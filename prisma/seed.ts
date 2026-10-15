@@ -113,7 +113,7 @@ async function main() {
     Xiaomi: ['Redmi 9A','Redmi 9C','Redmi 10A','Redmi 10','Redmi 12','Redmi 13','Redmi Note 10','Redmi Note 10 5G','Redmi Note 10T 5G','Redmi Note 11','Redmi Note 12','Redmi Note 13','Poco M3 Pro 5G','Poco X3','Poco X5','Poco X6'],
     Oppo: ['A16','A16s','A17','A18','A54','A54s','A57','A58','A74','A78','Reno 8','Reno 10'],
     Infinix: ['Smart 5','Smart 6','Smart 7','Smart 8','Hot 9 Play','Hot 10','Hot 10 Lite','Hot 10 Play','Hot 11','Hot 12','Hot 20','Hot 30','Hot 40'],
-    Tecno: ['Spark Go 2020','Spark 6 Go','Spark 7','Spark 8','Spark 9','Spark 10','Spark 20','Camon 18','Camon 19','Camon 20'],
+    Tecno: ['Pop 7','Pop 7 Pro','Spark Go 2020','Spark Go 2023','Spark 6 Go','Spark 7','Spark 8','Spark 9','Spark 10','Spark 10C','Spark 20','Camon 18','Camon 19','Camon 20'],
     itel: ['A49','A60','A70','P40','P55','S23'],
     Realme: ['C11 2020','C12','C15','C21','C25','C30','C33','C53','C55','C67','8','9','10'],
     Huawei: ['Y6p'],
@@ -216,7 +216,7 @@ async function main() {
       sourceName:'All Spares',
       sourceUrl:'https://all-spares.com/en/lcd-compatible-with-tecno-pop-7-spark-10-spark-go-2023-infinix-smart-7-black-without-frame-original-prc-bf7-bf6-ki5q-ki5k/',
       note:'Famille FPC6605-05. Compatibilité de panneau aftermarket : comparer FPC, connecteur, flex, dimensions et tester avant collage.',
-      models:[['Infinix','Smart 7'],['Tecno','Spark 10']]
+      models:[['Infinix','Smart 7'],['Tecno','Spark 10'],['Tecno','Spark 10C'],['Tecno','Spark Go 2023'],['Tecno','Pop 7'],['Tecno','Pop 7 Pro']]
     }
   ] as const;
 
