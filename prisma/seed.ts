@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { PrismaClient, UserRole, DeviceCategory, SubscriptionStatus, AutomationTrigger, AutomationAction, DocumentType, DurationUnit, AcademyLevel, RepairStatus } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import { compatibilityPack2 } from './compatibility-pack-2';
 
 const prisma = new PrismaClient();
 
@@ -220,7 +221,7 @@ async function main() {
     }
   ] as const;
 
-  for(const group of compatibilitySeeds){
+  for(const group of [...compatibilitySeeds, ...compatibilityPack2]){
     for(const [brandName,modelName] of group.models){
       const model=await prisma.deviceModel.findFirst({where:{brand:{name:brandName},name:modelName}});
       if(!model)continue;
