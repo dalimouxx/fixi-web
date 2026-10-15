@@ -1036,6 +1036,9 @@ model PartCompatibility {
   confidence      CompatibilityConfidence @default(VERIFIED)
   tested          Boolean                 @default(true)
   note            String?
+  sourceName      String?
+  sourceUrl       String?
+  sourceCheckedAt DateTime?
   createdAt       DateTime                @default(now())
   updatedAt       DateTime                @default(now()) @updatedAt
 

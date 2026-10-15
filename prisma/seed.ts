@@ -108,25 +108,138 @@ async function main() {
   }
 
   const catalog: Record<string,string[]> = {
-    Apple: ['iPhone 8','iPhone X','iPhone XR','iPhone 11','iPhone 11 Pro','iPhone 12','iPhone 12 Pro','iPhone 13','iPhone 13 Pro','iPhone 14','iPhone 14 Pro','iPhone 15','iPhone 15 Pro','iPhone 16','iPhone 16 Pro'],
-    Samsung: ['Galaxy A04','Galaxy A05','Galaxy A12','Galaxy A13','Galaxy A14','Galaxy A15','Galaxy A22','Galaxy A23','Galaxy A24','Galaxy A25','Galaxy A32','Galaxy A33','Galaxy A34','Galaxy A35','Galaxy A52','Galaxy A53','Galaxy A54','Galaxy A55','Galaxy S21','Galaxy S22','Galaxy S23','Galaxy S24','Galaxy S24 Ultra'],
-    Xiaomi: ['Redmi 10','Redmi 12','Redmi 13','Redmi Note 10','Redmi Note 11','Redmi Note 12','Redmi Note 13','Poco X3','Poco X5','Poco X6'],
-    Oppo: ['A16','A17','A18','A54','A57','A58','A74','A78','Reno 8','Reno 10'],
-    Infinix: ['Smart 5','Smart 6','Smart 7','Smart 8','Hot 10','Hot 11','Hot 12','Hot 20','Hot 30','Hot 40'],
-    Tecno: ['Spark 7','Spark 8','Spark 9','Spark 10','Spark 20','Camon 18','Camon 19','Camon 20'],
+    Apple: ['iPhone 8','iPhone SE 2020','iPhone SE 2022','iPhone X','iPhone XR','iPhone 11','iPhone 11 Pro','iPhone 12','iPhone 12 Pro','iPhone 13','iPhone 13 Pro','iPhone 14','iPhone 14 Pro','iPhone 15','iPhone 15 Pro','iPhone 16','iPhone 16 Pro'],
+    Samsung: ['Galaxy A04','Galaxy A05','Galaxy A12','Galaxy M12','Galaxy A32 5G','Galaxy A13','Galaxy A14','Galaxy A15','Galaxy A22','Galaxy A23','Galaxy A24','Galaxy A25','Galaxy A32','Galaxy A33','Galaxy A34','Galaxy A35','Galaxy A52','Galaxy A53','Galaxy A54','Galaxy A55','Galaxy S21','Galaxy S22','Galaxy S23','Galaxy S24','Galaxy S24 Ultra'],
+    Xiaomi: ['Redmi 9A','Redmi 9C','Redmi 10A','Redmi 10','Redmi 12','Redmi 13','Redmi Note 10','Redmi Note 10 5G','Redmi Note 10T 5G','Redmi Note 11','Redmi Note 12','Redmi Note 13','Poco M3 Pro 5G','Poco X3','Poco X5','Poco X6'],
+    Oppo: ['A16','A16s','A17','A18','A54','A54s','A57','A58','A74','A78','Reno 8','Reno 10'],
+    Infinix: ['Smart 5','Smart 6','Smart 7','Smart 8','Hot 9 Play','Hot 10','Hot 10 Lite','Hot 10 Play','Hot 11','Hot 12','Hot 20','Hot 30','Hot 40'],
+    Tecno: ['Pop 7','Pop 7 Pro','Spark Go 2020','Spark Go 2023','Spark 6 Go','Spark 7','Spark 8','Spark 9','Spark 10','Spark 10C','Spark 20','Camon 18','Camon 19','Camon 20'],
     itel: ['A49','A60','A70','P40','P55','S23'],
-    Realme: ['C21','C25','C30','C33','C53','C55','C67','8','9','10']
+    Realme: ['C11 2020','C12','C15','C21','C25','C30','C33','C53','C55','C67','8','9','10'],
+    Huawei: ['Y6p'],
+    Honor: ['9A']
   };
   for (const [brandName,models] of Object.entries(catalog)) {
     const brand=await prisma.deviceBrand.upsert({where:{name:brandName},update:{active:true},create:{name:brandName,active:true}});
     for(const modelName of models) await prisma.deviceModel.upsert({where:{brandId_name:{brandId:brand.id,name:modelName}},update:{active:true},create:{brandId:brand.id,name:modelName,category:DeviceCategory.PHONE}});
   }
 
-  // Exemples de compatibilité : modifiables depuis Compatibility Hub.
-  const smart5=await prisma.deviceModel.findFirst({where:{brand:{name:'Infinix'},name:'Smart 5'}});
-  const smart6=await prisma.deviceModel.findFirst({where:{brand:{name:'Infinix'},name:'Smart 6'}});
-  if(smart5) await prisma.partCompatibility.upsert({where:{partReference_modelId:{partReference:'LCD-SMART5-COMP',modelId:smart5.id}},update:{},create:{partReference:'LCD-SMART5-COMP',partName:'Afficheur Smart 5 compatible',partType:'DISPLAY',modelId:smart5.id,tested:true}});
-  if(smart6) await prisma.partCompatibility.upsert({where:{partReference_modelId:{partReference:'LCD-SMART5-COMP',modelId:smart6.id}},update:{},create:{partReference:'LCD-SMART5-COMP',partName:'Afficheur Smart 5 compatible',partType:'DISPLAY',modelId:smart6.id,tested:false,confidence:'COMMUNITY',note:'Exemple à confirmer selon la révision matérielle'}});
+  // Pack de compatibilités documentées. "VERIFIED" = vérifiée par source,
+  // "tested" reste false tant qu'un atelier Fixi n'a pas réalisé un test physique.
+  const checkedAt=new Date('2026-10-15T00:00:00.000Z');
+  const compatibilitySeeds = [
+    {
+      partReference:'IFIXIT-IF435-000-3',
+      partName:'Afficheur iPhone 8 / SE 2020 / SE 2022',
+      partType:'DISPLAY',
+      sourceName:'iFixit',
+      sourceUrl:'https://www.ifixit.com/products/iphone-se-2020-screen',
+      note:'iFixit indique que l’écran SE 2020/SE 2022 est compatible iPhone 8. Transférer le bouton Home original pour conserver Touch ID.',
+      models:[['Apple','iPhone 8'],['Apple','iPhone SE 2020'],['Apple','iPhone SE 2022']]
+    },
+    {
+      partReference:'REALME-A03559-XX',
+      partName:'Afficheur Realme C11 2020 / C12 / C15 / C25',
+      partType:'DISPLAY',
+      sourceName:'cPix',
+      sourceUrl:'https://cpix.fr/realme-serie-c/6040-ecran-realme-c11-2020-c12-c15-c25.html',
+      note:'Compatibilité annoncée pour RMX2185 / RMX2189 / RMX2180 / RMX3193-RMX3191. Tester image et tactile avant collage.',
+      models:[['Realme','C11 2020'],['Realme','C12'],['Realme','C15'],['Realme','C25']]
+    },
+    {
+      partReference:'LCD-SPARK6GO-SMART5-FAMILY',
+      partName:'Afficheur Spark Go 2020 / Spark 6 Go / Hot 10 Lite / Smart 5',
+      partType:'DISPLAY',
+      sourceName:'ORIWHIZ',
+      sourceUrl:'https://oriwhiz.com/fr-fr/products/original-lcd-screen-and-digitizer-full-assembly-for-tecno-spark-go-2020-spark-6-go-infinix-hot-10-lite-infinix-smart-5-for-tecno-spark-go-2020original',
+      note:'Même famille d’écran listée pour quatre modèles. Comparer nappe, connecteur et révision avant montage définitif.',
+      models:[['Tecno','Spark Go 2020'],['Tecno','Spark 6 Go'],['Infinix','Hot 10 Lite'],['Infinix','Smart 5']]
+    },
+    {
+      partReference:'BL-58BX',
+      partName:'Batterie Infinix BL-58BX 6000 mAh',
+      partType:'BATTERY',
+      sourceName:'Sunsky',
+      sourceUrl:'https://www.sunsky-online.com/fr/p/EDA006116602/Batterie-de-remplacement-pour-Infinix-Hot-9-Play-Hot-10-Play-BL-58BX-6000mAh.htm',
+      note:'Référence BL-58BX documentée pour Hot 9 Play et Hot 10 Play.',
+      models:[['Infinix','Hot 9 Play'],['Infinix','Hot 10 Play']]
+    },
+    {
+      partReference:'OPPO-A16-A16S-LCD',
+      partName:'Afficheur OPPO A16 / A16s',
+      partType:'DISPLAY',
+      sourceName:'Brico-phone',
+      sourceUrl:'https://www.brico-phone.com/22725-ecran-pour-oppo-a16.html',
+      note:'Compatibilité explicite A16 CPH2269 et A16s CPH2271. Tester la pièce avant collage.',
+      models:[['Oppo','A16'],['Oppo','A16s']]
+    },
+    {
+      partReference:'GH82-A12-M12-A32-5G',
+      partName:'Afficheur Samsung A12 / M12 / A32 5G',
+      partType:'DISPLAY',
+      sourceName:'Pieces2Mobile',
+      sourceUrl:'https://www.pieces2mobile.com/ecran-samsung-galaxy-a12-2020-a125f-m12-m127f-a32-5g-a326b-noir-origine.html',
+      note:'Références constructeur GH82-24491A / GH82-24490A / GH82-24708A / GH82-24709A. Vérifier le code modèle exact avant montage.',
+      models:[['Samsung','Galaxy A12'],['Samsung','Galaxy M12'],['Samsung','Galaxy A32 5G']]
+    },
+    {
+      partReference:'XIAOMI-REDMI9A-9C-10A-LCD',
+      partName:'Afficheur Redmi 9A / 9C / 10A',
+      partType:'DISPLAY',
+      sourceName:'Componenti Digitali',
+      sourceUrl:'https://www.componentidigitali.com/fr/componenti-digitali-home-page/pieces-detachees-pour-telephones-et-tablettes/pieces-de-rechange-pour-xiaomi/ecran-lcd-pour-xiaomi/ecran-lcd-pour-xiaomi-redmi-9a-9c-9at-10a-noir-oem-service-pack.3.39.277.gp.37990.uw',
+      note:'Service pack OEM listant Redmi 9A, 9C, 9AT et 10A. Tester affichage/tactile avant collage.',
+      models:[['Xiaomi','Redmi 9A'],['Xiaomi','Redmi 9C'],['Xiaomi','Redmi 10A']]
+    },
+    {
+      partReference:'5600020K1900-5600060K1900',
+      partName:'Afficheur Redmi Note 10 5G / Note 10T 5G / Poco M3 Pro 5G',
+      partType:'DISPLAY',
+      sourceName:'LCD-Phone',
+      sourceUrl:'https://lcd-phone.com/fr/service-pack/62273-ecran-xiaomi-redmi-note-10-5g-note-10t-5g-poco-m3-pro-5g-2021-noir-chassis-service-pack-5600020k1900-5600060k1900-6938700790485.html',
+      note:'Service Pack d’origine, références 5600020K1900/5600060K1900. Test fonctionnel recommandé avant collage définitif.',
+      models:[['Xiaomi','Redmi Note 10 5G'],['Xiaomi','Redmi Note 10T 5G'],['Xiaomi','Poco M3 Pro 5G']]
+    },
+    {
+      partReference:'02353LKV',
+      partName:'Afficheur Huawei Y6p / Honor 9A',
+      partType:'DISPLAY',
+      sourceName:'APEX Technology',
+      sourceUrl:'https://apexgsm.com/models/huawei/y6p-honor-9a/',
+      note:'Service Pack partagé Y6p / Honor 9A. Références 02353LKV/02354GMW/02354GMP selon variante.',
+      models:[['Huawei','Y6p'],['Honor','9A']]
+    },
+    {
+      partReference:'FPC6605-05',
+      partName:'Afficheur Smart 7 / Spark 10 / Spark 10C / Spark Go 2023 / Pop 7',
+      partType:'DISPLAY',
+      sourceName:'All Spares',
+      sourceUrl:'https://all-spares.com/en/lcd-compatible-with-tecno-pop-7-spark-10-spark-go-2023-infinix-smart-7-black-without-frame-original-prc-bf7-bf6-ki5q-ki5k/',
+      note:'Famille FPC6605-05. Compatibilité de panneau aftermarket : comparer FPC, connecteur, flex, dimensions et tester avant collage.',
+      models:[['Infinix','Smart 7'],['Tecno','Spark 10'],['Tecno','Spark 10C'],['Tecno','Spark Go 2023'],['Tecno','Pop 7'],['Tecno','Pop 7 Pro']]
+    }
+  ] as const;
+
+  for(const group of compatibilitySeeds){
+    for(const [brandName,modelName] of group.models){
+      const model=await prisma.deviceModel.findFirst({where:{brand:{name:brandName},name:modelName}});
+      if(!model)continue;
+      await prisma.partCompatibility.upsert({
+        where:{partReference_modelId:{partReference:group.partReference,modelId:model.id}},
+        update:{
+          partName:group.partName,partType:group.partType,confidence:'VERIFIED',tested:false,
+          note:group.note,sourceName:group.sourceName,sourceUrl:group.sourceUrl,sourceCheckedAt:checkedAt
+        },
+        create:{
+          partReference:group.partReference,partName:group.partName,partType:group.partType,modelId:model.id,
+          confidence:'VERIFIED',tested:false,note:group.note,sourceName:group.sourceName,sourceUrl:group.sourceUrl,sourceCheckedAt:checkedAt
+        }
+      });
+    }
+  }
+
+  // Nettoyage de l'ancien exemple non sourcé si présent.
+  await prisma.partCompatibility.deleteMany({where:{partReference:'LCD-SMART5-COMP'}});
 
 
   // Fixi Academy starter courses (global, available to every shop).
