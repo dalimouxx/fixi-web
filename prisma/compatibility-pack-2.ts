@@ -124,5 +124,32 @@ export const compatibilityPack2 = [
     sourceUrl:'https://www.gsmpartscenter.com/en/samsung/galaxy-a/sm-a022f-galaxy-a02',
     note:'Référence GH39-02043A listée compatible sur plusieurs Galaxy. Vérifier longueur et code SM.',
     models:[['Samsung','Galaxy A15 4G'],['Samsung','Galaxy A15 5G'],['Samsung','Galaxy M15'],['Samsung','Galaxy M12'],['Samsung','Galaxy A12 Nacho'],['Samsung','Galaxy A12'],['Samsung','Galaxy A02'],['Samsung','Galaxy A31'],['Samsung','Galaxy A21s'],['Samsung','Galaxy A60']]
+  },
+  {
+    partReference:'MW-DPA136-NF',
+    partName:'Afficheur Samsung Galaxy A13 5G / A04s',
+    partType:'DISPLAY',
+    sourceName:'Micro Wire',
+    sourceUrl:'https://www.microwire.eu/screen-lcd-samsung-galaxy-a13-5g-a04s',
+    note:'Écran partagé pour SM-A136 Galaxy A13 5G et SM-A047 Galaxy A04s. Non compatible A13 4G.',
+    models:[['Samsung','Galaxy A13 5G'],['Samsung','Galaxy A04s']]
+  },
+  {
+    partReference:'GH96-14006A',
+    partName:'Caméra macro Samsung 2 MP multi-modèles',
+    partType:'CAMERA',
+    sourceName:'Samsung-parts.net',
+    sourceUrl:'https://www.samsung-parts.net/epages/Samsung-Parts.sf/fr_FR/?ObjectPath=%2FShops%2FSamsung-Parts%2FProducts%2FGH96-14006A',
+    note:'Référence GH96-14006A documentée sur plusieurs Galaxy. Vérifier le code SM exact.',
+    models:[['Samsung','Galaxy A12'],['Samsung','Galaxy A13 5G'],['Samsung','Galaxy M12'],['Samsung','Galaxy A22'],['Samsung','Galaxy M23'],['Samsung','Galaxy A25'],['Samsung','Galaxy M32']]
+  },
+  {
+    partReference:'BL-58BX',
+    partName:'Batterie Infinix BL-58BX 6000 mAh',
+    partType:'BATTERY',
+    sourceName:'Sunsky',
+    sourceUrl:'https://www.sunsky-online.com/fr/p/EDA006116602/Batterie-de-remplacement-pour-Infinix-Hot-9-Play-Hot-10-Play-BL-58BX-6000mAh.htm',
+    note:'Famille BL-58BX; contrôler le code batterie original et le connecteur avant montage.',
+    models:[['Infinix','Hot 9 Play'],['Infinix','Hot 10 Play'],['Infinix','Hot 11 Play'],['Infinix','Hot 12 Play']]
   }
 ] as const;
