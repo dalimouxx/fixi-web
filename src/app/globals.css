@@ -254,3 +254,21 @@ html[data-theme="dark"] .academy-lessons button>span{background:#fff}html[data-t
 @media(max-width:1200px){.quick-actions{grid-template-columns:repeat(3,1fr)}.dashboard-action-grid{grid-template-columns:1fr}.pulse-grid{grid-template-columns:repeat(5,1fr)}}
 @media(max-width:900px){.topbar-new span{display:none}.command-shortcuts{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:720px){.sidebar-collapse{display:none}.quick-actions{grid-template-columns:repeat(2,1fr)}.pulse-grid{grid-template-columns:repeat(2,1fr)}.dashboard-action-grid{grid-template-columns:1fr}.topbar-quick{display:none}.command-shortcuts{grid-template-columns:1fr}.repairs-toolbar-v2{align-items:stretch;flex-direction:column}.view-toggle{align-self:flex-start}}
+
+
+/* FIXI SUPPLIER — LIGHT ERP FOUNDATION */
+.supplier-auth{background:radial-gradient(circle at 70% 10%,rgba(255,107,0,.12),transparent 28%),#f6f7f9}
+.supplier-login-card{box-shadow:0 24px 70px rgba(70,50,35,.10);border:1px solid var(--line)}
+.supplier-os{background:#f6f7f9;color:var(--text)}
+.supplier-os>aside{background:#fff;color:var(--text);border-right:1px solid var(--line);box-shadow:8px 0 30px rgba(70,50,35,.035)}
+.supplier-os-brand span{color:#8f857e}
+.supplier-os>aside>button{color:#6f6761}
+.supplier-os>aside>button:hover{background:#fff7f0;color:#c45100}
+.supplier-os>aside>button.active{background:#fff0e5;color:#c45100}
+.supplier-side-foot{border-top-color:var(--line)}
+.supplier-side-foot small{color:#8f857e}
+.supplier-side-foot button{color:#7f766f}
+.supplier-panel,.supplier-kpis>div{background:#fff;border-color:var(--line);box-shadow:0 8px 24px rgba(70,50,35,.045)}
+.supplier-order-grid>article,.supplier-product-grid>article{border-color:var(--line);background:#fff}
+.supplier-delivery{background:#fff7f0;color:#716860}
+.control-supplier-link{background:#fff1e7;color:#c45100;border:1px solid #ffd9bd}
