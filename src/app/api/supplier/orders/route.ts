@@ -1,0 +1,2 @@
+import { prisma } from '@/lib/prisma';import { requireSupplierSession } from '@/lib/supplier-auth';import { bad,ok } from '@/lib/http';import { plain } from '@/lib/serializers';
+export async function GET(){try{const s=await requireSupplierSession();const rows=await prisma.supplierOrder.findMany({where:{companyId:s.companyId},include:{shop:{select:{name:true,region:true,address:true,phone:true}},items:{include:{product:true}},delivery:true},orderBy:{createdAt:'desc'},take:300});return ok(plain(rows))}catch(e:any){return bad(e.message,e.status||500)}}

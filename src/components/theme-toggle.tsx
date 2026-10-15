@@ -1,0 +1,3 @@
+'use client';
+import { useEffect,useState } from 'react';import { Moon,Sun } from 'lucide-react';
+export function ThemeToggle(){const[dark,setDark]=useState(false);useEffect(()=>{const saved=localStorage.getItem('fixi-theme');const d=saved==='dark'||(!saved&&matchMedia('(prefers-color-scheme: dark)').matches);setDark(d);document.documentElement.dataset.theme=d?'dark':'light'},[]);function toggle(){const d=!dark;setDark(d);document.documentElement.dataset.theme=d?'dark':'light';localStorage.setItem('fixi-theme',d?'dark':'light')}return <button className="btn btn-ghost btn-sm theme-toggle" onClick={toggle} title={dark?'Mode clair':'Mode sombre'}>{dark?<Sun size={16}/>:<Moon size={16}/>}</button>}

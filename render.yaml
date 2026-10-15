@@ -1,0 +1,65 @@
+services:
+  - type: web
+    name: fixi-web
+    runtime: docker
+    plan: free
+    region: frankfurt
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    dockerCommand: npm run start
+    preDeployCommand: npx prisma db push && npm run db:seed
+    healthCheckPath: /api/health
+    autoDeployTrigger: commit
+    envVars:
+      - key: PORT
+        value: "10000"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: fixi-db
+          property: connectionString
+      - key: AUTH_SECRET
+        generateValue: true
+      - key: PLATFORM_AUTH_SECRET
+        generateValue: true
+      - key: DATA_ENCRYPTION_KEY
+        generateValue: true
+      - key: CRON_SECRET
+        generateValue: true
+      - key: SUPPLIER_AUTH_SECRET
+        generateValue: true
+      - key: FIXI_AI_ENABLED
+        value: "true"
+      - key: AI_PROVIDER
+        value: anthropic
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: ANTHROPIC_MODEL
+        value: claude-sonnet-5
+      - key: ANTHROPIC_API_URL
+        value: https://api.anthropic.com/v1
+      - key: NEXT_PUBLIC_APP_URL
+        sync: false
+      - key: DEFAULT_SHOP_SLUG
+        value: atelier-principal
+      - key: INITIAL_SHOP_SLUG
+        value: atelier-principal
+      - key: INITIAL_SHOP_NAME
+        value: Mon Atelier
+      - key: INITIAL_SHOP_REGION
+        value: Gabès
+      - key: INITIAL_ADMIN_LOGIN
+        value: admin
+      - key: INITIAL_ADMIN_PIN
+        sync: false
+      - key: PLATFORM_ADMIN_LOGIN
+        value: platform
+      - key: PLATFORM_ADMIN_PASSWORD
+        sync: false
+
+databases:
+  - name: fixi-db
+    plan: free
+    region: frankfurt
+    databaseName: fixi
+    user: fixi
+    postgresMajorVersion: "16"

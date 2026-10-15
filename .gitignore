@@ -1,0 +1,14 @@
+node_modules/
+.next/
+.env
+.env.*
+!.env.example
+coverage/
+*.log
+.DS_Store
+prisma/dev.db
+backups/
+data/
+*.sql
+*.sql.gz
+*.tar.gz

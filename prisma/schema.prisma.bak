@@ -1,0 +1,1860 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  RECEPTION
+  TECHNICIAN
+  CASHIER
+}
+
+enum RepairStatus {
+  RECEIVED
+  DIAGNOSIS
+  IN_REPAIR
+  WAITING_PART
+  READY
+  DELIVERED
+  CANCELLED
+}
+
+enum RepairPriority {
+  NORMAL
+  URGENT
+}
+
+enum DeviceCategory {
+  PHONE
+  TABLET
+  COMPUTER
+  OTHER
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  D17
+  FLOUCI
+  BANK_TRANSFER
+  ONLINE
+  OTHER
+}
+
+enum PaymentKind {
+  PAYMENT
+  REFUND
+}
+
+enum PurchaseStatus {
+  DRAFT
+  RECEIVED
+  CANCELLED
+}
+
+enum WarrantyClaimStatus {
+  OPEN
+  IN_REVIEW
+  RESOLVED
+  REJECTED
+}
+
+enum CashSessionStatus {
+  OPEN
+  CLOSED
+}
+
+enum StockMovementType {
+  PURCHASE
+  CONSUMPTION
+  ADJUSTMENT
+  RETURN
+  TRANSFER_IN
+  TRANSFER_OUT
+}
+
+enum AttachmentType {
+  BEFORE
+  AFTER
+  DOCUMENT
+  SIGNATURE_RECEPTION
+  SIGNATURE_DELIVERY
+}
+
+enum DocumentType {
+  QUOTE
+  INVOICE
+  CREDIT_NOTE
+}
+
+enum DocumentStatus {
+  DRAFT
+  SENT
+  APPROVED
+  REJECTED
+  CONVERTED
+  PARTIALLY_PAID
+  PAID
+  CANCELLED
+  EXPIRED
+}
+
+enum SubscriptionStatus {
+  TRIAL
+  ACTIVE
+  PAST_DUE
+  SUSPENDED
+  CANCELLED
+}
+
+enum NotificationType {
+  INFO
+  SUCCESS
+  WARNING
+  ERROR
+  STOCK
+  REPAIR
+  PAYMENT
+  WARRANTY
+  SYSTEM
+}
+
+enum AdPlacement {
+  QUEUE
+  TRACK
+  LANDING
+}
+
+enum AdCampaignStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  ENDED
+}
+
+enum AdMediaType {
+  IMAGE
+  ANIMATED_IMAGE
+  VIDEO
+}
+
+enum BroadcastAudience {
+  SHOP
+  REGION
+  PLAN
+  ALL
+}
+
+enum SupportTicketStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING_SHOP
+  RESOLVED
+  CLOSED
+}
+
+enum SupportPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum RewardReason {
+  TOP_SHOP
+  MANUAL
+  REFERRAL
+  PROMOTION
+}
+
+enum ChangelogVisibility {
+  ALL
+  STARTER
+  PRO
+  BUSINESS
+}
+
+enum AutomationTrigger {
+  REPAIR_CREATED
+  REPAIR_READY
+  READY_OVERDUE
+  LOW_STOCK
+  QUOTE_APPROVED
+  QUOTE_REJECTED
+  WARRANTY_EXPIRING
+  CASH_DIFFERENCE
+}
+
+enum AutomationAction {
+  NOTIFICATION
+  WHATSAPP_SUGGESTION
+  ASSIGN_TECHNICIAN
+  CREATE_TASK
+}
+
+enum GoalType {
+  REVENUE
+  REPAIRS
+  PROFIT
+  SATISFACTION
+}
+
+enum AppointmentStatus {
+  REQUESTED
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentLinkStatus {
+  PENDING
+  PAID
+  EXPIRED
+  CANCELLED
+  FAILED
+}
+
+enum PaymentProvider {
+  KONNECT
+  MANUAL
+  CUSTOM
+}
+
+enum MessageChannel {
+  IN_APP
+  WHATSAPP
+  PUSH
+}
+
+enum MessageDeliveryStatus {
+  QUEUED
+  SENT
+  DELIVERED
+  FAILED
+}
+
+enum SupplierOrderStatus {
+  PENDING
+  CONFIRMED
+  PREPARING
+  READY_FOR_DELIVERY
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+}
+
+enum SupplierDeliveryStatus {
+  PENDING
+  ASSIGNED
+  PICKED_UP
+  OUT_FOR_DELIVERY
+  DELIVERED
+  FAILED
+}
+
+enum AdBillingModel {
+  FLAT
+  CPM
+  CPC
+}
+
+enum AdReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum DurationUnit {
+  DAY
+  WEEK
+  MONTH
+  YEAR
+}
+
+enum SubscriptionRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum SaasPaymentStatus {
+  PENDING
+  CONFIRMED
+  REJECTED
+}
+
+enum CompatibilityConfidence {
+  VERIFIED
+  COMMUNITY
+  POSSIBLE
+}
+
+enum CommunityScope {
+  GLOBAL
+  REGION
+  SPECIALTY
+}
+
+enum CommunityPostType {
+  CHAT
+  FAULT
+  SOLUTION
+  COMPATIBILITY
+  ALERT
+}
+
+enum CommunityKnowledgeStatus {
+  DISCUSSION
+  PROPOSED
+  CONFIRMED
+  VERIFIED
+  REJECTED
+}
+
+enum CommunityVoteType {
+  USEFUL
+  CONFIRM
+}
+
+
+enum MarketListingStatus {
+  ACTIVE
+  RESERVED
+  SOLD
+  PAUSED
+  CLOSED
+}
+
+enum MarketRequestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  CANCELLED
+  COMPLETED
+}
+
+enum SosPartStatus {
+  OPEN
+  FOUND
+  CLOSED
+  EXPIRED
+}
+
+enum SosResponseStatus {
+  OFFERED
+  ACCEPTED
+  REJECTED
+  WITHDRAWN
+}
+
+enum ExpertCallStatus {
+  OPEN
+  ACCEPTED
+  IN_PROGRESS
+  RESOLVED
+  CANCELLED
+}
+
+enum AcademyLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum CareSubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+enum DigitalWarrantyStatus {
+  ACTIVE
+  EXPIRED
+  VOID
+}
+
+model Tenant {
+  id            String         @id @default(cuid())
+  name          String
+  createdAt     DateTime       @default(now())
+  shops         Shop[]
+  subscriptions Subscription[]
+  saasPayments  SaasPayment[]
+  saasInvoices  SaasInvoice[]
+  subscriptionRequests SubscriptionRequest[]
+}
+
+model Shop {
+  id                    String   @id @default(cuid())
+  tenantId              String
+  tenant                Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name                  String
+  slug                  String   @unique
+  region                String   @default("Non classée")
+  city                  String?
+  address               String?
+  phone                 String?
+  whatsappPhone         String?
+  email                 String?
+  website               String?
+  latitude              Decimal? @db.Decimal(10,7)
+  longitude             Decimal? @db.Decimal(10,7)
+  publicVisible         Boolean  @default(false)
+  publicFeatured        Boolean  @default(false)
+  publicDescription     String?
+  publicServices        String[] @default([])
+  coverDataUrl          String?
+  openingHours          Json?
+  taxId                 String?
+  countryCode           String   @default("216")
+  currency              String   @default("DT")
+  locale                String   @default("fr-TN")
+  logoDataUrl           String?
+  footerText            String   @default("Merci pour votre confiance")
+  whatsappReceived      String   @default("Bonjour {client}, votre appareil {device} a bien été reçu. Code : {code}.")
+  whatsappReady         String   @default("Bonjour {client}, votre appareil {device} est prêt. Montant restant : {balance} {currency}.")
+  queueShowClient       Boolean  @default(false)
+  invoicePrefix         String   @default("FAC")
+  quotePrefix           String   @default("DEV")
+  defaultTaxRate        Decimal  @default(0) @db.Decimal(5,2)
+  warrantyReminderDays  Int      @default(7)
+  lowStockNotifications Boolean  @default(true)
+  cashRequireSession    Boolean  @default(false)
+  smartMarginTarget     Decimal  @default(30) @db.Decimal(5,2)
+  readyReminderHours    Int      @default(72)
+  googleReviewUrl       String?
+  loyaltyEnabled        Boolean  @default(true)
+  qualityRequiredBeforeReady Boolean @default(true)
+  automationsEnabled    Boolean  @default(true)
+  cashierMaxDiscount    Decimal  @default(100) @db.Decimal(12,3)
+  cashierManagerApprovalAbove Decimal @default(10) @db.Decimal(12,3)
+  deliveryRequiresFullPayment Boolean @default(true)
+  whatsappCloudEnabled  Boolean  @default(false)
+  whatsappPhoneNumberId String?
+  whatsappBusinessAccountId String?
+  whatsappAccessTokenEncrypted String?
+  konnectEnabled        Boolean  @default(false)
+  konnectWalletId       String?
+  konnectApiKeyEncrypted String?
+  konnectSandbox        Boolean  @default(true)
+  pushEnabled           Boolean  @default(true)
+  aiExternalEnabled     Boolean  @default(false)
+  aiBaseUrl             String?
+  aiModel               String?
+  aiApiKeyEncrypted     String?
+  setupCompletedAt      DateTime?
+  isActive               Boolean  @default(true)
+  lastSeenAt             DateTime?
+  lastLoginAt            DateTime?
+  platformNotes          String?
+  createdAt              DateTime @default(now())
+  users                 User[]
+  clients               Client[]
+  repairs               Repair[]
+  payments              Payment[]
+  inventory             InventoryItem[]
+  suppliers             Supplier[]
+  purchases             Purchase[]
+  expenses              Expense[]
+  repairTypes           RepairType[]
+  auditLogs             AuditLog[]
+  warrantyClaims        WarrantyClaim[]
+  cashSessions          CashSession[]
+  stockMovements        StockMovement[]
+  attachments           RepairAttachment[]
+  notifications         Notification[]
+  salesDocuments        SalesDocument[]
+  platformMessages      PlatformMessage[]
+  supportTickets        SupportTicket[]
+  rewards               ShopReward[]
+  adImpressions         AdImpression[]
+  automationRules       AutomationRule[]
+  automationRuns        AutomationRun[]
+  qualityChecks         RepairQualityCheck[]
+  feedbacks             ClientFeedback[]
+  goals                 ShopGoal[]
+  appointments          Appointment[]
+  paymentLinks          PaymentLink[]
+  pushSubscriptions     PushSubscription[]
+  messageLogs           MessageLog[]
+  supplierMarketplaceOrders SupplierOrder[]
+  subscriptionRequests SubscriptionRequest[]
+  communityPosts       CommunityPost[]
+  communityVotes       CommunityVote[]
+  marketListings       PartMarketListing[] @relation("ListingSellerShop")
+  marketPurchaseRequests PartMarketRequest[] @relation("MarketBuyerShop")
+  sosPartRequests       SosPartRequest[] @relation("SosRequesterShop")
+  sosPartResponses      SosPartResponse[] @relation("SosResponderShop")
+  expertRequests        ExpertCallRequest[] @relation("ExpertRequesterShop")
+  expertAcceptedCalls   ExpertCallRequest[] @relation("ExpertAcceptedShop")
+  expertMessages        ExpertCallMessage[]
+  academyCourses        AcademyCourse[]
+  carePlans             CarePlan[]
+  careSubscriptions     ClientCareSubscription[]
+  digitalWarranties     DigitalWarranty[]
+
+  @@index([tenantId])
+  @@index([region])
+  @@index([city])
+  @@index([publicVisible, region])
+  @@index([lastSeenAt])
+}
+
+model User {
+  id                 String   @id @default(cuid())
+  shopId             String
+  shop               Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  fullName           String
+  loginCode          String
+  phone              String?
+  email              String?
+  role               UserRole
+  pinHash            String
+  isActive           Boolean  @default(true)
+  mustChangePin      Boolean  @default(false)
+  technicianSpecialties String[] @default([])
+  lastSeenAt         DateTime?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  assignedRepairs    Repair[] @relation("TechnicianRepairs")
+  statusEvents       RepairStatusEvent[]
+  payments           Payment[] @relation("PaymentUser")
+  auditLogs          AuditLog[]
+  claimsCreated      WarrantyClaim[] @relation("ClaimCreator")
+  claimsResolved     WarrantyClaim[] @relation("ClaimResolver")
+  cashSessionsOpened CashSession[] @relation("CashOpenedBy")
+  cashSessionsClosed CashSession[] @relation("CashClosedBy")
+  stockMovements     StockMovement[]
+  attachments        RepairAttachment[]
+  notifications      Notification[]
+  supportMessages    SupportMessage[]
+  qualityChecks      RepairQualityCheck[]
+  pushSubscriptions  PushSubscription[]
+  documentPayments    DocumentPayment[]
+  communityPosts      CommunityPost[]
+  communityVotes      CommunityVote[]
+  marketListings       PartMarketListing[]
+  marketPurchaseRequests PartMarketRequest[]
+  sosPartRequests       SosPartRequest[]
+  sosPartResponses      SosPartResponse[]
+  expertRequests        ExpertCallRequest[] @relation("ExpertRequesterUser")
+  expertAcceptedCalls   ExpertCallRequest[] @relation("ExpertAcceptedUser")
+  expertMessages        ExpertCallMessage[]
+  academyProgress       AcademyLessonProgress[]
+
+  @@unique([shopId, loginCode])
+  @@index([shopId, role])
+}
+
+model Client {
+  id             String   @id @default(cuid())
+  shopId         String
+  shop           Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  fullName       String
+  phone          String
+  email          String?
+  notes          String?
+  loyaltyPoints  Int      @default(0)
+  walletToken    String?  @unique @default(cuid())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  repairs        Repair[]
+  salesDocuments SalesDocument[]
+  feedbacks      ClientFeedback[]
+  appointments   Appointment[]
+  messageLogs     MessageLog[]
+  careSubscriptions ClientCareSubscription[]
+  digitalWarranties DigitalWarranty[]
+
+  @@unique([shopId, phone])
+  @@index([shopId, fullName])
+}
+
+model Repair {
+  id                String         @id @default(cuid())
+  shopId            String
+  shop              Shop           @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  code              String
+  publicToken       String         @unique @default(cuid())
+  offlineRequestId  String?        @unique
+  clientId          String
+  client            Client         @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  category          DeviceCategory
+  brand             String?
+  model             String
+  serialNumber      String?
+  color             String?
+  lockCodeEncrypted String?
+  reportedIssue     String
+  diagnosis         String?
+  internalNotes     String?
+  priority          RepairPriority @default(NORMAL)
+  status            RepairStatus   @default(RECEIVED)
+  technicianId      String?
+  technician        User?          @relation("TechnicianRepairs", fields: [technicianId], references: [id], onDelete: SetNull)
+  estimatedPrice    Decimal?       @db.Decimal(12,3)
+  finalPrice        Decimal?       @db.Decimal(12,3)
+  discountAmount    Decimal        @default(0) @db.Decimal(12,3)
+  discountReason    String?
+  discountApprovedBy String?
+  warrantyDays      Int            @default(30)
+  promisedAt        DateTime?
+  estimatedMinutes  Int?
+  deliveredAt       DateTime?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  parts             RepairPart[]
+  payments          Payment[]
+  statusEvents      RepairStatusEvent[]
+  warrantyClaims    WarrantyClaim[]
+  attachments       RepairAttachment[]
+  salesDocuments    SalesDocument[]
+  qualityChecks     RepairQualityCheck[]
+  feedback          ClientFeedback?
+  automationRuns    AutomationRun[]
+  paymentLinks      PaymentLink[]
+  messageLogs       MessageLog[]
+  digitalWarranty  DigitalWarranty?
+
+  @@unique([shopId, code])
+  @@index([shopId, status])
+  @@index([shopId, technicianId])
+  @@index([clientId])
+  @@index([shopId, deliveredAt])
+}
+
+model RepairStatusEvent {
+  id         String       @id @default(cuid())
+  repairId   String
+  repair     Repair       @relation(fields: [repairId], references: [id], onDelete: Cascade)
+  fromStatus RepairStatus?
+  toStatus   RepairStatus
+  note       String?
+  userId     String?
+  user       User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  createdAt  DateTime     @default(now())
+  @@index([repairId, createdAt])
+}
+
+model InventoryItem {
+  id              String   @id @default(cuid())
+  shopId          String
+  shop            Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  sku             String
+  name            String
+  category        String?
+  quantity        Int      @default(0)
+  minQuantity     Int      @default(0)
+  purchasePrice   Decimal  @default(0) @db.Decimal(12,3)
+  salePrice       Decimal  @default(0) @db.Decimal(12,3)
+  supplierId      String?
+  supplier        Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  repairParts     RepairPart[]
+  purchaseItems   PurchaseItem[]
+  stockMovements  StockMovement[]
+  compatibilities PartCompatibility[]
+  marketListings  PartMarketListing[]
+  @@unique([shopId, sku])
+  @@index([shopId, name])
+}
+
+model RepairPart {
+  id              String         @id @default(cuid())
+  repairId        String
+  repair          Repair         @relation(fields: [repairId], references: [id], onDelete: Cascade)
+  inventoryItemId String?
+  inventoryItem   InventoryItem? @relation(fields: [inventoryItemId], references: [id], onDelete: SetNull)
+  name            String
+  quantity        Int            @default(1)
+  unitCost        Decimal        @db.Decimal(12,3)
+  unitPrice       Decimal        @db.Decimal(12,3)
+  createdAt       DateTime       @default(now())
+  @@index([repairId])
+}
+
+model Payment {
+  id             String        @id @default(cuid())
+  shopId         String
+  shop           Shop          @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  repairId       String
+  repair         Repair        @relation(fields: [repairId], references: [id], onDelete: Restrict)
+  userId         String?
+  user           User?         @relation("PaymentUser", fields: [userId], references: [id], onDelete: SetNull)
+  cashSessionId  String?
+  cashSession    CashSession?  @relation(fields: [cashSessionId], references: [id], onDelete: SetNull)
+  kind           PaymentKind   @default(PAYMENT)
+  method         PaymentMethod
+  amount         Decimal       @db.Decimal(12,3)
+  receivedAmount Decimal?      @db.Decimal(12,3)
+  changeAmount   Decimal?      @db.Decimal(12,3)
+  externalReference String?
+  paymentLinkId  String?
+  paymentLink    PaymentLink?  @relation(fields: [paymentLinkId], references: [id], onDelete: SetNull)
+  note           String?
+  createdAt      DateTime      @default(now())
+  @@index([shopId, createdAt])
+  @@index([repairId])
+  @@index([cashSessionId])
+}
+
+model Supplier {
+  id        String   @id @default(cuid())
+  shopId    String
+  shop      Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  name      String
+  phone     String?
+  email     String?
+  address   String?
+  notes     String?
+  createdAt DateTime @default(now())
+  items     InventoryItem[]
+  purchases Purchase[]
+  @@index([shopId, name])
+}
+
+model Purchase {
+  id         String         @id @default(cuid())
+  shopId     String
+  shop       Shop           @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  supplierId String?
+  supplier   Supplier?      @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  reference  String
+  status     PurchaseStatus @default(DRAFT)
+  total      Decimal        @default(0) @db.Decimal(12,3)
+  notes      String?
+  createdAt  DateTime       @default(now())
+  receivedAt DateTime?
+  items      PurchaseItem[]
+  @@unique([shopId, reference])
+  @@index([shopId, createdAt])
+}
+
+model PurchaseItem {
+  id              String        @id @default(cuid())
+  purchaseId      String
+  purchase        Purchase      @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  inventoryItemId String
+  inventoryItem   InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+  quantity        Int
+  unitCost        Decimal       @db.Decimal(12,3)
+}
+
+model Expense {
+  id            String       @id @default(cuid())
+  shopId        String
+  shop          Shop         @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  cashSessionId String?
+  cashSession   CashSession? @relation(fields: [cashSessionId], references: [id], onDelete: SetNull)
+  category      String
+  label         String
+  amount        Decimal      @db.Decimal(12,3)
+  note          String?
+  expenseDate   DateTime     @default(now())
+  createdAt     DateTime     @default(now())
+  @@index([shopId, expenseDate])
+  @@index([cashSessionId])
+}
+
+model RepairType {
+  id           String         @id @default(cuid())
+  shopId       String
+  shop         Shop           @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  name         String
+  category     DeviceCategory
+  fixedPrice   Decimal?       @db.Decimal(12,3)
+  isFixedPrice Boolean        @default(false)
+  active       Boolean        @default(true)
+  @@index([shopId, category])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  shopId    String
+  shop      Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action    String
+  entity    String
+  entityId  String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+  @@index([shopId, createdAt])
+}
+
+model WarrantyClaim {
+  id           String              @id @default(cuid())
+  shopId       String
+  shop         Shop                @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  repairId     String
+  repair       Repair              @relation(fields: [repairId], references: [id], onDelete: Cascade)
+  status       WarrantyClaimStatus @default(OPEN)
+  issue        String
+  resolution   String?
+  createdById  String?
+  createdBy    User?               @relation("ClaimCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  resolvedById String?
+  resolvedBy   User?               @relation("ClaimResolver", fields: [resolvedById], references: [id], onDelete: SetNull)
+  createdAt    DateTime            @default(now())
+  resolvedAt   DateTime?
+  @@index([shopId, status])
+  @@index([repairId])
+}
+
+model CashSession {
+  id             String            @id @default(cuid())
+  shopId         String
+  shop           Shop              @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  openedById     String
+  openedBy       User              @relation("CashOpenedBy", fields: [openedById], references: [id], onDelete: Restrict)
+  closedById     String?
+  closedBy       User?             @relation("CashClosedBy", fields: [closedById], references: [id], onDelete: SetNull)
+  status         CashSessionStatus @default(OPEN)
+  openingAmount  Decimal           @default(0) @db.Decimal(12,3)
+  expectedCash   Decimal?          @db.Decimal(12,3)
+  closingActual  Decimal?          @db.Decimal(12,3)
+  difference     Decimal?          @db.Decimal(12,3)
+  note           String?
+  openedAt       DateTime          @default(now())
+  closedAt       DateTime?
+  payments       Payment[]
+  expenses       Expense[]
+  @@index([shopId, status])
+  @@index([shopId, openedAt])
+}
+
+model StockMovement {
+  id              String            @id @default(cuid())
+  shopId          String
+  shop            Shop              @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  inventoryItemId String
+  inventoryItem   InventoryItem     @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
+  userId          String?
+  user            User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+  type            StockMovementType
+  quantityChange  Int
+  quantityAfter   Int
+  unitCost        Decimal?          @db.Decimal(12,3)
+  reference       String?
+  note            String?
+  createdAt       DateTime          @default(now())
+  @@index([shopId, createdAt])
+  @@index([inventoryItemId, createdAt])
+}
+
+model RepairAttachment {
+  id           String         @id @default(cuid())
+  shopId       String
+  shop         Shop           @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  repairId     String
+  repair       Repair         @relation(fields: [repairId], references: [id], onDelete: Cascade)
+  uploadedById String?
+  uploadedBy   User?          @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+  type         AttachmentType
+  fileName     String
+  mimeType     String
+  url          String
+  sizeBytes    Int?
+  createdAt    DateTime       @default(now())
+  @@index([repairId, createdAt])
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  shopId    String
+  shop      Shop             @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  userId    String?
+  user      User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType @default(INFO)
+  title     String
+  message   String
+  href      String?
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+  @@index([shopId, createdAt])
+  @@index([userId, readAt])
+}
+
+model SalesDocument {
+  id            String         @id @default(cuid())
+  shopId        String
+  shop          Shop           @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  clientId      String
+  client        Client         @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  repairId      String?
+  repair        Repair?        @relation(fields: [repairId], references: [id], onDelete: SetNull)
+  type          DocumentType
+  status        DocumentStatus @default(DRAFT)
+  number        String
+  sourceQuoteId String?
+  publicToken   String?        @unique
+  clientDecisionAt DateTime?
+  clientDecisionNote String?
+  subtotal      Decimal        @default(0) @db.Decimal(12,3)
+  discount      Decimal        @default(0) @db.Decimal(12,3)
+  taxRate       Decimal        @default(0) @db.Decimal(5,2)
+  taxAmount     Decimal        @default(0) @db.Decimal(12,3)
+  total         Decimal        @default(0) @db.Decimal(12,3)
+  notes         String?
+  validUntil    DateTime?
+  issuedAt      DateTime       @default(now())
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  lines         SalesDocumentLine[]
+  payments      DocumentPayment[]
+  @@unique([shopId, number])
+  @@index([shopId, type, createdAt])
+  @@index([clientId])
+}
+
+model SalesDocumentLine {
+  id          String        @id @default(cuid())
+  documentId  String
+  document    SalesDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  description String
+  quantity    Decimal       @default(1) @db.Decimal(10,3)
+  unitPrice   Decimal       @default(0) @db.Decimal(12,3)
+  total       Decimal       @default(0) @db.Decimal(12,3)
+}
+
+model PlatformAdmin {
+  id           String   @id @default(cuid())
+  login        String   @unique
+  fullName     String
+  passwordHash String
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  platformMessages PlatformMessage[]
+  supportMessages SupportMessage[]
+  rewards         ShopReward[]
+  changelogEntries ChangelogEntry[]
+}
+
+model Plan {
+  id              String       @id @default(cuid())
+  code            String       @unique
+  name            String
+  description     String?
+  priceMonthly    Decimal      @default(0) @db.Decimal(12,3) // legacy
+  price           Decimal      @default(0) @db.Decimal(12,3)
+  durationValue   Int          @default(1)
+  durationUnit    DurationUnit @default(MONTH)
+  trialDays       Int          @default(0)
+  publicVisible   Boolean      @default(true)
+  maxShops        Int          @default(1)
+  maxUsersPerShop Int          @default(5)
+  features        Json?
+  active          Boolean      @default(true)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  subscriptions   Subscription[]
+  requests        SubscriptionRequest[]
+}
+
+model Subscription {
+  id        String             @id @default(cuid())
+  tenantId  String
+  tenant    Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  planId    String
+  plan      Plan               @relation(fields: [planId], references: [id], onDelete: Restrict)
+  status    SubscriptionStatus @default(TRIAL)
+  startsAt  DateTime           @default(now())
+  endsAt    DateTime?
+  notes     String?
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+  @@index([tenantId, status])
+}
+
+model SubscriptionRequest {
+  id            String                    @id @default(cuid())
+  tenantId      String
+  tenant        Tenant                    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  shopId        String
+  shop          Shop                      @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  planId        String?
+  plan          Plan?                     @relation(fields: [planId], references: [id], onDelete: SetNull)
+  requestedPrice Decimal?                 @db.Decimal(12,3)
+  durationValue Int?
+  durationUnit  DurationUnit?
+  status        SubscriptionRequestStatus @default(PENDING)
+  paymentMethod String?
+  proofDataUrl  String?
+  note          String?
+  adminNote     String?
+  createdAt     DateTime                  @default(now())
+  reviewedAt    DateTime?
+
+  @@index([tenantId, status])
+  @@index([shopId, status])
+}
+
+model DeviceBrand {
+  id        String        @id @default(cuid())
+  name      String        @unique
+  active    Boolean       @default(true)
+  sortOrder Int           @default(0)
+  createdAt DateTime      @default(now())
+  models    DeviceModel[]
+}
+
+model DeviceModel {
+  id          String         @id @default(cuid())
+  brandId     String
+  brand       DeviceBrand    @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  name        String
+  category    DeviceCategory @default(PHONE)
+  aliases     String[]       @default([])
+  releaseYear Int?
+  active      Boolean        @default(true)
+  createdAt   DateTime       @default(now())
+  compatibilities PartCompatibility[]
+  communityPosts   CommunityPost[]
+
+  @@unique([brandId, name])
+  @@index([name])
+}
+
+model PartCompatibility {
+  id              String                  @id @default(cuid())
+  inventoryItemId String?
+  inventoryItem   InventoryItem?          @relation(fields: [inventoryItemId], references: [id], onDelete: SetNull)
+  partReference   String
+  partName        String
+  partType        String                  @default("DISPLAY")
+  modelId         String
+  model           DeviceModel             @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  confidence      CompatibilityConfidence @default(VERIFIED)
+  tested          Boolean                 @default(true)
+  note            String?
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+
+  @@unique([partReference, modelId])
+  @@index([partReference])
+  @@index([partName])
+  @@index([modelId])
+}
+
+model DocumentPayment {
+  id          String        @id @default(cuid())
+  documentId  String
+  document    SalesDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  userId      String?
+  user        User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  kind        PaymentKind   @default(PAYMENT)
+  method      PaymentMethod
+  amount      Decimal       @db.Decimal(12,3)
+  reference   String?
+  note        String?
+  createdAt   DateTime      @default(now())
+
+  @@index([documentId, createdAt])
+}
+
+model LoginGuard {
+  id        String   @id @default(cuid())
+  keyHash   String   @unique
+  count     Int      @default(0)
+  resetAt   DateTime
+  updatedAt DateTime @updatedAt
+}
+
+
+model PlatformSettings {
+  id                 String   @id @default("platform")
+  appName            String   @default("Fixi")
+  logoDataUrl        String?
+  primaryColor       String   @default("#FF6B00")
+  supportEmail       String?
+  supportPhone       String?
+  landingHeadline    String   @default("Votre atelier. Enfin sous contrôle.")
+  landingSubheadline String   @default("Réparations, caisse, stock, clients et pilotage dans une seule plateforme.")
+  queueAdsEnabled    Boolean  @default(true)
+  trackingAdsEnabled Boolean  @default(true)
+  adsDefaultCpm      Decimal  @default(12) @db.Decimal(12,3)
+  adsDefaultCpc      Decimal  @default(0.5) @db.Decimal(12,3)
+  supplierMarketplaceEnabled Boolean @default(true)
+  updatedAt          DateTime @updatedAt
+}
+
+model PlatformMessage {
+  id          String             @id @default(cuid())
+  audience    BroadcastAudience  @default(ALL)
+  shopId      String?
+  shop        Shop?              @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  region      String?
+  planCode    String?
+  type        NotificationType   @default(INFO)
+  title       String
+  message     String
+  href        String?
+  pinned      Boolean            @default(false)
+  startsAt    DateTime           @default(now())
+  expiresAt   DateTime?
+  createdById String?
+  createdBy   PlatformAdmin?     @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime           @default(now())
+
+  @@index([shopId, createdAt])
+  @@index([region, createdAt])
+  @@index([startsAt, expiresAt])
+}
+
+model AdCampaign {
+  id                String           @id @default(cuid())
+  advertiserName    String
+  advertiserLogoUrl String?
+  title             String
+  description       String?
+  mediaType         AdMediaType
+  mediaUrl          String
+  targetUrl         String?
+  qrUrl             String?
+  placements        AdPlacement[]
+  targetRegions     String[]
+  targetShopIds     String[]
+  status            AdCampaignStatus @default(DRAFT)
+  reviewStatus      AdReviewStatus @default(PENDING)
+  billingModel      AdBillingModel @default(FLAT)
+  budget            Decimal? @db.Decimal(12,3)
+  cpm               Decimal? @db.Decimal(12,3)
+  cpc               Decimal? @db.Decimal(12,3)
+  spent             Decimal @default(0) @db.Decimal(12,3)
+  qrScans           Int @default(0)
+  contactName       String?
+  contactPhone      String?
+  contactEmail      String?
+  priority          Int              @default(0)
+  displaySeconds    Int              @default(8)
+  startsAt          DateTime
+  endsAt            DateTime
+  impressions       Int              @default(0)
+  clicks            Int              @default(0)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  impressionRows    AdImpression[]
+
+  @@index([status, startsAt, endsAt])
+}
+
+model AdImpression {
+  id         String      @id @default(cuid())
+  campaignId String
+  campaign   AdCampaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  shopId     String
+  shop       Shop        @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  placement  AdPlacement
+  createdAt  DateTime    @default(now())
+
+  @@index([campaignId, createdAt])
+  @@index([shopId, createdAt])
+}
+
+model SupportTicket {
+  id          String              @id @default(cuid())
+  shopId      String
+  shop        Shop                @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  subject     String
+  status      SupportTicketStatus @default(OPEN)
+  priority    SupportPriority     @default(NORMAL)
+  createdById String?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  messages    SupportMessage[]
+
+  @@index([shopId, status])
+  @@index([updatedAt])
+}
+
+model SupportMessage {
+  id              String         @id @default(cuid())
+  ticketId        String
+  ticket          SupportTicket  @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  userId          String?
+  user            User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  platformAdminId String?
+  platformAdmin   PlatformAdmin? @relation(fields: [platformAdminId], references: [id], onDelete: SetNull)
+  message         String
+  createdAt       DateTime       @default(now())
+
+  @@index([ticketId, createdAt])
+}
+
+model ShopReward {
+  id          String         @id @default(cuid())
+  shopId      String
+  shop        Shop           @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  reason      RewardReason
+  bonusDays   Int
+  note        String?
+  periodLabel String?
+  createdById String?
+  createdBy   PlatformAdmin? @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime       @default(now())
+
+  @@index([shopId, createdAt])
+}
+
+model FeatureFlag {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  label       String
+  description String?
+  enabled     Boolean  @default(false)
+  shopIds     String[]
+  planCodes   String[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model ChangelogEntry {
+  id          String               @id @default(cuid())
+  version     String
+  title       String
+  body        String
+  visibility  ChangelogVisibility  @default(ALL)
+  publishedAt DateTime             @default(now())
+  createdById String?
+  createdBy   PlatformAdmin?       @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([publishedAt])
+}
+
+model Referral {
+  id                 String   @id @default(cuid())
+  referrerShopId     String
+  referredTenantName String
+  contact            String?
+  status             String   @default("PENDING")
+  rewardDays         Int      @default(0)
+  createdAt          DateTime @default(now())
+
+  @@index([referrerShopId, status])
+}
+
+
+model SaasPayment {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  amount    Decimal  @db.Decimal(12,3)
+  method    String
+  reference String?
+  note      String?
+  invoiceId String?
+  invoice   SaasInvoice? @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+  status    SaasPaymentStatus @default(CONFIRMED)
+  proofDataUrl String?
+  paidAt    DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  @@index([tenantId, paidAt])
+}
+
+model SaasInvoice {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  number    String   @unique
+  amount    Decimal  @db.Decimal(12,3)
+  status    String   @default("OPEN")
+  issuedAt  DateTime @default(now())
+  dueAt     DateTime?
+  paidAt    DateTime?
+  note      String?
+  createdAt DateTime @default(now())
+  payments  SaasPayment[]
+
+  @@index([tenantId, issuedAt])
+}
+
+model PromoCode {
+  id              String   @id @default(cuid())
+  code            String   @unique
+  bonusDays       Int      @default(0)
+  discountPercent Decimal  @default(0) @db.Decimal(5,2)
+  active          Boolean  @default(true)
+  maxUses         Int?
+  usedCount       Int      @default(0)
+  expiresAt       DateTime?
+  createdAt       DateTime @default(now())
+}
+
+model AutomationRule {
+  id            String            @id @default(cuid())
+  shopId        String
+  shop          Shop              @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  name          String
+  trigger       AutomationTrigger
+  action        AutomationAction
+  enabled       Boolean           @default(true)
+  delayMinutes  Int               @default(0)
+  conditions    Json?
+  actionConfig  Json?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  runs          AutomationRun[]
+
+  @@index([shopId, enabled, trigger])
+}
+
+model AutomationRun {
+  id         String          @id @default(cuid())
+  shopId     String
+  shop       Shop            @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  ruleId     String
+  rule       AutomationRule  @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  repairId   String?
+  repair     Repair?         @relation(fields: [repairId], references: [id], onDelete: Cascade)
+  status     String          @default("DONE")
+  result     String?
+  metadata   Json?
+  createdAt  DateTime        @default(now())
+
+  @@index([shopId, createdAt])
+  @@index([ruleId, createdAt])
+  @@index([repairId, createdAt])
+}
+
+model RepairQualityCheck {
+  id          String    @id @default(cuid())
+  shopId      String
+  shop        Shop      @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  repairId    String
+  repair      Repair    @relation(fields: [repairId], references: [id], onDelete: Cascade)
+  key         String
+  label       String
+  required    Boolean   @default(true)
+  checked     Boolean   @default(false)
+  checkedById String?
+  checkedBy   User?     @relation(fields: [checkedById], references: [id], onDelete: SetNull)
+  checkedAt   DateTime?
+  sortOrder   Int       @default(0)
+  createdAt   DateTime  @default(now())
+
+  @@unique([repairId, key])
+  @@index([shopId, repairId])
+}
+
+model ClientFeedback {
+  id            String   @id @default(cuid())
+  shopId        String
+  shop          Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  repairId      String   @unique
+  repair        Repair   @relation(fields: [repairId], references: [id], onDelete: Cascade)
+  clientId      String
+  client        Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  rating        Int
+  speedRating   Int?
+  priceRating   Int?
+  welcomeRating Int?
+  comment       String?
+  createdAt     DateTime @default(now())
+
+  @@index([shopId, createdAt])
+  @@index([clientId, createdAt])
+}
+
+model ShopGoal {
+  id        String   @id @default(cuid())
+  shopId    String
+  shop      Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  type      GoalType
+  label     String
+  target    Decimal  @db.Decimal(14,3)
+  startsAt  DateTime
+  endsAt    DateTime
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([shopId, active, endsAt])
+}
+
+model Appointment {
+  id          String            @id @default(cuid())
+  shopId      String
+  shop        Shop              @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  clientId    String?
+  client      Client?           @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  publicToken String            @unique @default(cuid())
+  fullName    String
+  phone       String
+  service     String
+  device      String?
+  scheduledAt DateTime
+  status      AppointmentStatus @default(REQUESTED)
+  notes       String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@index([shopId, scheduledAt])
+  @@index([shopId, status])
+}
+
+model PaymentLink {
+  id          String            @id @default(cuid())
+  shopId      String
+  shop        Shop              @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  repairId    String
+  repair      Repair            @relation(fields: [repairId], references: [id], onDelete: Cascade)
+  publicToken String            @unique @default(cuid())
+  provider    PaymentProvider   @default(KONNECT)
+  providerRef String?
+  payUrl      String?
+  amount      Decimal           @db.Decimal(12,3)
+  status      PaymentLinkStatus @default(PENDING)
+  expiresAt   DateTime?
+  paidAt      DateTime?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  payments    Payment[]
+
+  @@index([shopId, status, createdAt])
+  @@index([repairId, status])
+  @@index([providerRef])
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  shopId    String
+  shop      Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([shopId, userId])
+}
+
+model MessageLog {
+  id          String                @id @default(cuid())
+  shopId      String
+  shop        Shop                  @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  clientId    String?
+  client      Client?               @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  repairId    String?
+  repair      Repair?               @relation(fields: [repairId], references: [id], onDelete: SetNull)
+  channel     MessageChannel
+  status      MessageDeliveryStatus @default(QUEUED)
+  recipient   String
+  title       String?
+  body        String
+  providerRef String?
+  error       String?
+  createdAt   DateTime              @default(now())
+  sentAt      DateTime?
+
+  @@index([shopId, createdAt])
+  @@index([repairId, createdAt])
+}
+
+model SupplierCompany {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  logoUrl     String?
+  phone       String?
+  email       String?
+  address     String?
+  region      String?
+  description String?
+  active      Boolean  @default(true)
+  verified    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  accounts    SupplierAccount[]
+  products    SupplierProduct[]
+  orders      SupplierOrder[]
+}
+
+model SupplierAccount {
+  id           String          @id @default(cuid())
+  companyId    String
+  company      SupplierCompany @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  fullName     String
+  login        String          @unique
+  passwordHash String
+  isActive     Boolean         @default(true)
+  createdAt    DateTime        @default(now())
+}
+
+model SupplierProduct {
+  id          String          @id @default(cuid())
+  companyId   String
+  company     SupplierCompany @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  sku         String
+  name        String
+  brand       String?
+  category    String?
+  description String?
+  imageUrl    String?
+  price       Decimal         @db.Decimal(12,3)
+  stock       Int             @default(0)
+  minOrderQty Int             @default(1)
+  active      Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  orderItems  SupplierOrderItem[]
+
+  @@unique([companyId, sku])
+  @@index([companyId, active, name])
+}
+
+model SupplierOrder {
+  id          String              @id @default(cuid())
+  shopId      String
+  shop        Shop                @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  companyId   String
+  company     SupplierCompany     @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  reference   String              @unique
+  status      SupplierOrderStatus @default(PENDING)
+  total       Decimal             @default(0) @db.Decimal(12,3)
+  note        String?
+  deliveryAddress String?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  receivedToStockAt DateTime?
+  items       SupplierOrderItem[]
+  delivery    SupplierDelivery?
+
+  @@index([shopId, createdAt])
+  @@index([companyId, status, createdAt])
+}
+
+model SupplierOrderItem {
+  id        String          @id @default(cuid())
+  orderId   String
+  order     SupplierOrder   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  product   SupplierProduct @relation(fields: [productId], references: [id], onDelete: Restrict)
+  quantity  Int
+  unitPrice Decimal         @db.Decimal(12,3)
+}
+
+model SupplierDelivery {
+  id           String                 @id @default(cuid())
+  orderId      String                 @unique
+  order        SupplierOrder          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  status       SupplierDeliveryStatus @default(PENDING)
+  driverName   String?
+  driverPhone  String?
+  trackingNote String?
+  proofUrl     String?
+  assignedAt   DateTime?
+  pickedUpAt   DateTime?
+  deliveredAt  DateTime?
+  updatedAt    DateTime               @updatedAt
+}
+
+
+
+model CommunityPost {
+  id              String                   @id @default(cuid())
+  shopId          String
+  shop            Shop                     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scope           CommunityScope           @default(GLOBAL)
+  region          String?
+  specialty       String?
+  type            CommunityPostType        @default(CHAT)
+  content         String
+  deviceModelId   String?
+  deviceModel     DeviceModel?             @relation(fields: [deviceModelId], references: [id], onDelete: SetNull)
+  partReference   String?
+  partName        String?
+  solution        String?
+  imageDataUrl    String?
+  knowledgeStatus CommunityKnowledgeStatus @default(DISCUSSION)
+  helpfulCount    Int                      @default(0)
+  confirmCount    Int                      @default(0)
+  replyToId       String?
+  replyTo         CommunityPost?           @relation("CommunityReplies", fields: [replyToId], references: [id], onDelete: Cascade)
+  replies         CommunityPost[]          @relation("CommunityReplies")
+  votes           CommunityVote[]
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
+
+  @@index([scope, createdAt])
+  @@index([region, createdAt])
+  @@index([specialty, createdAt])
+  @@index([type, knowledgeStatus])
+  @@index([deviceModelId])
+  @@index([replyToId])
+}
+
+model CommunityVote {
+  id        String            @id @default(cuid())
+  postId    String
+  post      CommunityPost     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shopId    String
+  shop      Shop              @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  type      CommunityVoteType
+  createdAt DateTime          @default(now())
+
+  @@unique([postId, userId, type])
+  @@index([postId, type])
+  @@index([shopId, type])
+}
+
+
+model PartMarketListing {
+  id              String              @id @default(cuid())
+  sellerShopId    String
+  sellerShop      Shop                @relation("ListingSellerShop", fields: [sellerShopId], references: [id], onDelete: Cascade)
+  createdById     String
+  createdBy       User                @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  inventoryItemId String?
+  inventoryItem   InventoryItem?      @relation(fields: [inventoryItemId], references: [id], onDelete: SetNull)
+  title           String
+  reference       String?
+  category        String?
+  brand           String?
+  compatibleModels String[]           @default([])
+  quality         String?
+  condition       String              @default("NEW")
+  quantity        Int                 @default(1)
+  reservedQuantity Int                @default(0)
+  unitPrice       Decimal             @db.Decimal(12,3)
+  imageDataUrl    String?
+  notes           String?
+  region          String?
+  status          MarketListingStatus @default(ACTIVE)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  requests        PartMarketRequest[]
+  sosResponses    SosPartResponse[]
+
+  @@index([status, createdAt])
+  @@index([sellerShopId, status])
+  @@index([region, status])
+  @@index([reference])
+}
+
+model PartMarketRequest {
+  id          String              @id @default(cuid())
+  listingId   String
+  listing     PartMarketListing   @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  buyerShopId String
+  buyerShop   Shop                @relation("MarketBuyerShop", fields: [buyerShopId], references: [id], onDelete: Cascade)
+  buyerUserId String
+  buyerUser   User                @relation(fields: [buyerUserId], references: [id], onDelete: Cascade)
+  quantity    Int
+  offeredPrice Decimal?           @db.Decimal(12,3)
+  message     String?
+  status      MarketRequestStatus @default(PENDING)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  @@index([listingId, status])
+  @@index([buyerShopId, status])
+}
+
+model SosPartRequest {
+  id            String        @id @default(cuid())
+  requesterShopId String
+  requesterShop Shop          @relation("SosRequesterShop", fields: [requesterShopId], references: [id], onDelete: Cascade)
+  requesterUserId String
+  requesterUser User          @relation(fields: [requesterUserId], references: [id], onDelete: Cascade)
+  partName      String
+  reference     String?
+  deviceModel   String?
+  quantity      Int           @default(1)
+  regionOnly    Boolean       @default(true)
+  region        String?
+  urgencyNote   String?
+  status        SosPartStatus @default(OPEN)
+  expiresAt     DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  responses     SosPartResponse[]
+
+  @@index([status, region, createdAt])
+  @@index([requesterShopId, status])
+}
+
+model SosPartResponse {
+  id            String            @id @default(cuid())
+  requestId     String
+  request       SosPartRequest    @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  responderShopId String
+  responderShop Shop              @relation("SosResponderShop", fields: [responderShopId], references: [id], onDelete: Cascade)
+  responderUserId String
+  responderUser User              @relation(fields: [responderUserId], references: [id], onDelete: Cascade)
+  listingId     String?
+  listing       PartMarketListing? @relation(fields: [listingId], references: [id], onDelete: SetNull)
+  quantityAvailable Int
+  price         Decimal?          @db.Decimal(12,3)
+  message       String?
+  status        SosResponseStatus @default(OFFERED)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  @@index([requestId, status])
+  @@index([responderShopId, status])
+}
+
+model ExpertCallRequest {
+  id              String           @id @default(cuid())
+  requesterShopId String
+  requesterShop   Shop             @relation("ExpertRequesterShop", fields: [requesterShopId], references: [id], onDelete: Cascade)
+  requesterUserId String
+  requesterUser   User             @relation("ExpertRequesterUser", fields: [requesterUserId], references: [id], onDelete: Cascade)
+  acceptedShopId  String?
+  acceptedShop    Shop?            @relation("ExpertAcceptedShop", fields: [acceptedShopId], references: [id], onDelete: SetNull)
+  acceptedUserId  String?
+  acceptedUser    User?            @relation("ExpertAcceptedUser", fields: [acceptedUserId], references: [id], onDelete: SetNull)
+  specialty       String?
+  device          String?
+  title           String
+  issue           String
+  regionOnly      Boolean          @default(false)
+  region          String?
+  budget          Decimal?         @db.Decimal(12,3)
+  agreedPrice     Decimal?         @db.Decimal(12,3)
+  status          ExpertCallStatus @default(OPEN)
+  meetingUrl      String?
+  resolvedNote    String?
+  createdAt       DateTime         @default(now())
+  acceptedAt      DateTime?
+  resolvedAt      DateTime?
+  updatedAt       DateTime         @updatedAt
+  messages        ExpertCallMessage[]
+
+  @@index([status, createdAt])
+  @@index([region, specialty, status])
+  @@index([requesterShopId, status])
+}
+
+model ExpertCallMessage {
+  id        String            @id @default(cuid())
+  callId    String
+  call      ExpertCallRequest @relation(fields: [callId], references: [id], onDelete: Cascade)
+  shopId    String
+  shop      Shop              @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  body      String
+  imageDataUrl String?
+  createdAt DateTime          @default(now())
+
+  @@index([callId, createdAt])
+}
+
+model AcademyCourse {
+  id          String       @id @default(cuid())
+  shopId      String?
+  shop        Shop?        @relation(fields: [shopId], references: [id], onDelete: SetNull)
+  title       String
+  description String
+  category    String
+  level       AcademyLevel @default(BEGINNER)
+  coverDataUrl String?
+  published   Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  lessons     AcademyLesson[]
+}
+
+model AcademyLesson {
+  id          String        @id @default(cuid())
+  courseId    String
+  course      AcademyCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title       String
+  content     String
+  videoUrl    String?
+  sortOrder   Int           @default(0)
+  estimatedMinutes Int      @default(10)
+  createdAt   DateTime      @default(now())
+  progress    AcademyLessonProgress[]
+
+  @@index([courseId, sortOrder])
+}
+
+model AcademyLessonProgress {
+  id          String        @id @default(cuid())
+  lessonId    String
+  lesson      AcademyLesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  completed   Boolean       @default(false)
+  completedAt DateTime?
+  updatedAt   DateTime      @updatedAt
+
+  @@unique([lessonId, userId])
+  @@index([userId, completed])
+}
+
+model CarePlan {
+  id            String   @id @default(cuid())
+  shopId        String
+  shop          Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  name          String
+  description   String?
+  durationDays  Int
+  price         Decimal  @db.Decimal(12,3)
+  benefits      String[] @default([])
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  subscriptions ClientCareSubscription[]
+
+  @@index([shopId, active])
+}
+
+model ClientCareSubscription {
+  id          String                 @id @default(cuid())
+  shopId      String
+  shop        Shop                   @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  clientId    String
+  client      Client                 @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  planId      String
+  plan        CarePlan               @relation(fields: [planId], references: [id], onDelete: Restrict)
+  status      CareSubscriptionStatus @default(ACTIVE)
+  startsAt    DateTime               @default(now())
+  endsAt      DateTime
+  pricePaid   Decimal                @default(0) @db.Decimal(12,3)
+  note        String?
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
+
+  @@index([shopId, status, endsAt])
+  @@index([clientId, status])
+}
+
+model DigitalWarranty {
+  id           String                @id @default(cuid())
+  shopId       String
+  shop         Shop                  @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  clientId     String
+  client       Client                @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  repairId     String                @unique
+  repair       Repair                @relation(fields: [repairId], references: [id], onDelete: Cascade)
+  publicToken  String                @unique @default(cuid())
+  status       DigitalWarrantyStatus @default(ACTIVE)
+  startsAt     DateTime
+  endsAt       DateTime
+  coverageText String?
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+
+  @@index([shopId, status, endsAt])
+  @@index([clientId, status, endsAt])
+}

@@ -1,0 +1,2 @@
+import { prisma } from '@/lib/prisma';import { requirePlatformSession } from '@/lib/platform-auth';import { bad,ok } from '@/lib/http';import { plain } from '@/lib/serializers';
+export async function GET(){try{await requirePlatformSession();const rows=await prisma.subscriptionRequest.findMany({include:{shop:{select:{name:true,region:true,phone:true}},tenant:{select:{name:true}},plan:true},orderBy:{createdAt:'desc'},take:200});return ok(plain(rows))}catch(e:any){return bad(e.message,e.status||500)}}

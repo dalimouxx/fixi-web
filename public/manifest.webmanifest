@@ -1,0 +1,17 @@
+{
+  "name": "Fixi V5 · Smart Repair Business OS",
+  "short_name": "Fixi",
+  "description": "Atelier, caisse, clients, stock et pilotage Fixi",
+  "start_url": "/app/dashboard",
+  "display": "standalone",
+  "background_color": "#0f0d0b",
+  "theme_color": "#ff6b00",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

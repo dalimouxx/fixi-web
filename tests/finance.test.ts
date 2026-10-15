@@ -1,0 +1,4 @@
+import test from 'node:test';import assert from 'node:assert/strict';import { documentTotals,paymentNet,repairBalance,warrantyIsActive } from '../src/lib/finance';
+test('paiements et remboursements calculent le net',()=>{assert.equal(paymentNet([{kind:'PAYMENT',amount:100},{kind:'REFUND',amount:20}]),80);assert.equal(repairBalance(150,[{kind:'PAYMENT',amount:100},{kind:'REFUND',amount:20}]),70)});
+test('devis calcule remise et taxe',()=>{const x=documentTotals([{quantity:2,unitPrice:50}],10,19);assert.equal(x.subtotal,100);assert.equal(x.discount,10);assert.equal(x.taxAmount,17.1);assert.equal(x.total,107.1)});
+test('garantie active sur la période',()=>{assert.equal(warrantyIsActive('2026-09-01',30,new Date('2026-09-24')),true);assert.equal(warrantyIsActive('2026-07-01',30,new Date('2026-09-24')),false)});

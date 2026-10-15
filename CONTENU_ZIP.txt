@@ -1,0 +1,43 @@
+FIXI WEB V10.0.0 — CONTENU
+
+Application Web complète Next.js / TypeScript / Prisma / PostgreSQL.
+
+Principaux modules :
+- Landing Page premium et Store Locator
+- Fixi Shop / Réception Express / Réception avancée
+- Catalogue marques, modèles et pannes
+- Compatibility Hub
+- Cash Simple + Cash Pro
+- Factures, paiements, abonnements flexibles
+- Community FR/AR + Knowledge
+- Parts Market inter-réparateurs
+- SOS Pièce régional/global
+- Expert Call
+- Fixi Academy
+- Fixi Care + garantie digitale
+- Client Wallet
+- Copilot vocal Réception Express
+- Offline Reception + Sync
+- Stock / SAV / CRM / rapports
+- Fixi Control SaaS
+- Fixi Ads
+- Supplier
+- Multi-boutiques / réseau
+
+Documentation :
+- README.md
+- INSTALLATION_VPS.md
+- INSTALLATION_CPANEL.md
+- UPGRADE_V9_V10.md
+- TEST_LOCAL_V10.md
+- RELEASE_10.0.0.md
+- VALIDATION.md
+- NETWORK_TROUBLESHOOTING.md
+
+Ne contient pas :
+- .env
+- secrets générés
+- base de données
+- uploads clients
+- node_modules
+- .next

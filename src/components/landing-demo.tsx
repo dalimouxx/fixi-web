@@ -1,0 +1,11 @@
+'use client';
+import { useState } from 'react';
+import { CheckCircle2,CreditCard,FileSearch,Smartphone,Sparkles,Wrench } from 'lucide-react';
+const steps=[
+ {k:'reception',n:'01',t:'Réception',icon:Smartphone,title:'iPhone 15 Pro reçu',text:'Client reconnu, appareil photographié et panne enregistrée.',side:['Client : Mohamed','Priorité : Normal','Photo avant : ✓']},
+ {k:'diagnostic',n:'02',t:'Diagnostic',icon:FileSearch,title:'Diagnostic assisté',text:'Fixi retrouve des cas similaires et suggère une durée et un prix.',side:['Cas similaires : 18','Durée : 52 min','Prix suggéré : 210 DT']},
+ {k:'repair',n:'03',t:'Réparation',icon:Wrench,title:'Technicien affecté',text:'Pièce consommée, stock décrémenté et timeline mise à jour.',side:['Technicien : Ahmed','Écran OLED ×1','Stock : 8 → 7']},
+ {k:'ready',n:'04',t:'Prêt',icon:CheckCircle2,title:'Contrôle qualité validé',text:'Le client reçoit son suivi et son devis/notification de disponibilité.',side:['Checklist : 8/8','WhatsApp : envoyé','Garantie : 90 jours']},
+ {k:'cash',n:'05',t:'Cash Pro',icon:CreditCard,title:'Paiement et livraison',text:'Paiement combiné, reçu et livraison sécurisée.',side:['Cash : 100 DT','D17 : 110 DT','Reste : 0 DT']},
+];
+export function LandingDemo(){const[active,setActive]=useState(0);const s=steps[active];const I=s.icon;return <section className="landing-demo-v7" id="demo"><div className="section-heading-v4"><span>DÉMO INTERACTIVE</span><h2>Une réparation complète.<br/><em>En quelques clics.</em></h2><p>Explorez un scénario de démonstration : chaque étape met à jour automatiquement les données liées.</p></div><div className="demo-v7-shell"><div className="demo-v7-tabs">{steps.map((x,i)=><button key={x.k} className={i===active?'active':''} onClick={()=>setActive(i)}><i>{x.n}</i><span>{x.t}</span></button>)}</div><div className="demo-v7-stage"><div className="demo-v7-main"><div className="demo-v7-icon"><I/></div><span>FIXI FLOW</span><h3>{s.title}</h3><p>{s.text}</p><div className="demo-v7-progress">{steps.map((x,i)=><i key={x.k} className={i<=active?'done':''}/>)}</div></div><aside><Sparkles/><span>DONNÉES LIÉES</span>{s.side.map(x=><div key={x}><CheckCircle2/><b>{x}</b></div>)}</aside></div></div></section>}

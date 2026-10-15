@@ -1,0 +1,9 @@
+import { prisma } from '@/lib/prisma';
+import { requireSession } from '@/lib/auth';
+import { bad,ok } from '@/lib/http';
+import { UserRole } from '@prisma/client';
+import { defaultQualityChecks } from '@/lib/smart';
+import { plain } from '@/lib/serializers';
+async function ensure(shopId:string,repairId:string){const count=await prisma.repairQualityCheck.count({where:{repairId}});if(!count)await prisma.repairQualityCheck.createMany({data:defaultQualityChecks.map(([key,label],i)=>({shopId,repairId,key,label,required:true,sortOrder:i}))});}
+export async function GET(_:Request,{params}:{params:Promise<{code:string}>}){try{const s=await requireSession();const{code}=await params;const r=await prisma.repair.findUnique({where:{shopId_code:{shopId:s.shopId,code}},select:{id:true}});if(!r)return bad('Réparation introuvable',404);await ensure(s.shopId,r.id);const rows=await prisma.repairQualityCheck.findMany({where:{repairId:r.id},include:{checkedBy:{select:{fullName:true}}},orderBy:{sortOrder:'asc'}});return ok(plain(rows));}catch(e:any){return bad(e.message,e.status||500)}}
+export async function PATCH(req:Request,{params}:{params:Promise<{code:string}>}){try{const s=await requireSession([UserRole.ADMIN,UserRole.TECHNICIAN]);const{code}=await params;const b=await req.json();const r=await prisma.repair.findUnique({where:{shopId_code:{shopId:s.shopId,code}},select:{id:true,technicianId:true}});if(!r)return bad('Réparation introuvable',404);if(s.role===UserRole.TECHNICIAN&&r.technicianId&&r.technicianId!==s.id)return bad('Accès refusé',403);await ensure(s.shopId,r.id);const x=await prisma.repairQualityCheck.findFirst({where:{repairId:r.id,key:String(b.key||'')}});if(!x)return bad('Contrôle introuvable',404);const checked=Boolean(b.checked);const u=await prisma.repairQualityCheck.update({where:{id:x.id},data:{checked,checkedById:checked?s.id:null,checkedAt:checked?new Date():null}});return ok(plain(u));}catch(e:any){return bad(e.message,e.status||500)}}

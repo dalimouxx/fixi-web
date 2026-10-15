@@ -1,0 +1,3 @@
+import { DurationUnit } from '@prisma/client';
+export function addDuration(start:Date,value:number,unit:DurationUnit){const d=new Date(start);const v=Math.max(1,Math.floor(value||1));if(unit===DurationUnit.DAY)d.setDate(d.getDate()+v);else if(unit===DurationUnit.WEEK)d.setDate(d.getDate()+v*7);else if(unit===DurationUnit.MONTH)d.setMonth(d.getMonth()+v);else d.setFullYear(d.getFullYear()+v);return d}
+export function durationLabel(value:number,unit:DurationUnit){const n=Math.max(1,value||1);const map:any={DAY:n>1?'jours':'jour',WEEK:n>1?'semaines':'semaine',MONTH:n>1?'mois':'mois',YEAR:n>1?'ans':'an'};return `${n} ${map[unit]||unit}`}

@@ -1,0 +1,2 @@
+import { LoginForm } from '@/components/login-form';
+export default function Login(){return <div className="auth-page"><section className="auth-visual"><div className="auth-copy"><div className="eyebrow">FIXI V5 · SMART REPAIR OS</div><h1>Tout votre atelier.<br/>Une seule interface.</h1><p>Réparations, caisse, clients, stock et équipe restent synchronisés en temps réel. Conçu pour aller vite au comptoir comme à l’établi.</p></div></section><section className="auth-panel"><LoginForm/></section></div>}

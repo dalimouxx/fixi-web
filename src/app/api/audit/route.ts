@@ -1,0 +1,2 @@
+import { prisma } from '@/lib/prisma';import { requireSession } from '@/lib/auth';import { bad,ok } from '@/lib/http';import { UserRole } from '@prisma/client';
+export async function GET(){try{const s=await requireSession([UserRole.ADMIN]);const rows=await prisma.auditLog.findMany({where:{shopId:s.shopId},include:{user:{select:{fullName:true}}},orderBy:{createdAt:'desc'},take:500});return ok(rows)}catch(e:any){return bad(e.message,e.status||500)}}

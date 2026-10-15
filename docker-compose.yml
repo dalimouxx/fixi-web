@@ -1,0 +1,95 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: fixi
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_DB: fixi
+    volumes:
+      - fixi_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fixi -d fixi"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+
+  web:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://fixi:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@db:5432/fixi?schema=public
+      AUTH_SECRET: ${AUTH_SECRET:?AUTH_SECRET is required}
+      PLATFORM_AUTH_SECRET: ${PLATFORM_AUTH_SECRET:?PLATFORM_AUTH_SECRET is required}
+      DATA_ENCRYPTION_KEY: ${DATA_ENCRYPTION_KEY:?DATA_ENCRYPTION_KEY is required}
+      CRON_SECRET: ${CRON_SECRET:?CRON_SECRET is required}
+      SUPPLIER_AUTH_SECRET: ${SUPPLIER_AUTH_SECRET:?SUPPLIER_AUTH_SECRET is required}
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+      VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:admin@localhost}
+      WHATSAPP_GRAPH_VERSION: ${WHATSAPP_GRAPH_VERSION:-v23.0}
+      FIXI_AI_ENABLED: ${FIXI_AI_ENABLED:-true}
+      AI_PROVIDER: ${AI_PROVIDER:-anthropic}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-sonnet-5}
+      ANTHROPIC_API_URL: ${ANTHROPIC_API_URL:-https://api.anthropic.com/v1}
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
+      DEFAULT_SHOP_SLUG: ${DEFAULT_SHOP_SLUG:-atelier-principal}
+      INITIAL_SHOP_SLUG: ${INITIAL_SHOP_SLUG:-atelier-principal}
+      INITIAL_SHOP_NAME: ${INITIAL_SHOP_NAME:-Mon Atelier}
+      INITIAL_SHOP_REGION: ${INITIAL_SHOP_REGION:-Gabès}
+      INITIAL_ADMIN_LOGIN: ${INITIAL_ADMIN_LOGIN:-admin}
+      INITIAL_ADMIN_PIN: ${INITIAL_ADMIN_PIN:?INITIAL_ADMIN_PIN is required}
+      PLATFORM_ADMIN_LOGIN: ${PLATFORM_ADMIN_LOGIN:-platform}
+      PLATFORM_ADMIN_PASSWORD: ${PLATFORM_ADMIN_PASSWORD:?PLATFORM_ADMIN_PASSWORD is required}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:3000/api/health >/dev/null || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    volumes:
+      - fixi_uploads:/app/data
+    ports:
+      - "3000:3000"
+
+
+  automations:
+    image: alpine:3.20
+    restart: unless-stopped
+    depends_on:
+      web:
+        condition: service_healthy
+    environment:
+      CRON_SECRET: ${CRON_SECRET:?CRON_SECRET is required}
+    command: >-
+      sh -c 'while true; do
+      wget -q -O /tmp/automation.json --header="x-cron-secret: $$CRON_SECRET" --post-data="" http://web:3000/api/system/automations/run || true;
+      sleep 300; done'
+
+  backup:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-14}
+    volumes:
+      - ./backups:/backups
+      - fixi_uploads:/uploads:ro
+    command: >-
+      sh -c 'mkdir -p /backups; sleep 300; while true; do
+      TS=$$(date +%Y%m%d_%H%M%S);
+      pg_dump --clean --if-exists --no-owner -h db -U fixi -d fixi | gzip > /backups/fixi_auto_$${TS}.sql.gz;
+      tar -czf /backups/fixi_uploads_auto_$${TS}.tar.gz -C /uploads . 2>/dev/null || true;
+      find /backups -type f -mtime +$${BACKUP_RETENTION_DAYS} -delete;
+      sleep 86400; done'
+
+volumes:
+  fixi_postgres:
+  fixi_uploads:

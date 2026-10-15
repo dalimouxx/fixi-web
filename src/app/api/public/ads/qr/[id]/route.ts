@@ -1,0 +1,3 @@
+import QRCode from 'qrcode';import {prisma} from '@/lib/prisma';import {AdReviewStatus} from '@prisma/client';
+export const runtime='nodejs';
+export async function GET(req:Request,{params}:{params:Promise<{id:string}>}){const{id}=await params;const ad=await prisma.adCampaign.findUnique({where:{id},select:{reviewStatus:true,qrUrl:true,targetUrl:true}});if(!ad||ad.reviewStatus!==AdReviewStatus.APPROVED||(!ad.qrUrl&&!ad.targetUrl))return new Response('Not found',{status:404});const go=new URL(`/api/public/ads/go/${id}?type=QR`,req.url).toString();const svg=await QRCode.toString(go,{type:'svg',margin:1,width:160,errorCorrectionLevel:'M'});return new Response(svg,{headers:{'Content-Type':'image/svg+xml','Cache-Control':'public, max-age=300'}})}

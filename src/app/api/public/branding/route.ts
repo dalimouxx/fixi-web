@@ -1,0 +1,2 @@
+import { prisma } from '@/lib/prisma';import { ok } from '@/lib/http';
+export async function GET(){const s=await prisma.platformSettings.upsert({where:{id:'platform'},update:{},create:{id:'platform'}});return ok({appName:s.appName,logoDataUrl:s.logoDataUrl,primaryColor:s.primaryColor,landingHeadline:s.landingHeadline,landingSubheadline:s.landingSubheadline,supportEmail:s.supportEmail,supportPhone:s.supportPhone})}
