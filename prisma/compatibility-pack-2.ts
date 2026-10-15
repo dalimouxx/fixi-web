@@ -88,5 +88,41 @@ export const compatibilityPack2 = [
     sourceUrl:'https://www.ifixit.com/fr-fr/products/xiaomi-redmi-note-13-4g-battery',
     note:'BN5P documentée pour Redmi Note 13 4G et Redmi Note 13 5G.',
     models:[['Xiaomi','Redmi Note 13 4G'],['Xiaomi','Redmi Note 13 5G']]
+  },
+  {
+    partReference:'BLP805',
+    partName:'Batterie OPPO BLP805 5000 mAh',
+    partType:'BATTERY',
+    sourceName:'GSM Parts Center',
+    sourceUrl:'https://www.gsmpartscenter.com/en/oppo/a-series/a16-cph2269',
+    note:'BLP805 listée sur plusieurs modèles OPPO. Vérifier le code CPH exact avant installation.',
+    models:[['Oppo','A32'],['Oppo','A16'],['Oppo','A54 5G'],['Oppo','A93 5G'],['Oppo','A16s'],['Oppo','A53 4G'],['Oppo','A53s'],['Oppo','A74 5G'],['Oppo','A54s']]
+  },
+  {
+    partReference:'BLP793',
+    partName:'Batterie Realme BLP793 6000 mAh',
+    partType:'BATTERY',
+    sourceName:'Repuestos Digital',
+    sourceUrl:'https://www.repuestosdigital.com/es/realme-7i-global-rmx2193/19107-bateria-blp793-6000mah-realme-narzo-20-c12-c25-narzo-30a-desmontaje.html',
+    note:'BLP793 listée pour plusieurs Realme. Vérifier le code RMX, dimensions et connecteur.',
+    models:[['Realme','C12'],['Realme','C15'],['Realme','C25'],['Realme','C25s'],['Realme','Narzo 20'],['Realme','Narzo 30A'],['Realme','Narzo 50A']]
+  },
+  {
+    partReference:'3722-004146',
+    partName:'Prise jack Samsung multi-modèles',
+    partType:'FLEX',
+    sourceName:'GSM Parts Center',
+    sourceUrl:'https://www.gsmpartscenter.com/en/samsung/galaxy-a/sm-a047f-galaxy-a04s',
+    note:'Référence service 3722-004146 listée sur plusieurs Galaxy. Contrôler la variante SM exacte.',
+    models:[['Samsung','Galaxy A04s'],['Samsung','Galaxy A13 5G'],['Samsung','Galaxy A13 4G'],['Samsung','Galaxy A12'],['Samsung','Galaxy A02'],['Samsung','Galaxy A51'],['Samsung','Galaxy A71'],['Samsung','Galaxy A70'],['Samsung','Galaxy A50'],['Samsung','Galaxy A40'],['Samsung','Galaxy A30s'],['Samsung','Galaxy A30']]
+  },
+  {
+    partReference:'GH39-02043A',
+    partName:'Câble antenne Samsung 117 mm multi-modèles',
+    partType:'FLEX',
+    sourceName:'GSM Parts Center',
+    sourceUrl:'https://www.gsmpartscenter.com/en/samsung/galaxy-a/sm-a022f-galaxy-a02',
+    note:'Référence GH39-02043A listée compatible sur plusieurs Galaxy. Vérifier longueur et code SM.',
+    models:[['Samsung','Galaxy A15 4G'],['Samsung','Galaxy A15 5G'],['Samsung','Galaxy M15'],['Samsung','Galaxy M12'],['Samsung','Galaxy A12 Nacho'],['Samsung','Galaxy A12'],['Samsung','Galaxy A02'],['Samsung','Galaxy A31'],['Samsung','Galaxy A21s'],['Samsung','Galaxy A60']]
   }
 ] as const;
