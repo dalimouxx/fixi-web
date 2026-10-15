@@ -108,25 +108,91 @@ async function main() {
   }
 
   const catalog: Record<string,string[]> = {
-    Apple: ['iPhone 8','iPhone X','iPhone XR','iPhone 11','iPhone 11 Pro','iPhone 12','iPhone 12 Pro','iPhone 13','iPhone 13 Pro','iPhone 14','iPhone 14 Pro','iPhone 15','iPhone 15 Pro','iPhone 16','iPhone 16 Pro'],
+    Apple: ['iPhone 8','iPhone SE 2020','iPhone SE 2022','iPhone X','iPhone XR','iPhone 11','iPhone 11 Pro','iPhone 12','iPhone 12 Pro','iPhone 13','iPhone 13 Pro','iPhone 14','iPhone 14 Pro','iPhone 15','iPhone 15 Pro','iPhone 16','iPhone 16 Pro'],
     Samsung: ['Galaxy A04','Galaxy A05','Galaxy A12','Galaxy A13','Galaxy A14','Galaxy A15','Galaxy A22','Galaxy A23','Galaxy A24','Galaxy A25','Galaxy A32','Galaxy A33','Galaxy A34','Galaxy A35','Galaxy A52','Galaxy A53','Galaxy A54','Galaxy A55','Galaxy S21','Galaxy S22','Galaxy S23','Galaxy S24','Galaxy S24 Ultra'],
     Xiaomi: ['Redmi 10','Redmi 12','Redmi 13','Redmi Note 10','Redmi Note 11','Redmi Note 12','Redmi Note 13','Poco X3','Poco X5','Poco X6'],
-    Oppo: ['A16','A17','A18','A54','A57','A58','A74','A78','Reno 8','Reno 10'],
-    Infinix: ['Smart 5','Smart 6','Smart 7','Smart 8','Hot 10','Hot 11','Hot 12','Hot 20','Hot 30','Hot 40'],
-    Tecno: ['Spark 7','Spark 8','Spark 9','Spark 10','Spark 20','Camon 18','Camon 19','Camon 20'],
+    Oppo: ['A16','A16s','A17','A18','A54','A54s','A57','A58','A74','A78','Reno 8','Reno 10'],
+    Infinix: ['Smart 5','Smart 6','Smart 7','Smart 8','Hot 9 Play','Hot 10','Hot 10 Lite','Hot 10 Play','Hot 11','Hot 12','Hot 20','Hot 30','Hot 40'],
+    Tecno: ['Spark Go 2020','Spark 6 Go','Spark 7','Spark 8','Spark 9','Spark 10','Spark 20','Camon 18','Camon 19','Camon 20'],
     itel: ['A49','A60','A70','P40','P55','S23'],
-    Realme: ['C21','C25','C30','C33','C53','C55','C67','8','9','10']
+    Realme: ['C11 2020','C12','C15','C21','C25','C30','C33','C53','C55','C67','8','9','10']
   };
   for (const [brandName,models] of Object.entries(catalog)) {
     const brand=await prisma.deviceBrand.upsert({where:{name:brandName},update:{active:true},create:{name:brandName,active:true}});
     for(const modelName of models) await prisma.deviceModel.upsert({where:{brandId_name:{brandId:brand.id,name:modelName}},update:{active:true},create:{brandId:brand.id,name:modelName,category:DeviceCategory.PHONE}});
   }
 
-  // Exemples de compatibilité : modifiables depuis Compatibility Hub.
-  const smart5=await prisma.deviceModel.findFirst({where:{brand:{name:'Infinix'},name:'Smart 5'}});
-  const smart6=await prisma.deviceModel.findFirst({where:{brand:{name:'Infinix'},name:'Smart 6'}});
-  if(smart5) await prisma.partCompatibility.upsert({where:{partReference_modelId:{partReference:'LCD-SMART5-COMP',modelId:smart5.id}},update:{},create:{partReference:'LCD-SMART5-COMP',partName:'Afficheur Smart 5 compatible',partType:'DISPLAY',modelId:smart5.id,tested:true}});
-  if(smart6) await prisma.partCompatibility.upsert({where:{partReference_modelId:{partReference:'LCD-SMART5-COMP',modelId:smart6.id}},update:{},create:{partReference:'LCD-SMART5-COMP',partName:'Afficheur Smart 5 compatible',partType:'DISPLAY',modelId:smart6.id,tested:false,confidence:'COMMUNITY',note:'Exemple à confirmer selon la révision matérielle'}});
+  // Pack de compatibilités documentées. "VERIFIED" = vérifiée par source,
+  // "tested" reste false tant qu'un atelier Fixi n'a pas réalisé un test physique.
+  const checkedAt=new Date('2026-10-15T00:00:00.000Z');
+  const compatibilitySeeds = [
+    {
+      partReference:'IFIXIT-IF435-000-3',
+      partName:'Afficheur iPhone 8 / SE 2020 / SE 2022',
+      partType:'DISPLAY',
+      sourceName:'iFixit',
+      sourceUrl:'https://www.ifixit.com/products/iphone-se-2020-screen',
+      note:'iFixit indique que l’écran SE 2020/SE 2022 est compatible iPhone 8. Transférer le bouton Home original pour conserver Touch ID.',
+      models:[['Apple','iPhone 8'],['Apple','iPhone SE 2020'],['Apple','iPhone SE 2022']]
+    },
+    {
+      partReference:'REALME-A03559-XX',
+      partName:'Afficheur Realme C11 2020 / C12 / C15 / C25',
+      partType:'DISPLAY',
+      sourceName:'cPix',
+      sourceUrl:'https://cpix.fr/realme-serie-c/6040-ecran-realme-c11-2020-c12-c15-c25.html',
+      note:'Compatibilité annoncée pour RMX2185 / RMX2189 / RMX2180 / RMX3193-RMX3191. Tester image et tactile avant collage.',
+      models:[['Realme','C11 2020'],['Realme','C12'],['Realme','C15'],['Realme','C25']]
+    },
+    {
+      partReference:'LCD-SPARK6GO-SMART5-FAMILY',
+      partName:'Afficheur Spark Go 2020 / Spark 6 Go / Hot 10 Lite / Smart 5',
+      partType:'DISPLAY',
+      sourceName:'ORIWHIZ',
+      sourceUrl:'https://oriwhiz.com/fr-fr/products/original-lcd-screen-and-digitizer-full-assembly-for-tecno-spark-go-2020-spark-6-go-infinix-hot-10-lite-infinix-smart-5-for-tecno-spark-go-2020original',
+      note:'Même famille d’écran listée pour quatre modèles. Comparer nappe, connecteur et révision avant montage définitif.',
+      models:[['Tecno','Spark Go 2020'],['Tecno','Spark 6 Go'],['Infinix','Hot 10 Lite'],['Infinix','Smart 5']]
+    },
+    {
+      partReference:'BL-58BX',
+      partName:'Batterie Infinix BL-58BX 6000 mAh',
+      partType:'BATTERY',
+      sourceName:'Sunsky',
+      sourceUrl:'https://www.sunsky-online.com/fr/p/EDA006116602/Batterie-de-remplacement-pour-Infinix-Hot-9-Play-Hot-10-Play-BL-58BX-6000mAh.htm',
+      note:'Référence BL-58BX documentée pour Hot 9 Play et Hot 10 Play.',
+      models:[['Infinix','Hot 9 Play'],['Infinix','Hot 10 Play']]
+    },
+    {
+      partReference:'OPPO-A16-A16S-LCD',
+      partName:'Afficheur OPPO A16 / A16s',
+      partType:'DISPLAY',
+      sourceName:'Brico-phone',
+      sourceUrl:'https://www.brico-phone.com/22725-ecran-pour-oppo-a16.html',
+      note:'Compatibilité explicite A16 CPH2269 et A16s CPH2271. Tester la pièce avant collage.',
+      models:[['Oppo','A16'],['Oppo','A16s']]
+    }
+  ] as const;
+
+  for(const group of compatibilitySeeds){
+    for(const [brandName,modelName] of group.models){
+      const model=await prisma.deviceModel.findFirst({where:{brand:{name:brandName},name:modelName}});
+      if(!model)continue;
+      await prisma.partCompatibility.upsert({
+        where:{partReference_modelId:{partReference:group.partReference,modelId:model.id}},
+        update:{
+          partName:group.partName,partType:group.partType,confidence:'VERIFIED',tested:false,
+          note:group.note,sourceName:group.sourceName,sourceUrl:group.sourceUrl,sourceCheckedAt:checkedAt
+        },
+        create:{
+          partReference:group.partReference,partName:group.partName,partType:group.partType,modelId:model.id,
+          confidence:'VERIFIED',tested:false,note:group.note,sourceName:group.sourceName,sourceUrl:group.sourceUrl,sourceCheckedAt:checkedAt
+        }
+      });
+    }
+  }
+
+  // Nettoyage de l'ancien exemple non sourcé si présent.
+  await prisma.partCompatibility.deleteMany({where:{partReference:'LCD-SMART5-COMP'}});
 
 
   // Fixi Academy starter courses (global, available to every shop).
