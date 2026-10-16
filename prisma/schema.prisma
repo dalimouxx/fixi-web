@@ -1919,6 +1919,48 @@ model SupplierErpCustomer {
   @@index([companyId, phone])
 }
 
+model SupplierCommercialDocument {
+  id          String   @id @default(cuid())
+  companyId   String
+  type        String
+  reference   String
+  status      String   @default("DRAFT")
+  customerId  String?
+  sourceSaleId String?
+  sourceOrderId String?
+  warehouseId String?
+  subtotal    Decimal  @default(0) @db.Decimal(12,3)
+  discount    Decimal  @default(0) @db.Decimal(12,3)
+  tax         Decimal  @default(0) @db.Decimal(12,3)
+  total       Decimal  @default(0) @db.Decimal(12,3)
+  validUntil  DateTime?
+  issuedAt    DateTime @default(now())
+  note        String?
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+
+  @@unique([companyId, reference])
+  @@index([companyId, type, issuedAt])
+  @@index([customerId])
+  @@index([sourceSaleId])
+}
+
+model SupplierCommercialDocumentItem {
+  id         String   @id @default(cuid())
+  documentId String
+  productId  String?
+  sku        String?
+  name       String
+  quantity   Int
+  unitPrice  Decimal  @default(0) @db.Decimal(12,3)
+  discount   Decimal  @default(0) @db.Decimal(12,3)
+  taxRate    Decimal  @default(0) @db.Decimal(5,2)
+
+  @@index([documentId])
+  @@index([productId])
+}
+
 model SupplierErpSale {
   id          String   @id @default(cuid())
   companyId   String
