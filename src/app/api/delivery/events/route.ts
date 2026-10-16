@@ -2,12 +2,14 @@ import {prisma} from '@/lib/prisma';
 import {requireDeliverySession} from '@/lib/delivery-auth';
 import {bad,ok} from '@/lib/http';
 import {plain} from '@/lib/serializers';
-import {SupplierDeliveryStatus,SupplierOrderStatus} from '@prisma/client';
+import {NotificationType,SupplierDeliveryStatus,SupplierOrderStatus} from '@prisma/client';
+import {notifySupplier} from '@/lib/supplier-notifications';
+import {notifyShop} from '@/lib/notifications';
 
 export async function POST(req:Request){
  try{
   const s=await requireDeliverySession();const b=await req.json();const orderId=String(b.orderId||''),type=String(b.type||'NOTE');
-  const o=await prisma.supplierOrder.findFirst({where:{id:orderId,companyId:s.companyId,delivery:{is:{driverAccountId:s.id}}},include:{delivery:true}});
+  const o=await prisma.supplierOrder.findFirst({where:{id:orderId,companyId:s.companyId,delivery:{is:{driverAccountId:s.id}}},include:{delivery:true,shop:{select:{name:true}}}});
   if(!o)return bad('Livraison introuvable',404);
   let amount:number|null=null;
   if(type==='COD_COLLECTED'){
@@ -25,6 +27,27 @@ export async function POST(req:Request){
    }
    return event;
   });
+  const managers=['OWNER','ADMIN','MANAGER','DELIVERY_MANAGER'];
+  if(type==='COD_COLLECTED'){
+   await Promise.allSettled([
+    notifySupplier(s.companyId,'COD encaissé',`${Number(amount||0).toFixed(3)} DT encaissé sur ${o.reference} · ${o.shop.name}`,{href:'/supplier?tab=delivery',kind:'PAYMENT',soundKey:'SUCCESS',roles:[...managers,'ACCOUNTANT'],metadata:{orderId:o.id,reference:o.reference,amount:Number(amount||0)}}),
+    notifyShop(o.shopId,'Paiement livraison enregistré',`${Number(amount||0).toFixed(3)} DT a été enregistré sur la commande ${o.reference}.`,'/app/suppliers',NotificationType.PAYMENT)
+   ]);
+  }
+  const incidentLabels:Record<string,string>={
+   CUSTOMER_ABSENT:'Client absent',
+   DELIVERY_REFUSED:'Livraison refusée',
+   INCIDENT:'Incident de livraison',
+   RETURN_TO_DEPOT:'Retour au dépôt',
+   RESCHEDULED:'Livraison reprogrammée'
+  };
+  if(incidentLabels[type]){
+   const urgent=['DELIVERY_REFUSED','INCIDENT','RETURN_TO_DEPOT'].includes(type);
+   await Promise.allSettled([
+    notifySupplier(s.companyId,incidentLabels[type],`${o.reference} · ${o.shop.name}${b.note?' · '+String(b.note):''}`,{href:'/supplier?tab=delivery',kind:urgent?'WARNING':'DELIVERY',priority:urgent?'URGENT':'HIGH',soundKey:urgent?'URGENT':'WARNING',roles:managers,metadata:{orderId:o.id,reference:o.reference,eventType:type}}),
+    notifyShop(o.shopId,incidentLabels[type],`Commande ${o.reference}${b.note?' · '+String(b.note):''}`,'/app/suppliers',urgent?NotificationType.WARNING:NotificationType.INFO)
+   ]);
+  }
   return ok(plain(x),{status:201});
  }catch(e:any){return bad(e.message,e.status||500)}
 }
