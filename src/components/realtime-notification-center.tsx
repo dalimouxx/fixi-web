@@ -52,7 +52,7 @@ export function RealtimeNotificationCenter({apiUrl,eventsUrl,storageKey,allHref,
     window.addEventListener('pointerdown',prime,{once:true});
     load();
     const es=new EventSource(eventsUrl);
-    es.onmessage=(ev)=>{try{const e=JSON.parse(ev.data);if(e.type==='notification.created'){const n=e.payload;announce(n);load(false)}}catch{load(true)}};
+    es.onmessage=(ev)=>{try{const e=JSON.parse(ev.data);if(e.type==='notification.created'){const n=e.payload;if(n?.id&&n?.message){announce(n);load(false)}else load(true)}}catch{load(true)}};
     const t=setInterval(()=>load(true),20000);
     return()=>{window.removeEventListener('pointerdown',prime);es.close();clearInterval(t)};
   },[]);
