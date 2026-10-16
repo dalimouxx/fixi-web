@@ -6,7 +6,8 @@ import {api} from './ui';
 import {dateTime,money} from '@/lib/format';
 
 const labels:Record<string,string>={READY_FOR_DELIVERY:'À démarrer',OUT_FOR_DELIVERY:'En route',DELIVERED:'Livrée'};
-type EventModal={order:any;type:'COD_COLLECTED'|'CUSTOMER_ABSENT'|'DELIVERY_REFUSED'|'RESCHEDULED'|'INCIDENT'|'RETURN_TO_DEPOT'}|null;
+type DriverEventType='COD_COLLECTED'|'CUSTOMER_ABSENT'|'DELIVERY_REFUSED'|'RESCHEDULED'|'INCIDENT'|'RETURN_TO_DEPOT';
+type EventModal={order:any;type:DriverEventType}|null;
 type ProofModal={order:any}|null;
 
 export function DriverApp({session}:{session:any}){
@@ -24,7 +25,7 @@ export function DriverApp({session}:{session:any}){
  async function patch(o:any,payload:any,quiet=false){if(!quiet){setBusy(o.id);setErr('');setMsg('')}try{await api('/api/delivery/orders/'+o.id,{method:'PATCH',body:JSON.stringify(payload)});if(!quiet)await load()}catch(e:any){if(!quiet)setErr(e.message)}finally{if(!quiet)setBusy('')}}
  async function addEvent(){if(!eventModal)return;const o=eventModal.order,type=eventModal.type;setBusy(o.id);setErr('');try{await api('/api/delivery/events',{method:'POST',body:JSON.stringify({orderId:o.id,type,note:eventNote||null,amount:type==='COD_COLLECTED'?Number(eventAmount||0):null})});setEventModal(null);setEventNote('');setEventAmount('');setMsg('Événement enregistré.');await load()}catch(e:any){setErr(e.message)}finally{setBusy('')}}
  async function shiftAction(){setBusy('SHIFT');setErr('');try{await api('/api/delivery/shift',{method:'POST',body:JSON.stringify(shiftModal==='open'?{action:'OPEN',startCash:Number(shiftForm.startCash||0),startMileage:shiftForm.startMileage===''?null:Number(shiftForm.startMileage),note:shiftForm.note||null}:{action:'CLOSE',endMileage:shiftForm.endMileage===''?null:Number(shiftForm.endMileage),remittedCod:Number(shiftForm.remittedCod||0),note:shiftForm.note||null})});setShiftModal(null);setMsg(shiftModal==='open'?'Journée démarrée.':'Journée clôturée.');await load()}catch(e:any){setErr(e.message)}finally{setBusy('')}}
- function openEvent(order:any,type:EventModal extends infer T?any:any){setEventNote('');setEventAmount(type==='COD_COLLECTED'?String(Math.max(0,Number(order.total)-Number(order.delivery?.cashCollected||0))):'');setEventModal({order,type} as EventModal)}
+ function openEvent(order:any,type:DriverEventType){setEventNote('');setEventAmount(type==='COD_COLLECTED'?String(Math.max(0,Number(order.total)-Number(order.delivery?.cashCollected||0))):'');setEventModal({order,type} as EventModal)}
  function maps(address:string){return 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(address)}
  async function photo(file?:File){if(!file)return;const data=await compressImage(file);setProof(p=>({...p,proofUrl:data}))}
  async function confirmDelivery(){if(!proofModal)return;const o=proofModal.order;if(!proof.recipientName.trim())return setErr('Nom du réceptionnaire requis.');setBusy(o.id);setErr('');try{await patch(o,{status:'DELIVERED',...proof},true);setProofModal(null);setProof({recipientName:'',recipientPhone:'',proofCode:'',proofUrl:''});setMsg('Livraison confirmée avec preuve de remise.');await load()}catch(e:any){setErr(e.message)}finally{setBusy('')}}
