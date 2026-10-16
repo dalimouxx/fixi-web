@@ -93,13 +93,16 @@ export async function POST(req:Request){
      const counted=i.countedQty??i.expectedQty,diff=counted-i.expectedQty;if(!diff)continue;
      adjustments++;absoluteDifference+=Math.abs(diff);
      const p=await tx.supplierProduct.findFirst({where:{id:i.productId,companyId:s.companyId}});if(!p)continue;
+     let globalDiff=diff;
      if(count.warehouseId){
-      const ws=await tx.supplierWarehouseStock.findUnique({where:{warehouseId_productId:{warehouseId:count.warehouseId,productId:i.productId}}});
+      const allocated=await tx.supplierWarehouseStock.aggregate({where:{companyId:s.companyId,productId:i.productId},_sum:{quantity:true}});
+      const allocatedTotal=Number(allocated._sum.quantity||0),unallocated=Math.max(0,p.stock-allocatedTotal);
+      globalDiff=diff>0?Math.max(0,diff-unallocated):diff;
       await tx.supplierWarehouseStock.upsert({where:{warehouseId_productId:{warehouseId:count.warehouseId,productId:i.productId}},update:{quantity:counted},create:{companyId:s.companyId,warehouseId:count.warehouseId,productId:i.productId,quantity:counted}});
      }
-     const after=Math.max(0,p.stock+diff);
+     const after=Math.max(0,p.stock+globalDiff);
      await tx.supplierProduct.update({where:{id:p.id},data:{stock:after}});
-     await tx.supplierErpStockMovement.create({data:{companyId:s.companyId,productId:p.id,type:'INVENTORY_ADJUST',quantity:diff,beforeQty:p.stock,afterQty:after,reference:count.reference,note:count.warehouseId?'Inventaire dépôt':'Inventaire global',accountId:s.id}});
+     await tx.supplierErpStockMovement.create({data:{companyId:s.companyId,productId:p.id,type:'INVENTORY_ADJUST',quantity:globalDiff,beforeQty:p.stock,afterQty:after,reference:count.reference,note:count.warehouseId?'Inventaire dépôt · écart physique '+diff:'Inventaire global',accountId:s.id}});
     }
     await tx.supplierStockCount.update({where:{id:count.id},data:{status:'CLOSED',closedAt:new Date()}});
    });
@@ -112,11 +115,14 @@ export async function POST(req:Request){
    if(!warehouseId||!productId)return bad('Dépôt et produit requis');
    const [w,p,current]=await Promise.all([prisma.supplierWarehouse.findFirst({where:{id:warehouseId,companyId:s.companyId,active:true}}),prisma.supplierProduct.findFirst({where:{id:productId,companyId:s.companyId}}),prisma.supplierWarehouseStock.findUnique({where:{warehouseId_productId:{warehouseId,productId}}})]);
    if(!w||!p)return bad('Dépôt ou produit invalide',404);
-   const before=current?.quantity||0,diff=quantity-before,after=Math.max(0,p.stock+diff);
+   const before=current?.quantity||0,diff=quantity-before;
+   const allocated=await prisma.supplierWarehouseStock.aggregate({where:{companyId:s.companyId,productId},_sum:{quantity:true}});
+   const allocatedTotal=Number(allocated._sum.quantity||0),unallocated=Math.max(0,p.stock-allocatedTotal);
+   const globalDiff=diff>0?Math.max(0,diff-unallocated):diff,after=Math.max(0,p.stock+globalDiff);
    const [x]=await prisma.$transaction([
     prisma.supplierWarehouseStock.upsert({where:{warehouseId_productId:{warehouseId,productId}},update:{quantity,location:b.location||undefined},create:{companyId:s.companyId,warehouseId,productId,quantity,location:b.location||null}}),
     prisma.supplierProduct.update({where:{id:p.id},data:{stock:after}}),
-    prisma.supplierErpStockMovement.create({data:{companyId:s.companyId,productId:p.id,type:'WAREHOUSE_ADJUST',quantity:diff,beforeQty:p.stock,afterQty:after,reference:w.code,note:'Ajustement dépôt '+w.name,accountId:s.id}})
+    prisma.supplierErpStockMovement.create({data:{companyId:s.companyId,productId:p.id,type:'WAREHOUSE_ADJUST',quantity:globalDiff,beforeQty:p.stock,afterQty:after,reference:w.code,note:'Dépôt '+w.name+' · variation dépôt '+diff,accountId:s.id}})
    ]);
    await notifySupplierLowStock(s.companyId,p.id);return ok(plain(x));
   }
