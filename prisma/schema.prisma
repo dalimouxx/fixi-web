@@ -1929,6 +1929,11 @@ model SupplierCommercialDocument {
   sourceSaleId String?
   sourceOrderId String?
   warehouseId String?
+  partyName   String?
+  partyPhone  String?
+  partyAddress String?
+  partyTaxId  String?
+  currency    String   @default("DT")
   subtotal    Decimal  @default(0) @db.Decimal(12,3)
   discount    Decimal  @default(0) @db.Decimal(12,3)
   tax         Decimal  @default(0) @db.Decimal(12,3)
