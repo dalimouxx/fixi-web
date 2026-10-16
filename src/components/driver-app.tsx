@@ -4,6 +4,8 @@ import {useRouter} from 'next/navigation';
 import {MapPinned,Navigation,Phone,Truck,CheckCircle2,RefreshCw,Map,Clock3,Banknote,AlertTriangle,RotateCcw,CalendarClock,PackageCheck,LogOut,PlayCircle,PauseCircle,Route,WalletCards,Camera,ShieldCheck,X,UserRound,Gauge,Wifi,WifiOff} from 'lucide-react';
 import {api} from './ui';
 import {RealtimeNotificationCenter} from './realtime-notification-center';
+import {PushToggle} from './push-toggle';
+import {PwaRegister} from './pwa-register';
 import {dateTime,money} from '@/lib/format';
 
 const labels:Record<string,string>={READY_FOR_DELIVERY:'À démarrer',OUT_FOR_DELIVERY:'En route',DELIVERED:'Livrée'};
@@ -36,8 +38,8 @@ export function DriverApp({session}:{session:any}){
   const id=navigator.geolocation.watchPosition(pos=>{for(const o of current){const now=Date.now();if(now-(lastGps.current[o.id]||0)<15000)continue;lastGps.current[o.id]=now;patch(o,{status:o.status,trackingNote:`GPS:${pos.coords.latitude},${pos.coords.longitude}|${new Date().toISOString()}`,latitude:pos.coords.latitude,longitude:pos.coords.longitude,accuracy:pos.coords.accuracy},true)}},()=>{}, {enableHighAccuracy:true,maximumAge:8000,timeout:12000});
   return()=>navigator.geolocation.clearWatch(id)
  },[tracking,shift.current?.id,online,active.map(o=>o.id+o.status).join('|')]);
- return <div className="delivery-app driver-app driver-v2">
-  <header><div className="driver-header-brand"><Truck/><span><b>Fixi Delivery</b><small>{session.companyName}</small></span></div><div className="driver-live-state">{online?<><Wifi/><span>En ligne</span></>:<><WifiOff/><span>Hors ligne</span></>}</div><RealtimeNotificationCenter apiUrl="/api/delivery/notifications" eventsUrl="/api/delivery/events-stream" storageKey="fixi-delivery-notifications" onEvent={load}/><div><b>{session.fullName}</b><span>Livreur</span></div><button onClick={logout} title="Déconnexion"><LogOut/></button></header>
+ return <div className="delivery-app driver-app driver-v2"><PwaRegister/>
+  <header><div className="driver-header-brand"><Truck/><span><b>Fixi Delivery</b><small>{session.companyName}</small></span></div><div className="driver-live-state">{online?<><Wifi/><span>En ligne</span></>:<><WifiOff/><span>Hors ligne</span></>}</div><RealtimeNotificationCenter apiUrl="/api/delivery/notifications" eventsUrl="/api/delivery/events-stream" storageKey="fixi-delivery-notifications" onEvent={load}/><PushToggle subscribeUrl="/api/delivery/push/subscribe"/><div><b>{session.fullName}</b><span>Livreur</span></div><button onClick={logout} title="Déconnexion"><LogOut/></button></header>
   <main>
    <section className="driver-command">
     <div className="driver-command-title"><span className="smart-kicker"><Route size={13}/> JOURNÉE & TOURNÉE</span><h1>{shift.current?'Tournée active':'Prêt à démarrer'}</h1><p>{shift.current?'GPS actif uniquement pendant les livraisons en cours.':'Ouvrez votre journée avant de prendre la route.'}</p></div>
