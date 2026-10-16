@@ -17,6 +17,7 @@ import {SupplierReports} from './supplier-reports';
 import {SupplierInventory} from './supplier-inventory';
 import {SupplierWarehouses} from './supplier-warehouses';
 import {SupplierReturns} from './supplier-returns';
+import {SupplierDues} from './supplier-dues';
 import {RealtimeNotificationCenter} from './realtime-notification-center';
 
 const nextStatus:Record<string,string|undefined>={PENDING:'CONFIRMED',CONFIRMED:'PREPARING',PREPARING:'READY_FOR_DELIVERY',READY_FOR_DELIVERY:undefined,OUT_FOR_DELIVERY:undefined};
@@ -133,7 +134,7 @@ export function SupplierDashboard({session}:{session:any}){
 
       {tab==='pricing'&&<section className="supplier-panel"><div className="supplier-section-head"><div><b>Prix grossistes & paliers</b><span>Tarifs selon la quantité commandée.</span></div><button className="btn btn-primary btn-sm" onClick={addTier}><Plus/> Nouveau palier</button></div><div className="table-wrap"><table className="table"><thead><tr><th>Produit</th><th>Tarif</th><th>Qté min.</th><th>Prix</th></tr></thead><tbody>{(advanced.tiers||[]).map((x:any)=><tr key={x.id}><td>{products.find(p=>p.id===x.productId)?.name||x.productId}</td><td>{x.name}</td><td>{x.minQty}</td><td><b>{money(x.unitPrice)}</b></td></tr>)}</tbody></table></div></section>}
 
-      {tab==='dues'&&<section className="supplier-panel"><div className="supplier-kpis"><K icon={Banknote} label="Créances clients" value={money(dueSales)}/><K icon={ArrowDownToLine} label="Dettes achats" value={money(duePurchases)}/><K icon={Users} label="Clients directs" value={erp.customers?.length||0}/><K icon={Users} label="Fournisseurs amont" value={advanced.vendors?.length||0}/></div><div className="supplier-finance-note"><AlertTriangle/><p>Les montants restants sont calculés depuis les ventes et achats enregistrés. Les règlements partiels peuvent être ajoutés depuis la caisse/finance.</p></div></section>}
+      {tab==='dues'&&<SupplierDues sales={erp.sales||[]} purchases={erp.purchases||[]} returns={erp.returns||advanced.returns||[]} customers={erp.customers||[]} methods={master.paymentMethods||[]} onChanged={()=>setRefresh(x=>x+1)}/>} 
 
       {tab==='reports'&&<SupplierReports/>}
 
