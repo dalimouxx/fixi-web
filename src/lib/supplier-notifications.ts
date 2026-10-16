@@ -1,5 +1,6 @@
 import {prisma} from './prisma';
 import {publishSupplierAccount} from './realtime';
+import {sendPushToSupplierAccounts} from './push';
 
 export type SupplierNotificationKind='INFO'|'SUCCESS'|'WARNING'|'ERROR'|'ORDER'|'DELIVERY'|'PAYMENT'|'STOCK'|'SYSTEM';
 export type SupplierNotificationPriority='LOW'|'NORMAL'|'HIGH'|'URGENT';
@@ -28,6 +29,7 @@ export async function notifySupplier(companyId:string,title:string,message:strin
   for(const row of rows)publishSupplierAccount(row.accountId,'notification.created',{
     id:row.id,title:row.title,message:row.message,href:row.href,kind:row.kind,priority:row.priority,soundKey:row.soundKey,createdAt:row.createdAt
   });
+  await sendPushToSupplierAccounts(rows.map(x=>x.accountId),{title,body:message,href:options.href||'/supplier'}).catch(()=>{});
   return rows;
 }
 
