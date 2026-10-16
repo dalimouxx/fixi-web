@@ -1,3 +1,5 @@
 'use client';
-import Link from 'next/link';import { Bell } from 'lucide-react';import { useEffect,useState } from 'react';
-export function NotificationBell(){const[count,setCount]=useState(0);async function load(){const r=await fetch('/api/notifications?unread=1',{cache:'no-store'});if(r.ok){const j=await r.json();setCount(j.unread||0)}}useEffect(()=>{load();const es=new EventSource('/api/events');es.onmessage=()=>load();const t=setInterval(load,30000);return()=>{es.close();clearInterval(t)}},[]);return <Link href="/app/notifications" className="notification-bell" title="Notifications"><Bell size={18}/>{count>0&&<span>{count>99?'99+':count}</span>}</Link>}
+import {RealtimeNotificationCenter} from './realtime-notification-center';
+export function NotificationBell(){
+  return <RealtimeNotificationCenter apiUrl="/api/notifications" eventsUrl="/api/events" storageKey="fixi-atelier-notifications" allHref="/app/notifications"/>;
+}
