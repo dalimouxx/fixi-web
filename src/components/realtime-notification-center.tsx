@@ -24,6 +24,7 @@ export function RealtimeNotificationCenter({apiUrl,eventsUrl,storageKey,allHref,
   const[toast,setToast]=useState<any>(null);
   const lastId=useRef<string>('');
   const initial=useRef(true);
+  const soundRef=useRef(true);
 
   async function load(fromRealtime=false){
     const r=await fetch(apiUrl,{cache:'no-store'});if(!r.ok)return;
@@ -39,14 +40,14 @@ export function RealtimeNotificationCenter({apiUrl,eventsUrl,storageKey,allHref,
 
   function announce(n:any){
     setToast(n);setTimeout(()=>setToast(null),5200);
-    if(sound)playFixiNotificationSound(n.soundKey||soundFor(n.kind,n.priority));
+    if(soundRef.current)playFixiNotificationSound(n.soundKey||soundFor(n.kind,n.priority));
     if(typeof Notification!=='undefined'&&Notification.permission==='granted'&&document.hidden){
       try{new Notification(n.title,{body:n.message,tag:n.id})}catch{}
     }
   }
 
   useEffect(()=>{
-    const stored=localStorage.getItem(storageKey+':sound');setSound(stored!=='0');
+    const stored=localStorage.getItem(storageKey+':sound');const enabled=stored!=='0';setSound(enabled);soundRef.current=enabled;
     setDesktop(typeof Notification!=='undefined'&&Notification.permission==='granted');
     const prime=()=>primeNotificationAudio();
     window.addEventListener('pointerdown',prime,{once:true});
@@ -58,7 +59,7 @@ export function RealtimeNotificationCenter({apiUrl,eventsUrl,storageKey,allHref,
   },[]);
 
   function toggleSound(){
-    const next=!sound;setSound(next);localStorage.setItem(storageKey+':sound',next?'1':'0');
+    const next=!sound;setSound(next);soundRef.current=next;localStorage.setItem(storageKey+':sound',next?'1':'0');
     if(next){primeNotificationAudio();playFixiNotificationSound('CHIME')}
   }
   async function enableDesktop(){
@@ -73,7 +74,7 @@ export function RealtimeNotificationCenter({apiUrl,eventsUrl,storageKey,allHref,
     await fetch(apiUrl,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'READ_ALL'})}).catch(()=>{});
     setRows(x=>x.map(n=>({...n,readAt:n.readAt||new Date().toISOString()})));setUnread(0);
   }
-  function go(n:any){if(!n.readAt)mark(n.id);setOpen(false);if(n.href&&onNavigate){onNavigate(n.href)}}
+  function go(n:any){if(!n.readAt)mark(n.id);setOpen(false);if(n.href){if(onNavigate)onNavigate(n.href);else window.location.href=n.href}}
 
   return <div className={'rt-notifications '+(compact?'compact':'')}>
     <button className={'rt-bell '+(unread?'active':'')} onClick={()=>setOpen(v=>!v)} title="Notifications temps réel">
