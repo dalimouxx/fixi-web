@@ -22,29 +22,36 @@ async function audit(companyId:string,accountId:string,action:string,entity:stri
 export async function GET(){
  try{
   const s=await requireSupplierSession();
-  const [customers,sales,payments,expenses,purchases,cashSessions,movements]=await Promise.all([
+  const [customers,sales,payments,expenses,purchases,cashSessions,movements,returns]=await Promise.all([
    prisma.supplierErpCustomer.findMany({where:{companyId:s.companyId},orderBy:{updatedAt:'desc'},take:1000}),
    prisma.supplierErpSale.findMany({where:{companyId:s.companyId},orderBy:{createdAt:'desc'},take:1000}),
    prisma.supplierErpPayment.findMany({where:{companyId:s.companyId},orderBy:{createdAt:'desc'},take:2000}),
    prisma.supplierErpExpense.findMany({where:{companyId:s.companyId},orderBy:{expenseDate:'desc'},take:1000}),
    prisma.supplierErpPurchase.findMany({where:{companyId:s.companyId},orderBy:{createdAt:'desc'},take:1000}),
    prisma.supplierErpCashSession.findMany({where:{companyId:s.companyId},orderBy:{openedAt:'desc'},take:250}),
-   prisma.supplierErpStockMovement.findMany({where:{companyId:s.companyId},orderBy:{createdAt:'desc'},take:1500})
+   prisma.supplierErpStockMovement.findMany({where:{companyId:s.companyId},orderBy:{createdAt:'desc'},take:1500}),
+   prisma.supplierReturn.findMany({where:{companyId:s.companyId,type:'SALE_RETURN',status:'COMPLETED'},orderBy:{createdAt:'desc'},take:1000})
   ]);
-  const [saleItems,purchaseItems]=await Promise.all([
+  const [saleItems,purchaseItems,returnItems]=await Promise.all([
    sales.length?prisma.supplierErpSaleItem.findMany({where:{saleId:{in:sales.map(x=>x.id)}}}):Promise.resolve([]),
-   purchases.length?prisma.supplierErpPurchaseItem.findMany({where:{purchaseId:{in:purchases.map(x=>x.id)}}}):Promise.resolve([])
+   purchases.length?prisma.supplierErpPurchaseItem.findMany({where:{purchaseId:{in:purchases.map(x=>x.id)}}}):Promise.resolve([]),
+   returns.length?prisma.supplierReturnItem.findMany({where:{returnId:{in:returns.map(x=>x.id)}}}):Promise.resolve([])
   ]);
-  const salesTotal=sales.filter(x=>x.status!=='CANCELLED').reduce((a,x)=>a+Number(x.total),0);
-  const cogs=saleItems.reduce((a,x)=>a+Number(x.unitCost)*x.quantity,0);
+  const grossSales=sales.filter(x=>x.status!=='CANCELLED').reduce((a,x)=>a+Number(x.total),0);
+  const returnsTotal=returns.reduce((a,x)=>a+Number(x.total),0);
+  const refundsTotal=returns.reduce((a,x)=>a+Number(x.refund),0);
+  const returnedCost=returnItems.filter(x=>x.restock).reduce((a,x)=>a+Number(x.unitCost)*x.quantity,0);
+  const grossCogs=saleItems.reduce((a,x)=>a+Number(x.unitCost)*x.quantity,0);
+  const salesTotal=Math.max(0,grossSales-returnsTotal),cogs=Math.max(0,grossCogs-returnedCost);
   const expensesTotal=expenses.reduce((a,x)=>a+Number(x.amount),0);
   const purchaseTotal=purchases.filter(x=>x.status!=='CANCELLED').reduce((a,x)=>a+Number(x.total),0);
-  const receivables=sales.reduce((a,x)=>a+Math.max(0,Number(x.total)-Number(x.paid)),0);
+  const retBySale=new Map<string,{total:number;refund:number}>();for(const r of returns){if(!r.sourceSaleId)continue;const x=retBySale.get(r.sourceSaleId)||{total:0,refund:0};x.total+=Number(r.total);x.refund+=Number(r.refund);retBySale.set(r.sourceSaleId,x)}
+  const receivables=sales.reduce((a,x)=>{const r=retBySale.get(x.id)||{total:0,refund:0};const netTotal=Math.max(0,Number(x.total)-r.total),netPaid=Math.max(0,Number(x.paid)-r.refund);return a+Math.max(0,netTotal-netPaid)},0);
   const payables=purchases.reduce((a,x)=>a+Math.max(0,Number(x.total)-Number(x.paid)),0);
   const collected=payments.filter(x=>x.kind==='IN').reduce((a,x)=>a+Number(x.amount),0);
   const paidOut=payments.filter(x=>x.kind==='OUT').reduce((a,x)=>a+Number(x.amount),0);
-  const metrics={salesTotal,cogs,grossProfit:salesTotal-cogs,expenses:expensesTotal,netProfit:salesTotal-cogs-expensesTotal,purchaseTotal,receivables,payables,collected,paidOut};
-  if(['OWNER','ADMIN','MANAGER','ACCOUNTANT'].includes(s.role))return ok(plain({customers,sales,saleItems,payments,expenses,purchases,purchaseItems,cashSessions,movements,metrics}));
+  const metrics={grossSales,returnsTotal,refundsTotal,salesTotal,cogs,grossProfit:salesTotal-cogs,expenses:expensesTotal,netProfit:salesTotal-cogs-expensesTotal,purchaseTotal,receivables,payables,collected,paidOut};
+  if(['OWNER','ADMIN','MANAGER','ACCOUNTANT'].includes(s.role))return ok(plain({customers,sales,saleItems,payments,expenses,purchases,purchaseItems,returns,returnItems,cashSessions,movements,metrics}));
   if(s.role==='SALES')return ok(plain({customers,sales,saleItems,payments,expenses:[],purchases:[],purchaseItems:[],cashSessions:cashSessions.filter(x=>x.accountId===s.id),movements:[],metrics:{salesTotal:metrics.salesTotal,grossProfit:metrics.grossProfit,receivables:metrics.receivables,collected:metrics.collected}}));
   if(s.role==='CASHIER'){
    const ownSales=sales.filter(x=>x.createdById===s.id),ownIds=new Set(ownSales.map(x=>x.id));
