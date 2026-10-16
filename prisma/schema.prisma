@@ -2025,7 +2025,7 @@ model SupplierErpCashSession {
   id            String   @id @default(cuid())
   companyId     String
   accountId     String
-  warehouseId   String??
+  warehouseId   String?
   status        String   @default("OPEN")
   openingAmount Decimal  @default(0) @db.Decimal(12,3)
   expectedCash  Decimal  @default(0) @db.Decimal(12,3)
