@@ -13,9 +13,10 @@ type Props={
   allHref?:string;
   compact?:boolean;
   onNavigate?:(href:string)=>void;
+  onEvent?:(notification:any)=>void;
 };
 
-export function RealtimeNotificationCenter({apiUrl,eventsUrl,storageKey,allHref,compact=true,onNavigate}:Props){
+export function RealtimeNotificationCenter({apiUrl,eventsUrl,storageKey,allHref,compact=true,onNavigate,onEvent}:Props){
   const[rows,setRows]=useState<any[]>([]);
   const[unread,setUnread]=useState(0);
   const[open,setOpen]=useState(false);
@@ -53,7 +54,7 @@ export function RealtimeNotificationCenter({apiUrl,eventsUrl,storageKey,allHref,
     window.addEventListener('pointerdown',prime,{once:true});
     load();
     const es=new EventSource(eventsUrl);
-    es.onmessage=(ev)=>{try{const e=JSON.parse(ev.data);if(e.type==='notification.created'){const n=e.payload;if(n?.id&&n?.message){announce(n);load(false)}else load(true)}}catch{load(true)}};
+    es.onmessage=(ev)=>{try{const e=JSON.parse(ev.data);if(e.type==='notification.created'){const n=e.payload;if(n?.id&&n?.message){announce(n);load(false)}else load(true);onEvent?.(n)}}catch{load(true);onEvent?.(null)}};
     const t=setInterval(()=>load(true),20000);
     return()=>{window.removeEventListener('pointerdown',prime);es.close();clearInterval(t)};
   },[]);
