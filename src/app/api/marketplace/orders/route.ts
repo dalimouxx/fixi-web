@@ -44,7 +44,7 @@ export async function POST(req:Request){
       if(products.some(p=>p.companyId!==companyId))throw Object.assign(new Error('Une commande doit contenir les produits d’un seul fournisseur'),{status:409});
 
       const warehouseRows=await tx.supplierWarehouseStock.findMany({where:{companyId,productId:{in:ids}},orderBy:{updatedAt:'asc'}});
-      let total=0;const rows:any[]=[];
+      let total=0;const rows:any[]=[],allocations:any[]=[];
 
       for(const p of products){
         const requested=grouped.get(p.id)||0,qty=Math.max(p.minOrderQty,requested);
@@ -53,6 +53,7 @@ export async function POST(req:Request){
         const stockRows=warehouseRows.filter(x=>x.productId===p.id);
         const allocated=stockRows.reduce((a,x)=>a+Number(x.quantity||0),0);
         const unallocated=Math.max(0,p.stock-allocated);
+        const fromUnallocated=Math.min(qty,unallocated);if(fromUnallocated>0)allocations.push({productId:p.id,warehouseId:null,quantity:fromUnallocated});
         let fromWarehouses=Math.max(0,qty-unallocated);
         const warehouseAvailable=stockRows.reduce((a,x)=>a+Math.max(0,Number(x.quantity||0)-Number(x.reserved||0)),0);
         if(warehouseAvailable<fromWarehouses)throw Object.assign(new Error(`Répartition dépôt incohérente pour ${p.name}`),{status:409});
@@ -66,16 +67,19 @@ export async function POST(req:Request){
           const available=Math.max(0,stock.quantity-stock.reserved),take=Math.min(fromWarehouses,available);
           if(take>0){
             await tx.supplierWarehouseStock.update({where:{id:stock.id},data:{quantity:{decrement:take}}});
+            allocations.push({productId:p.id,warehouseId:stock.warehouseId,quantity:take});
             fromWarehouses-=take;
           }
         }
       }
 
       const shop=await tx.shop.findUniqueOrThrow({where:{id:s.shopId}});
-      return tx.supplierOrder.create({
+      const order=await tx.supplierOrder.create({
         data:{shopId:s.shopId,companyId,reference:ref(),total,deliveryAddress:b.deliveryAddress||shop.address||null,note:b.note||null,items:{create:rows}},
         include:{company:true,shop:{select:{name:true}},items:{include:{product:true}}}
       });
+      if(allocations.length)await tx.supplierOrderStockAllocation.createMany({data:allocations.map(x=>({...x,orderId:order.id}))});
+      return order;
     },{isolationLevel:Prisma.TransactionIsolationLevel.Serializable});
 
     await audit(s.shopId,s.id,'CREATE','SUPPLIER_ORDER',result.id,{reference:result.reference,total:Number(result.total)});
