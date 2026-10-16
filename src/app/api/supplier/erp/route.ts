@@ -52,7 +52,7 @@ export async function GET(){
   const paidOut=payments.filter(x=>x.kind==='OUT').reduce((a,x)=>a+Number(x.amount),0);
   const metrics={grossSales,returnsTotal,refundsTotal,salesTotal,cogs,grossProfit:salesTotal-cogs,expenses:expensesTotal,netProfit:salesTotal-cogs-expensesTotal,purchaseTotal,receivables,payables,collected,paidOut};
   if(['OWNER','ADMIN','MANAGER','ACCOUNTANT'].includes(s.role))return ok(plain({customers,sales,saleItems,payments,expenses,purchases,purchaseItems,returns,returnItems,cashSessions,movements,metrics}));
-  if(s.role==='SALES')return ok(plain({customers,sales,saleItems,payments,expenses:[],purchases:[],purchaseItems:[],cashSessions:cashSessions.filter(x=>x.accountId===s.id),movements:[],metrics:{salesTotal:metrics.salesTotal,grossProfit:metrics.grossProfit,receivables:metrics.receivables,collected:metrics.collected}}));
+  if(s.role==='SALES')return ok(plain({customers,sales,saleItems,payments,returns,returnItems,expenses:[],purchases:[],purchaseItems:[],cashSessions:cashSessions.filter(x=>x.accountId===s.id),movements:[],metrics:{salesTotal:metrics.salesTotal,grossProfit:metrics.grossProfit,receivables:metrics.receivables,collected:metrics.collected,returnsTotal:metrics.returnsTotal}}));
   if(s.role==='CASHIER'){
    const ownSales=sales.filter(x=>x.createdById===s.id),ownIds=new Set(ownSales.map(x=>x.id));
    return ok(plain({customers,sales:ownSales,saleItems:saleItems.filter(x=>ownIds.has(x.saleId)),payments:payments.filter(x=>x.accountId===s.id),expenses:expenses.filter(x=>x.createdById===s.id),purchases:[],purchaseItems:[],cashSessions:cashSessions.filter(x=>x.accountId===s.id),movements:[],metrics:{salesTotal:ownSales.reduce((a,x)=>a+Number(x.total),0),collected:payments.filter(x=>x.accountId===s.id&&x.kind==='IN').reduce((a,x)=>a+Number(x.amount),0)}}));
@@ -170,9 +170,12 @@ export async function POST(req:Request){
    const cs=await cashLike(s.companyId,method)?await openCash(s.companyId,s.id):null;if(await cashLike(s.companyId,method)&&!cs)return bad('Ouvrez votre caisse avant un paiement espèces',409);
    if(b.saleId){
     const sale=await prisma.supplierErpSale.findFirst({where:{id:String(b.saleId),companyId:s.companyId}});if(!sale)return bad('Vente introuvable',404);
-    const remaining=Math.max(0,Number(sale.total)-Number(sale.paid));if(amount>remaining+0.001)return bad('Paiement supérieur au reste à payer',409);
-    const result=await prisma.$transaction(async tx=>{const p=await tx.supplierErpPayment.create({data:{companyId:s.companyId,customerId:sale.customerId,saleId:sale.id,cashSessionId:cs?.id||null,kind:'IN',method,amount,reference:b.reference||sale.reference,note:b.note||null,accountId:s.id}});const paid=money(Number(sale.paid)+amount);await tx.supplierErpSale.update({where:{id:sale.id},data:{paid,status:paid>=Number(sale.total)?'PAID':'PARTIALLY_PAID'}});return p});
-    const newPaid=money(Number(sale.paid)+amount),remaining=Math.max(0,money(Number(sale.total)-newPaid));
+    const credits=await prisma.supplierReturn.findMany({where:{companyId:s.companyId,sourceSaleId:sale.id,type:'SALE_RETURN',status:'COMPLETED'},select:{total:true,refund:true}});
+    const creditTotal=credits.reduce((a,x)=>a+Number(x.total),0),refunded=credits.reduce((a,x)=>a+Number(x.refund),0);
+    const netTotal=Math.max(0,money(Number(sale.total)-creditTotal)),netPaid=Math.max(0,money(Number(sale.paid)-refunded));
+    const beforeRemaining=Math.max(0,money(netTotal-netPaid));if(amount>beforeRemaining+0.001)return bad('Paiement supérieur au reste à payer',409);
+    const result=await prisma.$transaction(async tx=>{const p=await tx.supplierErpPayment.create({data:{companyId:s.companyId,customerId:sale.customerId,saleId:sale.id,cashSessionId:cs?.id||null,kind:'IN',method,amount,reference:b.reference||sale.reference,note:b.note||null,accountId:s.id}});const paid=money(Number(sale.paid)+amount),newNetPaid=Math.max(0,money(paid-refunded));await tx.supplierErpSale.update({where:{id:sale.id},data:{paid,status:newNetPaid>=netTotal?'PAID':'PARTIALLY_PAID'}});return p});
+    const newPaid=money(Number(sale.paid)+amount),newNetPaid=Math.max(0,money(newPaid-refunded)),remaining=Math.max(0,money(netTotal-newNetPaid));
     await notifySupplier(s.companyId,remaining<=0?'Créance soldée':'Paiement client reçu',`${sale.reference} · ${amount.toFixed(3)} DT${remaining>0?' · reste '+remaining.toFixed(3)+' DT':''}`,{href:'/supplier?tab=dues',kind:'PAYMENT',soundKey:'SUCCESS',roles:['OWNER','ADMIN','MANAGER','ACCOUNTANT'],metadata:{saleId:sale.id,reference:sale.reference,amount,remaining}});
     return ok(plain(result),{status:201});
    }
