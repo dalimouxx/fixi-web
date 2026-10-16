@@ -21,7 +21,8 @@ export async function GET(){
   if(s.role==='STOCK')return ok(plain({warehouses,warehouseStock,vendors,returns,counts,countItems,tiers,events:[]}));
   if(s.role==='ACCOUNTANT')return ok(plain({warehouses:[],warehouseStock:[],vendors,returns,counts:[],countItems:[],tiers:[],events:[]}));
   if(s.role==='DELIVERY_MANAGER')return ok(plain({warehouses:[],warehouseStock:[],vendors:[],returns:[],counts:[],countItems:[],tiers:[],events}));
-  if(s.role==='SALES')return ok(plain({warehouses:[],warehouseStock:[],vendors:[],returns,counts:[],countItems:[],tiers,events:[]}));
+  if(s.role==='SALES')return ok(plain({warehouses,warehouseStock,vendors:[],returns,counts:[],countItems:[],tiers,events:[]}));
+  if(s.role==='CASHIER')return ok(plain({warehouses,warehouseStock,vendors:[],returns:[],counts:[],countItems:[],tiers:[],events:[]}));
   return ok(plain({warehouses:[],warehouseStock:[],vendors:[],returns:[],counts:[],countItems:[],tiers:[],events:[]}));
  }catch(e:any){return bad(e.message,e.status||500)}
 }
