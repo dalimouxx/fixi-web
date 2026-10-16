@@ -12,10 +12,11 @@ import {SupplierPos} from './supplier-pos';
 import {SupplierMasterData} from './supplier-master-data';
 import {SupplierDeliveryCenter} from './supplier-delivery-center';
 import {SupplierActionModal} from './supplier-action-modal';
+import {SupplierTeam} from './supplier-team';
 
 const nextStatus:Record<string,string|undefined>={PENDING:'CONFIRMED',CONFIRMED:'PREPARING',PREPARING:'READY_FOR_DELIVERY',READY_FOR_DELIVERY:undefined,OUT_FOR_DELIVERY:undefined};
 const labels:Record<string,string>={PENDING:'Nouvelle',CONFIRMED:'Confirmée',PREPARING:'Préparation',READY_FOR_DELIVERY:'Prête',OUT_FOR_DELIVERY:'En livraison',DELIVERED:'Livrée',CANCELLED:'Annulée'};
-type Tab='dashboard'|'orders'|'products'|'masters'|'purchases'|'vendors'|'clients'|'invoices'|'returns'|'warehouses'|'inventory'|'pricing'|'dues'|'finance'|'reports'|'cashier'|'delivery';
+type Tab='dashboard'|'orders'|'products'|'masters'|'purchases'|'vendors'|'clients'|'invoices'|'returns'|'warehouses'|'inventory'|'pricing'|'dues'|'finance'|'reports'|'cashier'|'delivery'|'team';
 
 export function SupplierDashboard({session}:{session:any}){
   const[tab,setTab]=useState<Tab>('dashboard');const[products,setProducts]=useState<any[]>([]);const[orders,setOrders]=useState<any[]>([]);const[drivers,setDrivers]=useState<any[]>([]);const[erp,setErp]=useState<any>({customers:[],sales:[],saleItems:[],payments:[],expenses:[],purchases:[],cashSessions:[],movements:[],metrics:{}});const[advanced,setAdvanced]=useState<any>({warehouses:[],warehouseStock:[],vendors:[],returns:[],counts:[],tiers:[],events:[]});const[master,setMaster]=useState<any>({categories:[],brands:[],units:[],paymentMethods:[],company:null});
@@ -47,11 +48,23 @@ export function SupplierDashboard({session}:{session:any}){
   const cashCollected=delivered.reduce((a,o)=>a+Number(o.total),0);
   const directSales=Number(erp.metrics?.salesTotal??(erp.sales||[]).reduce((a:any,x:any)=>a+Number(x.total||0),0));const directPaid=Number(erp.metrics?.collected??(erp.payments||[]).filter((x:any)=>x.kind==='IN').reduce((a:any,x:any)=>a+Number(x.amount||0),0));const expensesTotal=Number(erp.metrics?.expenses??(erp.expenses||[]).reduce((a:any,x:any)=>a+Number(x.amount||0),0));const purchaseTotal=Number(erp.metrics?.purchaseTotal??(erp.purchases||[]).reduce((a:any,x:any)=>a+Number(x.total||0),0));const dueSales=Number(erp.metrics?.receivables??(erp.sales||[]).reduce((a:any,x:any)=>a+Math.max(0,Number(x.total||0)-Number(x.paid||0)),0));const duePurchases=Number(erp.metrics?.payables??(erp.purchases||[]).reduce((a:any,x:any)=>a+Math.max(0,Number(x.total||0)-Number(x.paid||0)),0));const estimatedGross=revenue+Number(erp.metrics?.grossProfit||0)-expensesTotal;const cashOpen=(erp.cashSessions||[]).find((x:any)=>x.status==='OPEN'&&(!x.accountId||x.accountId===session.id));
 
-  const nav=[
+  const role=String(session.role||'ADMIN');
+  const access:Record<string,string[]>={
+    OWNER:['dashboard','cashier','orders','products','masters','purchases','vendors','clients','invoices','returns','warehouses','inventory','pricing','dues','finance','reports','delivery','team'],
+    ADMIN:['dashboard','cashier','orders','products','masters','purchases','vendors','clients','invoices','returns','warehouses','inventory','pricing','dues','finance','reports','delivery','team'],
+    MANAGER:['dashboard','cashier','orders','products','masters','purchases','vendors','clients','invoices','returns','warehouses','inventory','pricing','dues','finance','reports','delivery','team'],
+    STOCK:['dashboard','products','masters','purchases','vendors','returns','warehouses','inventory','pricing','reports'],
+    SALES:['dashboard','cashier','orders','products','clients','invoices','pricing','dues','reports'],
+    CASHIER:['dashboard','cashier','clients','invoices'],
+    ACCOUNTANT:['dashboard','clients','invoices','dues','finance','reports','purchases','vendors'],
+    DELIVERY_MANAGER:['dashboard','orders','delivery']
+  };
+  const navAll=[
     ['dashboard','Tableau de bord',LayoutDashboard],['cashier','POS / Caisse',WalletCards],['orders','Commandes',ClipboardList],['products','Produits & stock',Warehouse],['masters','Référentiels',Boxes],['purchases','Achats',ArrowDownToLine],['vendors','Fournisseurs',Users],
     ['clients','Clients',Users],['invoices','Facturation',ReceiptText],['returns','Retours',RefreshCw],['warehouses','Dépôts',Warehouse],['inventory','Inventaire',Boxes],['pricing','Prix grossistes',BadgeDollarSign],['dues','Créances & dettes',Banknote],
-    ['finance','Finance & bénéfice',TrendingUp],['reports','Rapports',FileText],['delivery','Livraison',Truck]
+    ['finance','Finance & bénéfice',TrendingUp],['reports','Rapports',FileText],['delivery','Livraison',Truck],['team','Équipe & accès',Users]
   ] as const;
+  const nav=navAll.filter(([key])=>(access[role]||access.ADMIN).includes(key));
 
   return <div className="supplier-os supplier-erp">
     <aside>
@@ -120,6 +133,7 @@ export function SupplierDashboard({session}:{session:any}){
       {tab==='reports'&&<section className="supplier-panel"><div className="supplier-section-head"><div><b>Rapports de gestion</b><span>Vue synthétique inspirée du système exemple, adaptée au fournisseur de pièces.</span></div></div><div className="supplier-report-grid"><article><TrendingUp/><span>Ventes totales</span><b>{money(revenue+directSales)}</b></article><article><Warehouse/><span>Valeur stock</span><b>{money(stockValue)}</b></article><article><AlertTriangle/><span>Produits stock faible</span><b>{lowStock}</b></article><article><Banknote/><span>Créances clients</span><b>{money(dueSales)}</b></article><article><ArrowDownToLine/><span>Achats</span><b>{money(purchaseTotal)}</b></article><article><ReceiptText/><span>Dépenses</span><b>{money(expensesTotal)}</b></article></div><div className="supplier-report-links"><button className="btn btn-soft">Profit & Loss</button><button className="btn btn-soft">Valorisation stock</button><button className="btn btn-soft">Produits sans vente</button><button className="btn btn-soft">Top produits</button><button className="btn btn-soft">Top clients</button><button className="btn btn-soft">Journal mouvements</button></div></section>}
 
 {tab==='delivery'&&<SupplierDeliveryCenter orders={orders} drivers={drivers} onChanged={()=>setRefresh(x=>x+1)}/>}
+      {tab==='team'&&<SupplierTeam session={session}/>} 
     </main>
     <SupplierActionModal action={actionModal} products={products} vendors={advanced.vendors||[]} methods={master.paymentMethods||[]} onClose={()=>setActionModal(null)} onDone={()=>setRefresh(x=>x+1)}/>
   </div>
