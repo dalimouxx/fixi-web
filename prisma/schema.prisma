@@ -2219,8 +2219,11 @@ model SupplierReturn {
   type        String
   reference   String
   sourceRef   String?
+  sourceSaleId String?
+  warehouseId String?
   customerId  String?
   vendorId    String?
+  refundMethod String?
   status      String   @default("DRAFT")
   total       Decimal  @default(0) @db.Decimal(12,3)
   refund      Decimal  @default(0) @db.Decimal(12,3)
@@ -2230,15 +2233,18 @@ model SupplierReturn {
   completedAt DateTime?
   @@unique([companyId, reference])
   @@index([companyId, type, createdAt])
+  @@index([companyId, sourceSaleId])
 }
 
 model SupplierReturnItem {
   id        String   @id @default(cuid())
   returnId  String
+  saleItemId String?
   productId String?
   sku       String?
   name      String
   quantity  Int
+  unitCost  Decimal  @default(0) @db.Decimal(12,3)
   unitPrice Decimal  @default(0) @db.Decimal(12,3)
   reason    String?
   condition String?
