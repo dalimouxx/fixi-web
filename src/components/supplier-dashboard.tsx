@@ -81,7 +81,7 @@ export function SupplierDashboard({session}:{session:any}){
     </aside>
 
     <main>
-      <header><div><span>FIXI SUPPLIER ERP</span><h1>{nav.find(x=>x[0]===tab)?.[1]}</h1></div><div className="toolbar"><RealtimeNotificationCenter apiUrl="/api/supplier/notifications" eventsUrl="/api/supplier/events" storageKey="fixi-supplier-notifications" onNavigate={(href)=>{const m=href.match(/[?&]tab=([^&]+)/);if(m&&(nav as any).some((x:any)=>x[0]===m[1]))setTab(m[1] as Tab)}}/><button className="btn btn-ghost" onClick={()=>setRefresh(x=>x+1)}><RefreshCw/> Actualiser</button></div></header>
+      <header><div><span>FIXI SUPPLIER ERP</span><h1>{nav.find(x=>x[0]===tab)?.[1]}</h1></div><div className="toolbar"><RealtimeNotificationCenter apiUrl="/api/supplier/notifications" eventsUrl="/api/supplier/events" storageKey="fixi-supplier-notifications" onEvent={()=>setRefresh(x=>x+1)} onNavigate={(href)=>{const m=href.match(/[?&]tab=([^&]+)/);if(m&&(nav as any).some((x:any)=>x[0]===m[1]))setTab(m[1] as Tab)}}/><button className="btn btn-ghost" onClick={()=>setRefresh(x=>x+1)}><RefreshCw/> Actualiser</button></div></header>
 
       {tab==='dashboard'&&<>
         <div className="supplier-kpis supplier-kpis-6">
