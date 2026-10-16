@@ -16,14 +16,17 @@ export async function GET(){
    prisma.supplierPriceTier.findMany({where:{companyId:s.companyId,active:true},orderBy:[{productId:'asc'},{minQty:'asc'}]}),
    prisma.supplierDeliveryEvent.findMany({where:{companyId:s.companyId},orderBy:{createdAt:'desc'},take:500})
   ]);
-  const countItems=counts.length?await prisma.supplierStockCountItem.findMany({where:{stockCountId:{in:counts.map(x=>x.id)}},orderBy:{productId:'asc'}}):[];
-  if(['OWNER','ADMIN','MANAGER'].includes(s.role))return ok(plain({warehouses,warehouseStock,vendors,returns,counts,countItems,tiers,events}));
-  if(s.role==='STOCK')return ok(plain({warehouses,warehouseStock,vendors,returns,counts,countItems,tiers,events:[]}));
-  if(s.role==='ACCOUNTANT')return ok(plain({warehouses:[],warehouseStock:[],vendors,returns,counts:[],countItems:[],tiers:[],events:[]}));
-  if(s.role==='DELIVERY_MANAGER')return ok(plain({warehouses:[],warehouseStock:[],vendors:[],returns:[],counts:[],countItems:[],tiers:[],events}));
+  const [countItems,returnItems]=await Promise.all([
+   counts.length?prisma.supplierStockCountItem.findMany({where:{stockCountId:{in:counts.map(x=>x.id)}},orderBy:{productId:'asc'}}):Promise.resolve([]),
+   returns.length?prisma.supplierReturnItem.findMany({where:{returnId:{in:returns.map(x=>x.id)}}}):Promise.resolve([])
+  ]);
+  if(['OWNER','ADMIN','MANAGER'].includes(s.role))return ok(plain({warehouses,warehouseStock,vendors,returns,returnItems,counts,countItems,tiers,events}));
+  if(s.role==='STOCK')return ok(plain({warehouses,warehouseStock,vendors,returns,returnItems,counts,countItems,tiers,events:[]}));
+  if(s.role==='ACCOUNTANT')return ok(plain({warehouses:[],warehouseStock:[],vendors,returns,returnItems,counts:[],countItems:[],tiers:[],events:[]}));
+  if(s.role==='DELIVERY_MANAGER')return ok(plain({warehouses:[],warehouseStock:[],vendors:[],returns:[],returnItems:[],counts:[],countItems:[],tiers:[],events}));
   if(s.role==='SALES')return ok(plain({warehouses,warehouseStock,vendors:[],returns,counts:[],countItems:[],tiers,events:[]}));
-  if(s.role==='CASHIER')return ok(plain({warehouses,warehouseStock,vendors:[],returns:[],counts:[],countItems:[],tiers:[],events:[]}));
-  return ok(plain({warehouses:[],warehouseStock:[],vendors:[],returns:[],counts:[],countItems:[],tiers:[],events:[]}));
+  if(s.role==='CASHIER')return ok(plain({warehouses,warehouseStock,vendors:[],returns:[],returnItems:[],counts:[],countItems:[],tiers:[],events:[]}));
+  return ok(plain({warehouses:[],warehouseStock:[],vendors:[],returns:[],returnItems:[],counts:[],countItems:[],tiers:[],events:[]}));
  }catch(e:any){return bad(e.message,e.status||500)}
 }
 
@@ -51,13 +54,56 @@ export async function POST(req:Request){
    return ok(plain(await prisma.supplierDeliveryEvent.create({data:{companyId:s.companyId,orderId:String(b.orderId),accountId:s.id,type:String(b.type),note:b.note||null,amount:Number.isFinite(Number(b.amount))?Number(b.amount):null,latitude:Number.isFinite(Number(b.latitude))?Number(b.latitude):null,longitude:Number.isFinite(Number(b.longitude))?Number(b.longitude):null,proofUrl:b.proofUrl||null}})),{status:201});
   }
   if(action==='RETURN'){
-   const items=Array.isArray(b.items)?b.items:[];if(!items.length)return bad('Aucun article retourné');
-   const ref=String(b.reference||('RET-'+Date.now()));let total=0;
-   const ret=await prisma.$transaction(async tx=>{const r=await tx.supplierReturn.create({data:{companyId:s.companyId,type:String(b.type||'SALE_RETURN'),reference:ref,sourceRef:b.sourceRef||null,customerId:b.customerId||null,vendorId:b.vendorId||null,status:'COMPLETED',note:b.note||null,createdById:s.id,completedAt:new Date()}});
-    for(const i of items){const q=Math.max(1,Math.trunc(Number(i.quantity||1)));const unit=Number(i.unitPrice||0);total+=q*unit;await tx.supplierReturnItem.create({data:{returnId:r.id,productId:i.productId||null,sku:i.sku||null,name:String(i.name||'Article'),quantity:q,unitPrice:unit,reason:i.reason||null,condition:i.condition||null,restock:i.restock!==false}});
-     if(i.productId&&i.restock!==false){const p=await tx.supplierProduct.findFirst({where:{id:String(i.productId),companyId:s.companyId}});if(p){await tx.supplierProduct.update({where:{id:p.id},data:{stock:{increment:q}}});await tx.supplierErpStockMovement.create({data:{companyId:s.companyId,productId:p.id,type:'RETURN_IN',quantity:q,beforeQty:p.stock,afterQty:p.stock+q,reference:ref,accountId:s.id}})}}}
-    return tx.supplierReturn.update({where:{id:r.id},data:{total,refund:Number(b.refund||0)}})
-   });return ok(plain(ret),{status:201});
+   const type=String(b.type||'SALE_RETURN');
+   if(type!=='SALE_RETURN')return bad('Ce flux de retour doit être lié à une vente',409);
+   const sourceSaleId=String(b.sourceSaleId||'');const requested=Array.isArray(b.items)?b.items:[];
+   if(!sourceSaleId||!requested.length)return bad('Vente source et articles requis');
+   const sale=await prisma.supplierErpSale.findFirst({where:{id:sourceSaleId,companyId:s.companyId,status:{not:'CANCELLED'}}});
+   if(!sale)return bad('Vente source introuvable',404);
+   const saleItems=await prisma.supplierErpSaleItem.findMany({where:{saleId:sale.id}});
+   const priorReturns=await prisma.supplierReturn.findMany({where:{companyId:s.companyId,sourceSaleId:sale.id,status:'COMPLETED'},select:{id:true}});
+   const priorItems=priorReturns.length?await prisma.supplierReturnItem.findMany({where:{returnId:{in:priorReturns.map(x=>x.id)}}}):[];
+   const already=new Map<string,number>();for(const x of priorItems)if(x.saleItemId)already.set(x.saleItemId,(already.get(x.saleItemId)||0)+x.quantity);
+   const normalized:any[]=[];let rawTotal=0;
+   for(const i of requested){
+    const saleItem=saleItems.find(x=>x.id===String(i.saleItemId||''));if(!saleItem)return bad('Ligne de vente invalide',404);
+    const q=Math.max(1,Math.trunc(Number(i.quantity||1))),remaining=saleItem.quantity-(already.get(saleItem.id)||0);
+    if(q>remaining)return bad(`Quantité retournée supérieure au disponible pour ${saleItem.name} (max ${remaining})`,409);
+    rawTotal+=Number(saleItem.unitPrice)*q;
+    normalized.push({saleItem,q,reason:String(i.reason||'Retour client'),condition:String(i.condition||'BON'),restock:i.restock!==false});
+   }
+   const factor=Number(sale.subtotal)>0?Number(sale.total)/Number(sale.subtotal):1;
+   const total=Math.round(rawTotal*factor*1000)/1000;
+   const refund=Math.max(0,Math.round(Number(b.refund??total)*1000)/1000);if(refund>total+0.001)return bad('Le remboursement ne peut pas dépasser le montant de l’avoir',409);
+   const refundMethod=String(b.refundMethod||'CASH').toUpperCase();
+   const warehouseId=String(b.warehouseId||sale.warehouseId||'')||null;
+   if(warehouseId){const w=await prisma.supplierWarehouse.findFirst({where:{id:warehouseId,companyId:s.companyId,active:true}});if(!w)return bad('Dépôt de retour invalide',404)}
+   let cashSession:any=null;
+   if(refund>0){
+    const pm=refundMethod==='CASH'?{cashLike:true}:await prisma.supplierPaymentMethod.findFirst({where:{companyId:s.companyId,code:refundMethod,active:true}});
+    if(pm?.cashLike){cashSession=await prisma.supplierErpCashSession.findFirst({where:{companyId:s.companyId,accountId:s.id,status:'OPEN'},orderBy:{openedAt:'desc'}});if(!cashSession)return bad('Ouvrez votre caisse avant un remboursement espèces',409)}
+   }
+   const ref=String(b.reference||('AV-'+Date.now()));
+   const ret=await prisma.$transaction(async tx=>{
+    const r=await tx.supplierReturn.create({data:{companyId:s.companyId,type:'SALE_RETURN',reference:ref,sourceRef:sale.reference,sourceSaleId:sale.id,warehouseId,customerId:sale.customerId,refundMethod:refund>0?refundMethod:null,status:'COMPLETED',total,refund,note:b.note||null,createdById:s.id,completedAt:new Date()}});
+    for(const x of normalized){
+     await tx.supplierReturnItem.create({data:{returnId:r.id,saleItemId:x.saleItem.id,productId:x.saleItem.productId,sku:x.saleItem.sku,name:x.saleItem.name,quantity:x.q,unitCost:Number(x.saleItem.unitCost),unitPrice:Number(x.saleItem.unitPrice),reason:x.reason,condition:x.condition,restock:x.restock}});
+     if(x.restock&&x.saleItem.productId){
+      const p=await tx.supplierProduct.findFirst({where:{id:x.saleItem.productId,companyId:s.companyId}});
+      if(p){
+       await tx.supplierProduct.update({where:{id:p.id},data:{stock:{increment:x.q}}});
+       if(warehouseId)await tx.supplierWarehouseStock.upsert({where:{warehouseId_productId:{warehouseId,productId:p.id}},update:{quantity:{increment:x.q}},create:{companyId:s.companyId,warehouseId,productId:p.id,quantity:x.q}});
+       await tx.supplierErpStockMovement.create({data:{companyId:s.companyId,productId:p.id,type:'SALE_RETURN',quantity:x.q,beforeQty:p.stock,afterQty:p.stock+x.q,unitCost:x.saleItem.unitCost,reference:ref,note:'Avoir '+sale.reference,accountId:s.id}});
+      }
+     }
+    }
+    if(refund>0)await tx.supplierErpPayment.create({data:{companyId:s.companyId,customerId:sale.customerId,saleId:sale.id,cashSessionId:cashSession?.id||null,kind:'OUT',method:refundMethod,amount:refund,reference:ref,note:'Remboursement avoir '+sale.reference,accountId:s.id}});
+    await tx.supplierAuditEvent.create({data:{companyId:s.companyId,accountId:s.id,action:'RETURN',entity:'SALE',entityId:sale.id,metadata:{returnId:r.id,reference:ref,total,refund,warehouseId}}});
+    return r;
+   });
+   await Promise.allSettled(normalized.filter(x=>x.saleItem.productId).map(x=>notifySupplierLowStock(s.companyId,x.saleItem.productId)));
+   await notifySupplier(s.companyId,'Avoir client créé',`${ref} sur ${sale.reference} · ${total.toFixed(3)} DT${refund>0?' · remboursé '+refund.toFixed(3)+' DT':''}`,{href:'/supplier?tab=returns',kind:'PAYMENT',soundKey:refund>0?'SUCCESS':'CHIME',roles:['OWNER','ADMIN','MANAGER','ACCOUNTANT','SALES'],metadata:{returnId:ret.id,saleId:sale.id,reference:ref,total,refund}});
+   return ok(plain(ret),{status:201});
   }
   if(action==='STOCK_COUNT_START'){
    const warehouseId=String(b.warehouseId||'')||null;
