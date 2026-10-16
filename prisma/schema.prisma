@@ -1568,6 +1568,19 @@ model SupplierOrder {
   @@index([companyId, status, createdAt])
 }
 
+model SupplierOrderStockAllocation {
+  id          String   @id @default(cuid())
+  orderId     String
+  productId   String
+  warehouseId String?
+  quantity    Int
+  createdAt   DateTime @default(now())
+
+  @@index([orderId])
+  @@index([productId])
+  @@index([warehouseId])
+}
+
 model SupplierOrderItem {
   id        String          @id @default(cuid())
   orderId   String
