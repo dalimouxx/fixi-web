@@ -1556,18 +1556,20 @@ model SupplierOrderItem {
 }
 
 model SupplierDelivery {
-  id           String                 @id @default(cuid())
-  orderId      String                 @unique
-  order        SupplierOrder          @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  status       SupplierDeliveryStatus @default(PENDING)
-  driverName   String?
-  driverPhone  String?
-  trackingNote String?
-  proofUrl     String?
-  assignedAt   DateTime?
-  pickedUpAt   DateTime?
-  deliveredAt  DateTime?
-  updatedAt    DateTime               @default(now()) @updatedAt
+  id              String                 @id @default(cuid())
+  orderId         String                 @unique
+  order           SupplierOrder          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  status          SupplierDeliveryStatus @default(PENDING)
+  driverAccountId String?
+  driverName      String?
+  driverPhone     String?
+  trackingNote    String?
+  proofUrl        String?
+  assignedAt      DateTime?
+  pickedUpAt      DateTime?
+  deliveredAt     DateTime?
+  updatedAt       DateTime               @default(now()) @updatedAt
+  @@index([driverAccountId, status])
 }
 
 
