@@ -2135,6 +2135,24 @@ model SupplierDeliveryShift {
   @@index([companyId, openedAt])
 }
 
+model SupplierNotification {
+  id        String   @id @default(cuid())
+  companyId String
+  accountId String
+  kind      String   @default("INFO")
+  priority  String   @default("NORMAL")
+  title     String
+  message   String
+  href      String?
+  soundKey  String   @default("CHIME")
+  metadata  Json?
+  readAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([companyId, accountId, createdAt])
+  @@index([accountId, readAt])
+}
+
 model SupplierAuditEvent {
   id        String   @id @default(cuid())
   companyId String
