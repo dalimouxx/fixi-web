@@ -16,6 +16,7 @@ import {SupplierTeam} from './supplier-team';
 import {SupplierReports} from './supplier-reports';
 import {SupplierInventory} from './supplier-inventory';
 import {SupplierWarehouses} from './supplier-warehouses';
+import {SupplierReturns} from './supplier-returns';
 import {RealtimeNotificationCenter} from './realtime-notification-center';
 
 const nextStatus:Record<string,string|undefined>={PENDING:'CONFIRMED',CONFIRMED:'PREPARING',PREPARING:'READY_FOR_DELIVERY',READY_FOR_DELIVERY:undefined,OUT_FOR_DELIVERY:undefined};
@@ -23,7 +24,7 @@ const labels:Record<string,string>={PENDING:'Nouvelle',CONFIRMED:'Confirmée',PR
 type Tab='dashboard'|'orders'|'products'|'masters'|'purchases'|'vendors'|'clients'|'invoices'|'returns'|'warehouses'|'inventory'|'pricing'|'dues'|'finance'|'reports'|'cashier'|'delivery'|'team';
 
 export function SupplierDashboard({session}:{session:any}){
-  const[tab,setTab]=useState<Tab>(session.role==='CASHIER'?'cashier':session.role==='STOCK'?'products':session.role==='DELIVERY_MANAGER'?'delivery':session.role==='ACCOUNTANT'?'finance':'dashboard');const[products,setProducts]=useState<any[]>([]);const[orders,setOrders]=useState<any[]>([]);const[drivers,setDrivers]=useState<any[]>([]);const[erp,setErp]=useState<any>({customers:[],sales:[],saleItems:[],payments:[],expenses:[],purchases:[],cashSessions:[],movements:[],metrics:{}});const[advanced,setAdvanced]=useState<any>({warehouses:[],warehouseStock:[],vendors:[],returns:[],counts:[],countItems:[],tiers:[],events:[]});const[master,setMaster]=useState<any>({categories:[],brands:[],units:[],paymentMethods:[],company:null});
+  const[tab,setTab]=useState<Tab>(session.role==='CASHIER'?'cashier':session.role==='STOCK'?'products':session.role==='DELIVERY_MANAGER'?'delivery':session.role==='ACCOUNTANT'?'finance':'dashboard');const[products,setProducts]=useState<any[]>([]);const[orders,setOrders]=useState<any[]>([]);const[drivers,setDrivers]=useState<any[]>([]);const[erp,setErp]=useState<any>({customers:[],sales:[],saleItems:[],payments:[],expenses:[],purchases:[],cashSessions:[],movements:[],metrics:{}});const[advanced,setAdvanced]=useState<any>({warehouses:[],warehouseStock:[],vendors:[],returns:[],returnItems:[],counts:[],countItems:[],tiers:[],events:[]});const[master,setMaster]=useState<any>({categories:[],brands:[],units:[],paymentMethods:[],company:null});
   const[refresh,setRefresh]=useState(0);const[q,setQ]=useState('');const[actionModal,setActionModal]=useState<any>(null);const[showDriverForm,setShowDriverForm]=useState(false);const[driverForm,setDriverForm]=useState({fullName:'',login:'',phone:'',password:''});const[driverError,setDriverError]=useState('');
   const emptyProduct={sku:'',barcode:'',name:'',brandId:'',categoryId:'',unitId:'',qualityGrade:'',purchasePrice:'',retailPrice:'',wholesalePrice:'',minimumPrice:'',taxRate:'0',stock:'0',minStock:'0',maxStock:'',minOrderQty:'1',warrantyDays:'0',location:'',serialTracked:false};
   const[form,setForm]=useState<any>(emptyProduct);
@@ -124,7 +125,7 @@ export function SupplierDashboard({session}:{session:any}){
 
       {tab==='vendors'&&<section className="supplier-panel"><div className="supplier-section-head"><div><b>Fournisseurs amont</b><span>Grossistes/importateurs auprès desquels vous achetez.</span></div><button className="btn btn-primary btn-sm" onClick={newVendor}><Plus/> Ajouter</button></div><div className="supplier-card-grid">{(advanced.vendors||[]).map((v:any)=><article key={v.id}><Users/><div><b>{v.name}</b><span>{v.phone||'—'} · {v.address||'—'}</span></div><strong>{money(v.openingDue||0)}</strong></article>)}</div></section>}
 
-      {tab==='returns'&&<section className="supplier-panel"><div className="supplier-section-head"><div><b>Retours & avoirs</b><span>Retours clients, retours fournisseurs et remise en stock.</span></div><button className="btn btn-primary btn-sm" onClick={createReturn}><Plus/> Nouveau retour</button></div><div className="table-wrap"><table className="table"><thead><tr><th>Référence</th><th>Type</th><th>Total</th><th>Remboursé</th><th>Statut</th><th>Date</th></tr></thead><tbody>{(advanced.returns||[]).map((x:any)=><tr key={x.id}><td><code>{x.reference}</code></td><td>{x.type}</td><td>{money(x.total)}</td><td>{money(x.refund)}</td><td>{x.status}</td><td>{dateTime(x.createdAt)}</td></tr>)}</tbody></table></div></section>}
+      {tab==='returns'&&<SupplierReturns sales={erp.sales||[]} saleItems={erp.saleItems||[]} returns={advanced.returns||[]} returnItems={advanced.returnItems||[]} warehouses={advanced.warehouses||[]} methods={master.paymentMethods||[]} onChanged={()=>setRefresh(x=>x+1)}/>} 
 
       {tab==='warehouses'&&<SupplierWarehouses products={products} warehouses={advanced.warehouses||[]} warehouseStock={advanced.warehouseStock||[]} onNewWarehouse={newWarehouse} onChanged={()=>setRefresh(x=>x+1)}/>} 
 
