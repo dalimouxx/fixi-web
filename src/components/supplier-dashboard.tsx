@@ -19,6 +19,7 @@ import {SupplierWarehouses} from './supplier-warehouses';
 import {SupplierReturns} from './supplier-returns';
 import {SupplierDues} from './supplier-dues';
 import {SupplierCommercialDocuments} from './supplier-commercial-documents';
+import {SupplierPurchases} from './supplier-purchases';
 import {RealtimeNotificationCenter} from './realtime-notification-center';
 import {PushToggle} from './push-toggle';
 import {PwaRegister} from './pwa-register';
@@ -125,7 +126,7 @@ export function SupplierDashboard({session}:{session:any}){
       {tab==='masters'&&<SupplierMasterData data={master} onChanged={()=>setRefresh(x=>x+1)}/>} 
 
       
-      {tab==='purchases'&&<section className="supplier-panel"><div className="supplier-section-head"><div><b>Achats & approvisionnement</b><span>Réceptions, coûts d’achat et dettes fournisseurs.</span></div></div><div className="table-wrap"><table className="table"><thead><tr><th>Référence</th><th>Fournisseur</th><th>Total</th><th>Payé</th><th>Reste</th><th>Date</th></tr></thead><tbody>{(erp.purchases||[]).map((x:any)=><tr key={x.id}><td><code>{x.reference}</code></td><td>{x.vendorName}</td><td>{money(x.total)}</td><td>{money(x.paid)}</td><td><b>{money(Math.max(0,Number(x.total)-Number(x.paid)))}</b></td><td>{dateTime(x.createdAt)}</td></tr>)}</tbody></table></div></section>}
+      {tab==='purchases'&&<SupplierPurchases products={products} purchases={erp.purchases||[]} vendors={advanced.vendors||[]} warehouses={advanced.warehouses||[]} methods={master.paymentMethods||[]} onChanged={()=>setRefresh(x=>x+1)}/>} 
 
       {tab==='vendors'&&<section className="supplier-panel"><div className="supplier-section-head"><div><b>Fournisseurs amont</b><span>Grossistes/importateurs auprès desquels vous achetez.</span></div><button className="btn btn-primary btn-sm" onClick={newVendor}><Plus/> Ajouter</button></div><div className="supplier-card-grid">{(advanced.vendors||[]).map((v:any)=><article key={v.id}><Users/><div><b>{v.name}</b><span>{v.phone||'—'} · {v.address||'—'}</span></div><strong>{money(v.openingDue||0)}</strong></article>)}</div></section>}
 
