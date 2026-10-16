@@ -67,19 +67,23 @@ export async function POST(req:Request){
    if(warehouseId){const w=await prisma.supplierWarehouse.findFirst({where:{id:warehouseId,companyId:s.companyId,active:true}});if(!w)return bad('Dépôt invalide',404)}
    const [products,warehouseRows]=await Promise.all([
     prisma.supplierProduct.findMany({where:{companyId:s.companyId,id:{in:ids},active:true}}),
-    warehouseId?prisma.supplierWarehouseStock.findMany({where:{companyId:s.companyId,warehouseId,productId:{in:ids}}}):Promise.resolve([])
+    prisma.supplierWarehouseStock.findMany({where:{companyId:s.companyId,productId:{in:ids}},orderBy:{updatedAt:'asc'}})
    ]);
    let subtotal=0;const normalized:any[]=[];
    for(const i of items){
     const p=products.find(x=>x.id===String(i.productId));const q=Math.max(1,Math.trunc(Number(i.quantity||1)));
     if(!p)return bad('Produit introuvable',404);
-    const warehouseRow=warehouseId?warehouseRows.find(x=>x.productId===p.id):null;
+    const productWarehouseRows=warehouseRows.filter(x=>x.productId===p.id);
+    const warehouseRow=warehouseId?productWarehouseRows.find(x=>x.warehouseId===warehouseId):null;
     const available=warehouseId?Number(warehouseRow?.quantity||0)-Number(warehouseRow?.reserved||0):p.stock-p.reservedStock;
     if(available<q)return bad('Stock disponible insuffisant pour '+p.name+(warehouseId?' dans ce dépôt':''),409);
+    const allocatedTotal=productWarehouseRows.reduce((a,x)=>a+Number(x.quantity||0),0),unallocated=Math.max(0,p.stock-allocatedTotal);
+    const warehouseConsumption=warehouseId?0:Math.max(0,q-unallocated);
+    if(!warehouseId&&productWarehouseRows.reduce((a,x)=>a+Math.max(0,Number(x.quantity||0)-Number(x.reserved||0)),0)<warehouseConsumption)return bad('Répartition dépôt incohérente pour '+p.name,409);
     const defaultPrice=Number(p.retailPrice??p.price);const price=money(i.unitPrice??defaultPrice);
     const minimum=p.minimumPrice===null?null:Number(p.minimumPrice);
     if(minimum!==null&&price<minimum&&!allow(s.role,['OWNER','ADMIN','MANAGER']))return bad('Prix inférieur au minimum autorisé pour '+p.name,409);
-    subtotal+=price*q;normalized.push({p,q,price,warehouseRow});
+    subtotal+=price*q;normalized.push({p,q,price,warehouseRow,productWarehouseRows,warehouseConsumption});
    }
    const discount=Math.max(0,money(b.discount||0)),tax=Math.max(0,money(b.tax||0)),total=Math.max(0,money(subtotal-discount+tax));
    const rawPayments=Array.isArray(b.payments)&&b.payments.length?b.payments:(Number(b.paid||0)>0?[{method:String(b.method||'CASH'),amount:Number(b.paid)}]:[]);
@@ -98,6 +102,7 @@ export async function POST(req:Request){
      const before=x.p.stock,after=before-x.q;
      await tx.supplierProduct.update({where:{id:x.p.id},data:{stock:after}});
      if(warehouseId&&x.warehouseRow)await tx.supplierWarehouseStock.update({where:{id:x.warehouseRow.id},data:{quantity:{decrement:x.q}}});
+     if(!warehouseId&&x.warehouseConsumption>0){let remaining=x.warehouseConsumption;for(const row of x.productWarehouseRows){if(remaining<=0)break;const take=Math.min(remaining,Math.max(0,Number(row.quantity||0)-Number(row.reserved||0)));if(take>0){await tx.supplierWarehouseStock.update({where:{id:row.id},data:{quantity:{decrement:take}}});remaining-=take}}}
      await tx.supplierErpStockMovement.create({data:{companyId:s.companyId,productId:x.p.id,type:'SALE',quantity:-x.q,beforeQty:before,afterQty:after,unitCost:x.p.averageCost||x.p.purchasePrice,reference:ref,accountId:s.id}});
     }
     for(const p of payments)await tx.supplierErpPayment.create({data:{companyId:s.companyId,customerId:b.customerId||null,saleId:sale.id,cashSessionId:(await cashLike(s.companyId,p.method))?cashSession?.id:null,kind:'IN',method:p.method,amount:p.amount,reference:p.reference||ref,accountId:s.id}});
