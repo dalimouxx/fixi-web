@@ -2138,6 +2138,19 @@ model SupplierDeliveryShift {
   @@index([companyId, openedAt])
 }
 
+model SupplierPushSubscription {
+  id        String   @id @default(cuid())
+  companyId String
+  accountId String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([companyId, accountId])
+}
+
 model SupplierNotification {
   id        String   @id @default(cuid())
   companyId String
