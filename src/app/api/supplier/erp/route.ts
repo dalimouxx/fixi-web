@@ -43,7 +43,14 @@ export async function GET(){
   const collected=payments.filter(x=>x.kind==='IN').reduce((a,x)=>a+Number(x.amount),0);
   const paidOut=payments.filter(x=>x.kind==='OUT').reduce((a,x)=>a+Number(x.amount),0);
   const metrics={salesTotal,cogs,grossProfit:salesTotal-cogs,expenses:expensesTotal,netProfit:salesTotal-cogs-expensesTotal,purchaseTotal,receivables,payables,collected,paidOut};
-  return ok(plain({customers,sales,saleItems,payments,expenses,purchases,purchaseItems,cashSessions,movements,metrics}));
+  if(['OWNER','ADMIN','MANAGER','ACCOUNTANT'].includes(s.role))return ok(plain({customers,sales,saleItems,payments,expenses,purchases,purchaseItems,cashSessions,movements,metrics}));
+  if(s.role==='SALES')return ok(plain({customers,sales,saleItems,payments,expenses:[],purchases:[],purchaseItems:[],cashSessions:cashSessions.filter(x=>x.accountId===s.id),movements:[],metrics:{salesTotal:metrics.salesTotal,grossProfit:metrics.grossProfit,receivables:metrics.receivables,collected:metrics.collected}}));
+  if(s.role==='CASHIER'){
+   const ownSales=sales.filter(x=>x.createdById===s.id),ownIds=new Set(ownSales.map(x=>x.id));
+   return ok(plain({customers,sales:ownSales,saleItems:saleItems.filter(x=>ownIds.has(x.saleId)),payments:payments.filter(x=>x.accountId===s.id),expenses:expenses.filter(x=>x.createdById===s.id),purchases:[],purchaseItems:[],cashSessions:cashSessions.filter(x=>x.accountId===s.id),movements:[],metrics:{salesTotal:ownSales.reduce((a,x)=>a+Number(x.total),0),collected:payments.filter(x=>x.accountId===s.id&&x.kind==='IN').reduce((a,x)=>a+Number(x.amount),0)}}));
+  }
+  if(s.role==='STOCK')return ok(plain({customers:[],sales:[],saleItems:[],payments:[],expenses:[],purchases,purchaseItems,cashSessions:[],movements,metrics:{purchaseTotal:metrics.purchaseTotal,payables:metrics.payables}}));
+  return ok(plain({customers:[],sales:[],saleItems:[],payments:[],expenses:[],purchases:[],purchaseItems:[],cashSessions:[],movements:[],metrics:{}}));
  }catch(e:any){return bad(e.message,e.status||500)}
 }
 
