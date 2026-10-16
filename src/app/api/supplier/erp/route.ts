@@ -182,6 +182,22 @@ export async function POST(req:Request){
    return ok(plain(await prisma.supplierErpPayment.create({data:{companyId:s.companyId,customerId:b.customerId||null,cashSessionId:cs?.id||null,kind:String(b.kind||'IN'),method,amount,reference:b.reference||null,note:b.note||null,accountId:s.id}})),{status:201});
   }
 
+  if(action==='PURCHASE_PAYMENT'){
+   if(!allow(s.role,['OWNER','ADMIN','MANAGER','ACCOUNTANT']))return bad('FORBIDDEN',403);
+   const purchaseId=String(b.purchaseId||''),amount=money(b.amount),method=String(b.method||'CASH').toUpperCase();
+   if(!purchaseId||!(amount>0))return bad('Règlement fournisseur invalide');
+   const purchase=await prisma.supplierErpPurchase.findFirst({where:{id:purchaseId,companyId:s.companyId,status:{not:'CANCELLED'}}});if(!purchase)return bad('Achat introuvable',404);
+   const remaining=Math.max(0,money(Number(purchase.total)-Number(purchase.paid)));if(amount>remaining+0.001)return bad('Paiement supérieur au reste fournisseur',409);
+   const cs=await cashLike(s.companyId,method)?await openCash(s.companyId,s.id):null;if(await cashLike(s.companyId,method)&&!cs)return bad('Ouvrez votre caisse avant un paiement espèces',409);
+   const result=await prisma.$transaction(async tx=>{
+    const p=await tx.supplierErpPayment.create({data:{companyId:s.companyId,cashSessionId:cs?.id||null,kind:'OUT',method,amount,reference:b.reference||purchase.reference,note:b.note||('Règlement '+purchase.vendorName),accountId:s.id}});
+    const paid=money(Number(purchase.paid)+amount);await tx.supplierErpPurchase.update({where:{id:purchase.id},data:{paid,status:paid>=Number(purchase.total)?'PAID':'PARTIALLY_PAID'}});return p;
+   });
+   const rest=Math.max(0,money(remaining-amount));
+   await notifySupplier(s.companyId,rest<=0?'Dette fournisseur soldée':'Paiement fournisseur enregistré',`${purchase.reference} · ${amount.toFixed(3)} DT${rest>0?' · reste '+rest.toFixed(3)+' DT':''}`,{href:'/supplier?tab=dues',kind:'PAYMENT',soundKey:'SUCCESS',roles:['OWNER','ADMIN','MANAGER','ACCOUNTANT'],metadata:{purchaseId:purchase.id,reference:purchase.reference,amount,remaining:rest}});
+   return ok(plain(result),{status:201});
+  }
+
   if(action==='CASH_OPEN'){
    if(!allow(s.role,['OWNER','ADMIN','MANAGER','CASHIER','SALES']))return bad('FORBIDDEN',403);
    const exists=await openCash(s.companyId,s.id);if(exists)return bad('Votre caisse est déjà ouverte',409);
