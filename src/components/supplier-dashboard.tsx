@@ -11,36 +11,33 @@ import {dateTime,money} from '@/lib/format';
 import {SupplierPos} from './supplier-pos';
 import {SupplierMasterData} from './supplier-master-data';
 import {SupplierDeliveryCenter} from './supplier-delivery-center';
+import {SupplierActionModal} from './supplier-action-modal';
 
-const nextStatus:Record<string,string|undefined>={PENDING:'CONFIRMED',CONFIRMED:'PREPARING',PREPARING:'READY_FOR_DELIVERY',READY_FOR_DELIVERY:'OUT_FOR_DELIVERY',OUT_FOR_DELIVERY:'DELIVERED'};
+const nextStatus:Record<string,string|undefined>={PENDING:'CONFIRMED',CONFIRMED:'PREPARING',PREPARING:'READY_FOR_DELIVERY',READY_FOR_DELIVERY:undefined,OUT_FOR_DELIVERY:undefined};
 const labels:Record<string,string>={PENDING:'Nouvelle',CONFIRMED:'Confirmée',PREPARING:'Préparation',READY_FOR_DELIVERY:'Prête',OUT_FOR_DELIVERY:'En livraison',DELIVERED:'Livrée',CANCELLED:'Annulée'};
 type Tab='dashboard'|'orders'|'products'|'masters'|'purchases'|'vendors'|'clients'|'invoices'|'returns'|'warehouses'|'inventory'|'pricing'|'dues'|'finance'|'reports'|'cashier'|'delivery';
 
 export function SupplierDashboard({session}:{session:any}){
   const[tab,setTab]=useState<Tab>('dashboard');const[products,setProducts]=useState<any[]>([]);const[orders,setOrders]=useState<any[]>([]);const[drivers,setDrivers]=useState<any[]>([]);const[erp,setErp]=useState<any>({customers:[],sales:[],saleItems:[],payments:[],expenses:[],purchases:[],cashSessions:[],movements:[],metrics:{}});const[advanced,setAdvanced]=useState<any>({warehouses:[],warehouseStock:[],vendors:[],returns:[],counts:[],tiers:[],events:[]});const[master,setMaster]=useState<any>({categories:[],brands:[],units:[],paymentMethods:[],company:null});
-  const[refresh,setRefresh]=useState(0);const[q,setQ]=useState('');const[showDriverForm,setShowDriverForm]=useState(false);const[driverForm,setDriverForm]=useState({fullName:'',login:'',phone:'',password:''});const[driverError,setDriverError]=useState('');
+  const[refresh,setRefresh]=useState(0);const[q,setQ]=useState('');const[actionModal,setActionModal]=useState<any>(null);const[showDriverForm,setShowDriverForm]=useState(false);const[driverForm,setDriverForm]=useState({fullName:'',login:'',phone:'',password:''});const[driverError,setDriverError]=useState('');
   const emptyProduct={sku:'',barcode:'',name:'',brandId:'',categoryId:'',unitId:'',qualityGrade:'',purchasePrice:'',retailPrice:'',wholesalePrice:'',minimumPrice:'',taxRate:'0',stock:'0',minStock:'0',maxStock:'',minOrderQty:'1',warrantyDays:'0',location:'',serialTracked:false};
   const[form,setForm]=useState<any>(emptyProduct);
   async function load(){const[p,o,e,a,d,m]=await Promise.all([fetch('/api/supplier/products',{cache:'no-store'}).then(r=>r.json()),fetch('/api/supplier/orders',{cache:'no-store'}).then(r=>r.json()),fetch('/api/supplier/erp',{cache:'no-store'}).then(r=>r.json()).catch(()=>null),fetch('/api/supplier/advanced',{cache:'no-store'}).then(r=>r.json()).catch(()=>null),fetch('/api/supplier/drivers',{cache:'no-store'}).then(r=>r.json()).catch(()=>[]),fetch('/api/supplier/master-data',{cache:'no-store'}).then(r=>r.json()).catch(()=>null)]);setProducts(Array.isArray(p)?p:[]);setOrders(Array.isArray(o)?o:[]);setDrivers(Array.isArray(d)?d:[]);if(e&&typeof e==='object')setErp(e);if(a&&typeof a==='object')setAdvanced(a);if(m&&typeof m==='object')setMaster(m)}
   useEffect(()=>{load()},[refresh]);
   async function logout(){await fetch('/api/supplier/auth/logout',{method:'POST'});location.href='/supplier/login'}
   async function add(e:any){e.preventDefault();await api('/api/supplier/products',{method:'POST',body:JSON.stringify({...form,price:Number(form.retailPrice||0),purchasePrice:Number(form.purchasePrice||0),retailPrice:Number(form.retailPrice||0),wholesalePrice:form.wholesalePrice===''?null:Number(form.wholesalePrice),minimumPrice:form.minimumPrice===''?null:Number(form.minimumPrice),taxRate:Number(form.taxRate||0),stock:Number(form.stock||0),minStock:Number(form.minStock||0),maxStock:form.maxStock===''?null:Number(form.maxStock),minOrderQty:Number(form.minOrderQty||1),warrantyDays:Number(form.warrantyDays||0)})});setForm(emptyProduct);setRefresh(x=>x+1)}
-  async function status(id:string,status:string){const extra=status==='OUT_FOR_DELIVERY'?{driverName:prompt('Nom livreur')||'',driverPhone:prompt('Téléphone livreur')||''}:{};await api('/api/supplier/orders/'+id,{method:'PATCH',body:JSON.stringify({status,...extra})});setRefresh(x=>x+1)}
+  async function status(id:string,status:string){await api('/api/supplier/orders/'+id,{method:'PATCH',body:JSON.stringify({status})});setRefresh(x=>x+1)}
   async function erpAction(payload:any){await api('/api/supplier/erp',{method:'POST',body:JSON.stringify(payload)});setRefresh(x=>x+1)}
   async function advancedAction(payload:any){await api('/api/supplier/advanced',{method:'POST',body:JSON.stringify(payload)});setRefresh(x=>x+1)}
-  async function newCustomer(){const name=prompt('Nom du client professionnel');if(!name)return;const phone=prompt('Téléphone')||'';const creditLimit=Number(prompt('Plafond crédit (DT)','0')||0);await erpAction({action:'CUSTOMER',name,phone,creditLimit})}
-  async function newExpense(){const label=prompt('Libellé dépense');if(!label)return;const amount=Number(prompt('Montant (DT)','0')||0);if(!(amount>0))return;await erpAction({action:'EXPENSE',label,amount,category:'Général',method:'CASH'})}
-  async function openCash(){const openingAmount=Number(prompt('Fond de caisse initial (DT)','0')||0);await erpAction({action:'CASH_OPEN',openingAmount})}
-  async function closeCash(){const closingAmount=Number(prompt('Espèces réellement comptées (DT)','0')||0);await erpAction({action:'CASH_CLOSE',closingAmount})}
-  async function counterSale(){const sku=(prompt('SKU / référence produit')||'').trim().toUpperCase();const p=products.find(x=>String(x.sku).toUpperCase()===sku);if(!p){alert('Produit introuvable');return}const quantity=Math.max(1,Number(prompt('Quantité','1')||1));const paid=Number(prompt('Montant payé (DT)',String(Number(p.price)*quantity))||0);await erpAction({action:'SALE',items:[{productId:p.id,quantity}],paid,method:'CASH'})}
-  async function purchase(p:any){const quantity=Math.max(1,Number(prompt('Quantité reçue','1')||1));const unitCost=Number(prompt('Coût achat unitaire (DT)',String(Number(p.purchasePrice||0)))||0);if(!(unitCost>=0))return;const vendorName=prompt('Fournisseur amont','Fournisseur')||'Fournisseur';const paid=Number(prompt('Montant payé maintenant (DT)','0')||0);await erpAction({action:'PURCHASE',productId:p.id,quantity,unitCost,vendorName,paid,method:'CASH'})}
-  async function newVendor(){const name=prompt('Nom fournisseur amont');if(!name)return;await advancedAction({action:'VENDOR',name,phone:prompt('Téléphone')||'',address:prompt('Adresse')||''})}
-  async function newWarehouse(){const name=prompt('Nom du dépôt');if(!name)return;const code=(prompt('Code dépôt',name.slice(0,3).toUpperCase())||'DEP').toUpperCase();await advancedAction({action:'WAREHOUSE',name,code,address:prompt('Adresse')||'',region:prompt('Région')||''})}
+  async function newCustomer(){setActionModal({type:'CUSTOMER'})}
+  async function newExpense(){setActionModal({type:'EXPENSE'})}
+  async function purchase(p:any){setActionModal({type:'PURCHASE',product:p})}
+  async function newVendor(){setActionModal({type:'VENDOR'})}
+  async function newWarehouse(){setActionModal({type:'WAREHOUSE'})}
   async function startInventory(){await advancedAction({action:'STOCK_COUNT_START',reference:'INV-'+Date.now(),warehouseId:advanced.warehouses?.[0]?.id||null})}
-  async function addTier(){const sku=(prompt('SKU produit')||'').toUpperCase();const p=products.find(x=>String(x.sku).toUpperCase()===sku);if(!p){alert('Produit introuvable');return}const minQty=Math.max(1,Number(prompt('Quantité minimum','5')||5));const unitPrice=Number(prompt('Prix unitaire grossiste',String(Number(p.price)))||p.price);const name=prompt('Nom du tarif','Grossiste')||'Grossiste';await advancedAction({action:'PRICE_TIER',productId:p.id,minQty,unitPrice,name})}
-  async function createReturn(){const sku=(prompt('SKU produit retourné')||'').toUpperCase();const p=products.find(x=>String(x.sku).toUpperCase()===sku);if(!p){alert('Produit introuvable');return}const quantity=Math.max(1,Number(prompt('Quantité','1')||1));const reason=prompt('Motif du retour')||'';await advancedAction({action:'RETURN',type:'SALE_RETURN',items:[{productId:p.id,sku:p.sku,name:p.name,quantity,unitPrice:Number(p.price),reason,restock:true}],refund:Number(p.price)*quantity})}
+  async function addTier(){setActionModal({type:'PRICE_TIER'})}
+  async function createReturn(){setActionModal({type:'RETURN'})}
   async function newDriver(e?:any){if(e)e.preventDefault();setDriverError('');try{if(!driverForm.fullName.trim())throw new Error('Nom du livreur requis');if(!driverForm.login.trim())throw new Error('Identifiant requis');if(driverForm.password.length<4)throw new Error('Mot de passe minimum 4 caractères');await api('/api/supplier/drivers',{method:'POST',body:JSON.stringify({fullName:driverForm.fullName.trim(),login:driverForm.login.trim().toLowerCase(),password:driverForm.password,phone:driverForm.phone.trim()})});setDriverForm({fullName:'',login:'',phone:'',password:''});setShowDriverForm(false);setRefresh(x=>x+1)}catch(e:any){setDriverError(e.message||'Impossible de créer le livreur')}}
-  async function assignDriver(orderId:string){if(!drivers.length){alert('Créez d’abord un compte livreur.');return}const choices=drivers.filter(d=>d.isActive).map((d,i)=>`${i+1}. ${d.fullName} (${d.login})`).join('\n');const n=Number(prompt('Choisir le livreur :\n'+choices,'1')||0);const driver=drivers.filter(d=>d.isActive)[n-1];if(!driver)return;await api('/api/supplier/delivery/assign',{method:'POST',body:JSON.stringify({orderId,driverAccountId:driver.id})});setRefresh(x=>x+1)}
   const activeOrders=orders.filter(x=>!['DELIVERED','CANCELLED'].includes(x.status));
   const delivered=orders.filter(x=>x.status==='DELIVERED');const revenue=delivered.reduce((a,x)=>a+Number(x.total),0);
   const stockUnits=products.reduce((a,p)=>a+Number(p.stock||0),0);const stockValue=products.reduce((a,p)=>a+Number(p.stock||0)*Number(p.price||0),0);
@@ -124,6 +121,7 @@ export function SupplierDashboard({session}:{session:any}){
 
 {tab==='delivery'&&<SupplierDeliveryCenter orders={orders} drivers={drivers} onChanged={()=>setRefresh(x=>x+1)}/>}
     </main>
+    <SupplierActionModal action={actionModal} products={products} vendors={advanced.vendors||[]} methods={master.paymentMethods||[]} onClose={()=>setActionModal(null)} onDone={()=>setRefresh(x=>x+1)}/>
   </div>
 }
 
