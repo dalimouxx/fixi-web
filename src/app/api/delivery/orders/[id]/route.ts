@@ -1,4 +1,5 @@
 import {prisma} from '@/lib/prisma';
+import {ensureMarketplaceAccounting} from '@/lib/supplier-accounting';
 import {requireDeliverySession} from '@/lib/delivery-auth';
 import {bad,ok} from '@/lib/http';
 import {plain} from '@/lib/serializers';
@@ -38,6 +39,7 @@ export async function PATCH(req:Request,{params}:{params:Promise<{id:string}>}){
    if(Number.isFinite(Number(b.latitude))&&Number.isFinite(Number(b.longitude)))await tx.supplierDriverLocation.create({data:{companyId:s.companyId,orderId:id,accountId:s.id,latitude:Number(b.latitude),longitude:Number(b.longitude),accuracy:Number.isFinite(Number(b.accuracy))?Number(b.accuracy):null}});
    return order;
   });
+  if(status===SupplierOrderStatus.DELIVERED)await ensureMarketplaceAccounting(id,s.id);
   return ok(plain(result));
  }catch(e:any){return bad(e.message,e.status||500)}
 }
