@@ -1932,6 +1932,16 @@ model SupplierErpCustomer {
   @@index([companyId, phone])
 }
 
+model SupplierSequence {
+  id        String   @id @default(cuid())
+  companyId String
+  key       String
+  value     Int      @default(0)
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@unique([companyId, key])
+}
+
 model SupplierCommercialDocument {
   id          String   @id @default(cuid())
   companyId   String
