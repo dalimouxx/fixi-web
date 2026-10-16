@@ -15,7 +15,12 @@ export async function GET(){
    prisma.supplierPriceTier.findMany({where:{companyId:s.companyId,active:true},orderBy:[{productId:'asc'},{minQty:'asc'}]}),
    prisma.supplierDeliveryEvent.findMany({where:{companyId:s.companyId},orderBy:{createdAt:'desc'},take:500})
   ]);
-  return ok(plain({warehouses,warehouseStock,vendors,returns,counts,tiers,events}));
+  if(['OWNER','ADMIN','MANAGER'].includes(s.role))return ok(plain({warehouses,warehouseStock,vendors,returns,counts,tiers,events}));
+  if(s.role==='STOCK')return ok(plain({warehouses,warehouseStock,vendors,returns,counts,tiers,events:[]}));
+  if(s.role==='ACCOUNTANT')return ok(plain({warehouses:[],warehouseStock:[],vendors,returns,counts:[],tiers:[],events:[]}));
+  if(s.role==='DELIVERY_MANAGER')return ok(plain({warehouses:[],warehouseStock:[],vendors:[],returns:[],counts:[],tiers:[],events}));
+  if(s.role==='SALES')return ok(plain({warehouses:[],warehouseStock:[],vendors:[],returns,counts:[],tiers,events:[]}));
+  return ok(plain({warehouses:[],warehouseStock:[],vendors:[],returns:[],counts:[],tiers:[],events:[]}));
  }catch(e:any){return bad(e.message,e.status||500)}
 }
 
