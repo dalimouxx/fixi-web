@@ -116,7 +116,7 @@ export function SupplierDashboard({session}:{session:any}){
 
       {tab==='finance'&&<><div className="supplier-kpis"><K icon={BadgeDollarSign} label="CA marketplace" value={money(revenue)}/><K icon={Banknote} label="Ventes directes" value={money(directSales)}/><K icon={AlertTriangle} label="Créances clients" value={money(dueSales)}/><K icon={Warehouse} label="Dettes achats" value={money(duePurchases)}/></div><section className="supplier-panel"><div className="supplier-section-head"><div><b>Finance fournisseur</b><span>Ventes, paiements, achats et dépenses enregistrés.</span></div><button className="btn btn-soft btn-sm" onClick={newExpense}><Plus/> Dépense</button></div><div className="supplier-metrics"><div><span>Encaissements directs</span><b>{money(directPaid)}</b></div><div><span>Dépenses</span><b>{money(expensesTotal)}</b></div><div><span>Achats</span><b>{money(purchaseTotal)}</b></div><div><span>Résultat de flux</span><b>{money(revenue+directPaid-expensesTotal-purchaseTotal)}</b></div></div></section></>}
 
-      {tab==='cashier'&&<SupplierPos products={products} customers={erp.customers||[]} cashSessions={erp.cashSessions||[]} methods={master.paymentMethods||[]} session={session} onChanged={()=>setRefresh(x=>x+1)}/>}
+      {tab==='cashier'&&<SupplierPos products={products} customers={erp.customers||[]} cashSessions={erp.cashSessions||[]} methods={master.paymentMethods||[]} warehouses={advanced.warehouses||[]} warehouseStock={advanced.warehouseStock||[]} session={session} onChanged={()=>setRefresh(x=>x+1)}/>} 
       {tab==='masters'&&<SupplierMasterData data={master} onChanged={()=>setRefresh(x=>x+1)}/>} 
 
       
@@ -139,7 +139,7 @@ export function SupplierDashboard({session}:{session:any}){
 {tab==='delivery'&&<SupplierDeliveryCenter orders={orders} drivers={drivers} onChanged={()=>setRefresh(x=>x+1)}/>}
       {tab==='team'&&<SupplierTeam session={session}/>} 
     </main>
-    <SupplierActionModal action={actionModal} products={products} vendors={advanced.vendors||[]} methods={master.paymentMethods||[]} onClose={()=>setActionModal(null)} onDone={()=>setRefresh(x=>x+1)}/>
+    <SupplierActionModal action={actionModal} products={products} vendors={advanced.vendors||[]} methods={master.paymentMethods||[]} warehouses={advanced.warehouses||[]} onClose={()=>setActionModal(null)} onDone={()=>setRefresh(x=>x+1)}/>
   </div>
 }
 
