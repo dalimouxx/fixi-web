@@ -2,6 +2,7 @@ import {prisma} from '@/lib/prisma';
 import {requireSupplierSession,SupplierRole} from '@/lib/supplier-auth';
 import {bad,ok} from '@/lib/http';
 import {plain} from '@/lib/serializers';
+import {notifySupplier,notifySupplierLowStock} from '@/lib/supplier-notifications';
 
 const allow=(role:SupplierRole,roles:SupplierRole[])=>roles.includes(role);
 const money=(v:any)=>Math.round(Number(v||0)*1000)/1000;
@@ -95,6 +96,8 @@ export async function POST(req:Request){
     return sale;
    });
    await audit(s.companyId,s.id,'CREATE','SALE',sale.id,{reference:ref,total,paid,itemCount:normalized.length});
+   await Promise.allSettled(normalized.map((x:any)=>notifySupplierLowStock(s.companyId,x.p.id)));
+   if(paid<total)await notifySupplier(s.companyId,'Vente avec reste à payer',`${ref} · reste ${money(total-paid).toFixed(3)} DT`,{href:'/supplier?tab=dues',kind:'PAYMENT',priority:'NORMAL',roles:['OWNER','ADMIN','MANAGER','ACCOUNTANT'],metadata:{saleId:sale.id,reference:ref,total,paid,due:money(total-paid)}});
    return ok(plain(sale),{status:201});
   }
 
@@ -119,6 +122,7 @@ export async function POST(req:Request){
     return pur;
    });
    await audit(s.companyId,s.id,'CREATE','PURCHASE',purchase.id,{reference:ref,total,paid,itemCount:normalized.length});
+   await Promise.allSettled(normalized.map((x:any)=>notifySupplierLowStock(s.companyId,x.p.id)));
    return ok(plain(purchase),{status:201});
   }
 
@@ -144,7 +148,10 @@ export async function POST(req:Request){
    if(b.saleId){
     const sale=await prisma.supplierErpSale.findFirst({where:{id:String(b.saleId),companyId:s.companyId}});if(!sale)return bad('Vente introuvable',404);
     const remaining=Math.max(0,Number(sale.total)-Number(sale.paid));if(amount>remaining+0.001)return bad('Paiement supérieur au reste à payer',409);
-    const result=await prisma.$transaction(async tx=>{const p=await tx.supplierErpPayment.create({data:{companyId:s.companyId,customerId:sale.customerId,saleId:sale.id,cashSessionId:cs?.id||null,kind:'IN',method,amount,reference:b.reference||sale.reference,note:b.note||null,accountId:s.id}});const paid=money(Number(sale.paid)+amount);await tx.supplierErpSale.update({where:{id:sale.id},data:{paid,status:paid>=Number(sale.total)?'PAID':'PARTIALLY_PAID'}});return p});return ok(plain(result),{status:201});
+    const result=await prisma.$transaction(async tx=>{const p=await tx.supplierErpPayment.create({data:{companyId:s.companyId,customerId:sale.customerId,saleId:sale.id,cashSessionId:cs?.id||null,kind:'IN',method,amount,reference:b.reference||sale.reference,note:b.note||null,accountId:s.id}});const paid=money(Number(sale.paid)+amount);await tx.supplierErpSale.update({where:{id:sale.id},data:{paid,status:paid>=Number(sale.total)?'PAID':'PARTIALLY_PAID'}});return p});
+    const newPaid=money(Number(sale.paid)+amount),remaining=Math.max(0,money(Number(sale.total)-newPaid));
+    await notifySupplier(s.companyId,remaining<=0?'Créance soldée':'Paiement client reçu',`${sale.reference} · ${amount.toFixed(3)} DT${remaining>0?' · reste '+remaining.toFixed(3)+' DT':''}`,{href:'/supplier?tab=dues',kind:'PAYMENT',soundKey:'SUCCESS',roles:['OWNER','ADMIN','MANAGER','ACCOUNTANT'],metadata:{saleId:sale.id,reference:sale.reference,amount,remaining}});
+    return ok(plain(result),{status:201});
    }
    return ok(plain(await prisma.supplierErpPayment.create({data:{companyId:s.companyId,customerId:b.customerId||null,cashSessionId:cs?.id||null,kind:String(b.kind||'IN'),method,amount,reference:b.reference||null,note:b.note||null,accountId:s.id}})),{status:201});
   }
@@ -166,7 +173,9 @@ export async function POST(req:Request){
    ]);
    const expected=money(Number(cs.openingAmount)+Number(incoming._sum.amount||0)-Number(outgoing._sum.amount||0)-Number(expenses._sum.amount||0));
    const x=await prisma.supplierErpCashSession.update({where:{id:cs.id},data:{status:'CLOSED',expectedCash:expected,closingAmount:closing,difference:money(closing-expected),closedAt:new Date(),note:b.note||null}});
-   await audit(s.companyId,s.id,'CLOSE','CASH_SESSION',x.id,{expected,closing,difference:closing-expected});return ok(plain(x));
+   await audit(s.companyId,s.id,'CLOSE','CASH_SESSION',x.id,{expected,closing,difference:closing-expected});
+   if(Math.abs(closing-expected)>=0.001)await notifySupplier(s.companyId,'Écart de caisse',`Session clôturée avec un écart de ${money(closing-expected).toFixed(3)} DT.`,{href:'/supplier?tab=finance',kind:'WARNING',priority:'HIGH',soundKey:'WARNING',roles:['OWNER','ADMIN','MANAGER','ACCOUNTANT'],metadata:{cashSessionId:x.id,expected,closing,difference:money(closing-expected)}});
+   return ok(plain(x));
   }
 
   if(action==='STOCK_ADJUST'){
@@ -178,7 +187,7 @@ export async function POST(req:Request){
     prisma.supplierProduct.update({where:{id:p.id},data:{stock:after}}),
     prisma.supplierErpStockMovement.create({data:{companyId:s.companyId,productId:p.id,type:String(b.type||'ADJUSTMENT'),quantity:delta,beforeQty:p.stock,afterQty:after,reference:b.reference||null,note:b.note||null,accountId:s.id}})
    ]);
-   await audit(s.companyId,s.id,'ADJUST','PRODUCT',p.id,{delta,before:p.stock,after,note:b.note||null});return ok(plain(product));
+   await audit(s.companyId,s.id,'ADJUST','PRODUCT',p.id,{delta,before:p.stock,after,note:b.note||null});await notifySupplierLowStock(s.companyId,p.id);return ok(plain(product));
   }
   return bad('Action ERP inconnue');
  }catch(e:any){return bad(e.message,e.status||500)}
