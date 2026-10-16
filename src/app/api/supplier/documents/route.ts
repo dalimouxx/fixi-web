@@ -2,12 +2,10 @@ import {prisma} from '@/lib/prisma';
 import {requireSupplierSession} from '@/lib/supplier-auth';
 import {bad,ok} from '@/lib/http';
 import {plain} from '@/lib/serializers';
+import {nextSupplierReference} from '@/lib/supplier-sequences';
 
 const TYPES=['QUOTE','PROFORMA','DELIVERY_NOTE','PURCHASE_ORDER','RECEIPT'] as const;
-const prefixes:Record<string,string>={QUOTE:'DEV',PROFORMA:'PRO',DELIVERY_NOTE:'BL',PURCHASE_ORDER:'BC',RECEIPT:'REC'};
 const money=(v:any)=>Math.round(Number(v||0)*1000)/1000;
-
-function ref(type:string){return (prefixes[type]||'DOC')+'-'+new Date().toISOString().slice(0,10).replaceAll('-','')+'-'+Date.now().toString(36).toUpperCase()}
 
 export async function GET(req:Request){
  try{
@@ -37,10 +35,11 @@ export async function POST(req:Request){
   }
   subtotal=money(subtotal);tax=money(tax);const globalDiscount=Math.max(0,money(b.globalDiscount||0)),total=Math.max(0,money(subtotal-globalDiscount+tax));
   let customer:any=null;if(b.customerId){customer=await prisma.supplierErpCustomer.findFirst({where:{id:String(b.customerId),companyId:s.companyId}});if(!customer)return bad('Client invalide',404)}
-  const company=await prisma.supplierCompany.findUnique({where:{id:s.companyId},select:{currency:true}});
+  const company=await prisma.supplierCompany.findUnique({where:{id:s.companyId},select:{currency:true,invoicePrefix:true,receiptPrefix:true,purchasePrefix:true}});
+  const autoReference=String(b.reference||'').trim()||await nextSupplierReference(s.companyId,type,type==='RECEIPT'?company?.receiptPrefix||undefined:type==='PURCHASE_ORDER'?company?.purchasePrefix||undefined:undefined);
   const doc=await prisma.$transaction(async tx=>{
    const d=await tx.supplierCommercialDocument.create({data:{
-    companyId:s.companyId,type,reference:String(b.reference||ref(type)),status:String(b.status||'ISSUED'),customerId:customer?.id||null,sourceSaleId:b.sourceSaleId||null,sourceOrderId:b.sourceOrderId||null,warehouseId:b.warehouseId||null,
+    companyId:s.companyId,type,reference:autoReference,status:String(b.status||'ISSUED'),customerId:customer?.id||null,sourceSaleId:b.sourceSaleId||null,sourceOrderId:b.sourceOrderId||null,warehouseId:b.warehouseId||null,
     partyName:String(b.partyName||customer?.name||'').trim()||null,partyPhone:String(b.partyPhone||customer?.phone||'').trim()||null,partyAddress:String(b.partyAddress||customer?.address||customer?.region||'').trim()||null,partyTaxId:String(b.partyTaxId||customer?.taxId||'').trim()||null,currency:company?.currency||'DT',
     subtotal,discount:globalDiscount,tax,total,validUntil:b.validUntil?new Date(b.validUntil):null,note:b.note||null,createdById:s.id
    }});
