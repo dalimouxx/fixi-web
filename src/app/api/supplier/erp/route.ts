@@ -61,7 +61,7 @@ export async function POST(req:Request){
   if(action==='SALE'){
    if(!allow(s.role,['OWNER','ADMIN','MANAGER','SALES','CASHIER']))return bad('FORBIDDEN',403);
    const items=Array.isArray(b.items)?b.items:[];if(!items.length)return bad('Aucun article');
-   const ids=[...new Set(items.map((i:any)=>String(i.productId||'')).filter(Boolean))];
+   const ids:string[]=[...new Set<string>(items.map((i:any)=>String(i.productId||'')).filter((x:string)=>Boolean(x)))];
    const products=await prisma.supplierProduct.findMany({where:{companyId:s.companyId,id:{in:ids},active:true}});
    let subtotal=0;const normalized:any[]=[];
    for(const i of items){
@@ -101,7 +101,7 @@ export async function POST(req:Request){
   if(action==='PURCHASE'){
    if(!allow(s.role,['OWNER','ADMIN','MANAGER','STOCK']))return bad('FORBIDDEN',403);
    const items=Array.isArray(b.items)&&b.items.length?b.items:[{productId:b.productId,quantity:b.quantity,unitCost:b.unitCost}];
-   const ids=[...new Set(items.map((i:any)=>String(i.productId||'')).filter(Boolean))];if(!ids.length)return bad('Aucun article');
+   const ids:string[]=[...new Set<string>(items.map((i:any)=>String(i.productId||'')).filter((x:string)=>Boolean(x)))];if(!ids.length)return bad('Aucun article');
    const products=await prisma.supplierProduct.findMany({where:{companyId:s.companyId,id:{in:ids}}});
    let total=0;const normalized:any[]=[];
    for(const i of items){const p=products.find(x=>x.id===String(i.productId));const q=Math.max(1,Math.trunc(Number(i.quantity||1))),unitCost=money(i.unitCost);if(!p||!(unitCost>=0))return bad('Achat invalide');total+=unitCost*q;normalized.push({p,q,unitCost})}
