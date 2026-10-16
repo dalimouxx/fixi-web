@@ -198,7 +198,7 @@ export async function POST(req:Request){
    if(!allow(s.role,['OWNER','ADMIN','MANAGER','STOCK']))return bad('FORBIDDEN',403);
    const productId=String(b.productId||''),delta=Math.trunc(Number(b.delta||0));if(!productId||!delta)return bad('Mouvement invalide');
    const p=await prisma.supplierProduct.findFirst({where:{id:productId,companyId:s.companyId}});if(!p)return bad('Produit introuvable',404);
-   const company=await prisma.supplierCompany.findUnique({where:{id:s.companyId},select:{allowNegativeStock:true}});const after=p.stock+delta;if(after<0&&!company?.allowNegativeStock)return bad('Stock insuffisant',409);
+   const [company,allocated]=await Promise.all([prisma.supplierCompany.findUnique({where:{id:s.companyId},select:{allowNegativeStock:true}}),prisma.supplierWarehouseStock.aggregate({where:{companyId:s.companyId,productId:p.id},_sum:{quantity:true}})]);const after=p.stock+delta;if(after<0&&!company?.allowNegativeStock)return bad('Stock insuffisant',409);if(delta<0&&after<Number(allocated._sum.quantity||0))return bad('Ce retrait ferait passer le stock global sous le stock déjà réparti en dépôts. Ajustez le dépôt concerné.',409);
    const [product]=await prisma.$transaction([
     prisma.supplierProduct.update({where:{id:p.id},data:{stock:after}}),
     prisma.supplierErpStockMovement.create({data:{companyId:s.companyId,productId:p.id,type:String(b.type||'ADJUSTMENT'),quantity:delta,beforeQty:p.stock,afterQty:after,reference:b.reference||null,note:b.note||null,accountId:s.id}})
