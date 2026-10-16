@@ -13,6 +13,7 @@ import {SupplierMasterData} from './supplier-master-data';
 import {SupplierDeliveryCenter} from './supplier-delivery-center';
 import {SupplierActionModal} from './supplier-action-modal';
 import {SupplierTeam} from './supplier-team';
+import {SupplierReports} from './supplier-reports';
 
 const nextStatus:Record<string,string|undefined>={PENDING:'CONFIRMED',CONFIRMED:'PREPARING',PREPARING:'READY_FOR_DELIVERY',READY_FOR_DELIVERY:undefined,OUT_FOR_DELIVERY:undefined};
 const labels:Record<string,string>={PENDING:'Nouvelle',CONFIRMED:'Confirmée',PREPARING:'Préparation',READY_FOR_DELIVERY:'Prête',OUT_FOR_DELIVERY:'En livraison',DELIVERED:'Livrée',CANCELLED:'Annulée'};
@@ -130,7 +131,7 @@ export function SupplierDashboard({session}:{session:any}){
 
       {tab==='dues'&&<section className="supplier-panel"><div className="supplier-kpis"><K icon={Banknote} label="Créances clients" value={money(dueSales)}/><K icon={ArrowDownToLine} label="Dettes achats" value={money(duePurchases)}/><K icon={Users} label="Clients directs" value={erp.customers?.length||0}/><K icon={Users} label="Fournisseurs amont" value={advanced.vendors?.length||0}/></div><div className="supplier-finance-note"><AlertTriangle/><p>Les montants restants sont calculés depuis les ventes et achats enregistrés. Les règlements partiels peuvent être ajoutés depuis la caisse/finance.</p></div></section>}
 
-      {tab==='reports'&&<section className="supplier-panel"><div className="supplier-section-head"><div><b>Rapports de gestion</b><span>Vue synthétique inspirée du système exemple, adaptée au fournisseur de pièces.</span></div></div><div className="supplier-report-grid"><article><TrendingUp/><span>Ventes totales</span><b>{money(revenue+directSales)}</b></article><article><Warehouse/><span>Valeur stock</span><b>{money(stockValue)}</b></article><article><AlertTriangle/><span>Produits stock faible</span><b>{lowStock}</b></article><article><Banknote/><span>Créances clients</span><b>{money(dueSales)}</b></article><article><ArrowDownToLine/><span>Achats</span><b>{money(purchaseTotal)}</b></article><article><ReceiptText/><span>Dépenses</span><b>{money(expensesTotal)}</b></article></div><div className="supplier-report-links"><button className="btn btn-soft">Profit & Loss</button><button className="btn btn-soft">Valorisation stock</button><button className="btn btn-soft">Produits sans vente</button><button className="btn btn-soft">Top produits</button><button className="btn btn-soft">Top clients</button><button className="btn btn-soft">Journal mouvements</button></div></section>}
+      {tab==='reports'&&<SupplierReports/>}
 
 {tab==='delivery'&&<SupplierDeliveryCenter orders={orders} drivers={drivers} onChanged={()=>setRefresh(x=>x+1)}/>}
       {tab==='team'&&<SupplierTeam session={session}/>} 
