@@ -1,8 +1,9 @@
 'use client';
 import {useMemo,useState} from 'react';
-import {Search,ShoppingCart,Plus,Minus,Trash2,Banknote,WalletCards,UserRound,ReceiptText,LockKeyhole,UnlockKeyhole,ScanLine,Percent,CheckCircle2,X,Printer} from 'lucide-react';
+import {Search,ShoppingCart,Plus,Minus,Trash2,Banknote,WalletCards,UserRound,ReceiptText,LockKeyhole,UnlockKeyhole,ScanLine,Percent,CheckCircle2,X,Printer,Camera} from 'lucide-react';
 import {api} from './ui';
 import {money} from '@/lib/format';
+import {BarcodeCamera} from './barcode-camera';
 
 type Props={products:any[];customers:any[];cashSessions:any[];methods:any[];warehouses:any[];warehouseStock:any[];session:any;onChanged:()=>void};
 type CartLine={product:any;quantity:number;unitPrice:number};
@@ -11,7 +12,7 @@ type PaymentLine={method:string;amount:number};
 export function SupplierPos({products,customers,cashSessions,methods,warehouses,warehouseStock,session,onChanged}:Props){
  const[q,setQ]=useState('');const[category,setCategory]=useState('ALL');const[pricing,setPricing]=useState<'retail'|'wholesale'>('retail');const[warehouseId,setWarehouseId]=useState('');
  const[cart,setCart]=useState<CartLine[]>([]);const[customerId,setCustomerId]=useState('');const[discount,setDiscount]=useState(0);const[payments,setPayments]=useState<PaymentLine[]>([{method:'CASH',amount:0}]);
- const[busy,setBusy]=useState(false);const[msg,setMsg]=useState('');const[err,setErr]=useState('');const[cashModal,setCashModal]=useState<'open'|'close'|null>(null);const[cashAmount,setCashAmount]=useState('0');const[lastSale,setLastSale]=useState<any>(null);
+ const[busy,setBusy]=useState(false);const[msg,setMsg]=useState('');const[err,setErr]=useState('');const[scanner,setScanner]=useState(false);const[cashModal,setCashModal]=useState<'open'|'close'|null>(null);const[cashAmount,setCashAmount]=useState('0');const[lastSale,setLastSale]=useState<any>(null);
  const openSession=cashSessions.find(x=>x.status==='OPEN'&&(!x.accountId||x.accountId===session.id));const effectiveWarehouseId=openSession?.warehouseId??warehouseId;
  const categories=useMemo(()=>['ALL',...Array.from(new Set(products.filter(p=>p.active!==false).map(p=>p.category||'Sans catégorie'))).sort()],[products]);
  const filtered=useMemo(()=>products.filter(p=>p.active!==false&&(!q||[p.sku,p.barcode,p.name,p.brand,p.category].join(' ').toLowerCase().includes(q.toLowerCase()))&&(category==='ALL'||(p.category||'Sans catégorie')===category)),[products,q,category]);
@@ -19,6 +20,7 @@ export function SupplierPos({products,customers,cashSessions,methods,warehouses,
  const tax=cart.reduce((a,l)=>a+(l.unitPrice*l.quantity*Math.max(0,Number(l.product.taxRate||0))/100),0);
  const total=Math.max(0,subtotal-Math.max(0,discount)+tax);const paid=payments.reduce((a,p)=>a+Math.max(0,Number(p.amount||0)),0);const due=Math.max(0,total-paid);
  function productPrice(p:any){return pricing==='wholesale'?Number(p.wholesalePrice??p.price):Number(p.retailPrice??p.price)}
+ function detect(code:string){const key=code.trim().toLowerCase();const p=products.find(x=>String(x.barcode||'').trim().toLowerCase()===key||String(x.sku||'').trim().toLowerCase()===key);setScanner(false);if(!p){setQ(code);setErr('Aucun produit trouvé pour le code '+code);return}setQ('');add(p)}
  function available(p:any){if(effectiveWarehouseId){const r=warehouseStock.find(x=>x.warehouseId===effectiveWarehouseId&&x.productId===p.id);return Math.max(0,Number(r?.quantity||0)-Number(r?.reserved||0))}return Math.max(0,Number(p.stock||0)-Number(p.reservedStock||0))}
  function add(p:any){const av=available(p);if(av<=0){setErr('Stock indisponible pour '+p.name+(effectiveWarehouseId?' dans ce dépôt':''));return}setErr('');setCart(cur=>{const x=cur.find(l=>l.product.id===p.id);if(x){if(x.quantity>=av)return cur;return cur.map(l=>l.product.id===p.id?{...l,quantity:l.quantity+1}:l)}return [...cur,{product:p,quantity:1,unitPrice:productPrice(p)}]})}
  function qty(id:string,delta:number){setCart(cur=>cur.map(l=>l.product.id===id?{...l,quantity:Math.max(1,Math.min(available(l.product),l.quantity+delta))}:l))}
@@ -49,7 +51,7 @@ export function SupplierPos({products,customers,cashSessions,methods,warehouses,
   {err&&<div className="supplier-pos-alert error"><X/>{err}</div>}{msg&&<div className="supplier-pos-alert success"><CheckCircle2/>{msg}{lastSale&&<button onClick={()=>window.open('/supplier/documents/'+lastSale.id,'_blank')}><Printer/> Facture</button>}</div>}
   <div className="supplier-pos-layout">
    <section className="supplier-pos-products">
-    <div className="supplier-pos-search"><ScanLine/><input autoFocus value={q} onChange={e=>setQ(e.target.value)} placeholder="Scanner ou rechercher SKU, code-barres, produit…"/><Search/></div>
+    <div className="supplier-pos-search"><ScanLine/><input autoFocus value={q} onChange={e=>setQ(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();const key=q.trim().toLowerCase();const exact=products.find(p=>String(p.barcode||'').trim().toLowerCase()===key||String(p.sku||'').trim().toLowerCase()===key);if(exact){add(exact);setQ('')}}}} placeholder="Scanner ou rechercher SKU, code-barres, produit…"/><button type="button" className="supplier-camera-btn" onClick={()=>setScanner(true)} title="Scanner avec la caméra"><Camera/></button><Search/></div>
     <div className="supplier-pos-mode-row"><div className="supplier-pos-pricing"><button className={pricing==='retail'?'active':''} onClick={()=>updatePricing('retail')}>Détail</button><button className={pricing==='wholesale'?'active':''} onClick={()=>updatePricing('wholesale')}>Grossiste</button></div><label className="supplier-pos-warehouse"><span>Dépôt</span><select value={effectiveWarehouseId||''} disabled={!!openSession} onChange={e=>{setWarehouseId(e.target.value);setCart([]);setErr('')}}><option value="">Stock global</option>{warehouses.filter(w=>w.active).map(w=><option key={w.id} value={w.id}>{w.code} · {w.name}</option>)}</select></label></div>
     <div className="supplier-pos-categories">{categories.map(c=><button key={c} className={category===c?'active':''} onClick={()=>setCategory(c)}>{c==='ALL'?'Tous':c}</button>)}</div>
     <div className="supplier-pos-grid">{filtered.map(p=>{const av=available(p);return <button key={p.id} disabled={av<=0} onClick={()=>add(p)} className="supplier-pos-product"><div><b>{p.name}</b><span>{p.brand||'—'} · {p.sku}</span></div><strong>{money(productPrice(p))}</strong><small className={av<=Number(p.minStock||0)?'low':''}>{av} dispo.</small></button>})}{!filtered.length&&<div className="supplier-pos-empty">Aucun produit correspondant.</div>}</div>
@@ -64,6 +66,7 @@ export function SupplierPos({products,customers,cashSessions,methods,warehouses,
     <button disabled={busy||!cart.length} onClick={checkout} className="btn btn-primary btn-block supplier-pos-checkout"><ReceiptText/>{busy?'Validation…':'Valider la vente'} <b>{money(total)}</b></button>
    </aside>
   </div>
+  {scanner&&<BarcodeCamera onDetected={detect} onClose={()=>setScanner(false)}/>}
   {cashModal&&<div className="supplier-modal-backdrop"><div className="supplier-modal"><button className="supplier-modal-x" onClick={()=>setCashModal(null)}><X/></button><span className="smart-kicker"><WalletCards size={13}/> SESSION CAISSE</span><h2>{cashModal==='open'?'Ouverture de caisse':'Clôture de caisse'}</h2><p>{cashModal==='open'?'Comptez le fond de caisse présent avant la première vente. Le dépôt sélectionné restera associé à cette session.':'Comptez uniquement les espèces réellement présentes dans le tiroir.'}</p><label className="label">{cashModal==='open'?'Fond initial':'Espèces comptées'}</label><div className="supplier-money-input"><input autoFocus type="number" min={0} step="0.001" value={cashAmount} onChange={e=>setCashAmount(e.target.value)}/><b>DT</b></div><button disabled={busy} className="btn btn-primary btn-block" onClick={cashAction}>{cashModal==='open'?'Ouvrir la caisse':'Clôturer et contrôler'}</button></div></div>}
  </div>
 }
