@@ -63,16 +63,23 @@ export async function POST(req:Request){
    if(!allow(s.role,['OWNER','ADMIN','MANAGER','SALES','CASHIER']))return bad('FORBIDDEN',403);
    const items=Array.isArray(b.items)?b.items:[];if(!items.length)return bad('Aucun article');
    const ids:string[]=[...new Set<string>(items.map((i:any)=>String(i.productId||'')).filter((x:string)=>Boolean(x)))];
-   const products=await prisma.supplierProduct.findMany({where:{companyId:s.companyId,id:{in:ids},active:true}});
+   const warehouseId=String(b.warehouseId||'')||null;
+   if(warehouseId){const w=await prisma.supplierWarehouse.findFirst({where:{id:warehouseId,companyId:s.companyId,active:true}});if(!w)return bad('Dépôt invalide',404)}
+   const [products,warehouseRows]=await Promise.all([
+    prisma.supplierProduct.findMany({where:{companyId:s.companyId,id:{in:ids},active:true}}),
+    warehouseId?prisma.supplierWarehouseStock.findMany({where:{companyId:s.companyId,warehouseId,productId:{in:ids}}}):Promise.resolve([])
+   ]);
    let subtotal=0;const normalized:any[]=[];
    for(const i of items){
     const p=products.find(x=>x.id===String(i.productId));const q=Math.max(1,Math.trunc(Number(i.quantity||1)));
     if(!p)return bad('Produit introuvable',404);
-    if((p.stock-p.reservedStock)<q)return bad('Stock disponible insuffisant pour '+p.name,409);
+    const warehouseRow=warehouseId?warehouseRows.find(x=>x.productId===p.id):null;
+    const available=warehouseId?Number(warehouseRow?.quantity||0)-Number(warehouseRow?.reserved||0):p.stock-p.reservedStock;
+    if(available<q)return bad('Stock disponible insuffisant pour '+p.name+(warehouseId?' dans ce dépôt':''),409);
     const defaultPrice=Number(p.retailPrice??p.price);const price=money(i.unitPrice??defaultPrice);
     const minimum=p.minimumPrice===null?null:Number(p.minimumPrice);
     if(minimum!==null&&price<minimum&&!allow(s.role,['OWNER','ADMIN','MANAGER']))return bad('Prix inférieur au minimum autorisé pour '+p.name,409);
-    subtotal+=price*q;normalized.push({p,q,price});
+    subtotal+=price*q;normalized.push({p,q,price,warehouseRow});
    }
    const discount=Math.max(0,money(b.discount||0)),tax=Math.max(0,money(b.tax||0)),total=Math.max(0,money(subtotal-discount+tax));
    const rawPayments=Array.isArray(b.payments)&&b.payments.length?b.payments:(Number(b.paid||0)>0?[{method:String(b.method||'CASH'),amount:Number(b.paid)}]:[]);
@@ -85,11 +92,12 @@ export async function POST(req:Request){
    for(const p of payments)if(await cashLike(s.companyId,p.method)){cashSession=await openCash(s.companyId,s.id);if(!cashSession)return bad('Ouvrez votre caisse avant un encaissement espèces',409);break}
    const ref=String(b.reference||('V-'+Date.now()));
    const sale=await prisma.$transaction(async tx=>{
-    const sale=await tx.supplierErpSale.create({data:{companyId:s.companyId,customerId:b.customerId||null,cashSessionId:cashSession?.id||null,reference:ref,status:paid>=total?'PAID':paid>0?'PARTIALLY_PAID':'CREDIT',subtotal:money(subtotal),discount,tax,total,paid,dueAt:b.dueAt?new Date(b.dueAt):null,note:b.note||null,createdById:s.id}});
+    const sale=await tx.supplierErpSale.create({data:{companyId:s.companyId,customerId:b.customerId||null,warehouseId,cashSessionId:cashSession?.id||null,reference:ref,status:paid>=total?'PAID':paid>0?'PARTIALLY_PAID':'CREDIT',subtotal:money(subtotal),discount,tax,total,paid,dueAt:b.dueAt?new Date(b.dueAt):null,note:b.note||null,createdById:s.id}});
     for(const x of normalized){
      await tx.supplierErpSaleItem.create({data:{saleId:sale.id,productId:x.p.id,sku:x.p.sku,name:x.p.name,quantity:x.q,unitCost:Number(x.p.averageCost||x.p.purchasePrice||0),unitPrice:x.price}});
      const before=x.p.stock,after=before-x.q;
      await tx.supplierProduct.update({where:{id:x.p.id},data:{stock:after}});
+     if(warehouseId&&x.warehouseRow)await tx.supplierWarehouseStock.update({where:{id:x.warehouseRow.id},data:{quantity:{decrement:x.q}}});
      await tx.supplierErpStockMovement.create({data:{companyId:s.companyId,productId:x.p.id,type:'SALE',quantity:-x.q,beforeQty:before,afterQty:after,unitCost:x.p.averageCost||x.p.purchasePrice,reference:ref,accountId:s.id}});
     }
     for(const p of payments)await tx.supplierErpPayment.create({data:{companyId:s.companyId,customerId:b.customerId||null,saleId:sale.id,cashSessionId:(await cashLike(s.companyId,p.method))?cashSession?.id:null,kind:'IN',method:p.method,amount:p.amount,reference:p.reference||ref,accountId:s.id}});
@@ -105,17 +113,20 @@ export async function POST(req:Request){
    if(!allow(s.role,['OWNER','ADMIN','MANAGER','STOCK']))return bad('FORBIDDEN',403);
    const items=Array.isArray(b.items)&&b.items.length?b.items:[{productId:b.productId,quantity:b.quantity,unitCost:b.unitCost}];
    const ids:string[]=[...new Set<string>(items.map((i:any)=>String(i.productId||'')).filter((x:string)=>Boolean(x)))];if(!ids.length)return bad('Aucun article');
+   const warehouseId=String(b.warehouseId||'')||null;
+   if(warehouseId){const w=await prisma.supplierWarehouse.findFirst({where:{id:warehouseId,companyId:s.companyId,active:true}});if(!w)return bad('Dépôt invalide',404)}
    const products=await prisma.supplierProduct.findMany({where:{companyId:s.companyId,id:{in:ids}}});
    let total=0;const normalized:any[]=[];
    for(const i of items){const p=products.find(x=>x.id===String(i.productId));const q=Math.max(1,Math.trunc(Number(i.quantity||1))),unitCost=money(i.unitCost);if(!p||!(unitCost>=0))return bad('Achat invalide');total+=unitCost*q;normalized.push({p,q,unitCost})}
    total=money(total);const paid=Math.max(0,Math.min(total,money(b.paid||0)));const ref=String(b.reference||('ACH-'+Date.now()));let cashSession:any=null;
    if(paid>0&&await cashLike(s.companyId,String(b.method||'CASH').toUpperCase()))cashSession=await openCash(s.companyId,s.id);
    const purchase=await prisma.$transaction(async tx=>{
-    const pur=await tx.supplierErpPurchase.create({data:{companyId:s.companyId,vendorName:String(b.vendorName||'Fournisseur'),reference:ref,status:'RECEIVED',total,paid,dueAt:b.dueAt?new Date(b.dueAt):null,note:b.note||null,receivedAt:new Date()}});
+    const pur=await tx.supplierErpPurchase.create({data:{companyId:s.companyId,warehouseId,vendorName:String(b.vendorName||'Fournisseur'),reference:ref,status:'RECEIVED',total,paid,dueAt:b.dueAt?new Date(b.dueAt):null,note:b.note||null,receivedAt:new Date()}});
     for(const x of normalized){
      await tx.supplierErpPurchaseItem.create({data:{purchaseId:pur.id,productId:x.p.id,sku:x.p.sku,name:x.p.name,quantity:x.q,unitCost:x.unitCost}});
      const before=x.p.stock,after=before+x.q;const oldValue=Number(x.p.averageCost||x.p.purchasePrice||0)*Math.max(0,before);const newAverage=after>0?money((oldValue+x.unitCost*x.q)/after):x.unitCost;
      await tx.supplierProduct.update({where:{id:x.p.id},data:{stock:after,purchasePrice:x.unitCost,averageCost:newAverage}});
+     if(warehouseId)await tx.supplierWarehouseStock.upsert({where:{warehouseId_productId:{warehouseId,productId:x.p.id}},update:{quantity:{increment:x.q}},create:{companyId:s.companyId,warehouseId,productId:x.p.id,quantity:x.q}});
      await tx.supplierErpStockMovement.create({data:{companyId:s.companyId,productId:x.p.id,type:'PURCHASE',quantity:x.q,beforeQty:before,afterQty:after,unitCost:x.unitCost,reference:ref,accountId:s.id}});
     }
     if(paid>0)await tx.supplierErpPayment.create({data:{companyId:s.companyId,cashSessionId:cashSession?.id||null,kind:'OUT',method:String(b.method||'CASH').toUpperCase(),amount:paid,reference:ref,note:'Paiement achat',accountId:s.id}});
@@ -159,7 +170,7 @@ export async function POST(req:Request){
   if(action==='CASH_OPEN'){
    if(!allow(s.role,['OWNER','ADMIN','MANAGER','CASHIER','SALES']))return bad('FORBIDDEN',403);
    const exists=await openCash(s.companyId,s.id);if(exists)return bad('Votre caisse est déjà ouverte',409);
-   const x=await prisma.supplierErpCashSession.create({data:{companyId:s.companyId,accountId:s.id,openingAmount:money(b.openingAmount||0)}});await audit(s.companyId,s.id,'OPEN','CASH_SESSION',x.id);return ok(plain(x),{status:201});
+   const warehouseId=String(b.warehouseId||'')||null;if(warehouseId){const w=await prisma.supplierWarehouse.findFirst({where:{id:warehouseId,companyId:s.companyId,active:true}});if(!w)return bad('Dépôt invalide',404)}const x=await prisma.supplierErpCashSession.create({data:{companyId:s.companyId,accountId:s.id,warehouseId,openingAmount:money(b.openingAmount||0)}});await audit(s.companyId,s.id,'OPEN','CASH_SESSION',x.id);return ok(plain(x),{status:201});
   }
 
   if(action==='CASH_CLOSE'){
