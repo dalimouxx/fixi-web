@@ -1923,6 +1923,7 @@ model SupplierErpSale {
   id          String   @id @default(cuid())
   companyId   String
   customerId  String?
+  warehouseId String?
   sourceOrderId String?
   cashSessionId String?
   reference   String
@@ -2023,7 +2024,8 @@ model SupplierErpPurchaseItem {
 model SupplierErpCashSession {
   id            String   @id @default(cuid())
   companyId     String
-  accountId     String?
+  accountId     String
+  warehouseId   String??
   status        String   @default("OPEN")
   openingAmount Decimal  @default(0) @db.Decimal(12,3)
   expectedCash  Decimal  @default(0) @db.Decimal(12,3)
