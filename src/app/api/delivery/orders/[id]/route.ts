@@ -1,2 +1,43 @@
-import {prisma} from '@/lib/prisma';import {requireDeliverySession} from '@/lib/delivery-auth';import {bad,ok} from '@/lib/http';import {plain} from '@/lib/serializers';import {SupplierDeliveryStatus,SupplierOrderStatus} from '@prisma/client';
-export async function PATCH(req:Request,{params}:{params:Promise<{id:string}>}){try{const s=await requireDeliverySession();const{id}=await params;const b=await req.json();const o=await prisma.supplierOrder.findFirst({where:{id,companyId:s.companyId,delivery:{is:{driverAccountId:s.id}}},include:{delivery:true}});if(!o)return bad('Livraison introuvable',404);const status=String(b.status||o.status) as SupplierOrderStatus;const allowed:SupplierOrderStatus[]=[SupplierOrderStatus.READY_FOR_DELIVERY,SupplierOrderStatus.OUT_FOR_DELIVERY,SupplierOrderStatus.DELIVERED];if(!allowed.includes(status))return bad('Statut invalide');if(status===SupplierOrderStatus.OUT_FOR_DELIVERY&&o.status!==SupplierOrderStatus.READY_FOR_DELIVERY&&o.status!==SupplierOrderStatus.OUT_FOR_DELIVERY)return bad('Transition invalide',409);if(status===SupplierOrderStatus.DELIVERED&&o.status!==SupplierOrderStatus.OUT_FOR_DELIVERY)return bad('La livraison doit être en route',409);const order=await prisma.supplierOrder.update({where:{id},data:{status}});const ds=status===SupplierOrderStatus.DELIVERED?SupplierDeliveryStatus.DELIVERED:status===SupplierOrderStatus.OUT_FOR_DELIVERY?SupplierDeliveryStatus.OUT_FOR_DELIVERY:SupplierDeliveryStatus.ASSIGNED;await prisma.supplierDelivery.update({where:{orderId:id},data:{status:ds,pickedUpAt:status===SupplierOrderStatus.OUT_FOR_DELIVERY&&!o.delivery?.pickedUpAt?new Date():undefined,deliveredAt:status===SupplierOrderStatus.DELIVERED?new Date():undefined,trackingNote:b.trackingNote||undefined}});if(Number.isFinite(Number(b.latitude))&&Number.isFinite(Number(b.longitude))){await prisma.supplierDriverLocation.create({data:{companyId:s.companyId,orderId:id,accountId:s.id,latitude:Number(b.latitude),longitude:Number(b.longitude),accuracy:Number.isFinite(Number(b.accuracy))?Number(b.accuracy):null}})}return ok(plain(order))}catch(e:any){return bad(e.message,e.status||500)}}
+import {prisma} from '@/lib/prisma';
+import {requireDeliverySession} from '@/lib/delivery-auth';
+import {bad,ok} from '@/lib/http';
+import {plain} from '@/lib/serializers';
+import {SupplierDeliveryStatus,SupplierOrderStatus} from '@prisma/client';
+
+export async function PATCH(req:Request,{params}:{params:Promise<{id:string}>}){
+ try{
+  const s=await requireDeliverySession();const{id}=await params;const b=await req.json();
+  const o=await prisma.supplierOrder.findFirst({where:{id,companyId:s.companyId,delivery:{is:{driverAccountId:s.id}}},include:{delivery:true}});
+  if(!o)return bad('Livraison introuvable',404);
+  const status=String(b.status||o.status) as SupplierOrderStatus;
+  const allowed:SupplierOrderStatus[]=[SupplierOrderStatus.READY_FOR_DELIVERY,SupplierOrderStatus.OUT_FOR_DELIVERY,SupplierOrderStatus.DELIVERED];
+  if(!allowed.includes(status))return bad('Statut invalide');
+  if(status===SupplierOrderStatus.OUT_FOR_DELIVERY){
+   if(o.status!==SupplierOrderStatus.READY_FOR_DELIVERY&&o.status!==SupplierOrderStatus.OUT_FOR_DELIVERY)return bad('Transition invalide',409);
+   const shift=await prisma.supplierDeliveryShift.findFirst({where:{companyId:s.companyId,driverAccountId:s.id,status:'OPEN'}});
+   if(!shift)return bad('Ouvrez votre journée avant de démarrer une livraison',409);
+  }
+  if(status===SupplierOrderStatus.DELIVERED){
+   if(o.status!==SupplierOrderStatus.OUT_FOR_DELIVERY)return bad('La livraison doit être en route',409);
+   if(!String(b.recipientName||'').trim())return bad('Nom du réceptionnaire requis pour confirmer la livraison',409);
+  }
+  const ds=status===SupplierOrderStatus.DELIVERED?SupplierDeliveryStatus.DELIVERED:status===SupplierOrderStatus.OUT_FOR_DELIVERY?SupplierDeliveryStatus.OUT_FOR_DELIVERY:SupplierDeliveryStatus.ASSIGNED;
+  const result=await prisma.$transaction(async tx=>{
+   const order=await tx.supplierOrder.update({where:{id},data:{status}});
+   await tx.supplierDelivery.update({where:{orderId:id},data:{
+    status:ds,
+    pickedUpAt:status===SupplierOrderStatus.OUT_FOR_DELIVERY&&!o.delivery?.pickedUpAt?new Date():undefined,
+    deliveredAt:status===SupplierOrderStatus.DELIVERED?new Date():undefined,
+    trackingNote:b.trackingNote||undefined,
+    recipientName:status===SupplierOrderStatus.DELIVERED?String(b.recipientName).trim():undefined,
+    recipientPhone:status===SupplierOrderStatus.DELIVERED?(String(b.recipientPhone||'').trim()||null):undefined,
+    proofCode:status===SupplierOrderStatus.DELIVERED?(String(b.proofCode||'').trim()||null):undefined,
+    proofUrl:status===SupplierOrderStatus.DELIVERED?(b.proofUrl||undefined):undefined
+   }});
+   if(status===SupplierOrderStatus.DELIVERED)await tx.supplierDeliveryEvent.create({data:{companyId:s.companyId,orderId:id,accountId:s.id,type:'DELIVERY_PROOF',note:'Reçu par '+String(b.recipientName).trim()+(b.proofCode?' · Code '+String(b.proofCode):''),proofUrl:b.proofUrl||null}});
+   if(Number.isFinite(Number(b.latitude))&&Number.isFinite(Number(b.longitude)))await tx.supplierDriverLocation.create({data:{companyId:s.companyId,orderId:id,accountId:s.id,latitude:Number(b.latitude),longitude:Number(b.longitude),accuracy:Number.isFinite(Number(b.accuracy))?Number(b.accuracy):null}});
+   return order;
+  });
+  return ok(plain(result));
+ }catch(e:any){return bad(e.message,e.status||500)}
+}
