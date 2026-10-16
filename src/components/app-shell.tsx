@@ -6,7 +6,7 @@ import {
   LayoutDashboard,Wrench,PlusCircle,Users,CreditCard,Boxes,ReceiptText,UserCog,BarChart3,Settings,Search,LogOut,
   MonitorPlay,ShieldCheck,HeartHandshake,FileText,History,X,Headphones,PackageOpen,Link2,Sparkles,Gift,BrainCircuit,
   Workflow,Activity,CalendarDays,Megaphone,Eye,Building2,Smartphone,MessageCircle,ShoppingBag,PhoneCall,GraduationCap,
-  HeartHandshake as CareIcon,CloudOff,PanelLeftClose,PanelLeftOpen,Zap,Command,ChevronRight
+  HeartHandshake as CareIcon,CloudOff,PanelLeftClose,PanelLeftOpen,Zap,Command,ChevronRight,Wifi,WifiOff,ChevronDown
 } from 'lucide-react';
 import {NotificationBell} from './notification-bell';
 import {PwaRegister} from './pwa-register';
@@ -25,6 +25,7 @@ const links=[
 ['Compatibilité pièces','/app/compatibility',Link2,['ADMIN','RECEPTION','TECHNICIAN'],'ATELIER'],
 ['Catalogue appareils','/app/device-catalog',Smartphone,['ADMIN','RECEPTION'],'ATELIER'],
 ['Fixi Supplier','/app/suppliers',PackageOpen,['ADMIN','RECEPTION'],'ATELIER'],
+['Achats atelier','/app/purchases',ShoppingBag,['ADMIN','RECEPTION'],'ATELIER'],
 ['Marché pièces','/app/parts-market',ShoppingBag,['ADMIN','RECEPTION','TECHNICIAN','CASHIER'],'ATELIER'],
 ['Rendez-vous','/app/appointments',CalendarDays,['ADMIN','RECEPTION'],'ATELIER'],
 ['Garanties / SAV','/app/warranties',HeartHandshake,['ADMIN','RECEPTION','TECHNICIAN'],'ATELIER'],
@@ -61,10 +62,14 @@ const groupLabels:any={PRINCIPAL:'Essentiel',ATELIER:'Atelier & ventes',INTELLIG
 
 export function AppShell({children,user}:{children?:React.ReactNode;user:any}){
   const p=usePathname();const router=useRouter();
-  const[cmd,setCmd]=useState(false);const[q,setQ]=useState('');const[collapsed,setCollapsed]=useState(false);
+  const[cmd,setCmd]=useState(false);const[q,setQ]=useState('');const[collapsed,setCollapsed]=useState(false);const[online,setOnline]=useState(true);
   const visible=useMemo(()=>links.filter(x=>(x[3] as readonly string[]).includes(user.role)),[user.role]);
   const groups=useMemo(()=>['PRINCIPAL','ATELIER','INTELLIGENCE','SERVICES','GESTION'].map(g=>[g,visible.filter(x=>x[4]===g)] as const).filter(([,items])=>items.length),[visible]);
+  const current=useMemo(()=>visible.filter(x=>p===x[1]||p.startsWith(x[1]+'/')).sort((a,b)=>b[1].length-a[1].length)[0],[visible,p]);
+  const currentGroup=current?groupLabels[current[4]]:'Fixi';
+  const mobileLinks=visible.filter(x=>['/app/dashboard','/app/repairs/new','/app/repairs','/app/cashier','/app/stock'].includes(x[1])).slice(0,5);
   useEffect(()=>{const saved=localStorage.getItem('fixi-sidebar-collapsed');setCollapsed(saved==='1')},[]);
+  useEffect(()=>{const sync=()=>setOnline(navigator.onLine);sync();addEventListener('online',sync);addEventListener('offline',sync);return()=>{removeEventListener('online',sync);removeEventListener('offline',sync)}},[]);
   useEffect(()=>{localStorage.setItem('fixi-sidebar-collapsed',collapsed?'1':'0')},[collapsed]);
   useEffect(()=>{const f=(e:KeyboardEvent)=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();setCmd(v=>!v)}if(e.key==='Escape')setCmd(false)};addEventListener('keydown',f);return()=>removeEventListener('keydown',f)},[]);
   useEffect(()=>{const beat=()=>fetch('/api/heartbeat',{method:'POST'}).catch(()=>{});beat();const t=setInterval(beat,30000);const vis=()=>document.visibilityState==='visible'&&beat();document.addEventListener('visibilitychange',vis);return()=>{clearInterval(t);document.removeEventListener('visibilitychange',vis)}},[]);
@@ -95,8 +100,13 @@ export function AppShell({children,user}:{children?:React.ReactNode;user:any}){
         <div className="topbar-quick"><Link href="/app/repairs/new" className="topbar-new"><Zap size={15}/><span>Réception</span></Link></div>
         <div className="userbox"><OfflineSyncBadge/><NotificationBell/><PushToggle/><div className="avatar">{user.fullName.split(' ').map((x:string)=>x[0]).slice(0,2).join('').toUpperCase()}</div><div className="user-meta"><strong>{user.fullName}</strong><span>{user.roleLabel}</span></div><button className="btn btn-ghost btn-sm" onClick={logout} title="Déconnexion"><LogOut size={16}/></button></div>
       </header>
+      <div className="system-context-bar">
+        <div className="system-context-path"><span>{currentGroup}</span><ChevronRight size={13}/><b>{current?.[0]||'Espace Fixi'}</b></div>
+        <div className="system-context-meta"><span className={online?'system-online':'system-offline'}>{online?<Wifi size={13}/>:<WifiOff size={13}/>} {online?'Synchronisé':'Hors ligne'}</span><span>{user.shopName}</span><span>{user.roleLabel}</span></div>
+      </div>
       {children}
     </main>
+    <nav className="mobile-ops-nav">{mobileLinks.map(([label,href,Icon])=><Link key={href} href={href} className={p===href||p.startsWith(href+'/')?'active':''}><Icon/><span>{label.replace('Réception Express','Réception')}</span></Link>)}</nav>
     {cmd&&<div className="command-backdrop" onMouseDown={e=>e.target===e.currentTarget&&setCmd(false)}>
       <div className="command command-v2">
         <div className="command-input"><Search/><input autoFocus value={q} onChange={e=>setQ(e.target.value)} onKeyDown={e=>e.key==='Enter'&&search(q)} placeholder="Rechercher dans Fixi…"/><button onClick={()=>setCmd(false)}><X size={16}/></button></div>
