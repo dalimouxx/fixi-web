@@ -3,7 +3,9 @@ import {ensureMarketplaceAccounting} from '@/lib/supplier-accounting';
 import {requireDeliverySession} from '@/lib/delivery-auth';
 import {bad,ok} from '@/lib/http';
 import {plain} from '@/lib/serializers';
-import {SupplierDeliveryStatus,SupplierOrderStatus} from '@prisma/client';
+import {NotificationType,SupplierDeliveryStatus,SupplierOrderStatus} from '@prisma/client';
+import {notifySupplier} from '@/lib/supplier-notifications';
+import {notifyShop} from '@/lib/notifications';
 
 export async function PATCH(req:Request,{params}:{params:Promise<{id:string}>}){
  try{
@@ -40,6 +42,20 @@ export async function PATCH(req:Request,{params}:{params:Promise<{id:string}>}){
    return order;
   });
   if(status===SupplierOrderStatus.DELIVERED)await ensureMarketplaceAccounting(id,s.id);
+  if(status!==o.status){
+   if(status===SupplierOrderStatus.OUT_FOR_DELIVERY){
+    await Promise.allSettled([
+     notifySupplier(s.companyId,'Livraison démarrée',`La commande ${o.reference} est maintenant en route.`,{href:'/supplier?tab=delivery',kind:'DELIVERY',roles:['OWNER','ADMIN','MANAGER','DELIVERY_MANAGER'],metadata:{orderId:o.id,reference:o.reference}}),
+     notifyShop(o.shopId,'Votre commande est en route',`La commande ${o.reference} est partie en livraison. Vous pouvez suivre son avancement dans Fixi Supplier.`,'/app/suppliers',NotificationType.INFO)
+    ]);
+   }
+   if(status===SupplierOrderStatus.DELIVERED){
+    await Promise.allSettled([
+     notifySupplier(s.companyId,'Livraison confirmée',`Commande ${o.reference} remise à ${String(b.recipientName).trim()}.`,{href:'/supplier?tab=delivery',kind:'SUCCESS',priority:'NORMAL',soundKey:'SUCCESS',roles:['OWNER','ADMIN','MANAGER','DELIVERY_MANAGER','ACCOUNTANT'],metadata:{orderId:o.id,reference:o.reference,recipientName:String(b.recipientName).trim()}}),
+     notifyShop(o.shopId,'Commande livrée',`La commande ${o.reference} a été remise à ${String(b.recipientName).trim()}.`,'/app/suppliers',NotificationType.SUCCESS)
+    ]);
+   }
+  }
   return ok(plain(result));
  }catch(e:any){return bad(e.message,e.status||500)}
 }
