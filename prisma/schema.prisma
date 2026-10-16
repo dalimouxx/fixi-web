@@ -1475,7 +1475,14 @@ model SupplierCompany {
   email       String?
   address     String?
   region      String?
+  taxId       String?
   description String?
+  currency    String   @default("DT")
+  defaultTaxRate Decimal @default(0) @db.Decimal(5,2)
+  invoicePrefix String @default("FAC")
+  receiptPrefix String @default("TCK")
+  purchasePrefix String @default("ACH")
+  allowNegativeStock Boolean @default(false)
   active      Boolean  @default(true)
   verified    Boolean  @default(false)
   createdAt   DateTime @default(now())
@@ -1503,18 +1510,31 @@ model SupplierProduct {
   companyId   String
   company     SupplierCompany @relation(fields: [companyId], references: [id], onDelete: Cascade)
   sku         String
+  barcode     String?
   name        String
   brand       String?
   category    String?
+  brandId     String?
+  categoryId  String?
+  unitId      String?
   description String?
   imageUrl    String?
+  qualityGrade String?
   price       Decimal         @db.Decimal(12,3)
+  retailPrice Decimal?        @db.Decimal(12,3)
+  wholesalePrice Decimal?     @db.Decimal(12,3)
+  minimumPrice Decimal?       @db.Decimal(12,3)
   purchasePrice Decimal       @default(0) @db.Decimal(12,3)
+  averageCost Decimal         @default(0) @db.Decimal(12,3)
+  taxRate     Decimal         @default(0) @db.Decimal(5,2)
   stock       Int             @default(0)
+  reservedStock Int           @default(0)
   minStock    Int             @default(0)
-  barcode     String?
+  maxStock    Int?
   location    String?
   minOrderQty Int             @default(1)
+  warrantyDays Int            @default(0)
+  serialTracked Boolean       @default(false)
   active      Boolean         @default(true)
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @default(now()) @updatedAt
@@ -1522,6 +1542,9 @@ model SupplierProduct {
 
   @@unique([companyId, sku])
   @@index([companyId, active, name])
+  @@index([companyId, barcode])
+  @@index([companyId, categoryId])
+  @@index([companyId, brandId])
 }
 
 model SupplierOrder {
@@ -1565,6 +1588,13 @@ model SupplierDelivery {
   driverPhone     String?
   trackingNote    String?
   proofUrl        String?
+  recipientName   String?
+  recipientPhone  String?
+  proofCode       String?
+  cashDue         Decimal                @default(0) @db.Decimal(12,3)
+  cashCollected   Decimal                @default(0) @db.Decimal(12,3)
+  deliveryFee     Decimal                @default(0) @db.Decimal(12,3)
+  attemptCount    Int                    @default(0)
   assignedAt      DateTime?
   pickedUpAt      DateTime?
   deliveredAt     DateTime?
@@ -1893,6 +1923,8 @@ model SupplierErpSale {
   id          String   @id @default(cuid())
   companyId   String
   customerId  String?
+  sourceOrderId String?
+  cashSessionId String?
   reference   String
   status      String   @default("DRAFT")
   subtotal    Decimal  @default(0) @db.Decimal(12,3)
@@ -1907,6 +1939,7 @@ model SupplierErpSale {
   updatedAt   DateTime @default(now()) @updatedAt
   @@unique([companyId, reference])
   @@index([companyId, status, createdAt])
+  @@index([companyId, sourceOrderId])
   @@index([customerId])
 }
 
@@ -1929,6 +1962,7 @@ model SupplierErpPayment {
   companyId  String
   customerId String?
   saleId     String?
+  cashSessionId String?
   kind       String   @default("IN")
   method     String   @default("CASH")
   amount     Decimal  @db.Decimal(12,3)
@@ -1937,6 +1971,7 @@ model SupplierErpPayment {
   accountId  String?
   createdAt  DateTime @default(now())
   @@index([companyId, createdAt])
+  @@index([companyId, cashSessionId])
   @@index([customerId])
   @@index([saleId])
 }
@@ -1944,6 +1979,7 @@ model SupplierErpPayment {
 model SupplierErpExpense {
   id        String   @id @default(cuid())
   companyId String
+  cashSessionId String?
   category  String
   label     String
   amount    Decimal  @db.Decimal(12,3)
@@ -1953,6 +1989,7 @@ model SupplierErpExpense {
   expenseDate DateTime @default(now())
   createdAt DateTime @default(now())
   @@index([companyId, expenseDate])
+  @@index([companyId, cashSessionId])
 }
 
 model SupplierErpPurchase {
@@ -2026,6 +2063,90 @@ model SupplierDriverLocation {
   @@index([companyId, orderId, createdAt])
 }
 
+
+model SupplierCategory {
+  id        String   @id @default(cuid())
+  companyId String
+  name      String
+  slug      String
+  parentId  String?
+  description String?
+  sortOrder Int      @default(0)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+  @@unique([companyId, slug])
+  @@index([companyId, active, sortOrder])
+  @@index([parentId])
+}
+
+model SupplierBrand {
+  id        String   @id @default(cuid())
+  companyId String
+  name      String
+  slug      String
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+  @@unique([companyId, slug])
+  @@index([companyId, active, name])
+}
+
+model SupplierUnit {
+  id        String   @id @default(cuid())
+  companyId String
+  name      String
+  symbol    String
+  precision Int      @default(0)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  @@unique([companyId, symbol])
+  @@index([companyId, active])
+}
+
+model SupplierPaymentMethod {
+  id        String   @id @default(cuid())
+  companyId String
+  code      String
+  name      String
+  cashLike  Boolean  @default(false)
+  active    Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  @@unique([companyId, code])
+  @@index([companyId, active, sortOrder])
+}
+
+model SupplierDeliveryShift {
+  id            String   @id @default(cuid())
+  companyId     String
+  driverAccountId String
+  status        String   @default("OPEN")
+  startCash     Decimal  @default(0) @db.Decimal(12,3)
+  expectedCod   Decimal  @default(0) @db.Decimal(12,3)
+  collectedCod  Decimal  @default(0) @db.Decimal(12,3)
+  remittedCod   Decimal  @default(0) @db.Decimal(12,3)
+  startMileage  Int?
+  endMileage    Int?
+  note          String?
+  openedAt      DateTime @default(now())
+  closedAt      DateTime?
+  @@index([companyId, driverAccountId, status])
+  @@index([companyId, openedAt])
+}
+
+model SupplierAuditEvent {
+  id        String   @id @default(cuid())
+  companyId String
+  accountId String?
+  action    String
+  entity    String
+  entityId  String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+  @@index([companyId, createdAt])
+  @@index([companyId, entity, entityId])
+}
 
 model SupplierWarehouse {
   id        String   @id @default(cuid())
