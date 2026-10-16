@@ -1996,6 +1996,7 @@ model SupplierErpExpense {
 model SupplierErpPurchase {
   id          String   @id @default(cuid())
   companyId   String
+  warehouseId String?
   vendorName  String
   reference   String
   status      String   @default("DRAFT")
