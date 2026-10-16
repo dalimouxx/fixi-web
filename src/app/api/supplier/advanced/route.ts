@@ -1,5 +1,5 @@
 import {prisma} from '@/lib/prisma';
-import {requireSupplierSession} from '@/lib/supplier-auth';
+import {requireSupplierSession,requireSupplierRole} from '@/lib/supplier-auth';
 import {bad,ok} from '@/lib/http';
 import {plain} from '@/lib/serializers';
 
@@ -22,6 +22,10 @@ export async function GET(){
 export async function POST(req:Request){
  try{
   const s=await requireSupplierSession();const b=await req.json();const action=String(b.action||'');
+  const stockActions=['WAREHOUSE','VENDOR','PRICE_TIER','RETURN','STOCK_COUNT_START','WAREHOUSE_STOCK_SET'];
+  const deliveryActions=['DELIVERY_EVENT'];
+  if(stockActions.includes(action))await requireSupplierRole(['OWNER','ADMIN','MANAGER','STOCK','ACCOUNTANT']);
+  if(deliveryActions.includes(action))await requireSupplierRole(['OWNER','ADMIN','MANAGER','DELIVERY_MANAGER']);
   if(action==='WAREHOUSE'){
    if(!b.name||!b.code)return bad('Nom et code requis');
    return ok(plain(await prisma.supplierWarehouse.create({data:{companyId:s.companyId,name:String(b.name),code:String(b.code).toUpperCase(),address:b.address||null,region:b.region||null}})),{status:201});
