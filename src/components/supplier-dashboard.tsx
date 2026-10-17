@@ -78,7 +78,7 @@ export function SupplierDashboard({session}:{session:any}){
   ] as const;
   const nav=navAll.filter(([key])=>(access[role]||access.ADMIN).includes(key));
 
-  return <div className="supplier-os supplier-erp">
+  return <div className="supplier-os supplier-erp"><PwaRegister/>
     <aside>
       <div className="supplier-os-brand"><i>F</i><div><b>Fixi Supplier</b><span>{session.companyName}</span></div></div>
       <div className="supplier-nav-label">GESTION</div>
@@ -90,6 +90,10 @@ export function SupplierDashboard({session}:{session:any}){
 
     <main>
       <header><div><span>FIXI SUPPLIER ERP</span><h1>{nav.find(x=>x[0]===tab)?.[1]}</h1></div><div className="toolbar"><RealtimeNotificationCenter apiUrl="/api/supplier/notifications" eventsUrl="/api/supplier/events" storageKey="fixi-supplier-notifications" onEvent={()=>setRefresh(x=>x+1)} onNavigate={(href)=>{const m=href.match(/[?&]tab=([^&]+)/);if(m&&(nav as any).some((x:any)=>x[0]===m[1]))setTab(m[1] as Tab)}}/><PushToggle subscribeUrl="/api/supplier/push/subscribe"/><InstallAppButton label="Installer"/><button className="btn btn-ghost" onClick={()=>setRefresh(x=>x+1)}><RefreshCw/> Actualiser</button></div></header>
+      <section className="supplier-mobile-install">
+        <div className="supplier-mobile-install-copy"><i>F</i><span><b>Fixi Supplier sur votre téléphone</b><small>Installez l’ERP comme application et activez les notifications pour les commandes, paiements, retours et livraisons.</small></span></div>
+        <div className="supplier-mobile-install-actions"><InstallAppButton label="Installer Fixi Supplier"/><PushToggle subscribeUrl="/api/supplier/push/subscribe" label/></div>
+      </section>
 
       {tab==='dashboard'&&<>
         <div className="supplier-kpis supplier-kpis-6">
