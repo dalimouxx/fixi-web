@@ -527,3 +527,17 @@ html[data-theme="dark"] .academy-lessons button>span{background:#fff}html[data-t
  .supplier-mobile-install-actions .install-app,.supplier-mobile-install-actions .push-toggle{width:100%!important;justify-content:center!important;min-height:40px}
  .supplier-os>main>header{top:54px!important}
 }
+
+
+/* FIXI ATELIER COMPLETE MOBILE MENU */
+.mobile-ops-nav button{border:0;background:transparent;color:inherit;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:9px;font-weight:800}
+.mobile-ops-nav button svg{width:20px;height:20px}.mobile-ops-nav button.active{color:#ff650f}
+.mobile-menu-backdrop{position:fixed;inset:0;background:rgba(18,15,12,.45);backdrop-filter:blur(4px);z-index:90;display:flex;align-items:flex-end}
+.mobile-menu-sheet{width:100%;max-height:86vh;background:#f8f7f5;border-radius:26px 26px 0 0;padding:14px 14px calc(18px + env(safe-area-inset-bottom));box-shadow:0 -24px 70px rgba(25,18,13,.18);overflow:auto}
+.mobile-menu-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:4px 4px 12px;position:sticky;top:-14px;background:#f8f7f5;z-index:2}
+.mobile-menu-head>div{display:grid}.mobile-menu-head b{font-size:16px}.mobile-menu-head span{font-size:9px;color:var(--muted);margin-top:2px}.mobile-menu-head button{width:36px;height:36px;border:1px solid var(--line);background:#fff;border-radius:12px;display:grid;place-items:center}.mobile-menu-head svg{width:17px}
+.mobile-menu-groups{display:grid;gap:14px}.mobile-menu-groups section{display:grid;gap:7px}.mobile-menu-groups h3{margin:0;padding:0 4px;font-size:9px;text-transform:uppercase;letter-spacing:.11em;color:#9a8e85}
+.mobile-menu-groups section>div{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.mobile-menu-groups a{min-height:78px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:11px 8px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:7px;position:relative}
+.mobile-menu-groups a svg{width:19px;color:#746a63}.mobile-menu-groups a span{font-size:9px;font-weight:850;line-height:1.25}.mobile-menu-groups a.active{background:#fff1e7;border-color:#ffd4b5;color:#bd4c00}.mobile-menu-groups a.active svg{color:#ff650f}.mobile-menu-groups a em{position:absolute;right:6px;top:6px;font-size:6px;font-style:normal;background:#fff0e5;color:#c45100;border-radius:999px;padding:3px 5px;font-weight:950}
+@media(max-width:420px){.mobile-menu-groups section>div{grid-template-columns:repeat(2,minmax(0,1fr))}.mobile-menu-groups a{min-height:72px}}
