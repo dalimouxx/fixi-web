@@ -22,8 +22,13 @@ export async function POST(req:Request){
    if(type==='COD_COLLECTED')await tx.supplierDelivery.update({where:{orderId},data:{cashCollected:{increment:Number(amount)}}});
    if(['CUSTOMER_ABSENT','DELIVERY_REFUSED','INCIDENT'].includes(type))await tx.supplierDelivery.update({where:{orderId},data:{attemptCount:{increment:1}}});
    if(type==='RETURN_TO_DEPOT'){
-    await tx.supplierDelivery.update({where:{orderId},data:{status:SupplierDeliveryStatus.FAILED}});
-    await tx.supplierOrder.update({where:{id:orderId},data:{status:SupplierOrderStatus.READY_FOR_DELIVERY}});
+    await tx.supplierDelivery.update({where:{orderId},data:{status:SupplierDeliveryStatus.RETURNING,exceptionStatus:'RETURN_PENDING',returnNote:b.note||null}});
+    await tx.supplierOrder.update({where:{id:orderId},data:{status:SupplierOrderStatus.RETURNING}});
+   }
+   if(type==='RETURNED_TO_SUPPLIER'){
+    if(o.status!==SupplierOrderStatus.RETURNING)throw Object.assign(new Error('La commande n’est pas en retour'),{status:409});
+    await tx.supplierDelivery.update({where:{orderId},data:{status:SupplierDeliveryStatus.RETURNED,exceptionStatus:'RETURNED',returnedAt:new Date(),returnNote:b.note||o.delivery?.returnNote||null}});
+    await tx.supplierOrder.update({where:{id:orderId},data:{status:SupplierOrderStatus.RETURNED}});
    }
    return event;
   });
@@ -38,7 +43,8 @@ export async function POST(req:Request){
    CUSTOMER_ABSENT:'Client absent',
    DELIVERY_REFUSED:'Livraison refusée',
    INCIDENT:'Incident de livraison',
-   RETURN_TO_DEPOT:'Retour au dépôt',
+   RETURN_TO_DEPOT:'Retour vers fournisseur',
+   RETURNED_TO_SUPPLIER:'Retour remis au fournisseur',
    RESCHEDULED:'Livraison reprogrammée'
   };
   if(incidentLabels[type]){
