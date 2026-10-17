@@ -12,7 +12,7 @@ import {dateTime,money} from '@/lib/format';
 type Props={orders:any[];drivers:any[];onChanged:()=>void};
 
 export function SupplierDeliveryCenter({orders,drivers,onChanged}:Props){
-  const[overview,setOverview]=useState<any>({shifts:[],latestByOrder:{},codByOrder:{},events:[],metrics:{}});
+  const[overview,setOverview]=useState<any>({shifts:[],latestByOrder:{},codByOrder:{},dueByShop:{},dueDetailsByShop:{},events:[],metrics:{}});const[settlements,setSettlements]=useState<any[]>([]);const[settlementAmounts,setSettlementAmounts]=useState<Record<string,string>>({});
   const[selected,setSelected]=useState('');
   const[assignments,setAssignments]=useState<Record<string,string>>({});
   const[msg,setMsg]=useState('');
@@ -22,9 +22,9 @@ export function SupplierDeliveryCenter({orders,drivers,onChanged}:Props){
   const[driverForm,setDriverForm]=useState({fullName:'',login:'',phone:'',password:''});
 
   async function load(){
-    const r=await fetch('/api/supplier/delivery/overview',{cache:'no-store'});
-    const j=await r.json();
-    if(r.ok)setOverview(j);
+    const [r,s]=await Promise.all([fetch('/api/supplier/delivery/overview',{cache:'no-store'}),fetch('/api/supplier/delivery/settlements',{cache:'no-store'})]);
+    const j=await r.json(),sj=await s.json();
+    if(r.ok)setOverview(j);if(s.ok)setSettlements(Array.isArray(sj)?sj:[]);
   }
   useEffect(()=>{load();const t=setInterval(load,15000);return()=>clearInterval(t)},[]);
 
@@ -53,6 +53,9 @@ export function SupplierDeliveryCenter({orders,drivers,onChanged}:Props){
   }
 
   async function resolveReturn(order:any,action:'RESTOCK'|'DAMAGED'|'REDELIVER'){const note=action==='DAMAGED'?prompt('Note / motif dommage')||'Endommagé':action==='RESTOCK'?'Retour contrôlé et remis en stock':'Relivraison demandée';setBusy(order.id);setErr('');try{await api('/api/supplier/delivery/returns',{method:'POST',body:JSON.stringify({orderId:order.id,action,note})});setMsg(action==='RESTOCK'?'Retour remis en stock.':action==='DAMAGED'?'Retour classé endommagé.':'Commande remise dans le pool livreurs.');onChanged();await load()}catch(e:any){setErr(e.message)}finally{setBusy('')}}
+
+  async function confirmSettlement(x:any){const raw=settlementAmounts[x.id]??String(Number(x.declaredRemit??x.expectedCod??0));const actual=Number(raw);if(!(actual>=0)){setErr('Montant remis invalide.');return}setBusy('SETTLE:'+x.id);setErr('');try{await api('/api/supplier/delivery/settlements',{method:'POST',body:JSON.stringify({shiftId:x.id,actualAmount:actual})});setMsg('Remise livreur confirmée en caisse.');await load();onChanged()}catch(e:any){setErr(e.message)}finally{setBusy('')}}
+  async function revokeDriver(d:any){if(!confirm('Déconnecter immédiatement ce livreur de tous ses appareils ?'))return;setBusy('REVOKE:'+d.id);setErr('');try{await api('/api/supplier/drivers',{method:'PATCH',body:JSON.stringify({id:d.id,revokeSessions:true})});setMsg('Sessions livreur révoquées. Il devra se reconnecter.')}catch(e:any){setErr(e.message)}finally{setBusy('')}}
 
   async function createDriver(e:any){
     e.preventDefault();setBusy('DRIVER');setErr('');
@@ -168,8 +171,11 @@ export function SupplierDeliveryCenter({orders,drivers,onChanged}:Props){
                 <div><span>Dernière position</span><b>{loc?dateTime(loc.createdAt):'—'}</b></div>
                 <div><span>Précision</span><b>{loc?.accuracy?Math.round(Number(loc.accuracy))+' m':'—'}</b></div>
                 <div><span>COD encaissé</span><b>{money(overview.codByOrder?.[selectedOrder.id]||0)}</b></div>
+                <div><span>Dû client</span><b>{money(overview.dueByShop?.[selectedOrder.shopId]||0)}</b></div>
                 <div><span>Tentatives</span><b>{selectedOrder.delivery?.attemptCount||0}</b></div>
+                <div><span>Code remise</span><b>{selectedOrder.deliveryCode||'—'}</b></div>
               </div>
+              <div className="supplier-delivery-order-detail"><div><b>Détails client</b><span>{selectedOrder.shop?.name}</span><span>{selectedOrder.shop?.phone||'Téléphone —'}</span><span>{selectedOrder.deliveryAddress||selectedOrder.shop?.address||selectedOrder.shop?.region||'Adresse —'}</span></div><div><b>Détails commande</b>{selectedOrder.items?.map((i:any)=><span key={i.id}>{i.product?.name} × {i.quantity} · {money(Number(i.unitPrice)*i.quantity)}</span>)}<strong>Total {money(selectedOrder.total)}</strong></div></div>{(overview.dueDetailsByShop?.[selectedOrder.shopId]||[]).length>0&&<div className="supplier-delivery-due-detail"><b>Créances client</b>{overview.dueDetailsByShop[selectedOrder.shopId].map((d:any)=><div key={d.id}><span><strong>{d.reference}</strong><small>{dateTime(d.createdAt)}</small></span><span>Total {money(d.total)} · payé {money(d.paid)} · <b>reste {money(d.due)}</b></span></div>)}</div>}
               {loc&&(
                 <a
                   target="_blank"
@@ -186,6 +192,7 @@ export function SupplierDeliveryCenter({orders,drivers,onChanged}:Props){
 
       {returned.length>0&&<section className="supplier-panel supplier-returned-deliveries"><div className="supplier-section-head"><div><b>Retours remis au fournisseur</b><span>Une décision est obligatoire avant clôture : stock, endommagé ou relivraison.</span></div><span className="supplier-count-badge">{returned.length}</span></div><div className="supplier-dispatch-list">{returned.map(o=><article key={o.id}><div className="supplier-dispatch-main"><div><code>{o.reference}</code><b>{o.shop?.name}</b><span>{o.delivery?.returnNote||'Retour sans note'}</span></div><span className="status-pill returned">À traiter</span></div><div className="supplier-order-items">{o.items?.map((i:any)=><div key={i.id}><span>{i.product?.name} × {i.quantity}</span><b>{money(Number(i.unitPrice)*i.quantity)}</b></div>)}</div><div className="toolbar"><button disabled={busy===o.id} className="btn btn-primary btn-sm" onClick={()=>resolveReturn(o,'RESTOCK')}><CheckCircle2/> Remettre en stock</button><button disabled={busy===o.id} className="btn btn-danger btn-sm" onClick={()=>resolveReturn(o,'DAMAGED')}><AlertTriangle/> Endommagé</button><button disabled={busy===o.id} className="btn btn-soft btn-sm" onClick={()=>resolveReturn(o,'REDELIVER')}><RefreshCw/> Relivrer</button></div></article>)}</div></section>}
 
+      {settlements.some((x:any)=>x.status==='PENDING_CASHIER')&&<section className="supplier-panel supplier-settlements"><div className="supplier-section-head"><div><b>Remises livreurs à confirmer</b><span>Le livreur déclare son montant. La caisse recompte et confirme avant clôture définitive.</span></div></div><div className="supplier-settlement-list">{settlements.filter((x:any)=>x.status==='PENDING_CASHIER').map((x:any)=>{const expected=Number(x.expectedCod||x.collectedCod||0),declared=Number(x.declaredRemit||0),value=settlementAmounts[x.id]??String(declared);return <article key={x.id}><div><b>{x.driver?.fullName||x.driverAccountId}</b><span>{x.driver?.phone||x.driver?.login||'—'} · journée {dateTime(x.openedAt)}</span></div><div><span>Attendu</span><strong>{money(expected)}</strong></div><div><span>Déclaré livreur</span><strong>{money(declared)}</strong></div><div className={Math.abs(declared-expected)>.001?'settlement-diff bad':'settlement-diff'}><span>Écart déclaré</span><strong>{money(declared-expected)}</strong></div><label><span>Montant réellement reçu caisse</span><input className="input" type="number" min="0" step=".001" value={value} onChange={e=>setSettlementAmounts({...settlementAmounts,[x.id]:e.target.value})}/></label><details><summary>Détail encaissements</summary>{(x.collections||[]).map((e:any)=><div key={e.id}><span>{String(e.type).replaceAll('_',' ')} · {dateTime(e.createdAt)}</span><b>{money(e.amount||0)}</b></div>)}</details><button className="btn btn-primary" disabled={busy==='SETTLE:'+x.id} onClick={()=>confirmSettlement(x)}><CheckCircle2/> Confirmer remise caisse</button></article>})}</div></section>}
       <div className="supplier-delivery-lower">
         <section className="supplier-panel">
           <div className="supplier-section-head">
@@ -203,9 +210,7 @@ export function SupplierDeliveryCenter({orders,drivers,onChanged}:Props){
                 <div key={d.id}>
                   <span className={d.isActive&&sh?'driver-dot on':'driver-dot'}/>
                   <div><b>{d.fullName}</b><small>{d.phone||d.login}{subtitle}</small></div>
-                  <button className="driver-state-btn" disabled={busy===d.id||!!sh} onClick={()=>toggleDriver(d)}>
-                    {d.isActive?'Désactiver':'Activer'}
-                  </button>
+                  <div className="driver-security-actions"><button className="driver-state-btn" disabled={busy===d.id||!!sh} onClick={()=>toggleDriver(d)}>{d.isActive?'Désactiver':'Activer'}</button><button className="driver-state-btn danger" disabled={busy==='REVOKE:'+d.id} onClick={()=>revokeDriver(d)}>Déconnecter appareils</button></div>
                 </div>
               );
             })}
