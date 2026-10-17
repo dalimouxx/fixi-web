@@ -201,16 +201,19 @@ export function SupplierDeliveryCenter({orders,drivers,onChanged}:Props){
           <div className="driver-admin-list">
             {drivers.map(d=>{
               const sh=overview.shifts?.find((x:any)=>x.driverAccountId===d.id);
-              const subtitle=!d.isActive
-                ?' · désactivé'
-                :sh
-                  ?' · en journée depuis '+new Date(sh.openedAt).toLocaleTimeString('fr-TN',{hour:'2-digit',minute:'2-digit'})
-                  :' · hors tournée';
+              const pending=settlements.find((x:any)=>x.driverAccountId===d.id&&x.status==='PENDING_CASHIER');
+              const driverOrders=orders.filter(o=>o.delivery?.driverAccountId===d.id);
+              const activeCount=driverOrders.filter(o=>['READY_FOR_DELIVERY','OUT_FOR_DELIVERY','RETURNING'].includes(o.status)).length;
+              const deliveredToday=driverOrders.filter(o=>o.status==='DELIVERED'&&new Date(o.delivery?.deliveredAt||o.updatedAt).toDateString()===new Date().toDateString()).length;
+              const today=new Date();today.setHours(0,0,0,0);
+              const driverEvents=(overview.events||[]).filter((e:any)=>e.accountId===d.id&&new Date(e.createdAt)>=today);
+              const collected=driverEvents.filter((e:any)=>['COD_COLLECTED','DUE_COLLECTED'].includes(e.type)).reduce((a:number,e:any)=>a+Number(e.amount||0),0);
+              const subtitle=!d.isActive?' · désactivé':pending?' · remise caisse en attente':sh?' · en journée depuis '+new Date(sh.openedAt).toLocaleTimeString('fr-TN',{hour:'2-digit',minute:'2-digit'}):' · hors tournée';
               return (
-                <div key={d.id}>
-                  <span className={d.isActive&&sh?'driver-dot on':'driver-dot'}/>
-                  <div><b>{d.fullName}</b><small>{d.phone||d.login}{subtitle}</small></div>
-                  <div className="driver-security-actions"><button className="driver-state-btn" disabled={busy===d.id||!!sh} onClick={()=>toggleDriver(d)}>{d.isActive?'Désactiver':'Activer'}</button><button className="driver-state-btn danger" disabled={busy==='REVOKE:'+d.id} onClick={()=>revokeDriver(d)}>Déconnecter appareils</button></div>
+                <div key={d.id} className="driver-admin-detail">
+                  <span className={d.isActive&&(sh||pending)?'driver-dot on':'driver-dot'}/>
+                  <div><b>{d.fullName}</b><small>{d.phone||d.login}{subtitle}</small><em>{activeCount} active(s) · {deliveredToday} livrée(s) aujourd’hui · {money(collected)} encaissé</em></div>
+                  <div className="driver-security-actions"><button className="driver-state-btn" disabled={busy===d.id||!!sh||!!pending} onClick={()=>toggleDriver(d)}>{d.isActive?'Désactiver':'Activer'}</button><button className="driver-state-btn danger" disabled={busy==='REVOKE:'+d.id} onClick={()=>revokeDriver(d)}>Déconnecter appareils</button></div>
                 </div>
               );
             })}
