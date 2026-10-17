@@ -1563,7 +1563,7 @@ model SupplierOrder {
   total       Decimal             @default(0) @db.Decimal(12,3)
   note        String?
   deliveryAddress String?
-  deliveryCode String?            @unique
+  deliveryCode String?
   confirmedAt DateTime?
   createdAt   DateTime            @default(now())
   updatedAt   DateTime            @default(now()) @updatedAt
@@ -1573,6 +1573,7 @@ model SupplierOrder {
 
   @@index([shopId, createdAt])
   @@index([companyId, status, createdAt])
+  @@index([deliveryCode])
 }
 
 model SupplierOrderStockAllocation {
@@ -1941,7 +1942,7 @@ model SupplierErpCustomer {
   active      Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @default(now()) @updatedAt
-  @@unique([companyId, shopId])
+  @@index([companyId, shopId])
   @@index([companyId, name])
   @@index([companyId, phone])
 }
