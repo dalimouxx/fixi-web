@@ -23,6 +23,7 @@ import {SupplierPurchases} from './supplier-purchases';
 import {RealtimeNotificationCenter} from './realtime-notification-center';
 import {PushToggle} from './push-toggle';
 import {PwaRegister} from './pwa-register';
+import {InstallAppButton} from './install-app-button';
 
 const nextStatus:Record<string,string|undefined>={PENDING:'CONFIRMED',CONFIRMED:'PREPARING',PREPARING:'READY_FOR_DELIVERY',READY_FOR_DELIVERY:undefined,OUT_FOR_DELIVERY:undefined};
 const labels:Record<string,string>={PENDING:'Nouvelle',CONFIRMED:'Confirmée',PREPARING:'Préparation',READY_FOR_DELIVERY:'Disponible livreurs',OUT_FOR_DELIVERY:'En livraison',RETURNING:'Retour fournisseur',RETURNED:'Retour reçu à traiter',DELIVERED:'Livrée',CANCELLED:'Annulée'};
@@ -87,7 +88,7 @@ export function SupplierDashboard({session}:{session:any}){
     </aside>
 
     <main>
-      <header><div><span>FIXI SUPPLIER ERP</span><h1>{nav.find(x=>x[0]===tab)?.[1]}</h1></div><div className="toolbar"><RealtimeNotificationCenter apiUrl="/api/supplier/notifications" eventsUrl="/api/supplier/events" storageKey="fixi-supplier-notifications" onEvent={()=>setRefresh(x=>x+1)} onNavigate={(href)=>{const m=href.match(/[?&]tab=([^&]+)/);if(m&&(nav as any).some((x:any)=>x[0]===m[1]))setTab(m[1] as Tab)}}/><PushToggle subscribeUrl="/api/supplier/push/subscribe"/><button className="btn btn-ghost" onClick={()=>setRefresh(x=>x+1)}><RefreshCw/> Actualiser</button></div></header>
+      <header><div><span>FIXI SUPPLIER ERP</span><h1>{nav.find(x=>x[0]===tab)?.[1]}</h1></div><div className="toolbar"><RealtimeNotificationCenter apiUrl="/api/supplier/notifications" eventsUrl="/api/supplier/events" storageKey="fixi-supplier-notifications" onEvent={()=>setRefresh(x=>x+1)} onNavigate={(href)=>{const m=href.match(/[?&]tab=([^&]+)/);if(m&&(nav as any).some((x:any)=>x[0]===m[1]))setTab(m[1] as Tab)}}/><PushToggle subscribeUrl="/api/supplier/push/subscribe"/><InstallAppButton label="Installer"/><button className="btn btn-ghost" onClick={()=>setRefresh(x=>x+1)}><RefreshCw/> Actualiser</button></div></header>
 
       {tab==='dashboard'&&<>
         <div className="supplier-kpis supplier-kpis-6">
