@@ -5,7 +5,7 @@ import {plain} from '@/lib/serializers';
 
 export async function GET(){
  try{
-  const s=await requireSupplierRole(['OWNER','ADMIN','MANAGER','DELIVERY_MANAGER']);
+  const s=await requireSupplierRole(['OWNER','ADMIN','MANAGER','DELIVERY_MANAGER','CASHIER']);
   const [shifts,locations,events,customers,sales]=await Promise.all([
    prisma.supplierDeliveryShift.findMany({where:{companyId:s.companyId,status:'OPEN'},orderBy:{openedAt:'asc'}}),
    prisma.supplierDriverLocation.findMany({where:{companyId:s.companyId},orderBy:{createdAt:'desc'},take:1000}),
