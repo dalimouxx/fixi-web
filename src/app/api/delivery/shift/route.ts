@@ -6,11 +6,12 @@ import {plain} from '@/lib/serializers';
 export async function GET(){
  try{
   const s=await requireDeliverySession();
-  const [current,recent]=await Promise.all([
+  const [current,pendingCashier,recent]=await Promise.all([
    prisma.supplierDeliveryShift.findFirst({where:{companyId:s.companyId,driverAccountId:s.id,status:'OPEN'},orderBy:{openedAt:'desc'}}),
+   prisma.supplierDeliveryShift.findFirst({where:{companyId:s.companyId,driverAccountId:s.id,status:'PENDING_CASHIER'},orderBy:{submittedAt:'desc'}}),
    prisma.supplierDeliveryShift.findMany({where:{companyId:s.companyId,driverAccountId:s.id},orderBy:{openedAt:'desc'},take:15})
   ]);
-  return ok(plain({current,recent}));
+  return ok(plain({current,pendingCashier,recent}));
  }catch(e:any){return bad(e.message,e.status||500)}
 }
 
