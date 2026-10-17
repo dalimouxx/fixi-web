@@ -34,11 +34,6 @@ export async function POST(req:Request){
     await tx.supplierDelivery.update({where:{orderId},data:{status:SupplierDeliveryStatus.RETURNING,exceptionStatus:'RETURN_PENDING',returnNote:b.note||null}});
     await tx.supplierOrder.update({where:{id:orderId},data:{status:SupplierOrderStatus.RETURNING}});
    }
-   if(type==='RETURNED_TO_SUPPLIER'){
-    if(o.status!==SupplierOrderStatus.RETURNING)throw Object.assign(new Error('La commande n’est pas en retour'),{status:409});
-    await tx.supplierDelivery.update({where:{orderId},data:{status:SupplierDeliveryStatus.RETURNED,exceptionStatus:'RETURNED',returnedAt:new Date(),returnNote:b.note||o.delivery?.returnNote||null}});
-    await tx.supplierOrder.update({where:{id:orderId},data:{status:SupplierOrderStatus.RETURNED}});
-   }
    return event;
   });
   const managers=['OWNER','ADMIN','MANAGER','DELIVERY_MANAGER'];
