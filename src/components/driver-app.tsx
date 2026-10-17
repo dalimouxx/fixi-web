@@ -1,6 +1,7 @@
 'use client';
 import {useEffect,useMemo,useRef,useState} from 'react';
 import {useRouter} from 'next/navigation';
+import Link from 'next/link';
 import {MapPinned,Navigation,Phone,Truck,CheckCircle2,RefreshCw,Map,Clock3,Banknote,AlertTriangle,RotateCcw,CalendarClock,PackageCheck,LogOut,PlayCircle,PauseCircle,Route,WalletCards,Camera,ShieldCheck,X,UserRound,Gauge,Wifi,WifiOff,Radio,History} from 'lucide-react';
 import {api} from './ui';
 import {RealtimeNotificationCenter} from './realtime-notification-center';
@@ -86,7 +87,7 @@ export function DriverApp({session}:{session:any}){
        <details className="driver-parcel"><summary>{o.items.length} ligne(s) dans le colis</summary><div className="delivery-items">{o.items.map((i:any)=><div key={i.id}><span>{i.product.name} × {i.quantity}</span><b>{money(Number(i.unitPrice)*i.quantity)}</b></div>)}</div></details>
        <div className="delivery-actions driver-actions">
         {address&&<a className="btn btn-soft" target="_blank" href={maps(address)}><Navigation/> Itinéraire</a>}
-        {o.shop?.phone&&<a className="btn btn-soft" href={'tel:'+o.shop.phone}><Phone/> Appeler</a>}{o.status==='OUT_FOR_DELIVERY'&&o.delivery?.driverAccountId===session.id&&<button className="btn btn-soft" onClick={()=>openDue(o)}><WalletCards/> Dû client</button>}
+        {o.shop?.phone&&<a className="btn btn-soft" href={'tel:'+o.shop.phone}><Phone/> Appeler</a>}{o.delivery?.driverAccountId===session.id&&<Link className="btn btn-soft" target="_blank" href={'/delivery/orders/'+o.id+'/ticket'}><PackageCheck/> Bon livraison</Link>}{o.status==='OUT_FOR_DELIVERY'&&o.delivery?.driverAccountId===session.id&&<button className="btn btn-soft" onClick={()=>openDue(o)}><WalletCards/> Dû client</button>}
         {o.status==='READY_FOR_DELIVERY'&&!o.delivery?.driverAccountId&&<button disabled={busy===o.id} className="btn btn-primary" onClick={()=>acceptOrder(o)}><Truck/> Accepter</button>}{o.status==='READY_FOR_DELIVERY'&&o.delivery?.driverAccountId===session.id&&<button disabled={busy===o.id||!shift.current} className="btn btn-primary" onClick={()=>patch(o,{status:'OUT_FOR_DELIVERY'})}><PlayCircle/> Démarrer</button>}
         {o.status==='OUT_FOR_DELIVERY'&&<button className="btn btn-soft" onClick={()=>openEvent(o,'COD_COLLECTED')}><Banknote/> Encaisser COD</button>}
         {o.status==='OUT_FOR_DELIVERY'&&<button className="btn btn-soft" onClick={()=>openEvent(o,'CUSTOMER_ABSENT')}><AlertTriangle/> Absent</button>}
