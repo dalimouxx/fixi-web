@@ -13,12 +13,14 @@ type NotifyOptions={
   roles?:string[];
   accountIds?:string[];
   metadata?:Record<string,unknown>;
+  availableDriversOnly?:boolean;
 };
 
 export async function notifySupplier(companyId:string,title:string,message:string,options:NotifyOptions={}){
   const where:any={companyId,isActive:true};
   if(options.accountIds?.length) where.id={in:options.accountIds};
   if(options.roles?.length) where.role={in:options.roles};
+  if(options.availableDriversOnly)where.driverAvailable=true;
   const users=await prisma.supplierAccount.findMany({where,select:{id:true}});
   if(!users.length)return [];
   const kind=options.kind||'INFO',priority=options.priority||'NORMAL',soundKey=options.soundKey||soundFor(kind,priority);
