@@ -23,8 +23,8 @@ export async function POST(req:Request){
  try{
   const s=await requireSupplierRole(['OWNER','ADMIN','MANAGER','DELIVERY_MANAGER','STOCK']);
   const b=await req.json(),orderId=String(b.orderId||''),action=String(b.action||'');
-  const order=await prisma.supplierOrder.findFirst({where:{id:orderId,companyId:s.companyId,status:SupplierOrderStatus.RETURNED},include:{items:{include:{product:true}},delivery:true,shop:true}});
-  if(!order)return bad('Retour fournisseur introuvable ou non réceptionné',404);
+  const order=await prisma.supplierOrder.findFirst({where:{id:orderId,companyId:s.companyId,status:{in:[SupplierOrderStatus.RETURNING,SupplierOrderStatus.RETURNED]}},include:{items:{include:{product:true}},delivery:true,shop:true}});
+  if(!order)return bad('Retour fournisseur introuvable',404);
   if(order.delivery?.exceptionStatus?.startsWith('RESOLVED_'))return bad('Ce retour est déjà traité',409);
   const ref='RET-LIV-'+Date.now().toString(36).toUpperCase();
   if(action==='RESTOCK'||action==='DAMAGED'){
@@ -37,9 +37,9 @@ export async function POST(req:Request){
      if(restock)await tx.supplierProduct.update({where:{id:item.productId},data:{stock:{increment:item.quantity}}});
     }
     if(restock)for(const a of allocations)if(a.warehouseId)await tx.supplierWarehouseStock.upsert({where:{warehouseId_productId:{warehouseId:a.warehouseId,productId:a.productId}},update:{quantity:{increment:a.quantity}},create:{companyId:s.companyId,warehouseId:a.warehouseId,productId:a.productId,quantity:a.quantity}});
-    await tx.supplierDelivery.update({where:{orderId},data:{exceptionStatus:restock?'RESOLVED_RESTOCK':'RESOLVED_DAMAGED',returnCondition:restock?'GOOD':'DAMAGED',returnNote:b.note||order.delivery?.returnNote||null}});
+    await tx.supplierDelivery.update({where:{orderId},data:{status:SupplierDeliveryStatus.RETURNED,returnedAt:new Date(),exceptionStatus:restock?'RESOLVED_RESTOCK':'RESOLVED_DAMAGED',returnCondition:restock?'GOOD':'DAMAGED',returnNote:b.note||order.delivery?.returnNote||null}});
     await tx.supplierOrder.update({where:{id:orderId},data:{status:SupplierOrderStatus.CANCELLED}});
-    await tx.supplierAuditEvent.create({data:{companyId:s.companyId,accountId:s.id,action:restock?'RETURN_RESTOCK':'RETURN_DAMAGED',entity:'SUPPLIER_ORDER',entityId:orderId,metadata:{reference:order.reference,returnRef:ref,note:b.note||null}}});
+    await tx.supplierAuditEvent.create({data:{companyId:s.companyId,accountId:s.id,action:restock?'RETURN_RESTOCK':'RETURN_DAMAGED',entity:'SUPPLIER_ORDER',entityId:orderId,metadata:{reference:order.reference,returnRef:ref,note:b.note||null,driverAccountId:order.delivery?.driverAccountId,items:order.items.map(i=>({productId:i.productId,sku:i.product.sku,name:i.product.name,quantity:i.quantity,condition:restock?'GOOD':'DAMAGED'}))}}});
    });
    await notifyShop(order.shopId,restock?'Retour fournisseur clôturé':'Retour classé endommagé','La commande '+order.reference+' a été clôturée après retour fournisseur.','/app/suppliers',NotificationType.INFO);
    return ok({ok:true,status:restock?'RESTOCKED':'DAMAGED'});
