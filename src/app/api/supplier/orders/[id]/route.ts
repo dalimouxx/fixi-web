@@ -20,7 +20,7 @@ export async function PATCH(req:Request,{params}:{params:Promise<{id:string}>}){
  };
  const n=shopMessage[status];if(n)await notifyShop(o.shopId,n.title,n.message,'/app/suppliers',n.type);
 }
-if(status===SupplierOrderStatus.READY_FOR_DELIVERY&&o.status!==SupplierOrderStatus.READY_FOR_DELIVERY){await notifySupplier(s.companyId,'Nouvelle livraison disponible',o.reference+' · commande prête pour '+o.items.reduce((a,i)=>a+i.quantity,0)+' article(s).',{href:'/delivery',kind:'DELIVERY',priority:'HIGH',soundKey:'CHIME',roles:['DRIVER'],availableDriversOnly:true,metadata:{orderId:o.id,reference:o.reference,deliveryCodeRequired:true}});}
+if(status===SupplierOrderStatus.READY_FOR_DELIVERY&&o.status!==SupplierOrderStatus.READY_FOR_DELIVERY){await prisma.supplierAuditEvent.create({data:{companyId:s.companyId,accountId:s.id,action:'DELIVERY_TICKET_ISSUED',entity:'SUPPLIER_ORDER',entityId:o.id,metadata:{reference:o.reference,deliveryCode:o.deliveryCode,itemCount:o.items.reduce((a,i)=>a+i.quantity,0),confirmedAt:new Date().toISOString()}}});await notifySupplier(s.companyId,'Nouvelle livraison disponible',o.reference+' · commande prête pour '+o.items.reduce((a,i)=>a+i.quantity,0)+' article(s).',{href:'/delivery',kind:'DELIVERY',priority:'HIGH',soundKey:'CHIME',roles:['DRIVER'],availableDriversOnly:true,metadata:{orderId:o.id,reference:o.reference,deliveryCodeRequired:true}});}
 if(status===SupplierOrderStatus.DELIVERED)await ensureMarketplaceAccounting(id,s.id);
 if(status===SupplierOrderStatus.CANCELLED)await Promise.allSettled(o.items.map(i=>notifySupplierLowStock(s.companyId,i.productId)));
 return ok(plain(order))}catch(e:any){return bad(e.message,e.status||500)}}
