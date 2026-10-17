@@ -8,8 +8,8 @@ import {PushToggle} from './push-toggle';
 import {PwaRegister} from './pwa-register';
 import {dateTime,money} from '@/lib/format';
 
-const labels:Record<string,string>={READY_FOR_DELIVERY:'À démarrer',OUT_FOR_DELIVERY:'En route',DELIVERED:'Livrée'};
-type DriverEventType='COD_COLLECTED'|'CUSTOMER_ABSENT'|'DELIVERY_REFUSED'|'RESCHEDULED'|'INCIDENT'|'RETURN_TO_DEPOT';
+const labels:Record<string,string>={READY_FOR_DELIVERY:'À accepter',OUT_FOR_DELIVERY:'En route',RETURNING:'Retour fournisseur',RETURNED:'Retour remis',DELIVERED:'Livrée'};
+type DriverEventType='COD_COLLECTED'|'CUSTOMER_ABSENT'|'DELIVERY_REFUSED'|'RESCHEDULED'|'INCIDENT'|'RETURN_TO_DEPOT'|'RETURNED_TO_SUPPLIER';
 type EventModal={order:any;type:DriverEventType}|null;
 type ProofModal={order:any}|null;
 
@@ -20,7 +20,7 @@ export function DriverApp({session}:{session:any}){
  async function load(){const [o,e,s]=await Promise.all([fetch('/api/delivery/orders',{cache:'no-store'}),fetch('/api/delivery/events',{cache:'no-store'}),fetch('/api/delivery/shift',{cache:'no-store'})]);const oj=await o.json(),ej=await e.json(),sj=await s.json();setOrders(Array.isArray(oj)?oj:[]);setEvents(Array.isArray(ej)?ej:[]);setShift(sj&&typeof sj==='object'?sj:{current:null,recent:[]})}
  useEffect(()=>{load();const t=setInterval(load,20000);return()=>clearInterval(t)},[]);
  useEffect(()=>{const sync=()=>setOnline(navigator.onLine);sync();addEventListener('online',sync);addEventListener('offline',sync);return()=>{removeEventListener('online',sync);removeEventListener('offline',sync)}},[]);
- const active=useMemo(()=>orders.filter(o=>['READY_FOR_DELIVERY','OUT_FOR_DELIVERY'].includes(o.status)).sort((a,b)=>a.status==='OUT_FOR_DELIVERY'?-1:b.status==='OUT_FOR_DELIVERY'?1:new Date(a.createdAt).getTime()-new Date(b.createdAt).getTime()),[orders]);
+ const active=useMemo(()=>orders.filter(o=>['READY_FOR_DELIVERY','OUT_FOR_DELIVERY','RETURNING'].includes(o.status)).sort((a,b)=>a.status==='OUT_FOR_DELIVERY'?-1:b.status==='OUT_FOR_DELIVERY'?1:new Date(a.createdAt).getTime()-new Date(b.createdAt).getTime()),[orders]);
  const done=useMemo(()=>orders.filter(o=>o.status==='DELIVERED').slice(0,30),[orders]);
  const deliveredToday=useMemo(()=>done.filter(o=>new Date(o.delivery?.deliveredAt||o.updatedAt).toDateString()===new Date().toDateString()),[done]);
  const deliveredValueToday=useMemo(()=>deliveredToday.reduce((a,o)=>a+Number(o.total||0),0),[deliveredToday]);
@@ -67,7 +67,7 @@ export function DriverApp({session}:{session:any}){
         {o.status==='OUT_FOR_DELIVERY'&&<button className="btn btn-soft" onClick={()=>openEvent(o,'DELIVERY_REFUSED')}><RotateCcw/> Refus</button>}
         {o.status==='OUT_FOR_DELIVERY'&&<button className="btn btn-soft" onClick={()=>openEvent(o,'RESCHEDULED')}><CalendarClock/> Reprogrammer</button>}
         {o.status==='OUT_FOR_DELIVERY'&&<button className="btn btn-soft" onClick={()=>openEvent(o,'INCIDENT')}><AlertTriangle/> Incident</button>}
-        {o.status==='OUT_FOR_DELIVERY'&&<button className="btn btn-soft" onClick={()=>openEvent(o,'RETURN_TO_DEPOT')}><PackageCheck/> Retour dépôt</button>}
+        {o.status==='OUT_FOR_DELIVERY'&&<button className="btn btn-soft" onClick={()=>openEvent(o,'RETURN_TO_DEPOT')}><PackageCheck/> Retour fournisseur</button>}{o.status==='RETURNING'&&<button className="btn btn-primary" onClick={()=>openEvent(o,'RETURNED_TO_SUPPLIER')}><PackageCheck/> Remis au fournisseur</button>}
         {o.status==='OUT_FOR_DELIVERY'&&<button disabled={busy===o.id} className="btn btn-primary" onClick={()=>{setProof({recipientName:'',recipientPhone:o.shop?.phone||'',proofCode:'',proofUrl:''});setProofModal({order:o})}}><CheckCircle2/> Confirmer remise</button>}
        </div>
        <div className="delivery-event-log">{events.filter((e:any)=>e.orderId===o.id).slice(0,6).map((e:any)=><div key={e.id}><i/><span><b>{eventLabel(e.type)}</b><small>{e.note||''}{e.amount!==null&&e.amount!==undefined?' · '+money(e.amount):''}</small></span><time>{dateTime(e.createdAt)}</time></div>)}</div>
@@ -83,5 +83,5 @@ export function DriverApp({session}:{session:any}){
  </div>
 }
 
-function eventLabel(type:string){const x:Record<string,string>={COD_COLLECTED:'Encaissement COD',CUSTOMER_ABSENT:'Client absent',DELIVERY_REFUSED:'Livraison refusée',RESCHEDULED:'Livraison reprogrammée',INCIDENT:'Incident',RETURN_TO_DEPOT:'Retour au dépôt',DELIVERY_PROOF:'Preuve de livraison'};return x[type]||type.replaceAll('_',' ')}
+function eventLabel(type:string){const x:Record<string,string>={COD_COLLECTED:'Encaissement COD',CUSTOMER_ABSENT:'Client absent',DELIVERY_REFUSED:'Livraison refusée',RESCHEDULED:'Livraison reprogrammée',INCIDENT:'Incident',RETURN_TO_DEPOT:'Retour vers fournisseur',RETURNED_TO_SUPPLIER:'Retour remis au fournisseur',DELIVERY_PROOF:'Preuve de livraison'};return x[type]||type.replaceAll('_',' ')}
 async function compressImage(file:File){return new Promise<string>((resolve,reject)=>{const img=new Image();const url=URL.createObjectURL(file);img.onload=()=>{const max=960,scale=Math.min(1,max/Math.max(img.width,img.height));const canvas=document.createElement('canvas');canvas.width=Math.round(img.width*scale);canvas.height=Math.round(img.height*scale);const ctx=canvas.getContext('2d');if(!ctx){URL.revokeObjectURL(url);return reject(new Error('Image non supportée'))}ctx.drawImage(img,0,0,canvas.width,canvas.height);URL.revokeObjectURL(url);resolve(canvas.toDataURL('image/jpeg',.72))};img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('Image illisible'))};img.src=url})}
