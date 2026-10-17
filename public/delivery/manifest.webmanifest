@@ -1,0 +1,11 @@
+{
+  "name":"Fixi Delivery",
+  "short_name":"Delivery",
+  "description":"Livraisons, GPS, encaissements et preuves Fixi",
+  "start_url":"/delivery",
+  "scope":"/",
+  "display":"standalone",
+  "background_color":"#f6f7f9",
+  "theme_color":"#ff6b00",
+  "icons":[{"src":"/icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]
+}
