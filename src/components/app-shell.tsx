@@ -74,6 +74,7 @@ export function AppShell({children,user}:{children?:React.ReactNode;user:any}){
   useEffect(()=>{localStorage.setItem('fixi-sidebar-collapsed',collapsed?'1':'0')},[collapsed]);
   useEffect(()=>{const f=(e:KeyboardEvent)=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();setCmd(v=>!v)}if(e.key==='Escape')setCmd(false)};addEventListener('keydown',f);return()=>removeEventListener('keydown',f)},[]);
   useEffect(()=>{const beat=()=>fetch('/api/heartbeat',{method:'POST'}).catch(()=>{});beat();const t=setInterval(beat,30000);const vis=()=>document.visibilityState==='visible'&&beat();document.addEventListener('visibilitychange',vis);return()=>{clearInterval(t);document.removeEventListener('visibilitychange',vis)}},[]);
+  useEffect(()=>{const es=new EventSource('/api/events');es.onmessage=()=>window.dispatchEvent(new CustomEvent('fixi:realtime'));const vis=()=>{if(document.visibilityState==='visible')window.dispatchEvent(new CustomEvent('fixi:realtime'))};document.addEventListener('visibilitychange',vis);return()=>{document.removeEventListener('visibilitychange',vis);es.close()}},[]);
   async function logout(){await fetch('/api/auth/logout',{method:'POST'});router.push('/login');router.refresh()}
   function search(v:string){const x=v.trim();if(!x)return;setCmd(false);router.push('/app/repairs?q='+encodeURIComponent(x))}
   return <div className={`app-shell ${collapsed?'sidebar-collapsed':''}`}>
