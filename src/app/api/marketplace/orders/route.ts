@@ -77,11 +77,12 @@ export async function POST(req:Request){
       }
 
       const shop=await tx.shop.findUniqueOrThrow({where:{id:s.shopId}});
-      await tx.supplierErpCustomer.upsert({
-        where:{companyId_shopId:{companyId,shopId:shop.id}},
-        update:{name:shop.name,phone:shop.phone||null,email:shop.email||null,address:shop.address||null,region:shop.region||null,taxId:shop.taxId||null,active:true},
-        create:{companyId,shopId:shop.id,name:shop.name,phone:shop.phone||null,email:shop.email||null,address:shop.address||null,region:shop.region||null,taxId:shop.taxId||null}
-      });
+      const existingCustomer=await tx.supplierErpCustomer.findFirst({where:{companyId,shopId:shop.id}});
+      if(existingCustomer){
+        await tx.supplierErpCustomer.update({where:{id:existingCustomer.id},data:{name:shop.name,phone:shop.phone||null,email:shop.email||null,address:shop.address||null,region:shop.region||null,taxId:shop.taxId||null,active:true}});
+      }else{
+        await tx.supplierErpCustomer.create({data:{companyId,shopId:shop.id,name:shop.name,phone:shop.phone||null,email:shop.email||null,address:shop.address||null,region:shop.region||null,taxId:shop.taxId||null}});
+      }
       let code=deliveryCode();
       while(await tx.supplierOrder.findFirst({where:{deliveryCode:code},select:{id:true}}))code=deliveryCode();
       const order=await tx.supplierOrder.create({
