@@ -23,6 +23,7 @@ export async function PATCH(req:Request,{params}:{params:Promise<{id:string}>}){
   if(status===SupplierOrderStatus.DELIVERED){
    if(o.status!==SupplierOrderStatus.OUT_FOR_DELIVERY)return bad('La livraison doit être en route',409);
    if(!String(b.recipientName||'').trim())return bad('Nom du réceptionnaire requis pour confirmer la livraison',409);
+   const proofCode=String(b.proofCode||'').trim();if(!proofCode)return bad('Code de remise atelier requis',409);if(!o.deliveryCode||proofCode!==o.deliveryCode)return bad('Code de remise incorrect',409);
    if(!o.deliveryCode||String(b.proofCode||'').trim()!==String(o.deliveryCode))return bad('Code de remise atelier invalide',409);
   }
   const ds=status===SupplierOrderStatus.DELIVERED?SupplierDeliveryStatus.DELIVERED:status===SupplierOrderStatus.OUT_FOR_DELIVERY?SupplierDeliveryStatus.OUT_FOR_DELIVERY:SupplierDeliveryStatus.ASSIGNED;
