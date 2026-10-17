@@ -6,6 +6,7 @@ import {api} from './ui';
 import {RealtimeNotificationCenter} from './realtime-notification-center';
 import {PushToggle} from './push-toggle';
 import {PwaRegister} from './pwa-register';
+import {InstallAppButton} from './install-app-button';
 import {DeliveryInstall} from './delivery-install';
 import {BarcodeCamera} from './barcode-camera';
 import {dateTime,money} from '@/lib/format';
@@ -31,6 +32,7 @@ export function DriverApp({session}:{session:any}){
  const exceptionsToday=useMemo(()=>events.filter((e:any)=>['CUSTOMER_ABSENT','DELIVERY_REFUSED','INCIDENT','RETURN_TO_DEPOT'].includes(e.type)&&new Date(e.createdAt).toDateString()===new Date().toDateString()).length,[events]);
  async function toggleAvailable(){try{const next=!driverAvailable;await api('/api/delivery/profile',{method:'PATCH',body:JSON.stringify({driverAvailable:next})});setDriverAvailable(next);setMsg(next?'Vous êtes disponible pour recevoir de nouvelles courses.':'Vous ne recevrez plus de nouvelles courses automatiques.')}catch(e:any){setErr(e.message)}}
  async function logout(){await fetch('/api/delivery/auth/logout',{method:'POST'});router.push('/delivery/login');router.refresh()}
+ async function accept(o:any){setBusy(o.id);setErr('');setMsg('');try{await api('/api/delivery/orders/'+o.id+'/accept',{method:'POST'});setMsg('Livraison acceptée. Elle est maintenant réservée pour vous.');await load()}catch(e:any){setErr(e.message)}finally{setBusy('')}}
  async function patch(o:any,payload:any,quiet=false){if(!quiet){setBusy(o.id);setErr('');setMsg('')}try{await api('/api/delivery/orders/'+o.id,{method:'PATCH',body:JSON.stringify(payload)});if(!quiet)await load()}catch(e:any){if(!quiet)setErr(e.message)}finally{if(!quiet)setBusy('')}}
  async function acceptOrder(o:any){setBusy(o.id);setErr('');try{await api('/api/delivery/orders/'+o.id,{method:'POST',body:'{}'});setMsg('Commande acceptée. Elle est maintenant réservée pour vous.');await load()}catch(e:any){setErr(e.message)}finally{setBusy('')}}
  async function openDue(o:any){setBusy(o.id);setErr('');try{const r=await fetch('/api/delivery/customers/'+o.shopId+'/due',{cache:'no-store'});const j=await r.json();if(!r.ok)throw new Error(j.error||'Impossible de charger le dû');setDueData(j);setDueAmount(j.due>0?Number(j.due).toFixed(3):'0');setDueModal(o)}catch(e:any){setErr(e.message)}finally{setBusy('')}}
@@ -42,13 +44,21 @@ export function DriverApp({session}:{session:any}){
  async function photo(file?:File){if(!file)return;const data=await compressImage(file);setProof(p=>({...p,proofUrl:data}))}
  async function confirmDelivery(){if(!proofModal)return;const o=proofModal.order;if(!proof.recipientName.trim())return setErr('Nom du réceptionnaire requis.');setBusy(o.id);setErr('');try{await patch(o,{status:'DELIVERED',...proof},true);setProofModal(null);setProof({recipientName:'',recipientPhone:'',proofCode:'',proofUrl:''});setMsg('Livraison confirmée avec preuve de remise.');await load()}catch(e:any){setErr(e.message)}finally{setBusy('')}}
  useEffect(()=>{
+  const ongoing=active.filter(o=>o.status==='OUT_FOR_DELIVERY');
+  if(!('serviceWorker'in navigator))return;
+  navigator.serviceWorker.ready.then(reg=>{
+    for(const o of ongoing)reg.active?.postMessage({type:'DELIVERY_ONGOING',orderId:o.id,title:'Livraison en cours · '+o.reference,body:(o.shop?.name||'Client')+' · '+money(o.total)});
+  }).catch(()=>{});
+  return()=>{navigator.serviceWorker.ready.then(reg=>{for(const o of ongoing)reg.active?.postMessage({type:'DELIVERY_ONGOING_CLEAR',orderId:o.id})}).catch(()=>{})}
+ },[active.map(o=>o.id+o.status).join('|')]);
+ useEffect(()=>{
   if(!tracking||!shift.current||!online)return;
   const current=active.filter(o=>o.status==='OUT_FOR_DELIVERY');if(!current.length||!navigator.geolocation)return;
   const id=navigator.geolocation.watchPosition(pos=>{for(const o of current){const now=Date.now();if(now-(lastGps.current[o.id]||0)<15000)continue;lastGps.current[o.id]=now;patch(o,{status:o.status,trackingNote:`GPS:${pos.coords.latitude},${pos.coords.longitude}|${new Date().toISOString()}`,latitude:pos.coords.latitude,longitude:pos.coords.longitude,accuracy:pos.coords.accuracy},true)}},()=>{}, {enableHighAccuracy:true,maximumAge:8000,timeout:12000});
   return()=>navigator.geolocation.clearWatch(id)
  },[tracking,shift.current?.id,online,active.map(o=>o.id+o.status).join('|')]);
  return <div className="delivery-app driver-app driver-v2"><PwaRegister/>
-  <header><div className="driver-header-brand"><Truck/><span><b>Fixi Delivery</b><small>{session.companyName}</small></span></div><div className="driver-live-state">{online?<><Wifi/><span>En ligne</span></>:<><WifiOff/><span>Hors ligne</span></>}</div><button className={'driver-availability '+(driverAvailable?'on':'off')} onClick={toggleAvailable} title="Disponibilité livreur"><Radio/><span>{driverAvailable?'Disponible':'Indisponible'}</span></button><RealtimeNotificationCenter apiUrl="/api/delivery/notifications" eventsUrl="/api/delivery/events-stream" storageKey="fixi-delivery-notifications" onEvent={load}/><PushToggle subscribeUrl="/api/delivery/push/subscribe"/><div><b>{session.fullName}</b><span>Livreur</span></div><button onClick={logout} title="Déconnexion"><LogOut/></button></header>
+  <header><div className="driver-header-brand"><Truck/><span><b>Fixi Delivery</b><small>{session.companyName}</small></span></div><div className="driver-live-state">{online?<><Wifi/><span>En ligne</span></>:<><WifiOff/><span>Hors ligne</span></>}</div><button className={'driver-availability '+(driverAvailable?'on':'off')} onClick={toggleAvailable} title="Disponibilité livreur"><Radio/><span>{driverAvailable?'Disponible':'Indisponible'}</span></button><RealtimeNotificationCenter apiUrl="/api/delivery/notifications" eventsUrl="/api/delivery/events-stream" storageKey="fixi-delivery-notifications" onEvent={load}/><PushToggle subscribeUrl="/api/delivery/push/subscribe"/><InstallAppButton label="Installer"/><div><b>{session.fullName}</b><span>Livreur</span></div><button onClick={logout} title="Déconnexion"><LogOut/></button></header>
   <main>
    <DeliveryInstall/>
    <section className="driver-command">
@@ -58,6 +68,8 @@ export function DriverApp({session}:{session:any}){
    <div className="driver-kpis"><div><Truck/><span>À traiter</span><b>{active.length}</b></div><div><CheckCircle2/><span>Livrées aujourd’hui</span><b>{deliveredToday.length}</b></div><div><WalletCards/><span>Valeur livrée</span><b>{money(deliveredValueToday)}</b></div><div><Banknote/><span>COD encaissé</span><b>{money(codToday)}</b></div><div><WalletCards/><span>Anciens dus encaissés</span><b>{money(dueCollectedToday)}</b></div><div><AlertTriangle/><span>Incidents</span><b>{exceptionsToday}</b></div></div>
    {err&&<div className="driver-banner error"><AlertTriangle/>{err}</div>}{msg&&<div className="driver-banner success"><CheckCircle2/>{msg}</div>}
    {!shift.current&&<div className="driver-shift-lock"><ShieldCheck/><div><h2>Journée non ouverte</h2><p>Les commandes restent visibles, mais une livraison ne peut pas être démarrée tant que le livreur n’a pas ouvert sa journée.</p></div><button className="btn btn-primary" onClick={()=>setShiftModal('open')}>Ouvrir ma journée</button></div>}
+   {available.length>0&&<section className="driver-available"><div className="supplier-section-head"><div><b>Nouvelles missions disponibles</b><span>Le premier livreur qui accepte réserve la commande.</span></div><em>{available.length}</em></div><div className="driver-available-grid">{available.map(o=>{const address=o.deliveryAddress||o.shop?.address||o.shop?.region||'';return <article key={o.id}><div><code>{o.reference}</code><h3>{o.shop?.name}</h3><span><MapPinned/> {address||'Adresse non renseignée'}</span><strong>{money(o.total)}</strong></div><button className="btn btn-primary" disabled={busy===o.id} onClick={()=>accept(o)}><CheckCircle2/> Accepter</button></article>})}</div></section>}
+   <section className="driver-mobile-setup"><div><b>Fixi Delivery sur votre téléphone</b><span>Installez l’application et activez les notifications pour recevoir les nouvelles missions même écran verrouillé.</span></div><InstallAppButton label="Installer l’app"/><PushToggle subscribeUrl="/api/delivery/push/subscribe" label/></section>
    <div className="driver-route-list">
     {active.map((o,index)=>{const address=o.deliveryAddress||o.shop?.address||o.shop?.region||'';const collected=Number(o.delivery?.cashCollected||0);return <article key={o.id} className={o.status==='OUT_FOR_DELIVERY'?'active-delivery':''}>
       <div className="driver-stop-number">{index+1}</div>
@@ -80,7 +92,7 @@ export function DriverApp({session}:{session:any}){
        <div className="delivery-event-log">{events.filter((e:any)=>e.orderId===o.id).slice(0,6).map((e:any)=><div key={e.id}><i/><span><b>{eventLabel(e.type)}</b><small>{e.note||''}{e.amount!==null&&e.amount!==undefined?' · '+money(e.amount):''}</small></span><time>{dateTime(e.createdAt)}</time></div>)}</div>
       </div>
      </article>})}
-    {!active.length&&<div className="delivery-empty"><CheckCircle2/><h2>Aucune livraison active</h2><p>Votre responsable livraison peut vous affecter une nouvelle tournée depuis Fixi Supplier.</p></div>}
+    {!active.length&&<div className="delivery-empty"><CheckCircle2/><h2>Aucune livraison acceptée</h2><p>{available.length?'Choisissez une mission disponible ci-dessus.':'Aucune nouvelle mission pour le moment.'}</p></div>}
    </div>
    {done.length>0&&<section className="driver-history"><div className="supplier-section-head"><div><b>Historique récent</b><span>Preuves de remise et commandes terminées.</span></div></div>{done.map(o=><div key={o.id}><span><b>{o.reference}</b><small>{o.shop?.name} · {o.delivery?.recipientName?'Reçu par '+o.delivery.recipientName:'Livrée'}</small></span><strong>{money(o.total)}</strong><CheckCircle2/></div>)}</section>}
   </main>
