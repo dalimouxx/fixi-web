@@ -49,7 +49,7 @@ export async function POST(req:Request){
     prisma.supplierOrder.update({where:{id:orderId},data:{status:SupplierOrderStatus.READY_FOR_DELIVERY}}),
     prisma.supplierDelivery.update({where:{orderId},data:{status:SupplierDeliveryStatus.PENDING,driverAccountId:null,driverName:null,driverPhone:null,assignedAt:null,acceptedAt:null,pickedUpAt:null,exceptionStatus:null,returnCondition:null}})
    ]);
-   await notifySupplier(s.companyId,'Livraison à reprendre',order.reference+' est de nouveau disponible aux livreurs.',{href:'/delivery',kind:'DELIVERY',priority:'HIGH',roles:['DRIVER'],metadata:{orderId,reference:order.reference}});
+   await notifySupplier(s.companyId,'Livraison à reprendre',order.reference+' est de nouveau disponible aux livreurs.',{href:'/delivery',kind:'DELIVERY',priority:'HIGH',roles:['DRIVER'],availableDriversOnly:true,metadata:{orderId,reference:order.reference}});
    return ok({ok:true,status:'READY_FOR_DELIVERY'});
   }
   return bad('Décision de retour inconnue');
