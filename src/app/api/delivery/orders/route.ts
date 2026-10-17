@@ -5,8 +5,8 @@ export async function GET(){try{
  const shopIds=[...new Set(rows.map(x=>x.shopId))];
  const customers=shopIds.length?await prisma.supplierErpCustomer.findMany({where:{companyId:s.companyId,shopId:{in:shopIds}},select:{id:true,shopId:true}}):[];
  const customerIds=customers.map(x=>x.id);
- const sales=customerIds.length?await prisma.supplierErpSale.findMany({where:{companyId:s.companyId,customerId:{in:customerIds},status:{not:'CANCELLED'}},select:{customerId:true,total:true,paid:true}}):[];
+ const sales=customerIds.length?await prisma.supplierErpSale.findMany({where:{companyId:s.companyId,customerId:{in:customerIds},status:{not:'CANCELLED'}},select:{id:true,customerId:true,reference:true,status:true,total:true,paid:true,dueAt:true,createdAt:true},orderBy:{createdAt:'asc'}}):[];
  const dueByCustomer=new Map<string,number>();for(const x of sales){if(!x.customerId)continue;dueByCustomer.set(x.customerId,(dueByCustomer.get(x.customerId)||0)+Math.max(0,Number(x.total)-Number(x.paid)))}
  const customerByShop=new Map(customers.map(x=>[x.shopId,x.id]));
- return ok(plain(rows.map(x=>({...x,availableToAccept:x.status===SupplierOrderStatus.READY_FOR_DELIVERY&&!x.delivery?.driverAccountId,customerDue:dueByCustomer.get(customerByShop.get(x.shopId)||'')||0}))))
+ return ok(plain(rows.map(x=>{const customerId=customerByShop.get(x.shopId)||'';const dueDetails=sales.filter(s=>s.customerId===customerId&&Number(s.total)-Number(s.paid)>0.0001).map(s=>({id:s.id,reference:s.reference,status:s.status,total:Number(s.total),paid:Number(s.paid),due:Math.max(0,Number(s.total)-Number(s.paid)),dueAt:s.dueAt,createdAt:s.createdAt}));return {...x,availableToAccept:x.status===SupplierOrderStatus.READY_FOR_DELIVERY&&!x.delivery?.driverAccountId,customerDue:dueByCustomer.get(customerId)||0,dueDetails}})))
 }catch(e:any){return bad(e.message,e.status||500)}}
