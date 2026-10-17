@@ -1,0 +1,11 @@
+{
+  "name":"Fixi Supplier",
+  "short_name":"Supplier",
+  "description":"ERP fournisseur, stock, caisse, clients et livraisons Fixi",
+  "start_url":"/supplier",
+  "scope":"/",
+  "display":"standalone",
+  "background_color":"#f7f7f5",
+  "theme_color":"#ff6b00",
+  "icons":[{"src":"/icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]
+}
