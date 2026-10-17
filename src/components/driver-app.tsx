@@ -1,7 +1,7 @@
 'use client';
 import {useEffect,useMemo,useRef,useState} from 'react';
 import {useRouter} from 'next/navigation';
-import {MapPinned,Navigation,Phone,Truck,CheckCircle2,RefreshCw,Map,Clock3,Banknote,AlertTriangle,RotateCcw,CalendarClock,PackageCheck,LogOut,PlayCircle,PauseCircle,Route,WalletCards,Camera,ShieldCheck,X,UserRound,Gauge,Wifi,WifiOff} from 'lucide-react';
+import {MapPinned,Navigation,Phone,Truck,CheckCircle2,RefreshCw,Map,Clock3,Banknote,AlertTriangle,RotateCcw,CalendarClock,PackageCheck,LogOut,PlayCircle,PauseCircle,Route,WalletCards,Camera,ShieldCheck,X,UserRound,Gauge,Wifi,WifiOff,Radio} from 'lucide-react';
 import {api} from './ui';
 import {RealtimeNotificationCenter} from './realtime-notification-center';
 import {PushToggle} from './push-toggle';
@@ -17,8 +17,8 @@ type ProofModal={order:any}|null;
 export function DriverApp({session}:{session:any}){
  const router=useRouter();const[orders,setOrders]=useState<any[]>([]);const[events,setEvents]=useState<any[]>([]);const[shift,setShift]=useState<any>({current:null,recent:[]});const[busy,setBusy]=useState('');const[msg,setMsg]=useState('');const[err,setErr]=useState('');
  const[eventModal,setEventModal]=useState<EventModal>(null);const[dueModal,setDueModal]=useState<any>(null);const[dueData,setDueData]=useState<any>(null);const[dueAmount,setDueAmount]=useState('');const[eventNote,setEventNote]=useState('');const[eventAmount,setEventAmount]=useState('');const[proofModal,setProofModal]=useState<ProofModal>(null);const[proof,setProof]=useState({recipientName:'',recipientPhone:'',proofCode:'',proofUrl:''});
- const[shiftModal,setShiftModal]=useState<'open'|'close'|null>(null);const[shiftForm,setShiftForm]=useState({startCash:'0',startMileage:'',endMileage:'',remittedCod:'0',note:''});const[tracking,setTracking]=useState(true);const[online,setOnline]=useState(true);const lastGps=useRef<Record<string,number>>({});
- async function load(){const [o,e,s]=await Promise.all([fetch('/api/delivery/orders',{cache:'no-store'}),fetch('/api/delivery/events',{cache:'no-store'}),fetch('/api/delivery/shift',{cache:'no-store'})]);const oj=await o.json(),ej=await e.json(),sj=await s.json();setOrders(Array.isArray(oj)?oj:[]);setEvents(Array.isArray(ej)?ej:[]);setShift(sj&&typeof sj==='object'?sj:{current:null,recent:[]})}
+ const[shiftModal,setShiftModal]=useState<'open'|'close'|null>(null);const[driverAvailable,setDriverAvailable]=useState(true);const[shiftForm,setShiftForm]=useState({startCash:'0',startMileage:'',endMileage:'',remittedCod:'0',note:''});const[tracking,setTracking]=useState(true);const[online,setOnline]=useState(true);const lastGps=useRef<Record<string,number>>({});
+ async function load(){const [o,e,s,p]=await Promise.all([fetch('/api/delivery/orders',{cache:'no-store'}),fetch('/api/delivery/events',{cache:'no-store'}),fetch('/api/delivery/shift',{cache:'no-store'}),fetch('/api/delivery/profile',{cache:'no-store'})]);const oj=await o.json(),ej=await e.json(),sj=await s.json(),pj=await p.json();setOrders(Array.isArray(oj)?oj:[]);setEvents(Array.isArray(ej)?ej:[]);setShift(sj&&typeof sj==='object'?sj:{current:null,recent:[]});if(typeof pj?.driverAvailable==='boolean')setDriverAvailable(pj.driverAvailable)}
  useEffect(()=>{load();const t=setInterval(load,20000);return()=>clearInterval(t)},[]);
  useEffect(()=>{const sync=()=>setOnline(navigator.onLine);sync();addEventListener('online',sync);addEventListener('offline',sync);return()=>{removeEventListener('online',sync);removeEventListener('offline',sync)}},[]);
  const active=useMemo(()=>orders.filter(o=>['READY_FOR_DELIVERY','OUT_FOR_DELIVERY','RETURNING'].includes(o.status)).sort((a,b)=>a.status==='OUT_FOR_DELIVERY'?-1:b.status==='OUT_FOR_DELIVERY'?1:new Date(a.createdAt).getTime()-new Date(b.createdAt).getTime()),[orders]);
@@ -28,6 +28,7 @@ export function DriverApp({session}:{session:any}){
  const codToday=useMemo(()=>events.filter((e:any)=>e.type==='COD_COLLECTED'&&new Date(e.createdAt).toDateString()===new Date().toDateString()).reduce((a:number,e:any)=>a+Number(e.amount||0),0),[events]);
  const dueCollectedToday=useMemo(()=>events.filter((e:any)=>e.type==='DUE_COLLECTED'&&new Date(e.createdAt).toDateString()===new Date().toDateString()).reduce((a:number,e:any)=>a+Number(e.amount||0),0),[events]);
  const exceptionsToday=useMemo(()=>events.filter((e:any)=>['CUSTOMER_ABSENT','DELIVERY_REFUSED','INCIDENT','RETURN_TO_DEPOT'].includes(e.type)&&new Date(e.createdAt).toDateString()===new Date().toDateString()).length,[events]);
+ async function toggleAvailable(){try{const next=!driverAvailable;await api('/api/delivery/profile',{method:'PATCH',body:JSON.stringify({driverAvailable:next})});setDriverAvailable(next);setMsg(next?'Vous êtes disponible pour recevoir de nouvelles courses.':'Vous ne recevrez plus de nouvelles courses automatiques.')}catch(e:any){setErr(e.message)}}
  async function logout(){await fetch('/api/delivery/auth/logout',{method:'POST'});router.push('/delivery/login');router.refresh()}
  async function patch(o:any,payload:any,quiet=false){if(!quiet){setBusy(o.id);setErr('');setMsg('')}try{await api('/api/delivery/orders/'+o.id,{method:'PATCH',body:JSON.stringify(payload)});if(!quiet)await load()}catch(e:any){if(!quiet)setErr(e.message)}finally{if(!quiet)setBusy('')}}
  async function acceptOrder(o:any){setBusy(o.id);setErr('');try{await api('/api/delivery/orders/'+o.id,{method:'POST',body:'{}'});setMsg('Commande acceptée. Elle est maintenant réservée pour vous.');await load()}catch(e:any){setErr(e.message)}finally{setBusy('')}}
@@ -46,7 +47,7 @@ export function DriverApp({session}:{session:any}){
   return()=>navigator.geolocation.clearWatch(id)
  },[tracking,shift.current?.id,online,active.map(o=>o.id+o.status).join('|')]);
  return <div className="delivery-app driver-app driver-v2"><PwaRegister/>
-  <header><div className="driver-header-brand"><Truck/><span><b>Fixi Delivery</b><small>{session.companyName}</small></span></div><div className="driver-live-state">{online?<><Wifi/><span>En ligne</span></>:<><WifiOff/><span>Hors ligne</span></>}</div><RealtimeNotificationCenter apiUrl="/api/delivery/notifications" eventsUrl="/api/delivery/events-stream" storageKey="fixi-delivery-notifications" onEvent={load}/><PushToggle subscribeUrl="/api/delivery/push/subscribe"/><div><b>{session.fullName}</b><span>Livreur</span></div><button onClick={logout} title="Déconnexion"><LogOut/></button></header>
+  <header><div className="driver-header-brand"><Truck/><span><b>Fixi Delivery</b><small>{session.companyName}</small></span></div><div className="driver-live-state">{online?<><Wifi/><span>En ligne</span></>:<><WifiOff/><span>Hors ligne</span></>}</div><button className={'driver-availability '+(driverAvailable?'on':'off')} onClick={toggleAvailable} title="Disponibilité livreur"><Radio/><span>{driverAvailable?'Disponible':'Indisponible'}</span></button><RealtimeNotificationCenter apiUrl="/api/delivery/notifications" eventsUrl="/api/delivery/events-stream" storageKey="fixi-delivery-notifications" onEvent={load}/><PushToggle subscribeUrl="/api/delivery/push/subscribe"/><div><b>{session.fullName}</b><span>Livreur</span></div><button onClick={logout} title="Déconnexion"><LogOut/></button></header>
   <main>
    <DeliveryInstall/>
    <section className="driver-command">
