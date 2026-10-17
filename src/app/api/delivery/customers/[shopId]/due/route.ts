@@ -7,7 +7,7 @@ import {notifyShop} from '@/lib/notifications';
 import {NotificationType} from '@prisma/client';
 
 async function canAccess(companyId:string,driverId:string,shopId:string){
- const x=await prisma.supplierOrder.findFirst({where:{companyId,shopId,delivery:{is:{driverAccountId:driverId}}},select:{id:true}});
+ const x=await prisma.supplierOrder.findFirst({where:{companyId,shopId,status:'OUT_FOR_DELIVERY',delivery:{is:{driverAccountId:driverId}}},select:{id:true}});
  return !!x;
 }
 
