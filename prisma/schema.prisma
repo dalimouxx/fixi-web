@@ -2206,21 +2206,27 @@ model SupplierPaymentMethod {
 }
 
 model SupplierDeliveryShift {
-  id            String   @id @default(cuid())
-  companyId     String
-  driverAccountId String
-  status        String   @default("OPEN")
-  startCash     Decimal  @default(0) @db.Decimal(12,3)
-  expectedCod   Decimal  @default(0) @db.Decimal(12,3)
-  collectedCod  Decimal  @default(0) @db.Decimal(12,3)
-  remittedCod   Decimal  @default(0) @db.Decimal(12,3)
-  startMileage  Int?
-  endMileage    Int?
-  note          String?
-  openedAt      DateTime @default(now())
-  closedAt      DateTime?
+  id               String   @id @default(cuid())
+  companyId        String
+  driverAccountId  String
+  status           String   @default("OPEN")
+  startCash        Decimal  @default(0) @db.Decimal(12,3)
+  expectedCod      Decimal  @default(0) @db.Decimal(12,3)
+  collectedCod     Decimal  @default(0) @db.Decimal(12,3)
+  remittedCod      Decimal  @default(0) @db.Decimal(12,3)
+  declaredRemit    Decimal? @db.Decimal(12,3)
+  cashDifference   Decimal? @db.Decimal(12,3)
+  cashierAccountId String?
+  startMileage     Int?
+  endMileage       Int?
+  note             String?
+  openedAt         DateTime @default(now())
+  submittedAt      DateTime?
+  confirmedAt      DateTime?
+  closedAt         DateTime?
   @@index([companyId, driverAccountId, status])
   @@index([companyId, openedAt])
+  @@index([companyId, status, submittedAt])
 }
 
 model SupplierPushSubscription {
