@@ -4,7 +4,7 @@ import {BellRing,BellOff} from 'lucide-react';
 
 function b64ToUint8(v:string){const pad='='.repeat((4-v.length%4)%4),b=(v+pad).replace(/-/g,'+').replace(/_/g,'/');const raw=atob(b);return Uint8Array.from([...raw].map(c=>c.charCodeAt(0)))}
 
-export function PushToggle({subscribeUrl='/api/push/subscribe'}:{subscribeUrl?:string}){
+export function PushToggle({subscribeUrl='/api/push/subscribe',label=false}:{subscribeUrl?:string;label?:boolean}){
  const[supported,setSupported]=useState(false);const[on,setOn]=useState(false);const[busy,setBusy]=useState(false);
  useEffect(()=>{
   const ok='serviceWorker'in navigator&&'PushManager'in window;setSupported(ok);if(!ok)return;
@@ -22,5 +22,5 @@ export function PushToggle({subscribeUrl='/api/push/subscribe'}:{subscribeUrl?:s
    await fetch(subscribeUrl,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(sub)});setOn(true);
   }finally{setBusy(false)}
  }
- return supported?<button className={'push-toggle '+(on?'on':'')} onClick={toggle} disabled={busy} title={on?'Notifications Push activées':'Activer les notifications Push'}>{on?<BellRing size={17}/>:<BellOff size={17}/>}</button>:null;
+ return supported?<button className={'push-toggle '+(on?'on':'')+(label?' labeled':'')} onClick={toggle} disabled={busy} title={on?'Notifications Push activées':'Activer les notifications Push'}>{on?<BellRing size={17}/>:<BellOff size={17}/>} {label&&<span>{on?'Notifications activées':'Activer notifications'}</span>}</button>:null;
 }
