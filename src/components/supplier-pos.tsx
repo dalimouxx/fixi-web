@@ -1,5 +1,5 @@
 'use client';
-import {useMemo,useState} from 'react';
+import {useEffect,useMemo,useState} from 'react';
 import {Search,ShoppingCart,Plus,Minus,Trash2,Banknote,WalletCards,UserRound,ReceiptText,LockKeyhole,UnlockKeyhole,ScanLine,Percent,CheckCircle2,X,Printer,Camera} from 'lucide-react';
 import {api} from './ui';
 import {money} from '@/lib/format';
@@ -12,9 +12,11 @@ type PaymentLine={method:string;amount:number};
 export function SupplierPos({products,customers,cashSessions,methods,warehouses,warehouseStock,session,onChanged}:Props){
  const[q,setQ]=useState('');const[category,setCategory]=useState('ALL');const[pricing,setPricing]=useState<'retail'|'wholesale'>('retail');const[warehouseId,setWarehouseId]=useState('');
  const[cart,setCart]=useState<CartLine[]>([]);const[customerId,setCustomerId]=useState('');const[discount,setDiscount]=useState(0);const[payments,setPayments]=useState<PaymentLine[]>([{method:'CASH',amount:0}]);
- const[busy,setBusy]=useState(false);const[msg,setMsg]=useState('');const[err,setErr]=useState('');const[scanner,setScanner]=useState(false);const[cashModal,setCashModal]=useState<'open'|'close'|null>(null);const[cashAmount,setCashAmount]=useState('0');const[lastSale,setLastSale]=useState<any>(null);
+ const[draftReady,setDraftReady]=useState(false);const[busy,setBusy]=useState(false);const[msg,setMsg]=useState('');const[err,setErr]=useState('');const[scanner,setScanner]=useState(false);const[cashModal,setCashModal]=useState<'open'|'close'|null>(null);const[cashAmount,setCashAmount]=useState('0');const[lastSale,setLastSale]=useState<any>(null);
  const openSession=cashSessions.find(x=>x.status==='OPEN'&&(!x.accountId||x.accountId===session.id));const effectiveWarehouseId=openSession?.warehouseId??warehouseId;
- const categories=useMemo(()=>['ALL',...Array.from(new Set(products.filter(p=>p.active!==false).map(p=>p.category||'Sans catégorie'))).sort()],[products]);
+ useEffect(()=>{try{const raw=localStorage.getItem('fixi-supplier-pos-draft');if(raw){const d=JSON.parse(raw);if(Array.isArray(d.cart))setCart(d.cart);if(d.customerId)setCustomerId(d.customerId);if(Number.isFinite(Number(d.discount)))setDiscount(Number(d.discount));if(Array.isArray(d.payments)&&d.payments.length)setPayments(d.payments);if(d.pricing)setPricing(d.pricing);if(d.warehouseId)setWarehouseId(d.warehouseId)}}catch{}finally{setDraftReady(true)}},[]);
+ useEffect(()=>{if(!draftReady)return;try{localStorage.setItem('fixi-supplier-pos-draft',JSON.stringify({cart,customerId,discount,payments,pricing,warehouseId,updatedAt:new Date().toISOString()}))}catch{}},[draftReady,cart,customerId,discount,payments,pricing,warehouseId]);
+  const categories=useMemo(()=>['ALL',...Array.from(new Set(products.filter(p=>p.active!==false).map(p=>p.category||'Sans catégorie'))).sort()],[products]);
  const filtered=useMemo(()=>products.filter(p=>p.active!==false&&(!q||[p.sku,p.barcode,p.name,p.brand,p.category].join(' ').toLowerCase().includes(q.toLowerCase()))&&(category==='ALL'||(p.category||'Sans catégorie')===category)),[products,q,category]);
  const subtotal=cart.reduce((a,l)=>a+l.unitPrice*l.quantity,0);
  const tax=cart.reduce((a,l)=>a+(l.unitPrice*l.quantity*Math.max(0,Number(l.product.taxRate||0))/100),0);
@@ -36,7 +38,7 @@ export function SupplierPos({products,customers,cashSessions,methods,warehouses,
   setBusy(true);setErr('');setMsg('');
   try{
    const sale=await api('/api/supplier/erp',{method:'POST',body:JSON.stringify({action:'SALE',warehouseId:effectiveWarehouseId||null,customerId:customerId||null,items:cart.map(l=>({productId:l.product.id,quantity:l.quantity,unitPrice:l.unitPrice})),discount,tax,payments:payments.filter(p=>p.amount>0),dueAt:due>0?new Date(Date.now()+7*86400000).toISOString():null})});
-   setLastSale(sale);setMsg('Vente '+sale.reference+' enregistrée avec succès.');setCart([]);setDiscount(0);setPayments([{method:'CASH',amount:0}]);setCustomerId('');onChanged();
+   setLastSale(sale);setMsg('Vente '+sale.reference+' enregistrée avec succès.');try{localStorage.removeItem('fixi-supplier-pos-draft')}catch{}setCart([]);setDiscount(0);setPayments([{method:'CASH',amount:0}]);setCustomerId('');onChanged();
   }catch(e:any){setErr(e.message||'Vente impossible')}finally{setBusy(false)}
  }
  async function cashAction(){
