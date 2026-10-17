@@ -83,7 +83,7 @@ export function DriverApp({session}:{session:any}){
         {address&&<a className="btn btn-soft" target="_blank" href={maps(address)}><Navigation/> Itinéraire</a>}
         {o.shop?.phone&&<a className="btn btn-soft" href={'tel:'+o.shop.phone}><Phone/> Appeler</a>}{o.delivery?.driverAccountId===session.id&&<button className="btn btn-soft" onClick={()=>openDue(o)}><WalletCards/> Dû client</button>}
         {o.status==='READY_FOR_DELIVERY'&&!o.delivery?.driverAccountId&&<button disabled={busy===o.id} className="btn btn-primary" onClick={()=>acceptOrder(o)}><Truck/> Accepter</button>}{o.status==='READY_FOR_DELIVERY'&&o.delivery?.driverAccountId===session.id&&<button disabled={busy===o.id||!shift.current} className="btn btn-primary" onClick={()=>patch(o,{status:'OUT_FOR_DELIVERY'})}><PlayCircle/> Démarrer</button>}
-        {o.status==='OUT_FOR_DELIVERY'&&<button className="btn btn-soft" onClick={()=>openEvent(o,'COD_COLLECTED')}><Banknote/> Encaisser COD</button>}{o.status==='OUT_FOR_DELIVERY'&&Number(o.customerDue||0)>0&&<button className="btn btn-soft" onClick={()=>openEvent(o,'DUE_COLLECTED')}><WalletCards/> Ancien dû {money(o.customerDue)}</button>}
+        {o.status==='OUT_FOR_DELIVERY'&&<button className="btn btn-soft" onClick={()=>openEvent(o,'COD_COLLECTED')}><Banknote/> Encaisser COD</button>}
         {o.status==='OUT_FOR_DELIVERY'&&<button className="btn btn-soft" onClick={()=>openEvent(o,'CUSTOMER_ABSENT')}><AlertTriangle/> Absent</button>}
         {o.status==='OUT_FOR_DELIVERY'&&<button className="btn btn-soft" onClick={()=>openEvent(o,'DELIVERY_REFUSED')}><RotateCcw/> Refus</button>}
         {o.status==='OUT_FOR_DELIVERY'&&<button className="btn btn-soft" onClick={()=>openEvent(o,'RESCHEDULED')}><CalendarClock/> Reprogrammer</button>}
