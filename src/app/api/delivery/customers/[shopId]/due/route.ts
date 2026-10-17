@@ -18,8 +18,15 @@ export async function GET(_:Request,{params}:{params:Promise<{shopId:string}>}){
   const customer=await prisma.supplierErpCustomer.findFirst({where:{companyId:s.companyId,shopId,active:true}});
   if(!customer)return ok({customer:null,due:0,sales:[]});
   const sales=await prisma.supplierErpSale.findMany({where:{companyId:s.companyId,customerId:customer.id,status:{in:['CREDIT','PARTIALLY_PAID']}},orderBy:{createdAt:'asc'},take:100});
-  const due=sales.reduce((a,x)=>a+Math.max(0,Number(x.total)-Number(x.paid)),0);
-  return ok(plain({customer,due,sales}));
+  const saleIds=sales.map(x=>x.id),orderIds=sales.map(x=>x.sourceOrderId).filter(Boolean) as string[];
+  const [items,payments,orders]=await Promise.all([
+   saleIds.length?prisma.supplierErpSaleItem.findMany({where:{saleId:{in:saleIds}}}):Promise.resolve([]),
+   saleIds.length?prisma.supplierErpPayment.findMany({where:{saleId:{in:saleIds},kind:'IN'},orderBy:{createdAt:'desc'}}):Promise.resolve([]),
+   orderIds.length?prisma.supplierOrder.findMany({where:{id:{in:orderIds}},include:{delivery:true}}):Promise.resolve([])
+  ]);
+  const detailed=sales.map(x=>{const order=orders.find(o=>o.id===x.sourceOrderId);return {...x,due:Math.max(0,Number(x.total)-Number(x.paid)),items:items.filter(i=>i.saleId===x.id),payments:payments.filter(p=>p.saleId===x.id),delivery:order?.delivery?{driverName:order.delivery.driverName,recipientName:order.delivery.recipientName,deliveredAt:order.delivery.deliveredAt}:null}});
+  const due=detailed.reduce((a,x)=>a+Number(x.due),0);
+  return ok(plain({customer,due,sales:detailed}));
  }catch(e:any){return bad(e.message,e.status||500)}
 }
 
