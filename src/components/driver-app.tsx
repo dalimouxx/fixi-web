@@ -6,6 +6,7 @@ import {api} from './ui';
 import {RealtimeNotificationCenter} from './realtime-notification-center';
 import {PushToggle} from './push-toggle';
 import {PwaRegister} from './pwa-register';
+import {DeliveryInstall} from './delivery-install';
 import {dateTime,money} from '@/lib/format';
 
 const labels:Record<string,string>={READY_FOR_DELIVERY:'À accepter',OUT_FOR_DELIVERY:'En route',RETURNING:'Retour fournisseur',RETURNED:'Retour remis',DELIVERED:'Livrée'};
@@ -44,6 +45,7 @@ export function DriverApp({session}:{session:any}){
  return <div className="delivery-app driver-app driver-v2"><PwaRegister/>
   <header><div className="driver-header-brand"><Truck/><span><b>Fixi Delivery</b><small>{session.companyName}</small></span></div><div className="driver-live-state">{online?<><Wifi/><span>En ligne</span></>:<><WifiOff/><span>Hors ligne</span></>}</div><RealtimeNotificationCenter apiUrl="/api/delivery/notifications" eventsUrl="/api/delivery/events-stream" storageKey="fixi-delivery-notifications" onEvent={load}/><PushToggle subscribeUrl="/api/delivery/push/subscribe"/><div><b>{session.fullName}</b><span>Livreur</span></div><button onClick={logout} title="Déconnexion"><LogOut/></button></header>
   <main>
+   <DeliveryInstall/>
    <section className="driver-command">
     <div className="driver-command-title"><span className="smart-kicker"><Route size={13}/> JOURNÉE & TOURNÉE</span><h1>{shift.current?'Tournée active':'Prêt à démarrer'}</h1><p>{shift.current?'GPS actif uniquement pendant les livraisons en cours.':'Ouvrez votre journée avant de prendre la route.'}</p></div>
     <div className="driver-command-actions"><button className={'driver-tracking '+(tracking?'active':'')} disabled={!shift.current} onClick={()=>setTracking(v=>!v)}><Map/>{tracking?'GPS automatique':'GPS en pause'}</button><button className="btn btn-soft" onClick={load}><RefreshCw/> Actualiser</button>{!shift.current?<button className="btn btn-primary" onClick={()=>setShiftModal('open')}><PlayCircle/> Démarrer journée</button>:<button className="btn btn-danger" onClick={()=>{setShiftForm(x=>({...x,remittedCod:String(codToday)}));setShiftModal('close')}}><PauseCircle/> Fin de journée</button>}</div>
