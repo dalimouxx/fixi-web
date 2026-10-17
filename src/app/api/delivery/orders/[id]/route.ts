@@ -23,6 +23,7 @@ export async function PATCH(req:Request,{params}:{params:Promise<{id:string}>}){
   if(status===SupplierOrderStatus.DELIVERED){
    if(o.status!==SupplierOrderStatus.OUT_FOR_DELIVERY)return bad('La livraison doit être en route',409);
    if(!String(b.recipientName||'').trim())return bad('Nom du réceptionnaire requis pour confirmer la livraison',409);
+   if(!o.deliveryCode||String(b.proofCode||'').trim()!==String(o.deliveryCode))return bad('Code de remise atelier invalide',409);
   }
   const ds=status===SupplierOrderStatus.DELIVERED?SupplierDeliveryStatus.DELIVERED:status===SupplierOrderStatus.OUT_FOR_DELIVERY?SupplierDeliveryStatus.OUT_FOR_DELIVERY:SupplierDeliveryStatus.ASSIGNED;
   const result=await prisma.$transaction(async tx=>{
@@ -56,6 +57,28 @@ export async function PATCH(req:Request,{params}:{params:Promise<{id:string}>}){
     ]);
    }
   }
+  return ok(plain(result));
+ }catch(e:any){return bad(e.message,e.status||500)}
+}
+
+
+export async function POST(req:Request,{params}:{params:Promise<{id:string}>}){
+ try{
+  const s=await requireDeliverySession();const{id}=await params;
+  const o=await prisma.supplierOrder.findFirst({where:{id,companyId:s.companyId,status:SupplierOrderStatus.READY_FOR_DELIVERY},include:{delivery:true,shop:{select:{name:true}}}});
+  if(!o)return bad('Commande indisponible',404);
+  if(o.delivery?.driverAccountId===s.id)return ok(plain(o));
+  if(o.delivery?.driverAccountId)return bad('Cette commande vient d’être acceptée par un autre livreur',409);
+  const result=await prisma.$transaction(async tx=>{
+   const updated=await tx.supplierDelivery.updateMany({where:{orderId:id,driverAccountId:null},data:{driverAccountId:s.id,driverName:s.fullName,assignedAt:new Date(),acceptedAt:new Date(),status:SupplierDeliveryStatus.ASSIGNED}});
+   if(updated.count!==1)throw Object.assign(new Error('Commande déjà prise'),{status:409});
+   await tx.supplierDeliveryEvent.create({data:{companyId:s.companyId,orderId:id,accountId:s.id,type:'DELIVERY_ACCEPTED',note:'Commande acceptée par '+s.fullName}});
+   return tx.supplierOrder.findUnique({where:{id},include:{delivery:true,shop:{select:{name:true,region:true,address:true,phone:true}},items:{include:{product:true}}}});
+  });
+  await Promise.allSettled([
+   notifySupplier(s.companyId,'Commande prise par un livreur',o.reference+' · '+s.fullName+' a accepté la livraison.',{href:'/supplier?tab=delivery',kind:'DELIVERY',soundKey:'SUCCESS',roles:['OWNER','ADMIN','MANAGER','DELIVERY_MANAGER'],metadata:{orderId:id,reference:o.reference,driverAccountId:s.id}}),
+   notifyShop(o.shopId,'Livreur affecté',o.reference+' · '+s.fullName+' a accepté votre livraison.','/app/suppliers',NotificationType.INFO)
+  ]);
   return ok(plain(result));
  }catch(e:any){return bad(e.message,e.status||500)}
 }
