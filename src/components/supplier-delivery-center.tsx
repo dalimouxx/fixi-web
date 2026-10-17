@@ -30,9 +30,11 @@ export function SupplierDeliveryCenter({orders,drivers,onChanged}:Props){
 
   const ready=orders.filter(o=>o.status==='READY_FOR_DELIVERY');
   const moving=orders.filter(o=>o.status==='OUT_FOR_DELIVERY');
+  const returning=orders.filter(o=>o.status==='RETURNING');
+  const returned=orders.filter(o=>o.status==='RETURNED');
   const todayDone=orders.filter(o=>o.status==='DELIVERED'&&new Date(o.delivery?.deliveredAt||o.updatedAt).toDateString()===new Date().toDateString());
   const activeDrivers=drivers.filter(d=>d.isActive);
-  const selectedOrder=orders.find(o=>o.id===selected)||moving[0]||ready[0]||null;
+  const selectedOrder=orders.find(o=>o.id===selected)||moving[0]||returning[0]||ready[0]||returned[0]||null;
   const loc=selectedOrder?overview.latestByOrder?.[selectedOrder.id]:null;
   const lastEvents=useMemo(
     ()=>overview.events?.filter((e:any)=>!String(e.orderId).startsWith('SHIFT:')).slice(0,15)||[],
@@ -49,6 +51,8 @@ export function SupplierDeliveryCenter({orders,drivers,onChanged}:Props){
     }catch(e:any){setErr(e.message)}
     finally{setBusy('')}
   }
+
+  async function resolveReturn(order:any,action:'RESTOCK'|'DAMAGED'|'REDELIVER'){const note=action==='DAMAGED'?prompt('Note / motif dommage')||'Endommagé':action==='RESTOCK'?'Retour contrôlé et remis en stock':'Relivraison demandée';setBusy(order.id);setErr('');try{await api('/api/supplier/delivery/returns',{method:'POST',body:JSON.stringify({orderId:order.id,action,note})});setMsg(action==='RESTOCK'?'Retour remis en stock.':action==='DAMAGED'?'Retour classé endommagé.':'Commande remise dans le pool livreurs.');onChanged();await load()}catch(e:any){setErr(e.message)}finally{setBusy('')}}
 
   async function createDriver(e:any){
     e.preventDefault();setBusy('DRIVER');setErr('');
@@ -75,7 +79,7 @@ export function SupplierDeliveryCenter({orders,drivers,onChanged}:Props){
         <div>
           <span className="smart-kicker"><Route size={13}/> CONTROL TOWER</span>
           <h2>Exploitation livraison</h2>
-          <p>Affectations, livreurs actifs, GPS, COD et incidents dans une seule vue.</p>
+          <p>Dispatch automatique, livreurs actifs, GPS, COD, dus clients et retours dans une seule vue.</p>
         </div>
         <div className="toolbar">
           <button className="btn btn-soft" onClick={load}><RefreshCw/> Actualiser</button>
@@ -93,16 +97,16 @@ export function SupplierDeliveryCenter({orders,drivers,onChanged}:Props){
         <DeliveryKpi icon={Route} label="En route" value={moving.length}/>
         <DeliveryKpi icon={CheckCircle2} label="Livrées aujourd'hui" value={todayDone.length}/>
         <DeliveryKpi icon={Banknote} label="COD aujourd'hui" value={money(overview.metrics?.codToday||0)}/>
-        <DeliveryKpi icon={AlertTriangle} label="Incidents" value={overview.metrics?.incidentsToday||0}/>
+        <DeliveryKpi icon={AlertTriangle} label="Incidents" value={overview.metrics?.incidentsToday||0}/><DeliveryKpi icon={PackageCheck} label="Retours à traiter" value={returned.length}/>
       </div>
 
       <div className="supplier-delivery-control-grid">
         <section className="supplier-panel">
           <div className="supplier-section-head">
-            <div><b>File d'affectation</b><span>Commandes prêtes et courses en cours.</span></div>
+            <div><b>Dispatch automatique</b><span>Les commandes prêtes sont proposées à tous les livreurs actifs. L’affectation manuelle reste disponible en secours.</span></div>
           </div>
           <div className="supplier-dispatch-list">
-            {[...moving,...ready].map(o=>{
+            {[...moving,...returning,...ready].map(o=>{
               const latest=overview.latestByOrder?.[o.id];
               return (
                 <article key={o.id} className={selectedOrder?.id===o.id?'selected':''} onClick={()=>setSelected(o.id)}>
@@ -112,7 +116,7 @@ export function SupplierDeliveryCenter({orders,drivers,onChanged}:Props){
                       <b>{o.shop?.name}</b>
                       <span>{o.deliveryAddress||o.shop?.address||o.shop?.region||'Adresse manquante'}</span>
                     </div>
-                    <span className={'status-pill '+o.status.toLowerCase()}>{o.status==='OUT_FOR_DELIVERY'?'En route':'Prête'}</span>
+                    <span className={'status-pill '+o.status.toLowerCase()}>{o.status==='OUT_FOR_DELIVERY'?'En route':o.status==='RETURNING'?'Retour fournisseur':o.delivery?.driverAccountId?'Acceptée':'Disponible livreurs'}</span>
                   </div>
                   <div className="supplier-dispatch-meta">
                     <span><Truck/>{o.delivery?.driverName||'Non affectée'}</span>
@@ -120,7 +124,7 @@ export function SupplierDeliveryCenter({orders,drivers,onChanged}:Props){
                     <span><Activity/>{latest?'GPS '+new Date(latest.createdAt).toLocaleTimeString('fr-TN',{hour:'2-digit',minute:'2-digit'}):'GPS —'}</span>
                   </div>
                   {o.status==='READY_FOR_DELIVERY'&&(
-                    <div className="supplier-dispatch-assign" onClick={e=>e.stopPropagation()}>
+                    <div className="supplier-dispatch-assign" onClick={e=>e.stopPropagation()}><small style={{alignSelf:'center'}}>{o.delivery?.driverAccountId?'Livreur déjà sélectionné':'Auto-dispatch actif · affectation manuelle optionnelle'}</small>
                       <select
                         value={assignments[o.id]??o.delivery?.driverAccountId??''}
                         onChange={e=>setAssignments({...assignments,[o.id]:e.target.value})}
@@ -179,6 +183,8 @@ export function SupplierDeliveryCenter({orders,drivers,onChanged}:Props){
           )}
         </aside>
       </div>
+
+      {returned.length>0&&<section className="supplier-panel supplier-returned-deliveries"><div className="supplier-section-head"><div><b>Retours remis au fournisseur</b><span>Une décision est obligatoire avant clôture : stock, endommagé ou relivraison.</span></div><span className="supplier-count-badge">{returned.length}</span></div><div className="supplier-dispatch-list">{returned.map(o=><article key={o.id}><div className="supplier-dispatch-main"><div><code>{o.reference}</code><b>{o.shop?.name}</b><span>{o.delivery?.returnNote||'Retour sans note'}</span></div><span className="status-pill returned">À traiter</span></div><div className="supplier-order-items">{o.items?.map((i:any)=><div key={i.id}><span>{i.product?.name} × {i.quantity}</span><b>{money(Number(i.unitPrice)*i.quantity)}</b></div>)}</div><div className="toolbar"><button disabled={busy===o.id} className="btn btn-primary btn-sm" onClick={()=>resolveReturn(o,'RESTOCK')}><CheckCircle2/> Remettre en stock</button><button disabled={busy===o.id} className="btn btn-danger btn-sm" onClick={()=>resolveReturn(o,'DAMAGED')}><AlertTriangle/> Endommagé</button><button disabled={busy===o.id} className="btn btn-soft btn-sm" onClick={()=>resolveReturn(o,'REDELIVER')}><RefreshCw/> Relivrer</button></div></article>)}</div></section>}
 
       <div className="supplier-delivery-lower">
         <section className="supplier-panel">
