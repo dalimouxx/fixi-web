@@ -5,7 +5,7 @@ import {prisma} from './prisma';
 const COOKIE='fixi_delivery_session';
 const secret=()=>new TextEncoder().encode(process.env.DELIVERY_AUTH_SECRET||process.env.SUPPLIER_AUTH_SECRET||process.env.AUTH_SECRET||'dev-delivery-secret-change-me-123456789');
 
-export type DeliverySession={id:string;companyId:string;fullName:string;companyName:string;role:string};
+export type DeliverySession={id:string;companyId:string;fullName:string;companyName:string;role:string;sessionVersion:number};
 
 export async function createDeliverySession(v:DeliverySession){
  const token=await new SignJWT(v).setProtectedHeader({alg:'HS256'}).setIssuedAt().setExpirationTime('24h').sign(secret());
@@ -16,6 +16,6 @@ export async function getDeliverySession():Promise<DeliverySession|null>{const c
 export async function requireDeliverySession(){
  const s=await getDeliverySession();if(!s)throw Object.assign(new Error('UNAUTHENTICATED'),{status:401});
  const a=await prisma.supplierAccount.findFirst({where:{id:s.id,companyId:s.companyId,isActive:true,role:'DRIVER'},include:{company:true}});
- if(!a||!a.company.active)throw Object.assign(new Error('UNAUTHENTICATED'),{status:401});
+ if(!a||!a.company.active||a.deliverySessionVersion!==s.sessionVersion)throw Object.assign(new Error('UNAUTHENTICATED'),{status:401});
  return s;
 }
