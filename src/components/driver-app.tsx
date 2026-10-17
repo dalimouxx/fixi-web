@@ -28,8 +28,6 @@ export function DriverApp({session}:{session:any}){
  const deliveredToday=useMemo(()=>done.filter(o=>new Date(o.delivery?.deliveredAt||o.updatedAt).toDateString()===new Date().toDateString()),[done]);
  const deliveredValueToday=useMemo(()=>deliveredToday.reduce((a,o)=>a+Number(o.total||0),0),[deliveredToday]);
  const codToday=useMemo(()=>events.filter((e:any)=>['COD_COLLECTED','DUE_COLLECTED'].includes(e.type)&&new Date(e.createdAt).toDateString()===new Date().toDateString()).reduce((a:number,e:any)=>a+Number(e.amount||0),0),[events]);
- const deliveredToday=useMemo(()=>done.filter(o=>new Date(o.delivery?.deliveredAt||o.updatedAt).toDateString()===new Date().toDateString()),[done]);
- const deliveredValueToday=useMemo(()=>deliveredToday.reduce((a,o)=>a+Number(o.total||0),0),[deliveredToday]);
  const dueCollectedToday=useMemo(()=>events.filter((e:any)=>e.type==='DUE_COLLECTED'&&new Date(e.createdAt).toDateString()===new Date().toDateString()).reduce((a:number,e:any)=>a+Number(e.amount||0),0),[events]);
  const exceptionsToday=useMemo(()=>events.filter((e:any)=>['CUSTOMER_ABSENT','DELIVERY_REFUSED','INCIDENT','RETURN_TO_DEPOT'].includes(e.type)&&new Date(e.createdAt).toDateString()===new Date().toDateString()).length,[events]);
  async function toggleAvailable(){try{const next=!driverAvailable;await api('/api/delivery/profile',{method:'PATCH',body:JSON.stringify({driverAvailable:next})});setDriverAvailable(next);setMsg(next?'Vous êtes disponible pour recevoir de nouvelles courses.':'Vous ne recevrez plus de nouvelles courses automatiques.')}catch(e:any){setErr(e.message)}}
