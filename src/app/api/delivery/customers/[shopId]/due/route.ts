@@ -27,6 +27,7 @@ export async function POST(req:Request,{params}:{params:Promise<{shopId:string}>
  try{
   const s=await requireDeliverySession();const{shopId}=await params;const b=await req.json();
   if(!await canAccess(s.companyId,s.id,shopId))return bad('Client non autorisé',403);
+  const shift=await prisma.supplierDeliveryShift.findFirst({where:{companyId:s.companyId,driverAccountId:s.id,status:'OPEN'}});if(!shift)return bad('Ouvrez votre journée livreur avant tout encaissement.',409);
   const amount=Math.round(Math.max(0,Number(b.amount||0))*1000)/1000;if(!(amount>0))return bad('Montant invalide');
   const customer=await prisma.supplierErpCustomer.findFirst({where:{companyId:s.companyId,shopId,active:true}});if(!customer)return bad('Compte client introuvable',404);
   const sales=await prisma.supplierErpSale.findMany({where:{companyId:s.companyId,customerId:customer.id,status:{in:['CREDIT','PARTIALLY_PAID']}},orderBy:{createdAt:'asc'}});
