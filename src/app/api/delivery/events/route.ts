@@ -12,6 +12,7 @@ export async function POST(req:Request){
   const o=await prisma.supplierOrder.findFirst({where:{id:orderId,companyId:s.companyId,delivery:{is:{driverAccountId:s.id}}},include:{delivery:true,shop:{select:{name:true}}}});
   if(!o)return bad('Livraison introuvable',404);
   let amount:number|null=null;let dueCustomer:any=null;let dueSales:any[]=[];
+  if(['COD_COLLECTED','DUE_COLLECTED'].includes(type)){const shift=await prisma.supplierDeliveryShift.findFirst({where:{companyId:s.companyId,driverAccountId:s.id,status:'OPEN'}});if(!shift)return bad('Ouvrez votre journée livreur avant tout encaissement.',409)}
   if(type==='COD_COLLECTED'){
    const n=Number(b.amount);if(!(n>0))return bad('Montant COD invalide');
    const prev=await prisma.supplierDeliveryEvent.aggregate({where:{companyId:s.companyId,orderId,type:'COD_COLLECTED'},_sum:{amount:true}});
