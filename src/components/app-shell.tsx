@@ -13,6 +13,7 @@ import {PwaRegister} from './pwa-register';
 import {BrandLogo} from './brand-logo';
 import {PushToggle} from './push-toggle';
 import {OfflineSyncBadge} from './offline-sync-badge';
+import {InstallAppButton} from './install-app-button';
 
 const links=[
 ['Dashboard','/app/dashboard',LayoutDashboard,['ADMIN','RECEPTION','TECHNICIAN','CASHIER'],'PRINCIPAL'],
@@ -98,7 +99,7 @@ export function AppShell({children,user}:{children?:React.ReactNode;user:any}){
       <header className="topbar">
         <button className="global-search" onClick={()=>setCmd(true)}><Search size={17}/><span>Client, IMEI, réparation, pièce, facture…</span><kbd>Ctrl K</kbd></button>
         <div className="topbar-quick"><Link href="/app/repairs/new" className="topbar-new"><Zap size={15}/><span>Réception</span></Link></div>
-        <div className="userbox"><OfflineSyncBadge/><NotificationBell/><PushToggle/><div className="avatar">{user.fullName.split(' ').map((x:string)=>x[0]).slice(0,2).join('').toUpperCase()}</div><div className="user-meta"><strong>{user.fullName}</strong><span>{user.roleLabel}</span></div><button className="btn btn-ghost btn-sm" onClick={logout} title="Déconnexion"><LogOut size={16}/></button></div>
+        <div className="userbox"><OfflineSyncBadge/><NotificationBell/><PushToggle/><InstallAppButton label="Installer"/><div className="avatar">{user.fullName.split(' ').map((x:string)=>x[0]).slice(0,2).join('').toUpperCase()}</div><div className="user-meta"><strong>{user.fullName}</strong><span>{user.roleLabel}</span></div><button className="btn btn-ghost btn-sm" onClick={logout} title="Déconnexion"><LogOut size={16}/></button></div>
       </header>
       <div className="system-context-bar">
         <div className="system-context-path"><span>{currentGroup}</span><ChevronRight size={13}/><b>{current?.[0]||'Espace Fixi'}</b></div>
