@@ -6,7 +6,7 @@ import {
   LayoutDashboard,Wrench,PlusCircle,Users,CreditCard,Boxes,ReceiptText,UserCog,BarChart3,Settings,Search,LogOut,
   MonitorPlay,ShieldCheck,HeartHandshake,FileText,History,X,Headphones,PackageOpen,Link2,Sparkles,Gift,BrainCircuit,
   Workflow,Activity,CalendarDays,Megaphone,Eye,Building2,Smartphone,MessageCircle,ShoppingBag,PhoneCall,GraduationCap,
-  HeartHandshake as CareIcon,CloudOff,PanelLeftClose,PanelLeftOpen,Zap,Command,ChevronRight,Wifi,WifiOff,ChevronDown
+  HeartHandshake as CareIcon,CloudOff,PanelLeftClose,PanelLeftOpen,Zap,Command,ChevronRight,Wifi,WifiOff,ChevronDown,Menu
 } from 'lucide-react';
 import {NotificationBell} from './notification-bell';
 import {PwaRegister} from './pwa-register';
@@ -63,12 +63,12 @@ const groupLabels:any={PRINCIPAL:'Essentiel',ATELIER:'Atelier & ventes',INTELLIG
 
 export function AppShell({children,user}:{children?:React.ReactNode;user:any}){
   const p=usePathname();const router=useRouter();
-  const[cmd,setCmd]=useState(false);const[q,setQ]=useState('');const[collapsed,setCollapsed]=useState(false);const[online,setOnline]=useState(true);
+  const[cmd,setCmd]=useState(false);const[mobileMenu,setMobileMenu]=useState(false);const[q,setQ]=useState('');const[collapsed,setCollapsed]=useState(false);const[online,setOnline]=useState(true);
   const visible=useMemo(()=>links.filter(x=>(x[3] as readonly string[]).includes(user.role)),[user.role]);
   const groups=useMemo(()=>['PRINCIPAL','ATELIER','INTELLIGENCE','SERVICES','GESTION'].map(g=>[g,visible.filter(x=>x[4]===g)] as const).filter(([,items])=>items.length),[visible]);
   const current=useMemo(()=>visible.filter(x=>p===x[1]||p.startsWith(x[1]+'/')).sort((a,b)=>b[1].length-a[1].length)[0],[visible,p]);
   const currentGroup=current?groupLabels[current[4]]:'Fixi';
-  const mobileLinks=visible.filter(x=>['/app/dashboard','/app/repairs/new','/app/repairs','/app/cashier','/app/stock'].includes(x[1])).slice(0,5);
+  const mobileLinks=visible.filter(x=>['/app/dashboard','/app/repairs/new','/app/repairs','/app/cashier'].includes(x[1])).slice(0,4);
   useEffect(()=>{const saved=localStorage.getItem('fixi-sidebar-collapsed');setCollapsed(saved==='1')},[]);
   useEffect(()=>{const sync=()=>setOnline(navigator.onLine);sync();addEventListener('online',sync);addEventListener('offline',sync);return()=>{removeEventListener('online',sync);removeEventListener('offline',sync)}},[]);
   useEffect(()=>{localStorage.setItem('fixi-sidebar-collapsed',collapsed?'1':'0')},[collapsed]);
@@ -107,7 +107,8 @@ export function AppShell({children,user}:{children?:React.ReactNode;user:any}){
       </div>
       {children}
     </main>
-    <nav className="mobile-ops-nav">{mobileLinks.map(([label,href,Icon])=><Link key={href} href={href} className={p===href||p.startsWith(href+'/')?'active':''}><Icon/><span>{label.replace('Réception Express','Réception')}</span></Link>)}</nav>
+    <nav className="mobile-ops-nav">{mobileLinks.map(([label,href,Icon])=><Link key={href} href={href} className={p===href||p.startsWith(href+'/')?'active':''}><Icon/><span>{label.replace('Réception Express','Réception')}</span></Link>)}<button className={mobileMenu?'active':''} onClick={()=>setMobileMenu(true)}><Menu/><span>Plus</span></button></nav>
+    {mobileMenu&&<div className="mobile-menu-backdrop" onMouseDown={e=>e.target===e.currentTarget&&setMobileMenu(false)}><div className="mobile-menu-sheet"><div className="mobile-menu-head"><div><b>Menu Fixi Atelier</b><span>Toutes les fonctions</span></div><button onClick={()=>setMobileMenu(false)}><X/></button></div><div className="mobile-menu-groups">{groups.map(([group,items])=><section key={group}><h3>{groupLabels[group]}</h3><div>{items.map(([label,href,Icon])=><Link href={href} key={href} onClick={()=>setMobileMenu(false)} className={p===href||p.startsWith(href+'/')?'active':''}><Icon/><span>{label}</span>{label==='Fixi Supplier'&&<em>MARKET</em>}</Link>)}</div></section>)}</div></div></div>}
     {cmd&&<div className="command-backdrop" onMouseDown={e=>e.target===e.currentTarget&&setCmd(false)}>
       <div className="command command-v2">
         <div className="command-input"><Search/><input autoFocus value={q} onChange={e=>setQ(e.target.value)} onKeyDown={e=>e.key==='Enter'&&search(q)} placeholder="Rechercher dans Fixi…"/><button onClick={()=>setCmd(false)}><X size={16}/></button></div>
