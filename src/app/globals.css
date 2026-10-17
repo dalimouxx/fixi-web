@@ -476,3 +476,54 @@ html[data-theme="dark"] .academy-lessons button>span{background:#fff}html[data-t
 /* FIXI DELIVERY MOBILE NAV */
 .driver-mobile-nav{position:sticky;top:62px;z-index:35;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:8px 0 12px;padding:6px;background:rgba(247,247,245,.94);backdrop-filter:blur(12px);border:1px solid var(--line);border-radius:15px}.driver-mobile-nav button{border:0;background:#fff;border-radius:11px;min-height:42px;display:flex;align-items:center;justify-content:center;gap:5px;font-size:8px;font-weight:900;color:var(--text)}.driver-mobile-nav button svg{width:14px;color:#ff6b00}.driver-mobile-nav button b{min-width:18px;height:18px;border-radius:999px;background:#fff1e7;color:#b84b00;display:grid;place-items:center;font-size:7px}.driver-due-overview{scroll-margin-top:120px}.driver-route-list{scroll-margin-top:120px}.driver-history{scroll-margin-top:120px}.delivery-empty.compact{padding:18px!important}.delivery-empty.compact h3{margin:6px 0 3px}.delivery-empty.compact p{max-width:420px;margin:auto}
 @media(min-width:901px){.driver-mobile-nav{position:static;max-width:520px}}
+
+
+/* FIXI SUPPLIER MOBILE NAV + INSTALL FIX */
+.supplier-mobile-install{display:none}
+@media(max-width:900px){
+ .supplier-os>aside{
+  flex-direction:row!important;
+  align-items:center!important;
+  white-space:nowrap!important;
+  scrollbar-width:none;
+ }
+ .supplier-os>aside::-webkit-scrollbar{display:none}
+ .supplier-os>aside>button{
+  display:inline-flex!important;
+  grid-template-columns:none!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:6px!important;
+  flex:0 0 auto!important;
+ }
+ .supplier-os>aside>button span{display:inline!important;font-size:8px!important}
+ .supplier-os>aside>button em{display:inline-flex!important}
+ .supplier-os>aside>a{display:inline-flex!important;align-items:center!important;gap:6px!important;flex:0 0 auto!important}
+ .supplier-os>aside>a span{display:inline!important;font-size:8px!important}
+ .supplier-mobile-install{
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:10px;
+  align-items:center;
+  background:linear-gradient(135deg,#fff7ef,#fff);
+  border:1px solid #ffd9bc;
+  border-radius:16px;
+  padding:11px;
+  margin:0 0 12px;
+ }
+ .supplier-mobile-install-copy{display:flex;gap:9px;align-items:center;min-width:0}
+ .supplier-mobile-install-copy>i{width:34px;height:34px;border-radius:11px;background:linear-gradient(135deg,#ff5c00,#ff963f);color:#fff;display:grid;place-items:center;font-style:normal;font-weight:950;flex:0 0 auto}
+ .supplier-mobile-install-copy span{display:grid;min-width:0}
+ .supplier-mobile-install-copy b{font-size:10px}
+ .supplier-mobile-install-copy small{font-size:8px;color:var(--muted);line-height:1.4;margin-top:2px}
+ .supplier-mobile-install-actions{display:flex;gap:6px;align-items:center}
+}
+@media(max-width:600px){
+ .supplier-os>aside{position:sticky!important;top:0!important;padding:6px!important}
+ .supplier-os>aside>button,.supplier-os>aside>a{height:42px!important;padding:0 10px!important}
+ .supplier-os>aside>button span,.supplier-os>aside>a span{font-size:8px!important}
+ .supplier-mobile-install{grid-template-columns:1fr}
+ .supplier-mobile-install-actions{display:grid;grid-template-columns:1fr 1fr}
+ .supplier-mobile-install-actions .install-app,.supplier-mobile-install-actions .push-toggle{width:100%!important;justify-content:center!important;min-height:40px}
+ .supplier-os>main>header{top:54px!important}
+}
