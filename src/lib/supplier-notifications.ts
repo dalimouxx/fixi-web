@@ -31,7 +31,13 @@ export async function notifySupplier(companyId:string,title:string,message:strin
   for(const row of rows)publishSupplierAccount(row.accountId,'notification.created',{
     id:row.id,title:row.title,message:row.message,href:row.href,kind:row.kind,priority:row.priority,soundKey:row.soundKey,createdAt:row.createdAt
   });
-  await sendPushToSupplierAccounts(rows.map(x=>x.accountId),{title,body:message,href:options.href||'/supplier'}).catch(()=>{});
+  const push:any={title,body:message,href:options.href||'/supplier',data:options.metadata||{}};
+  if(kind==='DELIVERY'&&options.metadata?.orderId&&options.roles?.includes('DRIVER')){
+    push.tag='delivery-'+String(options.metadata.orderId);
+    push.requireInteraction=true;
+    push.actions=[{action:'accept-delivery',title:'Accepter'},{action:'open',title:'Ouvrir'}];
+  }
+  await sendPushToSupplierAccounts(rows.map(x=>x.accountId),push).catch(()=>{});
   return rows;
 }
 
