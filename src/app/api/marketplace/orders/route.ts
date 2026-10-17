@@ -9,6 +9,9 @@ import {notifySupplier,notifySupplierLowStock} from '@/lib/supplier-notification
 function ref(){
   return 'SUP-'+Date.now().toString(36).toUpperCase()+'-'+Math.random().toString(36).slice(2,6).toUpperCase();
 }
+function deliveryCode(){
+  return String(Math.floor(100000+Math.random()*900000));
+}
 
 export async function GET(){
   try{
@@ -74,8 +77,15 @@ export async function POST(req:Request){
       }
 
       const shop=await tx.shop.findUniqueOrThrow({where:{id:s.shopId}});
+      await tx.supplierErpCustomer.upsert({
+        where:{companyId_shopId:{companyId,shopId:shop.id}},
+        update:{name:shop.name,phone:shop.phone||null,email:shop.email||null,address:shop.address||null,region:shop.region||null,taxId:shop.taxId||null,active:true},
+        create:{companyId,shopId:shop.id,name:shop.name,phone:shop.phone||null,email:shop.email||null,address:shop.address||null,region:shop.region||null,taxId:shop.taxId||null}
+      });
+      let code=deliveryCode();
+      while(await tx.supplierOrder.findFirst({where:{deliveryCode:code},select:{id:true}}))code=deliveryCode();
       const order=await tx.supplierOrder.create({
-        data:{shopId:s.shopId,companyId,reference:ref(),total,deliveryAddress:b.deliveryAddress||shop.address||null,note:b.note||null,items:{create:rows}},
+        data:{shopId:s.shopId,companyId,reference:ref(),deliveryCode:code,total,deliveryAddress:b.deliveryAddress||shop.address||null,note:b.note||null,items:{create:rows}},
         include:{company:true,shop:{select:{name:true}},items:{include:{product:true}}}
       });
       if(allocations.length)await tx.supplierOrderStockAllocation.createMany({data:allocations.map(x=>({...x,orderId:order.id}))});
