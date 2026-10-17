@@ -3,6 +3,8 @@ import {requireSupplierSession,SupplierRole} from '@/lib/supplier-auth';
 import {bad,ok} from '@/lib/http';
 import {plain} from '@/lib/serializers';
 import {notifySupplier,notifySupplierLowStock} from '@/lib/supplier-notifications';
+import {notifyShop} from '@/lib/notifications';
+import {NotificationType} from '@prisma/client';
 
 const allow=(role:SupplierRole,roles:SupplierRole[])=>roles.includes(role);
 const money=(v:any)=>Math.round(Number(v||0)*1000)/1000;
@@ -180,6 +182,35 @@ export async function POST(req:Request){
     return ok(plain(result),{status:201});
    }
    return ok(plain(await prisma.supplierErpPayment.create({data:{companyId:s.companyId,customerId:b.customerId||null,cashSessionId:cs?.id||null,kind:String(b.kind||'IN'),method,amount,reference:b.reference||null,note:b.note||null,accountId:s.id}})),{status:201});
+  }
+
+  if(action==='CUSTOMER_PAYMENT'){
+   if(!allow(s.role,['OWNER','ADMIN','MANAGER','SALES','CASHIER','ACCOUNTANT']))return bad('FORBIDDEN',403);
+   const customerId=String(b.customerId||''),amount=money(b.amount),method=String(b.method||'CASH').toUpperCase();
+   if(!customerId||!(amount>0))return bad('Encaissement client invalide');
+   const customer=await prisma.supplierErpCustomer.findFirst({where:{id:customerId,companyId:s.companyId,active:true}});if(!customer)return bad('Client introuvable',404);
+   const sales=await prisma.supplierErpSale.findMany({where:{companyId:s.companyId,customerId,status:{in:['CREDIT','PARTIALLY_PAID']}},orderBy:{createdAt:'asc'}});
+   const totalDue=money(sales.reduce((a,x)=>a+Math.max(0,Number(x.total)-Number(x.paid)),0));
+   if(amount>totalDue+0.001)return bad('Montant supérieur au dû client',409);
+   const cs=await cashLike(s.companyId,method)?await openCash(s.companyId,s.id):null;if(await cashLike(s.companyId,method)&&!cs)return bad('Ouvrez votre caisse avant un encaissement espèces',409);
+   const allocations:any[]=[];
+   await prisma.$transaction(async tx=>{
+    let remaining=amount;
+    for(const sale of sales){
+     if(remaining<=0.0001)break;
+     const due=Math.max(0,money(Number(sale.total)-Number(sale.paid)));if(due<=0)continue;
+     const take=Math.min(remaining,due),paid=money(Number(sale.paid)+take);
+     const p=await tx.supplierErpPayment.create({data:{companyId:s.companyId,customerId,saleId:sale.id,cashSessionId:cs?.id||null,kind:'IN',method,amount:take,reference:b.reference||sale.reference,note:b.note||'Encaissement client réparti automatiquement',accountId:s.id}});
+     await tx.supplierErpSale.update({where:{id:sale.id},data:{paid,status:paid+0.001>=Number(sale.total)?'PAID':'PARTIALLY_PAID'}});
+     allocations.push({saleId:sale.id,reference:sale.reference,paymentId:p.id,amount:take});
+     remaining=money(remaining-take);
+    }
+   });
+   const rest=Math.max(0,money(totalDue-amount));
+   await audit(s.companyId,s.id,'CUSTOMER_PAYMENT','CUSTOMER',customer.id,{amount,method,remaining:rest,allocations});
+   await notifySupplier(s.companyId,rest<=0?'Compte client soldé':'Encaissement client',customer.name+' · '+amount.toFixed(3)+' DT'+(rest>0?' · reste '+rest.toFixed(3)+' DT':' · soldé'),{href:'/supplier?tab=dues',kind:'PAYMENT',soundKey:'SUCCESS',roles:['OWNER','ADMIN','MANAGER','ACCOUNTANT'],metadata:{customerId:customer.id,amount,remaining:rest,allocations}});
+   if(customer.shopId)await notifyShop(customer.shopId,'Paiement fournisseur enregistré',amount.toFixed(3)+' DT enregistré chez '+(s.companyName||'votre fournisseur')+'. Reste : '+rest.toFixed(3)+' DT.','/app/suppliers',NotificationType.PAYMENT).catch(()=>{});
+   return ok({ok:true,amount,remaining:rest,allocations},{status:201});
   }
 
   if(action==='PURCHASE_PAYMENT'){
