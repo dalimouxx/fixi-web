@@ -66,7 +66,7 @@ export function SupplierDashboard({session}:{session:any}){
     MANAGER:['dashboard','cashier','orders','products','masters','purchases','vendors','clients','invoices','returns','warehouses','inventory','pricing','dues','finance','reports','delivery','team'],
     STOCK:['dashboard','products','masters','purchases','vendors','returns','warehouses','inventory','pricing','reports'],
     SALES:['dashboard','cashier','orders','products','clients','invoices','pricing','dues','reports'],
-    CASHIER:['dashboard','cashier','clients','invoices'],
+    CASHIER:['dashboard','cashier','clients','invoices','delivery'],
     ACCOUNTANT:['dashboard','clients','invoices','dues','finance','reports','purchases','vendors'],
     DELIVERY_MANAGER:['dashboard','orders','delivery']
   };
