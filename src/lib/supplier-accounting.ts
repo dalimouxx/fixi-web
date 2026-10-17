@@ -7,10 +7,12 @@ export async function ensureMarketplaceAccounting(orderId:string,accountId?:stri
  if(!order)return null;
  const collected=Math.min(Number(order.total),Math.max(0,Number(order.delivery?.cashCollected||0)));
  return prisma.$transaction(async tx=>{
+  const customer=await tx.supplierErpCustomer.upsert({where:{companyId_shopId:{companyId:order.companyId,shopId:order.shopId}},update:{name:order.shop.name,phone:order.shop.phone||null,address:order.shop.address||null,region:order.shop.region||null,active:true},create:{companyId:order.companyId,shopId:order.shopId,name:order.shop.name,phone:order.shop.phone||null,address:order.shop.address||null,region:order.shop.region||null}});
   const again=await tx.supplierErpSale.findFirst({where:{sourceOrderId:orderId}});
   if(again)return again;
   const sale=await tx.supplierErpSale.create({data:{
    companyId:order.companyId,
+   customerId:customer.id,
    sourceOrderId:order.id,
    reference:order.reference,
    status:collected>=Number(order.total)?'PAID':collected>0?'PARTIALLY_PAID':'CREDIT',
@@ -36,6 +38,7 @@ export async function ensureMarketplaceAccounting(orderId:string,accountId?:stri
   }
   if(collected>0)await tx.supplierErpPayment.create({data:{
    companyId:order.companyId,
+   customerId:customer.id,
    saleId:sale.id,
    kind:'IN',
    method:'CASH',
