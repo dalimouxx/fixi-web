@@ -1501,6 +1501,7 @@ model SupplierAccount {
   passwordHash String
   role         String          @default("ADMIN")
   phone        String?
+  driverAvailable Boolean      @default(true)
   isActive     Boolean         @default(true)
   createdAt    DateTime        @default(now())
 }
@@ -1558,6 +1559,8 @@ model SupplierOrder {
   total       Decimal             @default(0) @db.Decimal(12,3)
   note        String?
   deliveryAddress String?
+  deliveryCode String?            @unique
+  confirmedAt DateTime?
   createdAt   DateTime            @default(now())
   updatedAt   DateTime            @default(now()) @updatedAt
   receivedToStockAt DateTime?
@@ -1608,7 +1611,12 @@ model SupplierDelivery {
   cashCollected   Decimal                @default(0) @db.Decimal(12,3)
   deliveryFee     Decimal                @default(0) @db.Decimal(12,3)
   attemptCount    Int                    @default(0)
+  exceptionStatus String?
+  returnCondition String?
+  returnNote      String?
+  returnedAt      DateTime?
   assignedAt      DateTime?
+  acceptedAt      DateTime?
   pickedUpAt      DateTime?
   deliveredAt     DateTime?
   updatedAt       DateTime               @default(now()) @updatedAt
@@ -1917,6 +1925,7 @@ model DigitalWarranty {
 model SupplierErpCustomer {
   id          String   @id @default(cuid())
   companyId   String
+  shopId      String?
   name        String
   phone       String?
   email       String?
@@ -1928,6 +1937,7 @@ model SupplierErpCustomer {
   active      Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @default(now()) @updatedAt
+  @@unique([companyId, shopId])
   @@index([companyId, name])
   @@index([companyId, phone])
 }
