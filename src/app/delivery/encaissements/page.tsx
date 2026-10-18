@@ -1,8 +1,34 @@
 'use client';
-import { useEffect, useState } from 'react';
 
-type Order = { id: string; reference: string; shop: { name: string }; total: string; delivery?: { driverAccountId: string } | null; availableToAccept?: boolean };
-type Receipt = { id: string; reference: string; amount: string; status: string; remittances: { id: string; amount: string; confirmedAt: string | null }[] };
+import { useCallback, useEffect, useState } from 'react';
+import Link from 'next/link';
+import { ArrowLeft, Banknote, CheckCircle2, Clock3, RefreshCw, ReceiptText, WalletCards } from 'lucide-react';
+import { FinanceSelectionSummary } from '@/components/finance-selection-summary';
+import st from '@/components/finance-ledger.module.css';
+
+type Order = {
+  id: string;
+  reference: string;
+  invoiceReference: string | null;
+  hasInvoice: boolean;
+  shop: { name: string };
+  status: string;
+  originalTotal: number;
+  creditTotal: number;
+  total: number;
+  paid: number;
+  due: number;
+  pending: number;
+  availableToCollect: number;
+};
+type Receipt = {
+  id: string; orderId: string|null; reference: string;
+  amount: string; status: string; createdAt: string; collectedAt: string;
+  order?: { reference: string }|null;
+  remittances: { id: string; amount: string; confirmedAt: string|null }[];
+};
+const format = (v: number) => Number(v||0).toFixed(3)+' DT';
+const date = (v: string) => v ? new Date(v).toLocaleString('fr-TN',{dateStyle:'medium',timeStyle:'short'}) : '—';
 
 export default function DriverCollectionsPage() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -11,89 +37,143 @@ export default function DriverCollectionsPage() {
   const [amount, setAmount] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
-  async function load() {
+  const load = useCallback(async () => {
+    setLoading(true);
     try {
-      const [ordersResponse, receiptsResponse] = await Promise.all([
-        fetch('/api/delivery/orders', { cache: 'no-store' }),
-        fetch('/api/supplier/settlements/driver', { cache: 'no-store' }),
+      const [orderResponse, receiptResponse] = await Promise.all([
+        fetch('/api/delivery/settlement-orders',{cache:'no-store'}),
+        fetch('/api/supplier/settlements/driver',{cache:'no-store'}),
       ]);
-      if (!ordersResponse.ok || !receiptsResponse.ok) throw new Error('Impossible de charger les encaissements.');
-      const [o, r] = await Promise.all([ordersResponse.json(), receiptsResponse.json()]);
-      setOrders(Array.isArray(o) ? o : []);
-      setReceipts(Array.isArray(r) ? r : []);
+      if (!orderResponse.ok || !receiptResponse.ok) {
+        const failed = !orderResponse.ok ? orderResponse : receiptResponse;
+        const response = await failed.json().catch(() => ({}));
+        throw new Error(response.error || 'Impossible de charger les comptes livreur.');
+      }
+      const [orderData, receiptData] = await Promise.all([orderResponse.json(),receiptResponse.json()]);
+      setOrders(Array.isArray(orderData) ? orderData : []);
+      setReceipts(Array.isArray(receiptData) ? receiptData : []);
+      setError('');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Erreur de chargement');
-    }
-  }
-  useEffect(() => { void load(); }, []);
+    } finally { setLoading(false); }
+  }, []);
+  useEffect(() => { void load(); window.addEventListener('focus', load); return () => window.removeEventListener('focus',load); }, [load]);
 
-  const assigned = orders.filter(o => o.delivery?.driverAccountId && !o.availableToAccept);
-  const chosen = assigned.find(o => o.id === orderId);
+  const selected = orders.find(order => order.id === orderId);
+  const receiptCount = receipts.filter(r => r.status === 'PENDING').length;
+  const amountRemaining = selected?.availableToCollect || 0;
+  const canCollect = !!selected && amountRemaining > 0.0001;
 
   async function record(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (submitting) return;
-    setMessage('');
-    setError('');
-    if (!chosen) { setError('Choisissez une commande attribuée.'); return; }
-    if (!amount.trim()) { setError('Indiquez le montant reçu, par exemple 50.'); return; }
+    setMessage('');setError('');
+    if (!selected) { setError('Choisissez une commande.'); return; }
+    const rawAmount = amount.trim();
+    if (!/^(?:0|[1-9]\d{0,8})(?:[.,]\d{1,3})?$/.test(rawAmount) || Number(rawAmount.replace(',','.')) <= 0) {
+      setError('Saisissez un montant simple, par exemple 50 ou 50,5.');
+      return;
+    }
+    if (Math.round(Number(rawAmount.replace(',','.'))*1000) > Math.round(amountRemaining*1000)) {
+      setError('Le montant dépasse ce qui reste encaissable sur cette commande : '+format(amountRemaining));
+      return;
+    }
     setSubmitting(true);
     try {
       const response = await fetch('/api/supplier/settlements/driver', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          orderId: chosen.id,
-          amount: amount.trim(),
-          method: 'CASH',
+          orderId: selected.id, amount: rawAmount, method: 'CASH',
           idempotencyKey: crypto.randomUUID() + '-driver',
         }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Encaissement non enregistré');
-      setMessage('Encaissement enregistré : ' + Number(data.amount).toFixed(3) + ' DT. En attente de confirmation du fournisseur.');
+      setMessage(format(Number(data.amount))+' enregistrés pour '+selected.reference+'. En attente de confirmation du fournisseur.');
       setAmount('');
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Erreur de paiement');
-    } finally {
-      setSubmitting(false);
-    }
+    } finally { setSubmitting(false); }
   }
 
-  return <main style={{ maxWidth: 760, margin: '24px auto', padding: '18px 16px', fontFamily: 'inherit' }}>
-    <a href="/delivery" style={{ display: 'inline-block', marginBottom: 24 }}>← Livraisons</a>
-    <h1 style={{ fontSize: 'clamp(25px, 5vw, 36px)', lineHeight: 1.2, margin: '0 0 8px' }}>Encaissements et caisse livreur</h1>
-    <p style={{ marginBottom: 24 }}>Choisissez une commande puis saisissez directement la somme reçue.</p>
-    <form onSubmit={record} style={{ display: 'grid', gap: 16, padding: 20, border: '1px solid #ddd', borderRadius: 14 }}>
-      <label style={{ display: 'grid', gap: 8 }}>
-        <strong>Commande attribuée</strong>
-        <select required value={orderId} onChange={e => { setOrderId(e.target.value); setError(''); }} style={{ width: '100%', padding: 13, borderRadius: 8, border: '1px solid #aaa', background: 'transparent' }}>
-          <option value="">Choisir la commande</option>
-          {assigned.map(o => <option key={o.id} value={o.id}>{o.reference} — {o.shop.name}</option>)}
-        </select>
-      </label>
-      {chosen && <p style={{ margin: 0, opacity: .75, fontSize: 14 }}>Commande {chosen.reference} · {chosen.shop.name}</p>}
-      <label style={{ display: 'grid', gap: 8 }}>
-        <strong>Montant reçu (DT)</strong>
-        <input required type="text" inputMode="decimal" autoComplete="off" value={amount} onChange={e => { setAmount(e.target.value); setError(''); }}
-          placeholder="Ex. 50" aria-describedby="amount-help" style={{ width: '100%', boxSizing: 'border-box', padding: 13, borderRadius: 8, border: '1px solid #aaa', fontSize: 18, background: 'transparent' }} />
-        <small id="amount-help" style={{ opacity: .75 }}>Écrivez simplement 50 pour 50 DT. Les décimales sont facultatives (ex. 50,5).</small>
-      </label>
-      <button disabled={submitting || assigned.length === 0} type="submit" style={{ padding: 14, borderRadius: 8, cursor: submitting ? 'wait' : 'pointer' }}>
-        {submitting ? 'Enregistrement…' : 'Enregistrer le montant reçu'}
-      </button>
-      {assigned.length === 0 && <p role="status">Aucune commande ne vous est attribuée pour le moment.</p>}
-      {error && <p role="alert" style={{ color: '#b91c1c', margin: 0 }}>{error}</p>}
-      {message && <p role="status" style={{ margin: 0 }}>{message}</p>}
-    </form>
-    <h2 style={{ marginTop: 32 }}>Historique</h2>
-    {receipts.length === 0 && <p>Aucun encaissement enregistré.</p>}
-    {receipts.map(r => <article key={r.id} style={{ padding: 14, borderBottom: '1px solid #ddd' }}>
-      <strong>{r.reference}</strong> — {Number(r.amount).toFixed(3)} DT ({r.status === 'PENDING' ? 'En attente' : r.status === 'CONFIRMED' ? 'Confirmé' : r.status})
-      <p style={{ margin: '6px 0 0' }}>Remis au fournisseur : {(r.remittances || []).filter(x => x.confirmedAt).reduce((n, x) => n + Number(x.amount), 0).toFixed(3)} DT</p>
-    </article>)}
+  return <main className={st.paymentPage}>
+    <Link href="/delivery" className={st.action}><ArrowLeft size={16}/> Retour aux livraisons</Link>
+    <div className={st.paymentHeader}>
+      <span className={st.eyebrow}>FIXI DELIVERY · CAISSE</span>
+      <h1>Encaisser une commande</h1>
+      <p>Choisissez une commande. Son montant, les sommes déjà réglées et le reste s’affichent automatiquement.</p>
+    </div>
+    <div className={st.cards}>
+      <div className={st.card+' '+st.highlight}><span>Commandes attribuées</span><strong>{orders.length}</strong><small>Soldées ou encore à régler</small></div>
+      <div className={st.card}><span>Encaissements à confirmer</span><strong>{receiptCount}</strong><small>En attente du fournisseur</small></div>
+      <div className={st.card}><span>Reste à reverser au supplier</span>
+        <strong>{format(receipts.filter(r=>r.status==='CONFIRMED').reduce((n,r)=>n+Number(r.amount)-(r.remittances||[]).filter(x=>x.confirmedAt).reduce((a,x)=>a+Number(x.amount),0),0))}</strong>
+        <small>Encaissements confirmés, non encore remis</small>
+      </div>
+    </div>
+    <section className={st.paymentPanel}>
+      <div className={st.paymentPanelTop}>
+        <i><WalletCards size={22}/></i><div><h2>Nouveau paiement</h2><p>Saisie simple en dinars · les décimales sont facultatives</p></div>
+      </div>
+      <form className={st.paymentPanelBody} onSubmit={record}>
+        <label className={st.paymentField}>Commande / facture attribuée
+          <select required value={orderId} onChange={e=>{setOrderId(e.target.value);setError('');setMessage('')}}>
+            <option value="">Sélectionnez une commande</option>
+            {orders.map(o=><option key={o.id} value={o.id}>{o.reference} — {o.shop.name}{o.due<.0001?' · soldée':''}</option>)}
+          </select>
+        </label>
+        {selected&&<FinanceSelectionSummary kind={selected.hasInvoice?'Facture':'Commande'} reference={selected.reference}
+          invoiceReference={selected.invoiceReference} customerName={selected.shop.name}
+          total={selected.total} paid={selected.paid} due={selected.due} pending={selected.pending}
+          available={selected.availableToCollect} creditTotal={selected.creditTotal}/>}
+        <label className={st.paymentField}>
+          <span className={st.paymentLabelRow}><Banknote size={16}/> Montant reçu de la boutique (DT)</span>
+          <input required type="text" inputMode="decimal" autoComplete="off" value={amount}
+            onChange={e=>{setAmount(e.target.value);setError('')}} placeholder="Ex. 50"
+            aria-describedby="simple-money-help" disabled={!canCollect||submitting}/>
+          <span id="simple-money-help" className={st.paymentHelp}>Vous pouvez saisir 50, 50.5 ou 50,5 DT.</span>
+        </label>
+        {selected && amountRemaining > .0001 && <div className={st.formActions}>
+          <button type="button" className={st.action} disabled={submitting}
+            onClick={()=>setAmount(String(amountRemaining))}>Encaisser tout le reste : {format(amountRemaining)}</button>
+        </div>}
+        {selected && !canCollect && <div className={st.feedback+' '+st.feedbackSuccess}><CheckCircle2 size={18}/>
+          Cette commande est déjà soldée ou ses encaissements sont en cours de validation.</div>}
+        <button type="submit" className={st.paymentSubmit} disabled={submitting||!canCollect}>
+          {submitting?<RefreshCw size={18}/>:<CheckCircle2 size={18}/>}
+          {submitting?'Enregistrement…':'Enregistrer le montant reçu'}
+        </button>
+        {orders.length===0 && !loading && <div className={st.paymentHistoryEmpty}>Aucune commande attribuée pour le moment.</div>}
+        {error && <div className={st.feedback+' '+st.feedbackError} role="alert">{error}</div>}
+        {message && <div className={st.feedback+' '+st.feedbackSuccess} role="status"><CheckCircle2 size={19}/>{message}</div>}
+      </form>
+    </section>
+    <div className={st.head}>
+      <div><span className={st.eyebrow}>TRANSPARENCE</span><h2 style={{margin:'7px 0 4px'}}>Historique des encaissements</h2>
+      <p>Chaque opération conserve sa date, sa commande et son état.</p></div>
+      <button className={st.action} type="button" disabled={loading} onClick={()=>void load()}><RefreshCw size={15}/> Actualiser</button>
+    </div>
+    <div className={st.paymentHistory}>
+      {receipts.length===0&&<div className={st.paymentHistoryEmpty}><ReceiptText size={22}/> Aucun encaissement enregistré.</div>}
+      {receipts.map(r=>{
+        const remitted=(r.remittances||[]).filter(x=>x.confirmedAt).reduce((sum,x)=>sum+Number(x.amount),0);
+        const confirmed=r.status==='CONFIRMED';
+        return <article key={r.id} className={st.paymentHistoryCard}>
+          <div><strong>{r.order?.reference || 'Commande '+(r.orderId||'')}</strong>
+            <small>{r.reference} · {date(r.collectedAt||r.createdAt)}</small>
+            <small>Remis au fournisseur : {format(remitted)} {confirmed?'· Reste à remettre : '+format(Math.max(0,Number(r.amount)-remitted)):''}</small>
+          </div>
+          <div><b>{format(Number(r.amount))}</b>
+            <small className={st.state+' '+(confirmed?st.ok:st.pending)}>
+              {confirmed?<><CheckCircle2 size={12}/> Confirmé</>:<><Clock3 size={12}/> {r.status==='PENDING'?'À confirmer':r.status}</>}
+            </small>
+          </div>
+        </article>;
+      })}
+    </div>
   </main>;
 }

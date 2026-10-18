@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, CheckCircle2, RefreshCw, WalletCards, Truck, ReceiptText, Clock3, Users, FileText } from 'lucide-react';
 import st from '@/components/finance-ledger.module.css';
+import { FinanceSelectionSummary } from '@/components/finance-selection-summary';
 
 type Client = {id:string;name:string;shopId?:string|null;phone?:string|null;region?:string|null;due:number;paid:number;
   invoices:{id:string;reference:string;sourceOrderId?:string|null;total:number;paid:number;due:number;createdAt:string}[]};
@@ -54,7 +55,9 @@ export default function SupplierFinancialLedger(){
  const unremitted=(data?.settlements||[]).filter(x=>x.collector==='DRIVER'&&x.status==='CONFIRMED'&&x.remainingToRemit>0.0001);
  const invoiceOptions=(data?.clients||[]).flatMap(c=>c.invoices.filter(i=>!!i.sourceOrderId&&i.due>0.0001)
    .map(i=>({...i,clientName:c.name})));
- const clients=useMemo(()=>(data?.clients||[]).filter(c=>!!c.shopId && c.due>.0001
+ const selectedInvoice=invoiceOptions.find(i=>i.sourceOrderId===orderId);
+ const selectedRemittance=unremitted.find(r=>r.id===remittanceId);
+  const clients=useMemo(()=>(data?.clients||[]).filter(c=>!!c.shopId && c.due>.0001
    &&(c.name+' '+c.invoices.map(i=>i.reference).join(' ')).toLowerCase().includes(search.toLowerCase())),[data,search]);
  const events=useMemo(()=>(data?.journal||[]).filter(j=>(j.reference+' '+j.customerName+' '+j.source+' '+j.invoiceReference+' '+j.type).toLowerCase()
    .includes(search.toLowerCase())),[data,search]);
@@ -71,8 +74,16 @@ export default function SupplierFinancialLedger(){
    finally{setBusy(false);}
  }
  async function collect(e:React.FormEvent){e.preventDefault();
+   if(!selectedInvoice){setError('Choisissez une facture.');return;}
+   const normalized=amount.trim().replace(',','.');
+   if(!/^(?:0|[1-9]\d{0,8})(?:\.\d{1,3})?$/.test(normalized)||Number(normalized)<=0){
+     setError('Saisissez 50, 50.5 ou 50,5 DT.');return;
+   }
+   if(Math.round(Number(normalized)*1000)>Math.round(selectedInvoice.due*1000)){
+     setError('Le paiement dépasse le reste de la facture : '+cur(selectedInvoice.due));return;
+   }
    if(await post('/api/supplier/settlements',{orderId,amount:amount.trim(),method,idempotencyKey:crypto.randomUUID()+'-supplier'},
-      'Paiement enregistré et ajouté à l’historique.')){setAmount('');}
+      'Paiement de '+cur(Number(normalized))+' enregistré et ajouté à l’historique.')){setAmount('');}
  }
  async function confirm(r:Receipt){if(!window.confirm('Confirmer '+cur(r.amount)+' reçus par '+(r.driverName||'le livreur')+' ?'))return;
    await post('/api/supplier/settlements/'+encodeURIComponent(r.id)+'/confirm',{},'Encaissement validé. La dette de l’atelier a été mise à jour.');
@@ -108,20 +119,44 @@ export default function SupplierFinancialLedger(){
    </div>
    {tab==='ATELIERS'&&<>
      <div className={st.note}><FileText size={14} style={{verticalAlign:'middle'}}/> Ici, la dette est calculée sur les mêmes factures que l’application Atelier. Un paiement validé apparaît dans l’historique des deux côtés.</div>
-     {invoiceOptions.length>0&&<section className={st.panel}>
-       <div className={st.panelTop}><div><h2>Enregistrer un paiement Atelier</h2><small>Un montant partiel suffit : 20, 50 ou 150,500 DT. L’écriture est datée automatiquement.</small></div></div>
-       <form onSubmit={collect} className={st.form}>
+     {invoiceOptions.length>0&&<section className={st.paymentPanel}>
+       <div className={st.paymentPanelTop}>
+         <i><WalletCards size={22}/></i>
+         <div><h2>Enregistrer un paiement Atelier</h2><p>Choisissez une facture, vérifiez son solde puis encaissez la somme reçue.</p></div>
+       </div>
+       <form onSubmit={collect} className={st.paymentPanelBody}>
+         <label className={st.paymentField}>Facture / atelier
+           <select required value={orderId} onChange={e=>{setOrderId(e.target.value);setAmount('');setError('')}}>
+             <option value="">Sélectionner une facture</option>
+             {invoiceOptions.map(i=><option key={i.id} value={i.sourceOrderId!}>{i.clientName} · {i.reference} · reste {cur(i.due)}</option>)}
+           </select>
+         </label>
+         {selectedInvoice&&<FinanceSelectionSummary
+           kind="Facture" reference={selectedInvoice.reference} customerName={selectedInvoice.clientName}
+           total={selectedInvoice.total} paid={selectedInvoice.paid} due={selectedInvoice.due}/>}
          <div className={st.grid2}>
-           <label>Facture / atelier<select required value={orderId} className={st.select} onChange={e=>setOrderId(e.target.value)}>
-             <option value="">Choisir une facture</option>{invoiceOptions.map(i=><option key={i.id} value={i.sourceOrderId!}>{i.clientName} · {i.reference} · reste {cur(i.due)}</option>)}
-           </select></label>
-           <label>Montant reçu (DT)<input required className={st.input} inputMode="decimal" placeholder="Ex. 50" value={amount} onChange={e=>setAmount(e.target.value)}/></label>
-           <label>Moyen de paiement<select className={st.select} value={method} onChange={e=>setMethod(e.target.value)}>
-             <option value="CASH">Espèces</option><option value="BANK_TRANSFER">Virement bancaire</option><option value="D17">D17</option><option value="FLOUCI">Flouci</option><option value="CARD">Carte</option>
-           </select></label>
+           <label className={st.paymentField}>Montant reçu (DT)
+             <input required value={amount} onChange={e=>{setAmount(e.target.value);setError('')}}
+               placeholder="Ex. 50" inputMode="decimal" autoComplete="off" disabled={!selectedInvoice||busy}/>
+             <span className={st.paymentHelp}>Saisissez simplement 50, 50.5 ou 50,5 DT.</span>
+           </label>
+           <label className={st.paymentField}>Moyen de paiement
+             <select value={method} onChange={e=>setMethod(e.target.value)} disabled={busy}>
+               <option value="CASH">Espèces</option><option value="BANK_TRANSFER">Virement bancaire</option>
+               <option value="D17">D17</option><option value="FLOUCI">Flouci</option><option value="CARD">Carte</option>
+             </select>
+           </label>
          </div>
-         <div className={st.formActions}><button disabled={busy} className={st.action+' '+st.primary}>{busy?'Enregistrement…':'Confirmer le paiement'}</button>
-           <small>Pour les autres ventes ERP, utilisez « Créances & dettes ».</small></div>
+         <div className={st.formActions}>
+           {selectedInvoice&&<button type="button" className={st.action} disabled={busy}
+              onClick={()=>setAmount(String(selectedInvoice.due))}>
+              Utiliser le solde restant : {cur(selectedInvoice.due)}
+           </button>}
+         </div>
+         <button type="submit" className={st.paymentSubmit} disabled={busy||!selectedInvoice}>
+           <CheckCircle2 size={18}/>{busy?'Enregistrement…':'Confirmer et enregistrer le paiement'}
+         </button>
+         <p className={st.paymentHelp}>La date, la facture et l’encaissement apparaîtront dans « Historique & preuves » et dans le relevé Atelier.</p>
        </form>
      </section>}
      {clients.length===0&&<div className={st.panel+' '+st.block}>Aucune créance atelier ouverte.</div>}
@@ -163,6 +198,11 @@ export default function SupplierFinancialLedger(){
            <option value="">Choisir l'encaissement</option>{unremitted.map(r=><option key={r.id} value={r.id}>{r.driverName||'Livreur'} · {r.shopName} · {cur(r.remainingToRemit)}</option>)}
          </select></label>
          <label>Somme réellement reçue (DT)<input className={st.input} required inputMode="decimal" placeholder="Ex. 50" value={remittanceAmount} onChange={e=>setRemittanceAmount(e.target.value)}/></label></div>
+         {selectedRemittance&&<div className={st.invoiceSummaryInfo} style={{borderRadius:12,padding:14}}>
+           <strong>{selectedRemittance.driverName||'Livreur'} · {selectedRemittance.shopName}</strong>
+           <div style={{marginTop:7}}>Encaissement initial : <b>{cur(selectedRemittance.amount)}</b> · Déjà remis : <b>{cur(selectedRemittance.remitted)}</b></div>
+           <div style={{marginTop:5}}>À reverser maintenant : <b>{cur(selectedRemittance.remainingToRemit)}</b> · Réf. {selectedRemittance.reference}</div>
+         </div>}
          <button className={st.action+' '+st.primary} disabled={busy}>Enregistrer la remise du livreur</button>
        </form>}
      </section>}
