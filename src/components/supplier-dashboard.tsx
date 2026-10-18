@@ -83,6 +83,7 @@ export function SupplierDashboard({session}:{session:any}){
       <div className="supplier-os-brand"><i>F</i><div><b>Fixi Supplier</b><span>{session.companyName}</span></div></div>
       <div className="supplier-nav-label">GESTION</div>
       {nav.map(([key,label,Icon])=><button key={key} className={tab===key?'active':''} onClick={()=>setTab(key as Tab)}><Icon/><span>{label}</span>{key==='orders'&&activeOrders.length>0&&<em>{activeOrders.length}</em>}</button>)}
+      <Link href="/supplier/settlements" className="supplier-delivery-link"><WalletCards/><span>Comptes & règlements</span></Link>
       <div className="supplier-nav-label">MOBILE</div>
       <Link href="/delivery/login" target="_blank" className="supplier-delivery-link"><MapPinned/><span>App livreur</span></Link>
       <div className="supplier-side-foot"><div><strong>{session.fullName}</strong><small>{session.role||'ADMIN'} · Compte fournisseur</small></div><button onClick={logout}><LogOut/></button></div>
