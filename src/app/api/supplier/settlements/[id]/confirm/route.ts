@@ -3,7 +3,7 @@ import { requireSupplierRole } from '@/lib/supplier-auth';
 import { bad, ok } from '@/lib/http';
 import { plain } from '@/lib/serializers';
 import { Prisma } from '@prisma/client';
-import { orderBalance } from '@/lib/supplier-settlement-ledger';
+import { orderBalance, mirrorSettlementToErp } from '@/lib/supplier-settlement-ledger';
 export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const s = await requireSupplierRole(['OWNER','ADMIN','MANAGER','ACCOUNTANT']);
@@ -15,6 +15,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
       const { remaining } = await orderBalance(tx, s.companyId, record.orderId);
       if (record.amount.greaterThan(remaining)) throw Object.assign(new Error('Dette deja reglee ou insuffisante'), { status: 409 });
       const saved = await tx.supplierSettlement.update({ where: { id }, data: { status: 'CONFIRMED', confirmedAt: new Date() } });
+      await mirrorSettlementToErp(tx, { companyId: s.companyId, orderId: record.orderId, amount: record.amount, reference: record.reference, method: record.method, accountId: s.id });
       await tx.supplierAuditEvent.create({ data: { companyId: s.companyId, accountId: s.id,
         action: 'DRIVER_COLLECTION_CONFIRMED', entity: 'SUPPLIER_ORDER', entityId: record.orderId,
         metadata: { settlementId: id, amount: record.amount.toString(), driverId: record.driverAccountId } } });
