@@ -114,7 +114,7 @@ export async function GET() {
     });
     const journal=[...paymentEvents,...pendingEvents,...remittanceEvents,...creditEvents]
       .sort((a,b)=>new Date(b.date).getTime()-new Date(a.date).getTime()).slice(0,1000);
-    return ok({metrics:{
+    return ok({role:s.role,metrics:{
       customerDue:num(invoiceRows.reduce((n,r)=>n.plus(r.due),zero)),
       atelierDue:num(clients.filter(c=>c.shopId).reduce((n,r)=>n.plus(r.due),zero)),
       outstandingCourierCash:Number(owed.toFixed(3)),
