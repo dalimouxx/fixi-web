@@ -17,7 +17,13 @@ export function middleware(req: NextRequest) {
       }
     }
   }
+  if (req.nextUrl.pathname.startsWith('/app/')) {
+    // Recompute the route in the server layout rather than trusting a client header.
+    const headers = new Headers(req.headers);
+    headers.set('x-fixi-path', req.nextUrl.pathname);
+    return NextResponse.next({ request: { headers } });
+  }
   return NextResponse.next();
 }
 
-export const config = { matcher: ['/api/:path*'] };
+export const config = { matcher: ['/api/:path*', '/app/:path*'] };
