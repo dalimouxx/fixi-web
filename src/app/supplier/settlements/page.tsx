@@ -76,7 +76,7 @@ export default function SupplierFinancialLedger(){
  async function collect(e:React.FormEvent){e.preventDefault();
    if(!selectedInvoice){setError('Choisissez une facture.');return;}
    const normalized=amount.trim().replace(',','.');
-   if(!/^(?:0|[1-9]\\d{0,8})(?:\\.\\d{1,3})?$/.test(normalized)||Number(normalized)<=0){
+   if(!/^(?:0|[1-9]\d{0,8})(?:\.\d{1,3})?$/.test(normalized)||Number(normalized)<=0){
      setError('Saisissez 50, 50.5 ou 50,5 DT.');return;
    }
    if(Math.round(Number(normalized)*1000)>Math.round(selectedInvoice.due*1000)){
@@ -198,6 +198,11 @@ export default function SupplierFinancialLedger(){
            <option value="">Choisir l'encaissement</option>{unremitted.map(r=><option key={r.id} value={r.id}>{r.driverName||'Livreur'} · {r.shopName} · {cur(r.remainingToRemit)}</option>)}
          </select></label>
          <label>Somme réellement reçue (DT)<input className={st.input} required inputMode="decimal" placeholder="Ex. 50" value={remittanceAmount} onChange={e=>setRemittanceAmount(e.target.value)}/></label></div>
+         {selectedRemittance&&<div className={st.invoiceSummaryInfo} style={{borderRadius:12,padding:14}}>
+           <strong>{selectedRemittance.driverName||'Livreur'} · {selectedRemittance.shopName}</strong>
+           <div style={{marginTop:7}}>Encaissement initial : <b>{cur(selectedRemittance.amount)}</b> · Déjà remis : <b>{cur(selectedRemittance.remitted)}</b></div>
+           <div style={{marginTop:5}}>À reverser maintenant : <b>{cur(selectedRemittance.remainingToRemit)}</b> · Réf. {selectedRemittance.reference}</div>
+         </div>}
          <button className={st.action+' '+st.primary} disabled={busy}>Enregistrer la remise du livreur</button>
        </form>}
      </section>}
