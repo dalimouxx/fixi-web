@@ -6,7 +6,7 @@ export const money = (value: unknown): Prisma.Decimal => {
     throw Object.assign(new Error('Indiquez un montant, par exemple 50 ou 50,500 DT'), { status: 400 });
   }
   const raw = value.trim();
-  if (!/^(?:0|[1-9]\\d{0,8})(?:[.,]\\d{1,3})?$/.test(raw)) {
+  if (!/^(?:0|[1-9]\d{0,8})(?:[.,]\d{1,3})?$/.test(raw)) {
     throw Object.assign(new Error('Montant invalide : écrivez simplement 50, 50.5 ou 50,500'), { status: 400 });
   }
   const amount = new Prisma.Decimal(raw.replace(',', '.'));
