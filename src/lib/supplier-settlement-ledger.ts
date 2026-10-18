@@ -1,11 +1,18 @@
 import { Prisma } from '@prisma/client';
 
+/** Accept a natural amount in dinars (50, 50.5, 50,500), preserving millimes. */
 export const money = (value: unknown): Prisma.Decimal => {
-  if (typeof value !== 'string' || !/^(?:0|[1-9]\d{0,8})\.\d{3}$/.test(value)) {
-    throw Object.assign(new Error('Montant invalide (ex: 150.000)'), { status: 400 });
+  if (typeof value !== 'string') {
+    throw Object.assign(new Error('Indiquez un montant, par exemple 50 ou 50,500 DT'), { status: 400 });
   }
-  const amount = new Prisma.Decimal(value);
-  if (!amount.greaterThan(0)) throw Object.assign(new Error('Montant nul'), { status: 400 });
+  const raw = value.trim();
+  if (!/^(?:0|[1-9]\d{0,8})(?:[.,]\d{1,3})?$/.test(raw)) {
+    throw Object.assign(new Error('Montant invalide : écrivez simplement 50, 50.5 ou 50,500'), { status: 400 });
+  }
+  const amount = new Prisma.Decimal(raw.replace(',', '.'));
+  if (!amount.greaterThan(0)) {
+    throw Object.assign(new Error('Le montant doit être supérieur à zéro'), { status: 400 });
+  }
   return amount;
 };
 

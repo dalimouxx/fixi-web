@@ -46,7 +46,7 @@ export default function SupplierSettlementsPage() {
         <option value="">Choisir une commande</option>
         {orders.filter(x=>x.status!=='CANCELLED').map(x=><option key={x.id} value={x.id}>{x.reference} — {x.shop?.name} — {Number(x.total).toFixed(3)} DT</option>)}
       </select></label>
-      <label>Montant (DT) <input required value={amount} onChange={e=>setAmount(e.target.value)} placeholder="150.000" pattern="[0-9]+\\.[0-9]{3}" style={{width:'100%',padding:10}}/></label>
+      <label>Montant (DT) <input required value={amount} onChange={e=>setAmount(e.target.value)} placeholder="Ex. 150" inputMode="decimal" style={{width:'100%',padding:10}}/></label>
       <label>Mode <select value={method} onChange={e=>setMethod(e.target.value)} style={{width:'100%',padding:10}}>
         <option value="CASH">Espèces</option><option value="BANK_TRANSFER">Virement</option><option value="D17">D17</option><option value="FLOUCI">Flouci</option><option value="CARD">Carte</option>
       </select></label>
@@ -58,7 +58,7 @@ export default function SupplierSettlementsPage() {
         <option value="">Choisir un encaissement confirmé</option>
         {driverReceipts.map(r=><option key={r.id} value={r.id}>{r.reference} — {((Number(r.amount)-(r.remittances||[]).filter(x=>x.confirmedAt).reduce((n,x)=>n+Number(x.amount),0))).toFixed(3)} DT à reverser</option>)}
       </select></label>
-      <label>Montant reçu (DT) <input required value={remittanceAmount} onChange={e=>setRemittanceAmount(e.target.value)} placeholder="50.000" pattern="[0-9]+\\.[0-9]{3}" style={{width:'100%',padding:10}}/></label>
+      <label>Montant reçu (DT) <input required value={remittanceAmount} onChange={e=>setRemittanceAmount(e.target.value)} placeholder="Ex. 50" inputMode="decimal" style={{width:'100%',padding:10}}/></label>
       <button style={{padding:12}}>Confirmer la remise partielle ou totale</button>
     </form>}
     {message&&<p role="status">{message}</p>}
