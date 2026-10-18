@@ -27,9 +27,23 @@ export async function orderBalance(tx: Prisma.TransactionClient, companyId: stri
     select: { amount: true }
   });
   const alreadyPaid = rows.reduce((sum, item) => sum.plus(item.amount), new Prisma.Decimal(order.delivery?.cashCollected || 0));
-  const sale = await tx.supplierErpSale.findFirst({ where: { companyId, sourceOrderId: orderId }, select: { paid: true } });
+  const sale = await tx.supplierErpSale.findFirst({
+    where: { companyId, sourceOrderId: orderId },
+    select: { id: true, total: true, paid: true },
+  });
   const effectivePaid = sale ? Prisma.Decimal.max(alreadyPaid, sale.paid) : alreadyPaid;
-  const remaining = Prisma.Decimal.max(new Prisma.Decimal(0), order.total.minus(effectivePaid));
+  let amountDue = order.total;
+  let paidNet = effectivePaid;
+  if (sale) {
+    const credits = await tx.supplierReturn.findMany({ where: {
+      companyId, sourceSaleId: sale.id, type: 'SALE_RETURN', status: 'COMPLETED',
+    }, select: { total: true, refund: true } });
+    const totalReturned = credits.reduce((n, r) => n.plus(r.total), new Prisma.Decimal(0));
+    const totalRefunded = credits.reduce((n, r) => n.plus(r.refund), new Prisma.Decimal(0));
+    amountDue = Prisma.Decimal.max(new Prisma.Decimal(0), sale.total.minus(totalReturned));
+    paidNet = Prisma.Decimal.max(new Prisma.Decimal(0), effectivePaid.minus(totalRefunded));
+  }
+  const remaining = Prisma.Decimal.max(new Prisma.Decimal(0), amountDue.minus(paidNet));
   return { order, remaining, alreadyPaid: effectivePaid };
 }
 
