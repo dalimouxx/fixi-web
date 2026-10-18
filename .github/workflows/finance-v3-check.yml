@@ -12,8 +12,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: npm
-      - run: npm ci
+      - run: npm install --no-audit --no-fund
       - run: npx prisma validate
         env:
           DATABASE_URL: postgresql://test:test@localhost:5432/fixi?schema=public
