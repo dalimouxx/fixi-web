@@ -26,6 +26,7 @@ const links=[
 ['Compatibilité pièces','/app/compatibility',Link2,['ADMIN','RECEPTION','TECHNICIAN'],'ATELIER'],
 ['Catalogue appareils','/app/device-catalog',Smartphone,['ADMIN','RECEPTION'],'ATELIER'],
 ['Fixi Supplier','/app/suppliers',PackageOpen,['ADMIN','RECEPTION'],'ATELIER'],
+['Mes dettes fournisseurs','/app/mes-dettes',CreditCard,['ADMIN','RECEPTION','CASHIER'],'ATELIER'],
 ['Achats atelier','/app/purchases',ShoppingBag,['ADMIN','RECEPTION'],'ATELIER'],
 ['Marché pièces','/app/parts-market',ShoppingBag,['ADMIN','RECEPTION','TECHNICIAN','CASHIER'],'ATELIER'],
 ['Rendez-vous','/app/appointments',CalendarDays,['ADMIN','RECEPTION'],'ATELIER'],

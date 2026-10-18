@@ -396,6 +396,7 @@ model Tenant {
 }
 
 model Shop {
+  supplierSettlements SupplierSettlement[]
   id                    String   @id @default(cuid())
   tenantId              String
   tenant                Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -1470,6 +1471,58 @@ model MessageLog {
   @@index([repairId, createdAt])
 }
 
+
+enum SupplierSettlementStatus {
+  PENDING
+  CONFIRMED
+  REVERSED
+}
+
+enum SupplierSettlementCollector {
+  SUPPLIER
+  DRIVER
+}
+
+model SupplierSettlement {
+  id               String                      @id @default(cuid())
+  companyId        String
+  shopId           String
+  orderId          String?
+  driverAccountId  String?
+  collector        SupplierSettlementCollector
+  status           SupplierSettlementStatus    @default(PENDING)
+  amount           Decimal                     @db.Decimal(12,3)
+  method           PaymentMethod
+  reference        String
+  idempotencyKey   String                      @unique
+  proofUrl         String?
+  note             String?
+  collectedAt      DateTime                    @default(now())
+  confirmedAt      DateTime?
+  reversedAt       DateTime?
+  createdAt        DateTime                    @default(now())
+  company          SupplierCompany             @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  shop             Shop                        @relation(fields: [shopId], references: [id], onDelete: Restrict)
+  order            SupplierOrder?              @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  remittances      SupplierSettlementRemittance[]
+
+  @@unique([companyId, reference])
+  @@index([companyId, shopId, status, createdAt])
+  @@index([driverAccountId, status])
+}
+
+model SupplierSettlementRemittance {
+  id             String             @id @default(cuid())
+  settlementId   String
+  settlement     SupplierSettlement @relation(fields: [settlementId], references: [id], onDelete: Restrict)
+  amount         Decimal            @db.Decimal(12,3)
+  reference      String             @unique
+  confirmedAt    DateTime?
+  createdAt      DateTime           @default(now())
+
+  @@index([settlementId, confirmedAt])
+}
+
 model SupplierCompany {
   id          String   @id @default(cuid())
   name        String
@@ -1494,6 +1547,7 @@ model SupplierCompany {
   accounts    SupplierAccount[]
   products    SupplierProduct[]
   orders      SupplierOrder[]
+  settlements SupplierSettlement[]
 }
 
 model SupplierAccount {
@@ -1571,6 +1625,7 @@ model SupplierOrder {
   receivedToStockAt DateTime?
   items       SupplierOrderItem[]
   delivery    SupplierDelivery?
+  settlements SupplierSettlement[]
 
   @@index([shopId, createdAt])
   @@index([companyId, status, createdAt])

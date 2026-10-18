@@ -5,7 +5,9 @@ export async function ensureMarketplaceAccounting(orderId:string,accountId?:stri
  if(existing)return existing;
  const order=await prisma.supplierOrder.findUnique({where:{id:orderId},include:{items:{include:{product:true}},delivery:true,shop:{select:{name:true,phone:true,address:true,region:true}}}});
  if(!order)return null;
- const collected=Math.min(Number(order.total),Math.max(0,Number(order.delivery?.cashCollected||0)));
+ const receipts=await prisma.supplierSettlement.findMany({where:{companyId:order.companyId,orderId,status:'CONFIRMED'}});
+ const legacyCash=Math.max(0,Number(order.delivery?.cashCollected||0));
+ const collected=Math.min(Number(order.total),legacyCash+receipts.reduce((n,r)=>n+Number(r.amount),0));
  return prisma.$transaction(async tx=>{
   let customer=await tx.supplierErpCustomer.findFirst({where:{companyId:order.companyId,shopId:order.shopId}});
   if(customer){
@@ -41,17 +43,18 @@ export async function ensureMarketplaceAccounting(orderId:string,accountId?:stri
     unitPrice:item.unitPrice
    }});
   }
-  if(collected>0)await tx.supplierErpPayment.create({data:{
+  if(legacyCash>0)await tx.supplierErpPayment.create({data:{
    companyId:order.companyId,
    customerId:customer.id,
    saleId:sale.id,
    kind:'IN',
    method:'CASH',
-   amount:collected,
+   amount:legacyCash,
    reference:order.reference,
    note:'COD Fixi Delivery',
    accountId:accountId||null
   }});
+  for(const r of receipts) await tx.supplierErpPayment.create({data:{companyId:order.companyId,customerId:customer.id,saleId:sale.id,kind:'IN',method:r.method,amount:r.amount,reference:r.reference,accountId:accountId||null}});
   await tx.supplierAuditEvent.create({data:{companyId:order.companyId,accountId:accountId||null,action:'ACCOUNT',entity:'MARKETPLACE_ORDER',entityId:order.id,metadata:{reference:order.reference,total:Number(order.total),collected,shop:order.shop.name}}});
   return sale;
  });

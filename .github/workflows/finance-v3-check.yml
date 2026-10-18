@@ -1,0 +1,30 @@
+name: Fixi V3 validation
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [feature/comptes-reglements-v3]
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - run: npx prisma validate
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/fixi?schema=public
+      - run: npx prisma generate
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/fixi?schema=public
+      - run: npm run check
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/fixi?schema=public
+      - run: npm run build
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/fixi?schema=public
+          AUTH_SECRET: test-auth-secret-at-least-32-chars-for-validation
+          PLATFORM_AUTH_SECRET: test-platform-secret-only-in-github-ci
+          DATA_ENCRYPTION_KEY: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
