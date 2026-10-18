@@ -20,7 +20,8 @@ type Invoice = {
 type Supplier = { customerId: string; company?: { id:string;name:string;region?:string|null;phone?:string|null }|null; due:number; totalPaid:number; sales:Invoice[] };
 type Statement = {
  totalDue:number;totalPaid:number;totalInvoiced:number;suppliers:Supplier[];
- pendingOrders:{id:string;reference:string;supplier:string;createdAt:string;status:string;total:number}[];
+ pendingOrders:{id:string;reference:string;supplier:string;createdAt:string;status:string;total:number;
+  collections?:{id:string;reference:string;amount:number;date:string;status:string;method:string;collector:string;collectorName?:string|null}[]}[];
 };
 const currency = (n:number) => Number(n||0).toFixed(3) + ' DT';
 const dt = (v:string|null|undefined) => v ? new Date(v).toLocaleString('fr-TN', {dateStyle:'medium',timeStyle:'short'}) : '—';
@@ -120,7 +121,9 @@ export default function MySupplierDebts() {
       <div className={styles.panelTop}><div><h2><Clock3 size={17} style={{verticalAlign:'middle'}}/> Commandes pas encore facturées</h2>
         <small>Ces commandes ne sont PAS incluses dans le total dû. Le solde n’augmente qu’après comptabilisation de la facture.</small></div><strong>{data.pendingOrders.length} commande(s)</strong></div>
       <div className={styles.block}>{data.pendingOrders.map(o=><div className={styles.line} key={o.id}>
-        <div><strong>{o.reference}</strong><div><span>{o.supplier} · {dt(o.createdAt)} · {o.status}</span></div></div><strong>{currency(o.total)}</strong>
+        <div><strong>{o.reference}</strong><div><span>{o.supplier} · {dt(o.createdAt)} · {o.status}</span></div>
+          {(o.collections||[]).map(p=><div key={p.id} style={{marginTop:5}}><span>{p.status==='CONFIRMED'?'Avance confirmée':'Encaissement à valider'} : {currency(p.amount)} · {dt(p.date)} · {via(p)} · {p.reference}</span></div>)}
+        </div><strong>{currency(o.total)}</strong>
       </div>)}</div>
     </section>}
     <div className={styles.note}><Wallet size={14} style={{verticalAlign:'middle'}}/> Les paiements en attente ne réduisent pas le solde. Les sommes déjà remises au fournisseur sont distinguées de celles détenues par un livreur.</div>
