@@ -3,7 +3,7 @@ import { requireSupplierRole } from '@/lib/supplier-auth';
 import { bad, ok } from '@/lib/http';
 import { plain } from '@/lib/serializers';
 import { Prisma, PaymentMethod } from '@prisma/client';
-import { money, orderBalance } from '@/lib/supplier-settlement-ledger';
+import { money, orderBalance, mirrorSettlementToErp } from '@/lib/supplier-settlement-ledger';
 
 export const dynamic = 'force-dynamic';
 const roles = ['OWNER','ADMIN','MANAGER','ACCOUNTANT','CASHIER'] as const;
@@ -42,6 +42,7 @@ export async function POST(req: Request) {
         reference: 'REG-' + crypto.randomUUID(), idempotencyKey: b.idempotencyKey,
         confirmedAt: new Date(), note: typeof b.note === 'string' ? b.note.slice(0, 500) : null,
       } });
+      await mirrorSettlementToErp(tx, { companyId: s.companyId, orderId: order.id, amount, reference: receipt.reference, method: b.method, accountId: s.id });
       await tx.supplierAuditEvent.create({ data: { companyId: s.companyId, accountId: s.id,
         action: 'SETTLEMENT_CONFIRMED', entity: 'SUPPLIER_ORDER', entityId: order.id,
         metadata: { settlementId: receipt.id, amount: amount.toString(), collector: 'SUPPLIER' } } });
