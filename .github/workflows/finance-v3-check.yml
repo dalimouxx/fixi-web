@@ -22,3 +22,9 @@ jobs:
       - run: npm run check
         env:
           DATABASE_URL: postgresql://test:test@localhost:5432/fixi?schema=public
+      - run: npm run build
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/fixi?schema=public
+          AUTH_SECRET: test-auth-secret-at-least-32-chars-for-validation
+          PLATFORM_AUTH_SECRET: test-platform-secret-only-in-github-ci
+          DATA_ENCRYPTION_KEY: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
