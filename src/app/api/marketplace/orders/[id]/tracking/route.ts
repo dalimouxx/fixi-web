@@ -6,7 +6,7 @@ import {UserRole} from '@prisma/client';
 
 export async function GET(_req:Request,{params}:{params:Promise<{id:string}>}){
  try{
-  const s=await requireSession([UserRole.ADMIN,UserRole.RECEPTION]);
+  const s=await requireSession([UserRole.ADMIN,UserRole.RECEPTION],'CONNECT');
   const{id}=await params;
   const order=await prisma.supplierOrder.findFirst({
    where:{id,shopId:s.shopId},

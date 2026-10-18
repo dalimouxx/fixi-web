@@ -15,7 +15,7 @@ function deliveryCode(){
 
 export async function GET(){
   try{
-    const s=await requireSession([UserRole.ADMIN,UserRole.RECEPTION]);
+    const s=await requireSession([UserRole.ADMIN,UserRole.RECEPTION],'CONNECT');
     const rows=await prisma.supplierOrder.findMany({
       where:{shopId:s.shopId},
       include:{company:true,items:{include:{product:true}},delivery:true},
@@ -27,7 +27,7 @@ export async function GET(){
 
 export async function POST(req:Request){
   try{
-    const s=await requireSession([UserRole.ADMIN,UserRole.RECEPTION]);
+    const s=await requireSession([UserRole.ADMIN,UserRole.RECEPTION],'CONNECT');
     const b=await req.json(),rawItems=Array.isArray(b.items)?b.items:[];
     if(!rawItems.length)return bad('Panier vide');
 

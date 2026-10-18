@@ -5,7 +5,7 @@ import { NotificationType,SubscriptionStatus } from '@prisma/client';
 
 export async function POST(){
   try{
-    const s=await requireSession();
+    const s=await requireSession(undefined,'CONNECT');
     const now=new Date();
     await prisma.$transaction([
       prisma.shop.update({where:{id:s.shopId},data:{lastSeenAt:now}}),

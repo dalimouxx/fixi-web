@@ -6,7 +6,7 @@ import { audit } from '@/lib/audit';
 
 export async function POST(req: Request) {
   try {
-    const s = await requireSession();
+    const s = await requireSession(undefined,'CONNECT');
     const b = await req.json();
     const currentPin = String(b.currentPin || '');
     const newPin = String(b.newPin || '');

@@ -14,6 +14,7 @@ import {BrandLogo} from './brand-logo';
 import {PushToggle} from './push-toggle';
 import {OfflineSyncBadge} from './offline-sync-badge';
 import {InstallAppButton} from './install-app-button';
+import { isConnectAppPath } from '@/lib/freemium';
 
 const links=[
 ['Dashboard','/app/dashboard',LayoutDashboard,['ADMIN','RECEPTION','TECHNICIAN','CASHIER'],'PRINCIPAL'],
@@ -64,12 +65,16 @@ const groupLabels:any={PRINCIPAL:'Essentiel',ATELIER:'Atelier & ventes',INTELLIG
 
 export function AppShell({children,user}:{children?:React.ReactNode;user:any}){
   const p=usePathname();const router=useRouter();
+  const connect=user.accessTier==='CONNECT';
   const[cmd,setCmd]=useState(false);const[mobileMenu,setMobileMenu]=useState(false);const[q,setQ]=useState('');const[collapsed,setCollapsed]=useState(false);const[online,setOnline]=useState(true);
-  const visible=useMemo(()=>links.filter(x=>(x[3] as readonly string[]).includes(user.role)),[user.role]);
+  const visible=useMemo(()=>links.filter(x=>(x[3] as readonly string[]).includes(user.role)
+    &&(!connect||isConnectAppPath(x[1]))),[user.role,connect]);
   const groups=useMemo(()=>['PRINCIPAL','ATELIER','INTELLIGENCE','SERVICES','GESTION'].map(g=>[g,visible.filter(x=>x[4]===g)] as const).filter(([,items])=>items.length),[visible]);
   const current=useMemo(()=>visible.filter(x=>p===x[1]||p.startsWith(x[1]+'/')).sort((a,b)=>b[1].length-a[1].length)[0],[visible,p]);
-  const currentGroup=current?groupLabels[current[4]]:'Fixi';
-  const mobileLinks=visible.filter(x=>['/app/dashboard','/app/repairs/new','/app/repairs','/app/cashier'].includes(x[1])).slice(0,4);
+  const currentGroup=connect?'Fixi Connect':current?groupLabels[current[4]]:'Fixi';
+  const mobileLinks=connect
+    ? visible.filter(x=>['/app/suppliers','/app/mes-dettes','/app/subscription','/app/support'].includes(x[1])).slice(0,4)
+    : visible.filter(x=>['/app/dashboard','/app/repairs/new','/app/repairs','/app/cashier'].includes(x[1])).slice(0,4);
   useEffect(()=>{const saved=localStorage.getItem('fixi-sidebar-collapsed');setCollapsed(saved==='1')},[]);
   useEffect(()=>{const sync=()=>setOnline(navigator.onLine);sync();addEventListener('online',sync);addEventListener('offline',sync);return()=>{removeEventListener('online',sync);removeEventListener('offline',sync)}},[]);
   useEffect(()=>{localStorage.setItem('fixi-sidebar-collapsed',collapsed?'1':'0')},[collapsed]);
@@ -83,35 +88,49 @@ export function AppShell({children,user}:{children?:React.ReactNode;user:any}){
     <aside className="sidebar">
       <div className="brand">
         <BrandLogo/>
-        <div className="brand-caption-wrap"><div className="brand-caption">SMART REPAIR OS · V10</div><span><Sparkles size={10}/> PREMIUM</span></div>
+        <div className="brand-caption-wrap"><div className="brand-caption">{connect?'COMMANDES & LIVRAISONS':'SMART REPAIR OS · V10'}</div><span><Sparkles size={10}/> {connect?'CONNECT · GRATUIT':'PREMIUM'}</span></div>
         <button className="sidebar-collapse" onClick={()=>setCollapsed(v=>!v)} title={collapsed?'Agrandir le menu':'Réduire le menu'}>{collapsed?<PanelLeftOpen size={17}/>:<PanelLeftClose size={17}/>}</button>
       </div>
-      <Link href="/app/repairs/new" className="sidebar-primary-action"><PlusCircle size={17}/><span>Nouvelle réception</span></Link>
+      <Link href={connect?'/app/suppliers':'/app/repairs/new'} className="sidebar-primary-action">
+        {connect?<PackageOpen size={17}/>:<PlusCircle size={17}/>}<span>{connect?'Commander des pièces':'Nouvelle réception'}</span>
+      </Link>
       <nav className="nav">
         {groups.map(([group,items])=><div className="nav-group" key={group}>
-          <div className="nav-section">{groupLabels[group]}</div>
+          <div className="nav-section">{connect?'Fixi Connect':groupLabels[group]}</div>
           {items.map(([label,href,Icon])=><Link key={href} href={href} title={label} className={`nav-link ${p===href||p.startsWith(href+'/')?'active':''}`}><Icon/><span>{label}</span>{label==='Fixi Supplier'&&<em>MARKET</em>}</Link>)}
         </div>)}
       </nav>
+      {connect&&<div style={{padding:'10px 14px'}}>
+        <Link href="/app/upgrade" className="btn btn-primary btn-block">
+          <Sparkles size={15}/> Passer à Fixi Pro
+        </Link></div>}
       <div className="sidebar-bottom">
-        <div className="shop-chip"><strong>{user.shopName}</strong><small>{user.roleLabel}</small><div className="shop-live"><i/> Connecté à Fixi</div><Link href={`/queue?shop=${encodeURIComponent(user.shopSlug)}`} target="_blank" className="nav-link queue-link"><MonitorPlay size={15}/><span>Écran file</span></Link></div>
+        <div className="shop-chip"><strong>{user.shopName}</strong><small>{user.roleLabel}</small><div className="shop-live"><i/> Connecté à Fixi</div>{!connect&&<Link href={`/queue?shop=${encodeURIComponent(user.shopSlug)}`} target="_blank" className="nav-link queue-link"><MonitorPlay size={15}/><span>Écran file</span></Link>}</div>
       </div>
     </aside>
     <main className="app-main">
       <header className="topbar">
-        <button className="global-search" onClick={()=>setCmd(true)}><Search size={17}/><span>Client, IMEI, réparation, pièce, facture…</span><kbd>Ctrl K</kbd></button>
-        <div className="topbar-quick"><Link href="/app/repairs/new" className="topbar-new"><Zap size={15}/><span>Réception</span></Link></div>
+        {connect?<div className="global-search" style={{cursor:'default'}}><PackageOpen size={17}/><span>Vos commandes, factures et livraisons fournisseurs</span></div>:
+          <button className="global-search" onClick={()=>setCmd(true)}><Search size={17}/><span>Client, IMEI, réparation, pièce, facture…</span><kbd>Ctrl K</kbd></button>}
+        <div className="topbar-quick"><Link href={connect?'/app/suppliers':'/app/repairs/new'} className="topbar-new">
+          {connect?<ShoppingBag size={15}/>:<Zap size={15}/>}<span>{connect?'Commander':'Réception'}</span>
+        </Link></div>
         <div className="userbox"><OfflineSyncBadge/><NotificationBell/><PushToggle/><InstallAppButton label="Installer"/><div className="avatar">{user.fullName.split(' ').map((x:string)=>x[0]).slice(0,2).join('').toUpperCase()}</div><div className="user-meta"><strong>{user.fullName}</strong><span>{user.roleLabel}</span></div><button className="btn btn-ghost btn-sm" onClick={logout} title="Déconnexion"><LogOut size={16}/></button></div>
       </header>
       <div className="system-context-bar">
         <div className="system-context-path"><span>{currentGroup}</span><ChevronRight size={13}/><b>{current?.[0]||'Espace Fixi'}</b></div>
         <div className="system-context-meta"><span className={online?'system-online':'system-offline'}>{online?<Wifi size={13}/>:<WifiOff size={13}/>} {online?'Synchronisé':'Hors ligne'}</span><span>{user.shopName}</span><span>{user.roleLabel}</span></div>
       </div>
-      {children}
+      {connect&&!isConnectAppPath(p)?<div className="page" style={{maxWidth:760,margin:'32px auto'}}>
+        <div className="card card-pad"><h1>Fonctionnalité réservée à Fixi Pro</h1>
+        <p>Vos commandes, livraisons, factures et dettes restent gratuites et accessibles sans limite.</p>
+        <div className="toolbar"><Link href="/app/suppliers" className="btn btn-soft">Mes commandes</Link>
+          <Link href="/app/upgrade" className="btn btn-primary">Découvrir Fixi Pro</Link></div></div>
+      </div>:children}
     </main>
     <nav className="mobile-ops-nav">{mobileLinks.map(([label,href,Icon])=><Link key={href} href={href} className={p===href||p.startsWith(href+'/')?'active':''}><Icon/><span>{label.replace('Réception Express','Réception')}</span></Link>)}<button className={mobileMenu?'active':''} onClick={()=>setMobileMenu(true)}><Menu/><span>Plus</span></button></nav>
     {mobileMenu&&<div className="mobile-menu-backdrop" onMouseDown={e=>e.target===e.currentTarget&&setMobileMenu(false)}><div className="mobile-menu-sheet"><div className="mobile-menu-head"><div><b>Menu Fixi Atelier</b><span>Toutes les fonctions</span></div><button onClick={()=>setMobileMenu(false)}><X/></button></div><div className="mobile-menu-groups">{groups.map(([group,items])=><section key={group}><h3>{groupLabels[group]}</h3><div>{items.map(([label,href,Icon])=><Link href={href} key={href} onClick={()=>setMobileMenu(false)} className={p===href||p.startsWith(href+'/')?'active':''}><Icon/><span>{label}</span>{label==='Fixi Supplier'&&<em>MARKET</em>}</Link>)}</div></section>)}</div></div></div>}
-    {cmd&&<div className="command-backdrop" onMouseDown={e=>e.target===e.currentTarget&&setCmd(false)}>
+    {!connect&&cmd&&<div className="command-backdrop" onMouseDown={e=>e.target===e.currentTarget&&setCmd(false)}>
       <div className="command command-v2">
         <div className="command-input"><Search/><input autoFocus value={q} onChange={e=>setQ(e.target.value)} onKeyDown={e=>e.key==='Enter'&&search(q)} placeholder="Rechercher dans Fixi…"/><button onClick={()=>setCmd(false)}><X size={16}/></button></div>
         {q?<button className="command-global-result" onClick={()=>search(q)}><div><Search size={17}/><span><b>Rechercher “{q}”</b><small>Réparations, client, téléphone, code ou appareil</small></span></div><ChevronRight size={17}/></button>:<div className="command-hint"><Command size={13}/> Tapez un terme ou choisissez une action rapide</div>}

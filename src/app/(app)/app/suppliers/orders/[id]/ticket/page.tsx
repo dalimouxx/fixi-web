@@ -5,7 +5,7 @@ import {requireSession} from '@/lib/auth';
 import {DeliveryTicket} from '@/components/delivery-ticket';
 
 export default async function ShopDeliveryTicketPage({params}:{params:Promise<{id:string}>}){
- let s:any;try{s=await requireSession()}catch{redirect('/login')}
+ let s:any;try{s=await requireSession(undefined,'CONNECT')}catch{redirect('/login')}
  const{id}=await params;
  const order=await prisma.supplierOrder.findFirst({where:{id,shopId:s.shopId},include:{company:true,shop:true,delivery:true,items:{include:{product:true}}}});
  if(!order)notFound();
