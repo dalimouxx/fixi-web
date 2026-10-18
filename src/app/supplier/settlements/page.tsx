@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, CheckCircle2, RefreshCw, WalletCards, Truck, ReceiptText, Clock3, Users, FileText } from 'lucide-react';
 import st from '@/components/finance-ledger.module.css';
 
-type Client = {id:string;name:string;shopId?:string|null;phone?:string|null;due:number;paid:number;
+type Client = {id:string;name:string;shopId?:string|null;phone?:string|null;region?:string|null;due:number;paid:number;
   invoices:{id:string;reference:string;sourceOrderId?:string|null;total:number;paid:number;due:number;createdAt:string}[]};
 type Receipt = {id:string;reference:string;shopName:string;orderReference?:string|null;collector:string;driverName?:string|null;
   amount:number;status:string;method:string;note?:string|null;proofUrl?:string|null;collectedAt:string;confirmedAt?:string|null;
@@ -54,7 +54,7 @@ export default function SupplierFinancialLedger(){
  const unremitted=(data?.settlements||[]).filter(x=>x.collector==='DRIVER'&&x.status==='CONFIRMED'&&x.remainingToRemit>0.0001);
  const invoiceOptions=(data?.clients||[]).flatMap(c=>c.invoices.filter(i=>!!i.sourceOrderId&&i.due>0.0001)
    .map(i=>({...i,clientName:c.name})));
- const clients=useMemo(()=>(data?.clients||[]).filter(c=>c.due>.0001
+ const clients=useMemo(()=>(data?.clients||[]).filter(c=>!!c.shopId && c.due>.0001
    &&(c.name+' '+c.invoices.map(i=>i.reference).join(' ')).toLowerCase().includes(search.toLowerCase())),[data,search]);
  const events=useMemo(()=>(data?.journal||[]).filter(j=>(j.reference+' '+j.customerName+' '+j.source+' '+j.invoiceReference+' '+j.type).toLowerCase()
    .includes(search.toLowerCase())),[data,search]);
