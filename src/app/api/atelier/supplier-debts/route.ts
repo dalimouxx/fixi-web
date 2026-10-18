@@ -11,9 +11,15 @@ export async function GET() {
       include: { company: { select: { name: true } }, delivery: true, items: { include: { product: { select: { name: true, sku: true } } } },
         settlements: { select: { id: true, reference: true, amount: true, status: true, collector: true, confirmedAt: true, createdAt: true } } },
       orderBy: { createdAt: 'desc' }, take: 200 });
+    const sales = orders.length ? await prisma.supplierErpSale.findMany({
+      where: { sourceOrderId: { in: orders.map(o => o.id) } },
+      select: { sourceOrderId: true, paid: true },
+    }) : [];
+    const paidByOrder = new Map(sales.filter(s => s.sourceOrderId).map(s => [s.sourceOrderId, s.paid]));
     const result = orders.map(order => {
-      const paid = order.settlements.filter(x => x.status === 'CONFIRMED')
+      const tracked = order.settlements.filter(x => x.status === 'CONFIRMED')
         .reduce((sum, x) => sum.plus(x.amount), new Prisma.Decimal(order.delivery?.cashCollected || 0));
+      const paid = Prisma.Decimal.max(tracked, paidByOrder.get(order.id) || 0);
       return { ...order, paid, due: Prisma.Decimal.max(0, order.total.minus(paid)) };
     });
     return ok(plain(result));
