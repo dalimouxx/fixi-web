@@ -4,7 +4,6 @@ import { Prisma } from '@prisma/client';
 // Common invoice-based source for both Atelier screens. Open orders are not invoices.
 const zero = new Prisma.Decimal(0);
 const fmt = (n: Prisma.Decimal) => Number(n.toFixed(3));
-const dec = (n: unknown) => new Prisma.Decimal(String(n ?? 0));
 
 export async function shopSupplierStatement(shopId: string) {
   const customers = await prisma.supplierErpCustomer.findMany({
@@ -128,6 +127,10 @@ export async function shopSupplierStatement(shopId: string) {
     pendingOrders: pendingOrders.map(o => ({
       id: o.id, reference: o.reference, createdAt: o.createdAt,
       supplier: o.company.name, status: o.status, total: fmt(o.total),
+      collections: receipts.filter(r=>r.orderId===o.id && r.companyId===customers.find(c=>c.companyId===r.companyId)?.companyId)
+        .map(r=>({ id:r.id,reference:r.reference,amount:fmt(r.amount),date:r.confirmedAt||r.collectedAt,
+          collector:r.collector,status:r.status,method:r.method,
+          collectorName:r.driverAccountId?driverMap.get(r.driverAccountId)||'Livreur':null })),
     })),
   };
 }
