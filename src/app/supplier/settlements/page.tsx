@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 type Order = { id:string; reference:string; status:string; total:string; shop:{name:string}; delivery?:{cashCollected:string}|null };
-type Receipt = { id:string; reference:string; amount:string; status:string; collector:string; order?:{reference:string}|null };
+type Receipt = { id:string; reference:string; amount:string; status:string; collector:string; order?:{reference:string}|null; remittances?:{amount:string;confirmedAt:string|null}[] };
 export default function SupplierSettlementsPage() {
   const [orders,setOrders]=useState<Order[]>([]);
   const [receipts,setReceipts]=useState<Receipt[]>([]);
@@ -9,6 +9,8 @@ export default function SupplierSettlementsPage() {
   const [amount,setAmount]=useState('');
   const [method,setMethod]=useState('CASH');
   const [message,setMessage]=useState('');
+  const [remittanceId,setRemittanceId]=useState('');
+  const [remittanceAmount,setRemittanceAmount]=useState('');
   const load=async()=> {
     const [o,p]=await Promise.all([fetch('/api/supplier/orders'),fetch('/api/supplier/settlements')]);
     if(o.ok){ const data=await o.json();setOrders(Array.isArray(data)?data:[]); }
@@ -27,6 +29,15 @@ export default function SupplierSettlementsPage() {
     const response=await fetch('/api/supplier/settlements/'+encodeURIComponent(id)+'/confirm',{method:'POST'});
     const data=await response.json();setMessage(response.ok?'Encaissement confirme':data.error||'Erreur');await load();
   }
+  const driverReceipts=receipts.filter(r=>r.collector==='DRIVER' && r.status==='CONFIRMED' && Number(r.amount)>(r.remittances||[]).filter(x=>x.confirmedAt).reduce((n,x)=>n+Number(x.amount),0));
+  async function remit(e:React.FormEvent) {
+    e.preventDefault();setMessage('');
+    const response=await fetch('/api/supplier/settlements/remittances',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({settlementId:remittanceId,amount:remittanceAmount,reference:'REM-'+crypto.randomUUID()})});
+    const data=await response.json();
+    setMessage(response.ok?'Reversement confirme : '+data.reference:(data.error||'Erreur'));
+    if(response.ok){setRemittanceAmount('');await load()}
+  }
   return <main style={{maxWidth:960,margin:'40px auto',padding:20,fontFamily:'sans-serif'}}>
     <a href="/supplier">← Fournisseur</a><h1>Comptes & règlements</h1>
     <p>Encaissements partiels et validation des paiements livreur.</p>
@@ -41,6 +52,15 @@ export default function SupplierSettlementsPage() {
       </select></label>
       <button style={{padding:12,cursor:'pointer'}}>Enregistrer le règlement</button>
     </form>
+    {driverReceipts.length>0&&<form onSubmit={remit} style={{display:'grid',gap:12,maxWidth:520,marginBottom:30}}>
+      <h2>Confirmer une remise du livreur</h2>
+      <label>Encaissement à reverser <select required value={remittanceId} onChange={e=>setRemittanceId(e.target.value)} style={{width:'100%',padding:10}}>
+        <option value="">Choisir un encaissement confirmé</option>
+        {driverReceipts.map(r=><option key={r.id} value={r.id}>{r.reference} — {((Number(r.amount)-(r.remittances||[]).filter(x=>x.confirmedAt).reduce((n,x)=>n+Number(x.amount),0))).toFixed(3)} DT à reverser</option>)}
+      </select></label>
+      <label>Montant reçu (DT) <input required value={remittanceAmount} onChange={e=>setRemittanceAmount(e.target.value)} placeholder="50.000" pattern="[0-9]+\\.[0-9]{3}" style={{width:'100%',padding:10}}/></label>
+      <button style={{padding:12}}>Confirmer la remise partielle ou totale</button>
+    </form>}
     {message&&<p role="status">{message}</p>}
     <h2>Historique des encaissements</h2>
     <div style={{overflowX:'auto'}}><table style={{width:'100%',textAlign:'left',borderSpacing:12}}>
