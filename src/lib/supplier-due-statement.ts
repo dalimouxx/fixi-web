@@ -127,7 +127,7 @@ export async function shopSupplierStatement(shopId: string) {
     pendingOrders: pendingOrders.map(o => ({
       id: o.id, reference: o.reference, createdAt: o.createdAt,
       supplier: o.company.name, status: o.status, total: fmt(o.total),
-      collections: receipts.filter(r=>r.orderId===o.id && r.companyId===customers.find(c=>c.companyId===r.companyId)?.companyId)
+      collections: receipts.filter(r=>r.orderId===o.id)
         .map(r=>({ id:r.id,reference:r.reference,amount:fmt(r.amount),date:r.confirmedAt||r.collectedAt,
           collector:r.collector,status:r.status,method:r.method,
           collectorName:r.driverAccountId?driverMap.get(r.driverAccountId)||'Livreur':null })),
