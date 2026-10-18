@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-type Order = { id:string; reference:string; total:string; shop:{name:string}; delivery?:{cashCollected:string}|null };
+type Order = { id:string; reference:string; status:string; total:string; shop:{name:string}; delivery?:{cashCollected:string}|null };
 type Receipt = { id:string; reference:string; amount:string; status:string; collector:string; order?:{reference:string}|null };
 export default function SupplierSettlementsPage() {
   const [orders,setOrders]=useState<Order[]>([]);
