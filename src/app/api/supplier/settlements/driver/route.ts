@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import { requireSupplierRole } from '@/lib/supplier-auth';
+import { requireDeliverySession } from '@/lib/delivery-auth';
 import { bad, ok } from '@/lib/http';
 import { plain } from '@/lib/serializers';
 import { PaymentMethod, Prisma } from '@prisma/client';
@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    const s = await requireSupplierRole(['DRIVER']);
+    const s = await requireDeliverySession();
     const rows = await prisma.supplierSettlement.findMany({ where: { companyId: s.companyId, driverAccountId: s.id },
       include: { order: { select: { reference: true } }, remittances: true }, orderBy: { createdAt: 'desc' }, take: 200 });
     return ok(plain(rows));
@@ -16,7 +16,7 @@ export async function GET() {
 }
 export async function POST(req: Request) {
   try {
-    const s = await requireSupplierRole(['DRIVER']);
+    const s = await requireDeliverySession();
     const b = await req.json();
     if (typeof b.orderId !== 'string' || typeof b.idempotencyKey !== 'string' || b.idempotencyKey.length < 12 || b.idempotencyKey.length > 128) return bad('Parametres invalides');
     if (b.method !== PaymentMethod.CASH) return bad('Seuls les encaissements en especes sont autorises pour le livreur');
