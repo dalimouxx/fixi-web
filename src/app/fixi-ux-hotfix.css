@@ -347,3 +347,37 @@ body[data-lang="ar"] .saas-v4 .network-legend>span b{direction:ltr;text-align:en
 @media(prefers-reduced-motion:reduce){
  .supplier-os.supplier-erp .fixi-supplier-menu-scroll{scroll-behavior:auto}
 }
+
+/* Important: override the old 2024 mobile supplier horizontal navigation,
+   which previously forced the same <aside> into an unscrollable sticky toolbar. */
+@media(min-width:761px){
+ .supplier-os.supplier-erp>aside.fixi-supplier-drawer{
+   position:sticky!important;top:0!important;width:100%!important;
+   flex-direction:column!important;align-items:stretch!important;
+   white-space:normal!important;overflow:hidden!important;
+   border-right:1px solid #eee0d5!important;
+   background:#fff!important;
+ }
+}
+.supplier-os.supplier-erp>aside.fixi-supplier-drawer .supplier-os-brand{display:flex!important}
+.supplier-os.supplier-erp>aside.fixi-supplier-drawer .supplier-side-foot{display:flex!important}
+.supplier-os.supplier-erp .fixi-supplier-menu-scroll .supplier-nav-label{display:block!important}
+.supplier-os.supplier-erp .fixi-supplier-menu-scroll{white-space:normal!important}
+@media(max-width:760px){
+ .supplier-os.supplier-erp>aside.fixi-supplier-drawer{
+   position:fixed!important;top:0!important;bottom:0!important;left:0!important;
+   width:min(330px,86vw)!important;height:100dvh!important;
+   display:flex!important;flex-direction:column!important;align-items:stretch!important;
+   white-space:normal!important;overflow:hidden!important;z-index:1302!important;
+   background:#fff!important;border-right:1px solid #ecdfd5!important;
+ }
+ .supplier-os.supplier-erp>aside.fixi-supplier-drawer:not(.open){
+   transform:translateX(-110%)!important;visibility:hidden!important;
+ }
+ .supplier-os.supplier-erp>aside.fixi-supplier-drawer.open{
+   transform:translateX(0)!important;visibility:visible!important;
+ }
+ .supplier-os.supplier-erp>aside.fixi-supplier-drawer .supplier-os-brand{display:flex!important}
+ .supplier-os.supplier-erp>aside.fixi-supplier-drawer .supplier-side-foot{display:flex!important}
+ .supplier-os.supplier-erp>aside.fixi-supplier-drawer .supplier-nav-label{display:block!important}
+}
