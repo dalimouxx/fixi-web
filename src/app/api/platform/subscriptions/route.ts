@@ -7,6 +7,17 @@ import { addDuration } from '@/lib/subscription-duration';
 
 export const dynamic='force-dynamic';
 
+export async function GET(){
+ try{
+  await requirePlatformSession();
+  const rows=await prisma.subscription.findMany({
+    include:{tenant:{select:{id:true,name:true,shops:{select:{id:true,name:true}}}},plan:true},
+    orderBy:[{createdAt:'desc'},{id:'desc'}],take:500,
+  });
+  return ok(plain(rows));
+ }catch(e:any){return bad(e.message,e.status||500)}
+}
+
 /** Only platform administrators can assign workshop subscriptions. */
 export async function POST(req: Request) {
   try {
