@@ -1,6 +1,7 @@
 import {prisma} from '@/lib/prisma';
 import {requireSupplierRole} from '@/lib/supplier-auth';
 import {bad,ok} from '@/lib/http';
+import {requireSupplierCreationCapacity} from '@/lib/supplier-saas';
 
 function parseLine(line:string,sep:string){
  const out:string[]=[];let cur='',q=false;
@@ -41,6 +42,7 @@ export async function POST(req:Request){
     if(get('warrantyDays')!=='')data.warrantyDays=Math.max(0,Math.trunc(num(get('warrantyDays'))));
     if(existing){await prisma.supplierProduct.update({where:{id:existing.id},data});updated++}
     else{
+     await requireSupplierCreationCapacity(s.companyId,'PRODUCT');
      if(data.price===undefined)data.price=0;if(data.stock===undefined)data.stock=0;
      const pp=data.purchasePrice??0;
      await prisma.supplierProduct.create({data:{companyId:s.companyId,sku,...data,retailPrice:data.price,purchasePrice:pp,averageCost:pp,minOrderQty:1,active:true}});created++;
