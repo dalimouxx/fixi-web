@@ -1,4 +1,4 @@
-const CACHE='fixi-v10-public-shell';
+const CACHE='fixi-v11-public-shell';
 const SHELL=['/','/login','/offline-reception.html','/manifest.webmanifest','/icon.svg'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
@@ -19,14 +19,21 @@ self.addEventListener('fetch',event=>{
 self.addEventListener('push',event=>{
   let data={title:'Fixi',body:'Nouvelle notification',href:'/app/notifications',actions:[],data:{}};
   try{if(event.data)data={...data,...event.data.json()}}catch{}
+  const identity=String(data.experienceKey||data.data?.experienceKey||'GENERAL');
+  const urgentMission=identity==='DRIVER_NEW_MISSION';
+  const vibration=urgentMission?[160,90,160,100,230]:
+    identity.startsWith('DRIVER_')?[120,80,160]:
+    identity.startsWith('SUPPLIER_')?[110,75,110]:[90,60,125];
   const options={
     body:data.body,
     icon:'/icon.svg',
     badge:'/icon.svg',
     data:{href:data.href||'/app/notifications',...(data.data||{})},
     tag:data.tag||('fixi-'+Date.now()),
-    renotify:true,
-    requireInteraction:!!data.requireInteraction,
+    renotify:!!data.tag,
+    vibrate:vibration,
+    timestamp:Date.now(),
+    requireInteraction:urgentMission||!!data.requireInteraction,
     actions:Array.isArray(data.actions)?data.actions:[]
   };
   event.waitUntil(self.registration.showNotification(data.title,options));
@@ -51,12 +58,21 @@ self.addEventListener('notificationclick',event=>{
         await self.registration.showNotification('Connexion requise',{body:'Ouvrez Fixi Delivery pour accepter la mission.',icon:'/icon.svg',badge:'/icon.svg',data:{href:'/delivery'}});
       }
       const clients=await self.clients.matchAll({type:'window',includeUncontrolled:true});
-      for(const c of clients){if('focus'in c){c.navigate('/delivery');return c.focus()}}
+      const deliveryClient=clients.find(c=>{try{return new URL(c.url).pathname.startsWith('/delivery')}catch{return false}});
+      if(deliveryClient&&'focus'in deliveryClient){await deliveryClient.navigate('/delivery');return deliveryClient.focus();}
       return self.clients.openWindow('/delivery');
     })());
     return;
   }
-  event.waitUntil(self.clients.matchAll({type:'window',includeUncontrolled:true}).then(clients=>{for(const c of clients){if('focus'in c){c.navigate(href);return c.focus()}}return self.clients.openWindow(href)}));
+  // Keep Supplier, Boutique and Delivery sessions in their own tabs/app contexts.
+  const allowed=href.startsWith('/supplier')||href.startsWith('/delivery')||href.startsWith('/app/')
+    ?href:'/app/notifications';
+  const channel=allowed.startsWith('/supplier')?'/supplier':allowed.startsWith('/delivery')?'/delivery':'/app/';
+  event.waitUntil(self.clients.matchAll({type:'window',includeUncontrolled:true}).then(async clients=>{
+    const matching=clients.find(c=>{try{return new URL(c.url).pathname.startsWith(channel)}catch{return false}});
+    if(matching&&'focus'in matching){await matching.navigate(allowed);return matching.focus();}
+    return self.clients.openWindow(allowed);
+  }));
 });
 
 self.addEventListener('message',event=>{
