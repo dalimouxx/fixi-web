@@ -16,11 +16,12 @@ export function SaasSubscriptionsV8(){
  const {data:plans}=useApi<any[]>('/api/platform/plans',refresh);
  const {data:requests}=useApi<any[]>('/api/platform/subscription-requests',refresh);
  const {data:tenants}=useApi<any[]>('/api/platform/tenants',refresh);
+ const {data:history}=useApi<any[]>('/api/platform/subscriptions',refresh);
  const [screen,setScreen]=useState<Screen>('plans');
  const [edit,setEdit]=useState<any>(null),[subEdit,setSubEdit]=useState<any>(null);
  const [create,setCreate]=useState(false),[createSub,setCreateSub]=useState(false);
  const [f,setF]=useState<any>(blank),[sf,setSf]=useState<any>(emptySubscription);
- const [search,setSearch]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState(''),[message,setMessage]=useState('');
+ const [search,setSearch]=useState(''),[historyTenant,setHistoryTenant]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState(''),[message,setMessage]=useState('');
  const active=(plans||[]).filter((p:any)=>p.active);
  const openClients=useMemo(()=>(tenants||[]).filter((t:any)=>
    (t.name+' '+(t.shops||[]).map((x:any)=>x.name).join(' ')).toLocaleLowerCase().includes(search.toLocaleLowerCase())),
@@ -166,6 +167,30 @@ export function SaasSubscriptionsV8(){
         {sub&&<button type="button" title="Supprimer ou archiver la période" className="btn btn-soft btn-sm" onClick={()=>void deleteSub(sub)}><Archive size={14}/> Archiver</button>}
       </div></td></tr>})}
       {!openClients.length&&<tr><td colSpan={6}>Aucun client correspondant à la recherche.</td></tr>}
+    </tbody>
+   </table></div>
+   <div className="section-toolbar" style={{marginTop:28}}><div><h2>Historique des périodes Atelier</h2>
+     <p>Consultez les abonnements précédents, les dates et les prix convenus. Les opérations avec historique sont archivées.</p></div>
+     <div className="fixi-subs-search"><Search size={16}/>
+       <select aria-label="Filtrer le client" value={historyTenant} onChange={e=>setHistoryTenant(e.target.value)}>
+         <option value="">Tous les clients</option>
+         {(tenants||[]).map((t:any)=><option key={t.id} value={t.id}>{t.name}</option>)}
+       </select>
+     </div>
+   </div>
+   <div className="control-table-wrap"><table className="control-table">
+    <thead><tr><th>Client</th><th>Plan</th><th>Date début</th><th>Date fin</th><th>Prix convenu</th><th>État</th><th>Actions</th></tr></thead>
+    <tbody>{(history||[]).filter((x:any)=>!historyTenant||x.tenantId===historyTenant).map((sub:any)=><tr key={sub.id}>
+      <td><strong>{sub.tenant?.name||'Client'}</strong></td><td>{sub.plan?.name||'—'}</td>
+      <td>{dateOnly(sub.startsAt)}</td><td>{sub.endsAt?dateOnly(sub.endsAt):'Sans limite'}</td>
+      <td>{money(sub.agreedPrice??sub.plan?.price??0)}</td>
+      <td><span className={'status-pill '+String(sub.status||'').toLowerCase()}>{stateNames[sub.status]||sub.status}</span></td>
+      <td><div className="fixi-subs-actions">
+        <button type="button" className="btn btn-soft btn-sm" onClick={()=>editSubscription(sub)}><Edit3 size={14}/> Modifier</button>
+        <button type="button" className="btn btn-soft btn-sm" onClick={()=>void deleteSub(sub)}><Archive size={14}/> Archiver</button>
+      </div></td>
+    </tr>)}
+    {!(history||[]).length&&<tr><td colSpan={7}>Aucune période enregistrée.</td></tr>}
     </tbody>
    </table></div>
   </>}
