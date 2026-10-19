@@ -17,12 +17,15 @@ export async function notifyShop(
   type:NotificationType=NotificationType.INFO,roles?:UserRole[],
   options:ShopNotificationOptions={}
 ){
+  const experienceKey=options.experienceKey||'GENERAL';
+  // Supplier purchasing screens are available to these workshop roles only.
+  const allowedRoles=roles?.length?roles:experienceKey.startsWith('SHOP_')
+    ?[UserRole.ADMIN,UserRole.RECEPTION]:undefined;
   const users=await prisma.user.findMany({
-    where:{shopId,isActive:true,...(roles?.length?{role:{in:roles}}:{})},
+    where:{shopId,isActive:true,...(allowedRoles?.length?{role:{in:allowedRoles}}:{})},
     select:{id:true},
   });
   if(!users.length)return;
-  const experienceKey=options.experienceKey||'GENERAL';
   const config=getNotificationExperience(experienceKey);
   const safeHref=href?.startsWith('/app/')?href:'/app/notifications';
   await prisma.notification.createMany({data:users.map(u=>({
