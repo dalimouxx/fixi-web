@@ -18,7 +18,9 @@ export async function GET(){
     const s=await requireSession([UserRole.ADMIN,UserRole.RECEPTION],'CONNECT');
     const rows=await prisma.supplierOrder.findMany({
       where:{shopId:s.shopId},
-      include:{company:true,items:{include:{product:true}},delivery:true},
+      include:{company:{select:{id:true,name:true,region:true,phone:true,logoUrl:true,verified:true}},
+        items:{include:{product:{select:{id:true,name:true,sku:true,brand:true,category:true,imageUrl:true,qualityGrade:true}}}},
+        delivery:true},
       orderBy:{createdAt:'desc'},take:200
     });
     return ok(plain(rows));
@@ -87,18 +89,20 @@ export async function POST(req:Request){
       while(await tx.supplierOrder.findFirst({where:{deliveryCode:code},select:{id:true}}))code=deliveryCode();
       const order=await tx.supplierOrder.create({
         data:{shopId:s.shopId,companyId,reference:ref(),deliveryCode:code,total,deliveryAddress:b.deliveryAddress||shop.address||null,note:b.note||null,items:{create:rows}},
-        include:{company:true,shop:{select:{name:true}},items:{include:{product:true}}}
+        include:{company:{select:{id:true,name:true,region:true}},
+          shop:{select:{name:true}},items:{include:{product:{select:{id:true,name:true,sku:true}}}}}
       });
       if(allocations.length)await tx.supplierOrderStockAllocation.createMany({data:allocations.map(x=>({...x,orderId:order.id}))});
       return order;
     },{isolationLevel:Prisma.TransactionIsolationLevel.Serializable});
 
     await audit(s.shopId,s.id,'CREATE','SUPPLIER_ORDER',result.id,{reference:result.reference,total:Number(result.total)});
-    await notifySupplier(result.companyId,'Nouvelle commande Fixi',`${result.shop.name} a passé la commande ${result.reference} · ${Number(result.total).toFixed(3)} DT`,{
-      href:'/supplier?tab=orders',kind:'ORDER',priority:'HIGH',soundKey:'CHIME',
+    await notifySupplier(result.companyId,'📦 Nouvelle commande à traiter',`${result.shop.name} · ${result.reference} · ${Number(result.total).toFixed(3)} DT. Ouvrez les commandes pour la préparer.`,{
+      href:'/supplier?tab=orders',kind:'ORDER',priority:'HIGH',
+      experienceKey:'SUPPLIER_NEW_ORDER',eventId:result.id,
       roles:['OWNER','ADMIN','MANAGER','SALES','STOCK'],
       metadata:{orderId:result.id,reference:result.reference,shopId:s.shopId}
-    });
+    }).catch(err=>console.error('Notification nouvelle commande Supplier',err));
     await Promise.allSettled(result.items.map(i=>notifySupplierLowStock(result.companyId,i.productId)));
     return ok(plain(result),{status:201});
   }catch(e:any){

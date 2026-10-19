@@ -883,6 +883,9 @@ model Notification {
   title     String
   message   String
   href      String?
+  experienceKey String @default("GENERAL")
+  soundKey  String @default("CHIME")
+  priority  String @default("NORMAL")
   readAt    DateTime?
   createdAt DateTime         @default(now())
   @@index([shopId, createdAt])
@@ -1681,6 +1684,7 @@ model SupplierDelivery {
   assignedAt      DateTime?
   acceptedAt      DateTime?
   pickedUpAt      DateTime?
+  arrivedAt       DateTime?
   deliveredAt     DateTime?
   updatedAt       DateTime               @default(now()) @updatedAt
   @@index([driverAccountId, status])
@@ -2310,6 +2314,7 @@ model SupplierNotification {
   message   String
   href      String?
   soundKey  String   @default("CHIME")
+  experienceKey String @default("GENERAL")
   metadata  Json?
   readAt    DateTime?
   createdAt DateTime @default(now())

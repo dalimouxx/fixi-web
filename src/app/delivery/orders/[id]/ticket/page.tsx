@@ -12,6 +12,6 @@ export default async function DriverDeliveryTicketPage({params}:{params:Promise<
  const customer=await prisma.supplierErpCustomer.findFirst({where:{companyId:s.companyId,shopId:order.shopId},select:{id:true}});
  const sales=customer?await prisma.supplierErpSale.findMany({where:{companyId:s.companyId,customerId:customer.id,status:{not:'CANCELLED'}},select:{total:true,paid:true}}):[];
  const customerDue=sales.reduce((a,x)=>a+Math.max(0,Number(x.total)-Number(x.paid)),0);
- const qr=await QRCode.toDataURL(String(order.deliveryCode||order.reference),{width:300,margin:1,errorCorrectionLevel:'H'});
+ const qr=await QRCode.toDataURL('FIXI-TICKET:'+order.reference,{width:300,margin:1,errorCorrectionLevel:'H'});
  return <DeliveryTicket order={{...order,customerDue}} qr={qr} viewer="driver"/>
 }

@@ -39,7 +39,7 @@ export async function PATCH(req:Request,{params}:{params:Promise<{id:string}>}){
     proofCode:status===SupplierOrderStatus.DELIVERED?(String(b.proofCode||'').trim()||null):undefined,
     proofUrl:status===SupplierOrderStatus.DELIVERED?(b.proofUrl||undefined):undefined
    }});
-   if(status===SupplierOrderStatus.DELIVERED)await tx.supplierDeliveryEvent.create({data:{companyId:s.companyId,orderId:id,accountId:s.id,type:'DELIVERY_PROOF',note:'Reçu par '+String(b.recipientName).trim()+(b.proofCode?' · Code '+String(b.proofCode):''),proofUrl:b.proofUrl||null}});
+   if(status===SupplierOrderStatus.DELIVERED)await tx.supplierDeliveryEvent.create({data:{companyId:s.companyId,orderId:id,accountId:s.id,type:'DELIVERY_PROOF',note:'Reçu par '+String(b.recipientName).trim()+' · Code de remise vérifié',proofUrl:b.proofUrl||null}});
    if(Number.isFinite(Number(b.latitude))&&Number.isFinite(Number(b.longitude)))await tx.supplierDriverLocation.create({data:{companyId:s.companyId,orderId:id,accountId:s.id,latitude:Number(b.latitude),longitude:Number(b.longitude),accuracy:Number.isFinite(Number(b.accuracy))?Number(b.accuracy):null}});
    return order;
   });
@@ -47,18 +47,25 @@ export async function PATCH(req:Request,{params}:{params:Promise<{id:string}>}){
   if(status!==o.status){
    if(status===SupplierOrderStatus.OUT_FOR_DELIVERY){
     await Promise.allSettled([
-     notifySupplier(s.companyId,'Livraison démarrée',`La commande ${o.reference} est maintenant en route.`,{href:'/supplier?tab=delivery',kind:'DELIVERY',roles:['OWNER','ADMIN','MANAGER','DELIVERY_MANAGER'],metadata:{orderId:o.id,reference:o.reference}}),
-     notifyShop(o.shopId,'Votre commande est en route',`La commande ${o.reference} est partie en livraison. Vous pouvez suivre son avancement dans Fixi Supplier.`,'/app/suppliers',NotificationType.INFO)
+     notifySupplier(s.companyId,'🚚 Livraison en route',`La commande ${o.reference} est maintenant en route.`,{href:'/supplier?tab=delivery',kind:'DELIVERY',experienceKey:'SUPPLIER_UPDATE',eventId:o.id+'-OUT',roles:['OWNER','ADMIN','MANAGER','DELIVERY_MANAGER'],metadata:{orderId:o.id,reference:o.reference}}),
+     notifyShop(o.shopId,'Votre commande est en route',`La commande ${o.reference} est partie en livraison. Vous pouvez suivre son avancement dans Fixi Supplier.`,'/app/suppliers?tab=orders',NotificationType.INFO,undefined,{experienceKey:'SHOP_ORDER_PROGRESS',eventId:o.id+'-OUT',metadata:{orderId:o.id,reference:o.reference,status:'OUT_FOR_DELIVERY'}})
     ]);
    }
    if(status===SupplierOrderStatus.DELIVERED){
     await Promise.allSettled([
-     notifySupplier(s.companyId,'Livraison confirmée',`Commande ${o.reference} remise à ${String(b.recipientName).trim()}.`,{href:'/supplier?tab=delivery',kind:'SUCCESS',priority:'NORMAL',soundKey:'SUCCESS',roles:['OWNER','ADMIN','MANAGER','DELIVERY_MANAGER','ACCOUNTANT'],metadata:{orderId:o.id,reference:o.reference,recipientName:String(b.recipientName).trim()}}),
-     notifyShop(o.shopId,'Commande livrée',`La commande ${o.reference} a été remise à ${String(b.recipientName).trim()}.`,'/app/suppliers',NotificationType.SUCCESS)
+     notifySupplier(s.companyId,'✅ Livraison remise avec preuve',`Commande ${o.reference} remise à ${String(b.recipientName).trim()}.`,{href:'/supplier?tab=delivery',kind:'SUCCESS',priority:'NORMAL',experienceKey:'SUPPLIER_UPDATE',eventId:o.id+'-DELIVERED',roles:['OWNER','ADMIN','MANAGER','DELIVERY_MANAGER','ACCOUNTANT'],metadata:{orderId:o.id,reference:o.reference,recipientName:String(b.recipientName).trim()}}),
+     notifyShop(o.shopId,'🎉 Votre commande est livrée',`La commande ${o.reference} a été remise à ${String(b.recipientName).trim()}. Vérifiez votre réception et les articles.`,'/app/suppliers?tab=orders',NotificationType.SUCCESS,undefined,{
+       experienceKey:'SHOP_ORDER_DELIVERED',eventId:o.id+'-DELIVERED',
+       metadata:{orderId:o.id,reference:o.reference,status:'DELIVERED'}
+     }),
+     notifySupplier(s.companyId,'✅ Bravo, livraison terminée',`Mission ${o.reference} terminée. Votre remise à ${String(b.recipientName).trim()} est enregistrée.`,{
+       href:'/delivery',kind:'SUCCESS',priority:'NORMAL',experienceKey:'DRIVER_DELIVERED',
+       eventId:o.id,accountIds:[s.id],metadata:{orderId:o.id,reference:o.reference}
+     })
     ]);
    }
   }
-  return ok(plain(result));
+  return ok({ok:true,id:result.id,status:result.status});
  }catch(e:any){return bad(e.message,e.status||500)}
 }
 
@@ -66,9 +73,11 @@ export async function PATCH(req:Request,{params}:{params:Promise<{id:string}>}){
 export async function POST(req:Request,{params}:{params:Promise<{id:string}>}){
  try{
   const s=await requireDeliverySession();const{id}=await params;
+  const driver=await prisma.supplierAccount.findFirst({where:{id:s.id,companyId:s.companyId,role:'DRIVER',isActive:true,driverAvailable:true},select:{id:true}});
+  if(!driver)return bad('Activez votre disponibilité avant de prendre une mission',409);
   const o=await prisma.supplierOrder.findFirst({where:{id,companyId:s.companyId,status:SupplierOrderStatus.READY_FOR_DELIVERY},include:{delivery:true,shop:{select:{name:true}}}});
   if(!o)return bad('Commande indisponible',404);
-  if(o.delivery?.driverAccountId===s.id)return ok(plain(o));
+  if(o.delivery?.driverAccountId===s.id)return ok({ok:true,id:o.id,status:o.status,alreadyAccepted:true});
   if(o.delivery?.driverAccountId)return bad('Cette commande vient d’être acceptée par un autre livreur',409);
   const result=await prisma.$transaction(async tx=>{
    const updated=await tx.supplierDelivery.updateMany({where:{orderId:id,driverAccountId:null},data:{driverAccountId:s.id,driverName:s.fullName,assignedAt:new Date(),acceptedAt:new Date(),status:SupplierDeliveryStatus.ASSIGNED}});
@@ -78,8 +87,10 @@ export async function POST(req:Request,{params}:{params:Promise<{id:string}>}){
   });
   await Promise.allSettled([
    notifySupplier(s.companyId,'Commande prise par un livreur',o.reference+' · '+s.fullName+' a accepté la livraison.',{href:'/supplier?tab=delivery',kind:'DELIVERY',soundKey:'SUCCESS',roles:['OWNER','ADMIN','MANAGER','DELIVERY_MANAGER'],metadata:{orderId:id,reference:o.reference,driverAccountId:s.id}}),
-   notifyShop(o.shopId,'Livreur affecté',o.reference+' · '+s.fullName+' a accepté votre livraison.','/app/suppliers',NotificationType.INFO)
+   notifyShop(o.shopId,'Votre livreur est affecté',o.reference+' · '+s.fullName+' a accepté votre livraison.','/app/suppliers?tab=orders',NotificationType.INFO,undefined,{
+     experienceKey:'SHOP_ORDER_PROGRESS',eventId:o.id+'-ASSIGNED',metadata:{orderId:o.id,status:'ASSIGNED'}
+   })
   ]);
-  return ok(plain(result));
+  return ok({ok:true,id:result?.id,reference:result?.reference});
  }catch(e:any){return bad(e.message,e.status||500)}
 }

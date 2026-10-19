@@ -1,6 +1,7 @@
 import {prisma} from './prisma';
 import {publishSupplierAccount} from './realtime';
 import {sendPushToSupplierAccounts} from './push';
+import {getNotificationExperience, experienceTag, type FixiExperienceKey, type FixiSoundKey} from './notification-experience';
 
 export type SupplierNotificationKind='INFO'|'SUCCESS'|'WARNING'|'ERROR'|'ORDER'|'DELIVERY'|'PAYMENT'|'STOCK'|'SYSTEM';
 export type SupplierNotificationPriority='LOW'|'NORMAL'|'HIGH'|'URGENT';
@@ -9,7 +10,9 @@ type NotifyOptions={
   href?:string;
   kind?:SupplierNotificationKind;
   priority?:SupplierNotificationPriority;
-  soundKey?:'CHIME'|'SUCCESS'|'WARNING'|'URGENT'|'SILENT';
+  soundKey?:FixiSoundKey;
+  experienceKey?:FixiExperienceKey;
+  eventId?:string;
   roles?:string[];
   accountIds?:string[];
   metadata?:Record<string,unknown>;
@@ -23,21 +26,29 @@ export async function notifySupplier(companyId:string,title:string,message:strin
   if(options.availableDriversOnly)where.driverAvailable=true;
   const users=await prisma.supplierAccount.findMany({where,select:{id:true}});
   if(!users.length)return [];
-  const kind=options.kind||'INFO',priority=options.priority||'NORMAL',soundKey=options.soundKey||soundFor(kind,priority);
+  const kind=options.kind||'INFO',priority=options.priority||'NORMAL';
+  const experienceKey=options.experienceKey||'GENERAL';
+  const soundKey=options.soundKey||(
+    experienceKey==='GENERAL'?soundFor(kind,priority):getNotificationExperience(experienceKey).sound
+  );
   const rows=await prisma.$transaction(users.map(u=>prisma.supplierNotification.create({data:{
-    companyId,accountId:u.id,kind,priority,title,message,href:options.href||null,soundKey,
+    companyId,accountId:u.id,kind,priority,title,message,href:options.href||null,soundKey,experienceKey,
     metadata:options.metadata as any
   }})));
   for(const row of rows)publishSupplierAccount(row.accountId,'notification.created',{
-    id:row.id,title:row.title,message:row.message,href:row.href,kind:row.kind,priority:row.priority,soundKey:row.soundKey,createdAt:row.createdAt
+    id:row.id,title:row.title,message:row.message,href:row.href,kind:row.kind,priority:row.priority,soundKey:row.soundKey,experienceKey,createdAt:row.createdAt
   });
-  const push:any={title,body:message,href:options.href||'/supplier',data:options.metadata||{}};
-  if(kind==='DELIVERY'&&options.metadata?.orderId&&options.roles?.includes('DRIVER')){
-    push.tag='delivery-'+String(options.metadata.orderId);
+  const push:any={title,body:message,href:options.href||'/supplier',
+    experienceKey,tag:experienceTag(experienceKey,options.eventId),
+    data:{...(options.metadata||{}),experienceKey}};
+  if(experienceKey==='DRIVER_NEW_MISSION'&&options.metadata?.orderId){
+    push.tag=experienceTag('DRIVER_NEW_MISSION',String(options.metadata.orderId));
     push.requireInteraction=true;
-    push.actions=[{action:'accept-delivery',title:'Accepter'},{action:'open',title:'Ouvrir'}];
+    push.actions=[{action:'accept-delivery',title:'Accepter la mission'},{action:'open',title:'Voir la tournée'}];
   }
-  await sendPushToSupplierAccounts(rows.map(x=>x.accountId),push).catch(()=>{});
+  void sendPushToSupplierAccounts(rows.map(x=>x.accountId),push).catch(err=>
+    console.warn('Supplier push failed',String(err))
+  );
   return rows;
 }
 

@@ -35,7 +35,7 @@ export function SupplierDashboard({session}:{session:any}){
   const emptyProduct={sku:'',barcode:'',name:'',imageUrl:'',brandId:'',categoryId:'',unitId:'',qualityGrade:'',purchasePrice:'',retailPrice:'',wholesalePrice:'',minimumPrice:'',taxRate:'0',stock:'0',minStock:'0',maxStock:'',minOrderQty:'1',warrantyDays:'0',location:'',serialTracked:false};
   const[form,setForm]=useState<any>(emptyProduct);
   async function load(){const[p,o,e,a,d,m]=await Promise.all([fetch('/api/supplier/products',{cache:'no-store'}).then(r=>r.json()),fetch('/api/supplier/orders',{cache:'no-store'}).then(r=>r.json()),fetch('/api/supplier/erp',{cache:'no-store'}).then(r=>r.json()).catch(()=>null),fetch('/api/supplier/advanced',{cache:'no-store'}).then(r=>r.json()).catch(()=>null),fetch('/api/supplier/drivers',{cache:'no-store'}).then(r=>r.json()).catch(()=>[]),fetch('/api/supplier/master-data',{cache:'no-store'}).then(r=>r.json()).catch(()=>null)]);setProducts(Array.isArray(p)?p:[]);setOrders(Array.isArray(o)?o:[]);setDrivers(Array.isArray(d)?d:[]);if(e&&typeof e==='object')setErp(e);if(a&&typeof a==='object')setAdvanced(a);if(m&&typeof m==='object')setMaster(m)}
-  useEffect(()=>{load();const vis=()=>{if(document.visibilityState==='visible')load()};const focus=()=>load();document.addEventListener('visibilitychange',vis);window.addEventListener('focus',focus);const t=setInterval(()=>{if(document.visibilityState==='visible')load()},6000);return()=>{clearInterval(t);document.removeEventListener('visibilitychange',vis);window.removeEventListener('focus',focus)}},[refresh]);
+  useEffect(()=>{load();const vis=()=>{if(document.visibilityState==='visible')load()};const focus=()=>load();document.addEventListener('visibilitychange',vis);window.addEventListener('focus',focus);const t=setInterval(()=>{if(document.visibilityState==='visible')load()},18000);return()=>{clearInterval(t);document.removeEventListener('visibilitychange',vis);window.removeEventListener('focus',focus)}},[refresh]);
   async function logout(){await fetch('/api/supplier/auth/logout',{method:'POST'});location.href='/supplier/login'}
   async function add(e:any){e.preventDefault();await api('/api/supplier/products',{method:'POST',body:JSON.stringify({...form,price:Number(form.retailPrice||0),purchasePrice:Number(form.purchasePrice||0),retailPrice:Number(form.retailPrice||0),wholesalePrice:form.wholesalePrice===''?null:Number(form.wholesalePrice),minimumPrice:form.minimumPrice===''?null:Number(form.minimumPrice),taxRate:Number(form.taxRate||0),stock:Number(form.stock||0),minStock:Number(form.minStock||0),maxStock:form.maxStock===''?null:Number(form.maxStock),minOrderQty:Number(form.minOrderQty||1),warrantyDays:Number(form.warrantyDays||0)})});setForm(emptyProduct);setRefresh(x=>x+1)}
   async function status(id:string,status:string){await api('/api/supplier/orders/'+id,{method:'PATCH',body:JSON.stringify({status})});setRefresh(x=>x+1)}
@@ -77,6 +77,24 @@ export function SupplierDashboard({session}:{session:any}){
     ['finance','Finance & bénéfice',TrendingUp],['reports','Rapports',FileText],['delivery','Livraison',Truck],['team','Équipe & accès',Users]
   ] as const;
   const nav=navAll.filter(([key])=>(access[role]||access.ADMIN).includes(key));
+  useEffect(()=>{
+    const fromUrl=new URLSearchParams(window.location.search).get('tab');
+    const match=nav.find(([key])=>key===fromUrl);
+    if(match)setTab(match[0] as Tab);
+  },[]);
+  function navigateNotification(href:string){
+    if(href.startsWith('/supplier?')){
+      const target=new URL(href,window.location.origin).searchParams.get('tab');
+      const allowed=nav.find(([key])=>key===target);
+      if(allowed){setTab(allowed[0] as Tab);setMobileNavOpen(false);return;}
+    }
+    // The finance, delivery and other supplier pages are separate routes.
+    if(href.startsWith('/supplier/')||href==='/supplier'){
+      window.location.assign(href);return;
+    }
+    window.location.assign('/supplier');
+  }
+
   const [mobileNavOpen,setMobileNavOpen]=useState(false);
   const mobilePrimary=nav.filter(([key])=>['dashboard','orders','products','delivery','cashier'].includes(key)).slice(0,4);
 
@@ -95,7 +113,7 @@ export function SupplierDashboard({session}:{session:any}){
     </aside>
 
     <main>
-      <header><div className="fixi-supplier-header-title"><button type="button" className="fixi-supplier-menu-button" aria-label="Ouvrir les modules fournisseur" aria-expanded={mobileNavOpen} onClick={()=>setMobileNavOpen(true)}><span>☰</span></button><div><span>FIXI SUPPLIER ERP</span><h1>{nav.find(x=>x[0]===tab)?.[1]}</h1></div></div><div className="toolbar"><RealtimeNotificationCenter apiUrl="/api/supplier/notifications" eventsUrl="/api/supplier/events" storageKey="fixi-supplier-notifications" onEvent={()=>setRefresh(x=>x+1)} onNavigate={(href)=>{const m=href.match(/[?&]tab=([^&]+)/);if(m&&(nav as any).some((x:any)=>x[0]===m[1]))setTab(m[1] as Tab)}}/><PushToggle subscribeUrl="/api/supplier/push/subscribe"/><InstallAppButton label="Installer"/><button className="btn btn-ghost" onClick={()=>setRefresh(x=>x+1)}><RefreshCw/> Actualiser</button></div></header>
+      <header><div className="fixi-supplier-header-title"><button type="button" className="fixi-supplier-menu-button" aria-label="Ouvrir les modules fournisseur" aria-expanded={mobileNavOpen} onClick={()=>setMobileNavOpen(true)}><span>☰</span></button><div><span>FIXI SUPPLIER ERP</span><h1>{nav.find(x=>x[0]===tab)?.[1]}</h1></div></div><div className="toolbar"><RealtimeNotificationCenter apiUrl="/api/supplier/notifications" eventsUrl="/api/supplier/events" storageKey="fixi-supplier-notifications" onEvent={()=>setRefresh(x=>x+1)} onNavigate={navigateNotification}/><PushToggle subscribeUrl="/api/supplier/push/subscribe"/><InstallAppButton label="Installer"/><button className="btn btn-ghost" onClick={()=>setRefresh(x=>x+1)}><RefreshCw/> Actualiser</button></div></header>
       <section className="supplier-mobile-install">
         <div className="supplier-mobile-install-copy"><i>F</i><span><b>Fixi Supplier sur votre téléphone</b><small>Installez l’ERP comme application et activez les notifications pour les commandes, paiements, retours et livraisons.</small></span></div>
         <div className="supplier-mobile-install-actions"><InstallAppButton label="Installer Fixi Supplier"/><PushToggle subscribeUrl="/api/supplier/push/subscribe" label/></div>

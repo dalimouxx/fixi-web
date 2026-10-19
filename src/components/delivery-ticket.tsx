@@ -23,8 +23,8 @@ export function DeliveryTicket({order,qr,viewer}:{order:any;qr:string;viewer:'su
     <div><span>Références</span><b>{order.items?.length||0}</b></div><div><span>Quantité totale</span><b>{qty}</b></div><div><span>Total commande</span><b>{money(order.total)}</b></div><div><span>Ancien dû client</span><b>{money(order.customerDue||0)}</b></div>
    </section>
    <section className="delivery-ticket-proof">
-    <div className="delivery-ticket-qr"><img src={qr} alt="QR code de remise"/><span><b>SCAN À LA RÉCEPTION</b><small>Le livreur scanne ce QR dans Fixi Delivery devant l’atelier.</small></span></div>
-    <div className="delivery-ticket-code"><span>CODE DE REMISE</span><b>{order.deliveryCode||'—'}</b><small>Ne validez jamais une livraison sans présence physique des produits.</small></div>
+    <div className="delivery-ticket-qr"><img src={qr} alt="QR d’identification du bon de livraison"/><span><b>QR DU BON LOGISTIQUE</b><small>Ce QR identifie uniquement la commande. Il ne valide pas la remise. Le code sécurisé est affiché dans Fixi Atelier.</small></span></div>
+    <div className="delivery-ticket-code"><span>VALIDATION SÉCURISÉE</span><b style={{fontSize:15}}>Code fourni par la boutique</b><small>Le livreur demande le QR/code secret sur l’application Atelier au moment de remettre physiquement les produits.</small></div>
    </section>
    <section className="delivery-ticket-chain">
     <div><span>1 · FOURNISSEUR</span><b>Commande contrôlée et remise</b><small>Nom / signature : ____________________</small><small>Date/heure : ____________________</small></div>
