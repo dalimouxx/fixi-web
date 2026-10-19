@@ -1,5 +1,5 @@
 'use client';
-import { useMemo,useState } from 'react';import { useRouter } from 'next/navigation';import { Activity,AlertTriangle,BarChart3,BellRing,Menu,Truck,CreditCard,Building2,CalendarClock,ChevronRight,CircleDollarSign,Gift,Headphones,ImagePlus,LayoutDashboard,LogOut,Megaphone,MessageSquareText,MonitorUp,Palette,Pause,Play,Plus,RefreshCw,Settings2,ShieldCheck,Store,Trash2,Trophy,Users,Wrench,X,ReceiptText,BadgePercent,UserPlus,PackageOpen,MapPin } from 'lucide-react';import { api,Modal,useApi } from './ui';import { SaasDirectory } from './saas-directory';import { SaasSubscriptionsV8 } from './saas-subscriptions-v8';import { SaasBillingV8 } from './saas-billing-v8';import { dateOnly,dateTime,money } from '@/lib/format';
+import { useMemo,useState,useEffect } from 'react';import { useRouter } from 'next/navigation';import { Activity,AlertTriangle,BarChart3,BellRing,Menu,Truck,CreditCard,Building2,CalendarClock,ChevronRight,CircleDollarSign,Gift,Headphones,ImagePlus,LayoutDashboard,LogOut,Megaphone,MessageSquareText,MonitorUp,Palette,Pause,Play,Plus,RefreshCw,Settings2,ShieldCheck,Store,Trash2,Trophy,Users,Wrench,X,ReceiptText,BadgePercent,UserPlus,PackageOpen,MapPin } from 'lucide-react';import { api,Modal,useApi } from './ui';import { SaasDirectory } from './saas-directory';import { SaasSubscriptionsV8 } from './saas-subscriptions-v8';import { SaasBillingV8 } from './saas-billing-v8';import { dateOnly,dateTime,money } from '@/lib/format';
 type Tab='overview'|'shops'|'directory'|'subscriptions'|'billing'|'messages'|'ads'|'support'|'brand'|'tools';
 const emptyClient={tenantName:'',shopName:'',slug:'',region:'Gabès',adminName:'',loginCode:'admin',pin:'',planId:'',status:'TRIAL',phone:'',address:'',endsAt:''};
 export function SaasDashboard({admin}:{admin:any}){const r=useRouter();const[tab,setTab]=useState<Tab>('overview');
@@ -29,6 +29,11 @@ async function toggleFlag(x:any){await api('/api/platform/feature-flags',{method
 async function addChangelog(){const version=prompt('Version (ex. 4.0.1)');if(!version)return;const title=prompt('Titre de la nouveauté');if(!title)return;const body=prompt('Description');if(!body)return;await api('/api/platform/changelog',{method:'POST',body:JSON.stringify({version,title,body,visibility:'ALL'})});setRefresh(x=>x+1)}
 async function convertReferral(x:any){const rewardDays=Number(prompt('Jours offerts à la boutique parrain','15')||15);await api('/api/platform/referrals/'+x.id,{method:'PATCH',body:JSON.stringify({status:'CONVERTED',rewardDays})});if(rewardDays>0)await reward(x.referrerShopId,rewardDays,'REFERRAL');setRefresh(v=>v+1)}
 const nav:any[]=[['overview','Vue globale',LayoutDashboard],['shops','Boutiques',Store],['directory','Annuaire',MapPin],['subscriptions','Abonnements',CalendarClock],['billing','Facturation Fixi',ReceiptText],['messages','Messages',MessageSquareText],['ads','Fixi Ads',Megaphone],['support','Support',Headphones],['brand','Identité',Palette],['tools','Outils',Settings2]];
+useEffect(()=>{
+  const requested=new URLSearchParams(window.location.search).get('tab');
+  if(requested&&nav.some(([key])=>key===requested))setTab(requested as Tab);
+},[]);
+
 return <div className={'saas-v4'+(menuOpen?' menu-open':'')}>
 {menuOpen&&<button type="button" aria-label="Fermer le menu" className="fixi-control-backdrop" onClick={()=>setMenuOpen(false)}/>}
 <aside id="fixi-control-navigation" className="control-side" aria-label="Administration Fixi">
