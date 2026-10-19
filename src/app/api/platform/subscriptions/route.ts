@@ -28,8 +28,10 @@ export async function POST(req: Request) {
       addDuration(startsAt,plan.durationValue,plan.durationUnit);
     if(endsAt&&(!Number.isFinite(endsAt.getTime())||endsAt<=startsAt))
       return bad('Date de fin invalide',400);
+    const agreedPrice=free?0:b.agreedPrice===undefined||b.agreedPrice===''?Number(plan.price):Number(b.agreedPrice);
+    if(!Number.isFinite(agreedPrice)||agreedPrice<0||agreedPrice>10000000)return bad('Prix négocié invalide',400);
     const sub=await prisma.subscription.create({
-      data:{tenantId,planId,status:status as SubscriptionStatus,startsAt,endsAt,
+      data:{tenantId,planId,status:status as SubscriptionStatus,startsAt,endsAt,agreedPrice,
         notes:String(b.notes||'').slice(0,1500)||null},
       include:{plan:true},
     });
