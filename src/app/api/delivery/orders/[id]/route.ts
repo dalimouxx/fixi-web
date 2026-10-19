@@ -65,7 +65,7 @@ export async function PATCH(req:Request,{params}:{params:Promise<{id:string}>}){
     ]);
    }
   }
-  return ok(plain(result));
+  return ok({ok:true,id:result.id,status:result.status});
  }catch(e:any){return bad(e.message,e.status||500)}
 }
 
@@ -75,7 +75,7 @@ export async function POST(req:Request,{params}:{params:Promise<{id:string}>}){
   const s=await requireDeliverySession();const{id}=await params;
   const o=await prisma.supplierOrder.findFirst({where:{id,companyId:s.companyId,status:SupplierOrderStatus.READY_FOR_DELIVERY},include:{delivery:true,shop:{select:{name:true}}}});
   if(!o)return bad('Commande indisponible',404);
-  if(o.delivery?.driverAccountId===s.id)return ok(plain(o));
+  if(o.delivery?.driverAccountId===s.id)return ok({ok:true,id:o.id,status:o.status,alreadyAccepted:true});
   if(o.delivery?.driverAccountId)return bad('Cette commande vient d’être acceptée par un autre livreur',409);
   const result=await prisma.$transaction(async tx=>{
    const updated=await tx.supplierDelivery.updateMany({where:{orderId:id,driverAccountId:null},data:{driverAccountId:s.id,driverName:s.fullName,assignedAt:new Date(),acceptedAt:new Date(),status:SupplierDeliveryStatus.ASSIGNED}});
