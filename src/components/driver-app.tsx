@@ -77,7 +77,28 @@ export function DriverApp({session}:{session:any}){
   return()=>navigator.geolocation.clearWatch(id)
  },[tracking,shift.current?.id,online,active.map(o=>o.id+o.status).join('|')]);
  return <div className="delivery-app driver-app driver-v2"><PwaRegister/>
-  <header><div className="driver-header-brand"><Truck/><span><b>Fixi Delivery</b><small>{session.companyName}</small></span></div><div className="driver-live-state">{online?<><Wifi/><span>En ligne</span></>:<><WifiOff/><span>Hors ligne</span></>}</div><button className={'driver-availability '+(driverAvailable?'on':'off')} onClick={toggleAvailable} title="Disponibilité livreur"><Radio/><span>{driverAvailable?'Disponible':'Indisponible'}</span></button><RealtimeNotificationCenter apiUrl="/api/delivery/notifications" eventsUrl="/api/delivery/events-stream" storageKey="fixi-delivery-notifications" onEvent={load}/><PushToggle subscribeUrl="/api/delivery/push/subscribe"/><InstallAppButton label="Installer"/><div><b>{session.fullName}</b><span>Livreur</span></div><button onClick={logout} title="Déconnexion"><LogOut/></button></header>
+  <header className="fixi-driver-topbar">
+    <div className="driver-header-brand">
+      <Truck aria-hidden="true"/><span><b>Fixi Delivery</b><small>{session.companyName}</small></span>
+    </div>
+    <div className="fixi-driver-header-state">
+      <div className="driver-live-state" aria-label={online?'Connexion active':'Connexion perdue'}>
+        {online?<Wifi size={17}/>:<WifiOff size={17}/>}<span>{online?'En ligne':'Hors ligne'}</span>
+      </div>
+      <button type="button" className={'driver-availability '+(driverAvailable?'on':'off')} onClick={toggleAvailable}
+         aria-label={driverAvailable?'Se rendre indisponible':'Se rendre disponible'} title="Changer ma disponibilité">
+        <Radio size={17}/><span>{driverAvailable?'Disponible':'Indisponible'}</span>
+      </button>
+    </div>
+    <div className="fixi-driver-header-actions">
+      <RealtimeNotificationCenter apiUrl="/api/delivery/notifications" eventsUrl="/api/delivery/events-stream"
+        storageKey="fixi-delivery-notifications" onEvent={load}/>
+      <PushToggle subscribeUrl="/api/delivery/push/subscribe"/>
+      <span className="fixi-driver-header-install"><InstallAppButton label="Installer"/></span>
+      <span className="fixi-driver-user"><b>{session.fullName}</b><small>Livreur</small></span>
+      <button type="button" className="fixi-driver-logout" onClick={logout} title="Déconnexion" aria-label="Déconnexion"><LogOut size={18}/></button>
+    </div>
+  </header>
   <main>
    <DeliveryInstall/>
    <Link href="/delivery/encaissements" className="fixi-driver-collections-link"><Banknote size={17}/> Encaissements & caisse livreur</Link>
@@ -95,7 +116,7 @@ export function DriverApp({session}:{session:any}){
    {err&&<div className="driver-banner error"><AlertTriangle/>{err}</div>}{msg&&<div className="driver-banner success"><CheckCircle2/>{msg}</div>}
    {shift.pendingCashier&&<div className="driver-shift-lock pending"><ShieldCheck/><div><h2>Remise caisse en attente</h2><p>Attendu {money(shift.pendingCashier.expectedCod||shift.pendingCashier.collectedCod||0)} · déclaré {money(shift.pendingCashier.declaredRemit||0)}. Le caissier doit recompter et confirmer avant votre prochaine journée.</p></div></div>}{!shift.current&&!shift.pendingCashier&&<div className="driver-shift-lock"><ShieldCheck/><div><h2>Journée non ouverte</h2><p>Les commandes restent visibles, mais une livraison ne peut pas être démarrée tant que le livreur n’a pas ouvert sa journée.</p></div><button className="btn btn-primary" onClick={()=>setShiftModal('open')}>Ouvrir ma journée</button></div>}
    {view==='orders'&&available.length>0&&<section id="driver-orders" className="driver-available"><div className="supplier-section-head"><div><b>Nouvelles missions disponibles</b><span>Le premier livreur qui accepte réserve la commande.</span></div><em>{available.length}</em></div><div className="driver-available-grid">{available.map(o=>{const address=o.deliveryAddress||o.shop?.address||o.shop?.region||'';return <article key={o.id}><div><code>{o.reference}</code><h3>{o.shop?.name}</h3><span><MapPinned/> {address||'Adresse non renseignée'}</span><strong>{money(o.total)}</strong></div><button className="btn btn-primary" disabled={busy===o.id} onClick={()=>accept(o)}><CheckCircle2/> Accepter</button></article>})}</div></section>}
-   {view==='orders'&&<section className="driver-mobile-setup"><div><b>Fixi Delivery sur votre téléphone</b><span>Installez l’application et activez les notifications pour recevoir les nouvelles missions même écran verrouillé.</span></div><InstallAppButton label="Installer l’app"/><PushToggle subscribeUrl="/api/delivery/push/subscribe" label/></section>}
+
    {view==='dues'&&<section id="driver-dues" className="driver-due-overview"><div className="supplier-section-head"><div><b>Dus clients à suivre</b><span>Chaque créance est détaillée par facture. Encaissement autorisé uniquement pendant une journée ouverte.</span></div></div><div className="driver-due-client-list">{active.filter(o=>Number(o.customerDue||0)>0).map(o=><article key={'due-'+o.id}><div className="driver-due-client-head"><div><b>{o.shop?.name}</b><span>{o.shop?.phone||'Sans téléphone'} · {o.shop?.address||o.shop?.region||'Adresse non renseignée'}</span></div><strong>{money(o.customerDue)}</strong></div><div className="driver-due-invoices">{(o.dueDetails||[]).map((d:any)=><div key={d.id}><span><b>{d.reference}</b><small>{dateTime(d.createdAt)}{d.dueAt?' · échéance '+dateTime(d.dueAt):''}</small></span><span><small>Total {money(d.total)}</small><small>Payé {money(d.paid)}</small><b>Reste {money(d.due)}</b></span></div>)}</div><button className="btn btn-soft btn-block" disabled={!shift.current||busy===o.id} onClick={()=>openDue(o)}><WalletCards/> Encaisser un dû</button></article>)}</div>{!active.some(o=>Number(o.customerDue||0)>0)&&<div className="delivery-empty compact"><WalletCards/><h3>Aucun dû disponible</h3><p>Pour sécurité, les dus sont visibles uniquement pour les clients de vos livraisons actives.</p></div>}</section>}
    {view==='orders'&&<div id="driver-orders" className="driver-route-list">
     {active.map((o,index)=>{const address=o.deliveryAddress||o.shop?.address||o.shop?.region||'';const collected=Number(o.delivery?.cashCollected||0);return <article key={o.id} className={o.status==='OUT_FOR_DELIVERY'?'active-delivery':''}>

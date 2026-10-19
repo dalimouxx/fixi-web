@@ -1,0 +1,383 @@
+/* Fixi layout hotfix, 2026-10-19.
+   Shared light palette, stable LTR application geometry, localized text, and fixed menus. */
+
+/* Delivery: replace legacy 3-column 68px header which caused overlapping buttons. */
+.delivery-app.driver-v2>header.fixi-driver-topbar{
+  display:flex!important;
+  flex-wrap:nowrap;
+  justify-content:space-between;
+  align-items:center;
+  gap:20px;
+  height:auto!important;
+  min-height:78px!important;
+  padding:10px clamp(14px,2vw,32px)!important;
+  background:rgba(255,255,255,.98);
+  border-bottom:1px solid #eee1d6;
+  box-shadow:0 4px 18px rgba(35,22,12,.035);
+  z-index:90;
+  direction:ltr;
+}
+.delivery-app.driver-v2>header.fixi-driver-topbar>div{
+  text-align:start;
+}
+.delivery-app.driver-v2 .fixi-driver-topbar .driver-header-brand{
+  display:flex!important;
+  align-items:center;
+  gap:11px;
+  flex:0 1 250px;
+  min-width:165px;
+}
+.delivery-app.driver-v2 .fixi-driver-topbar .driver-header-brand>svg{
+  width:29px;height:29px;color:#ef721c;flex:0 0 auto;
+}
+.delivery-app.driver-v2 .fixi-driver-topbar .driver-header-brand>span{
+  display:flex;flex-direction:column;gap:2px;min-width:0;
+}
+.delivery-app.driver-v2 .fixi-driver-topbar .driver-header-brand b{
+  display:block;font-size:18px;line-height:1.2;color:#342a21;font-weight:900;
+}
+.delivery-app.driver-v2 .fixi-driver-topbar .driver-header-brand small{
+  font-size:12px;line-height:1.25;color:#8c7b6d;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.delivery-app.driver-v2 .fixi-driver-header-state{
+  display:flex;align-items:center;justify-content:center;gap:11px;flex:1 1 auto;min-width:0;
+}
+.delivery-app.driver-v2 .fixi-driver-header-state .driver-live-state{
+  display:inline-flex;gap:6px;align-items:center;justify-content:center;flex:0 0 auto;
+  font-size:12px;font-weight:750;color:#1a9462;white-space:nowrap;
+}
+.delivery-app.driver-v2 .fixi-driver-header-state .driver-live-state svg{flex-shrink:0}
+.delivery-app.driver-v2 .fixi-driver-header-state .driver-availability{
+  display:inline-flex;flex-direction:row;align-items:center;gap:8px;
+  padding:9px 12px;min-height:43px;min-width:0;width:auto;height:auto;
+  border-radius:12px;border:1px solid #c6ead7;background:#eaf8f0;
+  color:#167c52;font-size:12px;font-weight:850;white-space:nowrap;justify-self:auto;
+}
+.delivery-app.driver-v2 .fixi-driver-header-state .driver-availability.off{
+  border-color:#f2dcba;background:#fff4e4;color:#a66b29;
+}
+.delivery-app.driver-v2 .fixi-driver-header-state .driver-availability svg{width:18px;height:18px}
+.delivery-app.driver-v2 .fixi-driver-header-actions{
+  display:flex;align-items:center;justify-content:flex-end;gap:9px;
+  flex:0 1 auto;min-width:0;
+}
+.delivery-app.driver-v2 .fixi-driver-header-actions button,
+.delivery-app.driver-v2 .fixi-driver-header-actions .install-app{
+  position:static!important;
+  min-height:43px;min-width:43px;
+  width:auto;height:auto;
+  padding:9px 11px;
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  border:1px solid #e9ded4;background:#fff;color:#66594d;border-radius:12px;
+  white-space:nowrap;box-sizing:border-box;
+}
+.delivery-app.driver-v2 .fixi-driver-header-actions .install-app:disabled{display:none!important}
+.delivery-app.driver-v2 .fixi-driver-header-actions .install-app svg{width:17px;height:17px}
+.delivery-app.driver-v2 .fixi-driver-header-actions .push-toggle,
+.delivery-app.driver-v2 .fixi-driver-header-actions .fixi-driver-logout{min-width:43px;width:43px}
+.delivery-app.driver-v2 .fixi-driver-header-actions .fixi-driver-user{
+  display:flex;flex-direction:column;text-align:start;gap:3px;
+  padding:0 4px 0 9px;max-width:155px;min-width:0;
+}
+.delivery-app.driver-v2 .fixi-driver-header-actions .fixi-driver-user b{
+  font-size:12px;font-weight:850;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#3d3025;
+}
+.delivery-app.driver-v2 .fixi-driver-header-actions .fixi-driver-user small{
+  color:#938273;font-size:11px;
+}
+.delivery-app.driver-v2 .fixi-driver-header-actions .fixi-driver-logout:hover{
+  color:#c14826;background:#fff3ec;border-color:#f4c4ab;
+}
+.delivery-app.driver-v2 .delivery-install{
+  box-sizing:border-box;max-width:100%;width:100%;min-height:76px;
+  display:flex;align-items:center;gap:13px;padding:17px 18px!important;
+  margin:0 0 15px!important;
+  background:#fff;border:1px solid #ecdfd5;border-radius:17px;
+}
+.delivery-app.driver-v2 .delivery-install>svg{flex:0 0 25px;width:25px;height:25px;color:#ed7626}
+.delivery-app.driver-v2 .delivery-install>span{
+  display:flex!important;flex-direction:column;gap:4px;flex:1 1 auto;min-width:0;
+  font-size:13px;line-height:1.4;
+}
+.delivery-app.driver-v2 .delivery-install b{
+  color:#403226;font-weight:900;font-size:14px;line-height:1.4;
+}
+.delivery-app.driver-v2 .delivery-install small{
+  color:#826e5e;line-height:1.5;font-size:12px;
+}
+.delivery-app.driver-v2 .delivery-install>.btn{flex:0 0 auto;margin-left:auto}
+/* Driver already has installation in header and this banner: avoid any duplicate desktop prompts. */
+@media(min-width:761px){
+ .delivery-app.driver-v2 .delivery-install:not(.installed){display:none!important}
+ .delivery-app.driver-v2 .fixi-driver-header-install{display:inline-flex;align-items:center}
+}
+@media(min-width:761px) and (max-width:1179px){
+ .delivery-app.driver-v2>header.fixi-driver-topbar{
+  display:grid!important;grid-template-columns:minmax(160px,1fr) minmax(230px,1.2fr);
+  gap:7px 12px;min-height:78px!important;
+ }
+ .delivery-app.driver-v2 .fixi-driver-header-state{justify-content:flex-end}
+ .delivery-app.driver-v2 .fixi-driver-header-actions{
+  grid-column:1/-1;justify-content:flex-end;
+  border-top:1px solid #f4ede8;padding-top:8px;
+ }
+ .delivery-app.driver-v2 .fixi-driver-topbar .driver-header-brand{min-width:0}
+ .delivery-app.driver-v2 .fixi-driver-header-actions .fixi-driver-user{max-width:180px}
+}
+@media(max-width:760px){
+ .delivery-app.driver-v2>header.fixi-driver-topbar{
+  display:grid!important;grid-template-columns:minmax(0,1fr) auto;
+  gap:9px 10px;min-height:0!important;padding:10px 12px!important;
+  position:sticky;top:0;z-index:90;align-items:center;
+ }
+ .delivery-app.driver-v2 .fixi-driver-topbar .driver-header-brand{grid-column:1;flex:none;min-width:0}
+ .delivery-app.driver-v2 .fixi-driver-topbar .driver-header-brand b{font-size:16px!important}
+ .delivery-app.driver-v2 .fixi-driver-topbar .driver-header-brand small{font-size:11px!important}
+ .delivery-app.driver-v2 .fixi-driver-topbar .driver-header-brand>svg{width:25px;height:25px}
+ .delivery-app.driver-v2 .fixi-driver-header-state{grid-column:2;gap:7px}
+ .delivery-app.driver-v2 .fixi-driver-header-state .driver-live-state{font-size:11px}
+ .delivery-app.driver-v2 .fixi-driver-header-state .driver-availability{min-height:38px;padding:7px 9px;font-size:11px}
+ .delivery-app.driver-v2 .fixi-driver-header-actions{
+  grid-column:1/-1;justify-content:flex-end;
+  border-top:1px solid #f1e8df;padding-top:7px;min-width:0;gap:8px;
+ }
+ .delivery-app.driver-v2 .fixi-driver-header-actions .fixi-driver-header-install{display:none}
+ .delivery-app.driver-v2 .fixi-driver-header-actions .fixi-driver-user{display:none}
+ .delivery-app.driver-v2 .fixi-driver-header-actions button{min-height:42px;min-width:42px;padding:8px}
+ .delivery-app.driver-v2 .delivery-install{margin-top:3px!important;flex-wrap:wrap;gap:10px}
+ .delivery-app.driver-v2 .delivery-install>span{flex-basis:calc(100% - 50px)}
+ .delivery-app.driver-v2 .delivery-install>.btn{margin:5px 0 0 auto}
+ .delivery-app.driver-v2>main{padding-top:12px!important}
+ .delivery-app.driver-v2 .driver-command-actions{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-start}
+ .delivery-app.driver-v2 .driver-command-actions>*{min-height:44px;max-width:100%}
+}
+@media(max-width:390px){
+ .delivery-app.driver-v2 .fixi-driver-header-state .driver-live-state span{display:none}
+ .delivery-app.driver-v2 .fixi-driver-header-state .driver-availability{gap:4px;padding:7px}
+ .delivery-app.driver-v2 .fixi-driver-header-state .driver-availability svg{width:16px;height:16px}
+}
+
+/* Supplier: the menu itself scrolls, the account footer stays accessible. */
+.supplier-os.supplier-erp>aside.fixi-supplier-drawer{
+  height:100dvh!important;min-height:0;max-height:100dvh;
+  overflow:hidden!important;display:flex;flex-direction:column;
+  gap:0;overscroll-behavior:contain;
+}
+.supplier-os.supplier-erp>aside.fixi-supplier-drawer .supplier-os-brand{
+  flex:0 0 auto;padding:12px 10px 16px;margin:0;
+  border-bottom:1px solid rgba(149,120,88,.16);
+}
+.supplier-os.supplier-erp .fixi-supplier-menu-scroll{
+  flex:1 1 auto;min-height:0;min-width:0;width:100%;
+  overflow-y:auto!important;overflow-x:hidden;
+  overscroll-behavior-y:contain;scrollbar-gutter:stable;
+  -webkit-overflow-scrolling:touch;touch-action:pan-y;
+  display:flex;flex-direction:column;gap:3px;padding:12px 5px 18px;
+}
+.supplier-os.supplier-erp .fixi-supplier-menu-scroll:focus-visible{
+  outline:2px solid #f18938;outline-offset:-2px;
+}
+.supplier-os.supplier-erp .fixi-supplier-menu-scroll::-webkit-scrollbar{width:8px}
+.supplier-os.supplier-erp .fixi-supplier-menu-scroll::-webkit-scrollbar-thumb{
+  background:#d9b79c;border-radius:999px;border:2px solid #fff;
+}
+.supplier-os.supplier-erp .fixi-supplier-nav-item{flex:0 0 auto;width:100%}
+.supplier-os.supplier-erp .fixi-supplier-menu-scroll .supplier-nav-label{
+  display:block;margin:13px 7px 7px;color:#a97957;font-size:10px;font-weight:900;
+  letter-spacing:.085em;line-height:1.5;
+}
+.supplier-os.supplier-erp .fixi-supplier-nav-item>button,
+.supplier-os.supplier-erp .fixi-supplier-menu-scroll .supplier-delivery-link{
+  display:flex;align-items:center;text-align:start;gap:11px;
+  width:100%;min-height:45px;height:auto;max-width:100%;
+  padding:11px 12px!important;border:0;border-radius:12px;
+  background:transparent;color:#65584c;font-size:12px;font-weight:780;
+  line-height:1.35;white-space:normal;
+}
+.supplier-os.supplier-erp .fixi-supplier-nav-item>button>span,
+.supplier-os.supplier-erp .fixi-supplier-menu-scroll .supplier-delivery-link>span{
+  flex:1 1 auto;min-width:0;word-break:normal;overflow-wrap:break-word;
+}
+.supplier-os.supplier-erp .fixi-supplier-nav-item>button>svg,
+.supplier-os.supplier-erp .fixi-supplier-menu-scroll .supplier-delivery-link>svg{
+  width:19px;height:19px;flex:0 0 19px;color:#968173;
+}
+.supplier-os.supplier-erp .fixi-supplier-nav-item>button:hover,
+.supplier-os.supplier-erp .fixi-supplier-menu-scroll .supplier-delivery-link:hover{
+  background:#fff4eb;color:#b75617;
+}
+.supplier-os.supplier-erp .fixi-supplier-nav-item>button.active{
+  background:#fff0e2;color:#b94f11;font-weight:900;
+}
+.supplier-os.supplier-erp .fixi-supplier-nav-item>button.active>svg{color:#eb7524}
+.supplier-os.supplier-erp .fixi-supplier-nav-item em{
+  margin-inline-start:auto;flex:0 0 auto;font-size:11px;
+  padding:3px 7px;background:#f37e2d;color:#fff;border-radius:999px;
+  font-style:normal;
+}
+.supplier-os.supplier-erp>aside.fixi-supplier-drawer .supplier-side-foot{
+  margin-top:0;flex:0 0 auto;padding:14px 9px 10px;
+  border-top:1px solid #ece0d6;background:#fff;z-index:2;
+}
+@media(max-width:760px){
+ .supplier-os.supplier-erp>aside.fixi-supplier-drawer{
+  height:100dvh!important;max-height:100dvh;padding:7px 12px calc(10px + env(safe-area-inset-bottom,0px))!important;
+  overflow:hidden!important;
+ }
+ .supplier-os.supplier-erp .fixi-supplier-menu-scroll{padding:10px 3px 16px}
+ .supplier-os.supplier-erp .fixi-supplier-nav-item>button,
+ .supplier-os.supplier-erp .fixi-supplier-menu-scroll .supplier-delivery-link{font-size:13px}
+ .supplier-os.supplier-erp>aside.fixi-supplier-drawer .supplier-os-brand{padding-right:52px}
+}
+
+/* Fixi Control: visible shop cards (replaces legacy dark-on-dark) */
+.saas-v4 .shop-admin-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr));
+  gap:17px;align-items:stretch;
+}
+.saas-v4 .shop-admin-card{
+  display:flex;flex-direction:column;gap:0;
+  min-width:0;max-width:100%;padding:22px;background:#fff!important;
+  color:#30251f!important;border:1px solid #e8ddd3!important;border-radius:20px;
+  box-shadow:0 12px 32px rgba(40,26,16,.055);
+}
+.saas-v4 .shop-card-top{display:flex;gap:12px;align-items:center}
+.saas-v4 .shop-logo-mini{
+  background:#fff1e6;color:#ce6017;width:52px;height:52px;border-radius:14px;
+  font-size:19px;flex:0 0 52px;
+}
+.saas-v4 .shop-name{flex:1 1 auto;min-width:0}
+.saas-v4 .shop-name strong{font-size:17px!important;font-weight:900;color:#32251d!important;line-height:1.3;overflow-wrap:anywhere}
+.saas-v4 .shop-name span{color:#817268!important;font-size:12px!important;margin-top:5px;line-height:1.4}
+.saas-v4 .live-badge{
+  flex:0 0 auto;padding:7px 10px;font-size:11px!important;
+  color:#795f50;background:#f4f1ee;border:1px solid #eee5de;gap:7px;
+}
+.saas-v4 .live-badge i{width:8px;height:8px}
+.saas-v4 .live-badge.offline{background:#fff0ed;color:#a94443;border-color:#f5d4d0}
+.saas-v4 .live-badge.idle{background:#fff7e7;color:#986417;border-color:#f3e0b9}
+.saas-v4 .live-badge.online{background:#e8f9f0;color:#19794f;border-color:#bdebd0}
+.saas-v4 .shop-card-metrics{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;margin:21px 0 13px;
+}
+.saas-v4 .shop-card-metrics>div{
+  padding:14px 13px;border-radius:13px;border:1px solid #eee4dc;
+  background:#fcfaf7!important;min-height:77px;
+}
+.saas-v4 .shop-card-metrics span{
+  color:#86766c!important;font-size:11px!important;line-height:1.35;
+}
+.saas-v4 .shop-card-metrics b{
+  color:#292019!important;font-size:16px!important;line-height:1.35;
+  font-weight:850;margin-top:7px;overflow-wrap:anywhere;
+}
+.saas-v4 .shop-card-metrics>div:last-child{
+  background:#fff5eb!important;border-color:#f8dfc9;
+}
+.saas-v4 .shop-card-metrics>div:last-child b{color:#ac5016!important;font-size:14px!important}
+.saas-v4 .shop-last{
+  color:#837266!important;font-size:12px!important;line-height:1.5;
+  margin:4px 0 16px;overflow-wrap:anywhere;
+}
+.saas-v4 .shop-last b{color:#514136;font-weight:850}
+.saas-v4 .shop-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:auto}
+.saas-v4 .shop-actions>.btn{
+  display:inline-flex;justify-content:center;align-items:center;min-height:44px;
+  border-radius:12px;padding:9px 10px;font-size:12px!important;font-weight:850;
+  background:#fff;color:#5e4a3b;border:1px solid #e6d9cf;box-shadow:none;
+}
+.saas-v4 .shop-actions>.btn:hover{background:#fff4e9;border-color:#edc5aa;color:#b75516}
+.saas-v4 .shop-actions>.btn-danger{background:#fff0ee!important;color:#b14137!important;border-color:#f5cfca!important}
+.saas-v4 .shop-actions>.btn-success{background:#e7f9ef!important;color:#17774c!important;border-color:#c1ebd1!important}
+.saas-v4 .shop-actions>.icon-danger{
+  background:#fff7f5;color:#b94639;border-color:#f2d6d0;width:100%;height:44px;
+  display:flex;align-items:center;justify-content:center;border-radius:12px;
+}
+.saas-v4 .shop-actions>.icon-danger:hover{background:#ffece8}
+
+/* Actual network statistics: light center and readable legend. */
+.saas-v4 .network-ring{width:190px;height:190px;max-width:100%;margin:22px auto;border-radius:50%}
+.saas-v4 .network-ring:after{inset:16px;background:#fff!important;box-shadow:0 0 0 1px #f1eae4}
+.saas-v4 .network-ring>div b{color:#30241c!important;font-size:38px;font-weight:900;line-height:1.2}
+.saas-v4 .network-ring>div span{font-size:12px!important;color:#87786b!important;margin-top:7px}
+.saas-v4 .network-legend{display:grid;gap:12px;margin-top:17px}
+.saas-v4 .network-legend>span{
+  display:grid;grid-template-columns:16px minmax(0,1fr) auto;align-items:center;
+  font-size:13px!important;color:#615248!important;gap:9px;
+}
+.saas-v4 .network-legend>span>i{width:10px;height:10px;border-radius:50%}
+.saas-v4 .network-legend b{font-size:15px;color:#32251c!important;font-weight:850}
+.saas-v4 .network-legend .online{background:#25bc7c}
+.saas-v4 .network-legend .idle{background:#edb548}
+.saas-v4 .network-legend .offline{background:#e56a6b}
+
+/* Preserve visual column order in Arabic (no abrupt sidebar mirroring). */
+body[data-lang="ar"] :is(.delivery-app,.supplier-os,.saas-v4,.app-shell){
+ direction:ltr;
+}
+body[data-lang="ar"] :is(.delivery-app,.supplier-os,.saas-v4,.app-shell) :is(h1,h2,h3,p,small){
+ direction:rtl;unicode-bidi:plaintext;text-align:start;
+}
+body[data-lang="ar"] .delivery-app .fixi-driver-topbar .driver-header-brand>span,
+body[data-lang="ar"] .delivery-app .fixi-driver-header-actions .fixi-driver-user,
+body[data-lang="ar"] .supplier-os .fixi-supplier-nav-item>button>span,
+body[data-lang="ar"] .supplier-os .supplier-delivery-link>span,
+body[data-lang="ar"] .saas-v4 .shop-name,
+body[data-lang="ar"] .saas-v4 .shop-card-metrics>div,
+body[data-lang="ar"] .saas-v4 .network-legend>span,
+body[data-lang="ar"] .saas-v4 .network-ring>div{
+ direction:rtl;unicode-bidi:plaintext;text-align:start;
+}
+body[data-lang="ar"] :is(.delivery-app,.supplier-os,.saas-v4,.app-shell) :is(code,time,input[type="number"],input[type="tel"],input[type="email"]){
+ direction:ltr;unicode-bidi:isolate;
+}
+body[data-lang="ar"] .fixi-driver-header-state{direction:ltr}
+body[data-lang="ar"] .fixi-driver-header-actions{direction:ltr}
+body[data-lang="ar"] .supplier-os .supplier-os-brand{direction:ltr}
+body[data-lang="ar"] .delivery-app .driver-command-actions{direction:ltr}
+body[data-lang="ar"] .saas-v4 .network-legend>span b{direction:ltr;text-align:end}
+@media(max-width:550px){
+ .saas-v4 .shop-card-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .saas-v4 .shop-actions{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .saas-v4 .shop-admin-card{padding:16px}
+ .saas-v4 .shop-card-top{flex-wrap:wrap}
+ .saas-v4 .live-badge{margin-left:auto}
+}
+@media(prefers-reduced-motion:reduce){
+ .supplier-os.supplier-erp .fixi-supplier-menu-scroll{scroll-behavior:auto}
+}
+
+/* Important: override the old 2024 mobile supplier horizontal navigation,
+   which previously forced the same <aside> into an unscrollable sticky toolbar. */
+@media(min-width:761px){
+ .supplier-os.supplier-erp>aside.fixi-supplier-drawer{
+   position:sticky!important;top:0!important;width:100%!important;
+   flex-direction:column!important;align-items:stretch!important;
+   white-space:normal!important;overflow:hidden!important;
+   border-right:1px solid #eee0d5!important;
+   background:#fff!important;
+ }
+}
+.supplier-os.supplier-erp>aside.fixi-supplier-drawer .supplier-os-brand{display:flex!important}
+.supplier-os.supplier-erp>aside.fixi-supplier-drawer .supplier-side-foot{display:flex!important}
+.supplier-os.supplier-erp .fixi-supplier-menu-scroll .supplier-nav-label{display:block!important}
+.supplier-os.supplier-erp .fixi-supplier-menu-scroll{white-space:normal!important}
+@media(max-width:760px){
+ .supplier-os.supplier-erp>aside.fixi-supplier-drawer{
+   position:fixed!important;top:0!important;bottom:0!important;left:0!important;
+   width:min(330px,86vw)!important;height:100dvh!important;
+   display:flex!important;flex-direction:column!important;align-items:stretch!important;
+   white-space:normal!important;overflow:hidden!important;z-index:1302!important;
+   background:#fff!important;border-right:1px solid #ecdfd5!important;
+ }
+ .supplier-os.supplier-erp>aside.fixi-supplier-drawer:not(.open){
+   transform:translateX(-110%)!important;visibility:hidden!important;
+ }
+ .supplier-os.supplier-erp>aside.fixi-supplier-drawer.open{
+   transform:translateX(0)!important;visibility:visible!important;
+ }
+ .supplier-os.supplier-erp>aside.fixi-supplier-drawer .supplier-os-brand{display:flex!important}
+ .supplier-os.supplier-erp>aside.fixi-supplier-drawer .supplier-side-foot{display:flex!important}
+ .supplier-os.supplier-erp>aside.fixi-supplier-drawer .supplier-nav-label{display:block!important}
+}

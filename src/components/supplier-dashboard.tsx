@@ -103,12 +103,23 @@ export function SupplierDashboard({session}:{session:any}){
     <aside className={mobileNavOpen?'fixi-supplier-drawer open':'fixi-supplier-drawer'} aria-label="Navigation Supplier">
       <button className="fixi-supplier-drawer-close" aria-label="Fermer le menu" onClick={()=>setMobileNavOpen(false)}><X size={20}/></button>
       <div className="supplier-os-brand"><i>F</i><div><b>Fixi Supplier</b><span>{session.companyName}</span></div></div>
-      <div className="supplier-nav-label">GESTION</div>
-      {nav.map(([key,label,Icon])=><button key={key} className={tab===key?'active':''} onClick={()=>{setTab(key as Tab);setMobileNavOpen(false)}}><Icon/><span>{label}</span>{key==='orders'&&activeOrders.length>0&&<em>{activeOrders.length}</em>}</button>)}
-      <Link href="/supplier/settlements" onClick={()=>setMobileNavOpen(false)} className="supplier-delivery-link"><WalletCards/><span>Comptes & règlements</span></Link>
-      <Link href="/supplier/subscription" onClick={()=>setMobileNavOpen(false)} className="supplier-delivery-link"><ReceiptText/><span>Mon abonnement Supplier</span></Link>
-      <div className="supplier-nav-label">MOBILE</div>
-      <Link href="/delivery/login" target="_blank" className="supplier-delivery-link"><MapPinned/><span>App livreur</span></Link>
+      <div className="fixi-supplier-menu-scroll" role="navigation" aria-label="Modules du fournisseur" tabIndex={0}>
+        {nav.map(([key,label,Icon])=><div key={key} className="fixi-supplier-nav-item">
+          {key==='dashboard'&&<div className="supplier-nav-label">VUE GÉNÉRALE</div>}
+          {key==='products'&&<div className="supplier-nav-label">CATALOGUE & STOCK</div>}
+          {key==='clients'&&<div className="supplier-nav-label">VENTES & FACTURATION</div>}
+          {key==='warehouses'&&<div className="supplier-nav-label">GESTION DES DÉPÔTS</div>}
+          {key==='dues'&&<div className="supplier-nav-label">COMPTES & LOGISTIQUE</div>}
+          <button type="button" className={tab===key?'active':''} onClick={()=>{setTab(key as Tab);setMobileNavOpen(false)}} aria-current={tab===key?'page':undefined}>
+            <Icon/><span>{label}</span>{key==='orders'&&activeOrders.length>0&&<em>{activeOrders.length}</em>}
+          </button>
+        </div>)}
+        <div className="supplier-nav-label">ABONNEMENT & RÈGLEMENTS</div>
+        <Link href="/supplier/settlements" onClick={()=>setMobileNavOpen(false)} className="supplier-delivery-link"><WalletCards/><span>Comptes & règlements</span></Link>
+        <Link href="/supplier/subscription" onClick={()=>setMobileNavOpen(false)} className="supplier-delivery-link"><ReceiptText/><span>Mon abonnement Supplier</span></Link>
+        <div className="supplier-nav-label">LIVRAISONS</div>
+        <Link href="/delivery/login" target="_blank" className="supplier-delivery-link"><MapPinned/><span>App livreur</span></Link>
+      </div>
       <div className="supplier-side-foot"><div><strong>{session.fullName}</strong><small>{session.role||'ADMIN'} · Compte fournisseur</small></div><button onClick={logout}><LogOut/></button></div>
     </aside>
 
