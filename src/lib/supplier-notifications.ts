@@ -41,7 +41,7 @@ export async function notifySupplier(companyId:string,title:string,message:strin
   const push:any={title,body:message,href:options.href||'/supplier',
     experienceKey,tag:experienceTag(experienceKey,options.eventId),
     data:{...(options.metadata||{}),experienceKey}};
-  if(kind==='DELIVERY'&&options.metadata?.orderId&&options.roles?.includes('DRIVER')){
+  if(experienceKey==='DRIVER_NEW_MISSION'&&options.metadata?.orderId){
     push.tag=experienceTag('DRIVER_NEW_MISSION',String(options.metadata.orderId));
     push.requireInteraction=true;
     push.actions=[{action:'accept-delivery',title:'Accepter la mission'},{action:'open',title:'Voir la tournée'}];
