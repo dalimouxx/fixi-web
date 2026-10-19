@@ -1,0 +1,157 @@
+/* FIXI MOBILE PRO v1 – responsive & touch-friendly layer.
+   Scoped to app shells; desktop layout remains unchanged. */
+:root{--fixi-touch:46px}
+.app-shell,.supplier-os,.delivery-app{width:100%;max-width:100%;min-width:0}
+.app-shell *,.supplier-os *,.delivery-app *{min-width:0}
+.app-shell .btn,.supplier-os .btn,.delivery-app .btn{touch-action:manipulation}
+.app-shell button,.supplier-os button,.delivery-app button{touch-action:manipulation}
+.app-shell input,.supplier-os input,.delivery-app input,.app-shell select,.supplier-os select,.delivery-app select{max-width:100%;box-sizing:border-box}
+.app-shell .table-wrap,.supplier-os .table-wrap,.delivery-app .table-wrap{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.app-shell .table,.supplier-os .table,.delivery-app .table{min-width:580px}
+.app-shell .page,.supplier-os>main,.delivery-app>main{min-width:0}
+.app-shell .card,.supplier-os .supplier-panel,.delivery-app .driver-command{min-width:0}
+.fixi-supplier-header-title{display:flex;gap:12px;align-items:center;min-width:0}
+.fixi-supplier-menu-button{display:none;flex:0 0 44px;width:44px;height:44px;place-items:center;border:1px solid #ecdace;border-radius:13px;background:#fff;color:#de6617;cursor:pointer;font-size:21px}
+.fixi-supplier-drawer-close,.fixi-supplier-drawer-backdrop,.fixi-supplier-bottom-nav{display:none}
+.fixi-driver-collections-link{display:inline-flex;align-items:center;gap:9px;padding:11px 16px;margin:0 0 14px;border:1px solid #f4c8ac;background:#fff8f2;color:#a94a12;border-radius:12px;text-decoration:none;font-size:13px;font-weight:850}
+.fixi-driver-nav-payments{display:flex;align-items:center;justify-content:center;gap:6px;color:inherit;text-decoration:none;font-size:12px;font-weight:800;background:#fff;border-radius:11px}
+.fixi-driver-nav-payments svg{width:19px;height:19px;color:#ff6b00}
+/* Tablets 8–12in: retain module access but free up horizontal space. */
+@media(min-width:761px) and (max-width:1199px){
+  .app-shell:not(.sidebar-collapsed){grid-template-columns:82px minmax(0,1fr)}
+  .app-shell:not(.sidebar-collapsed)>.sidebar{padding:14px 8px;align-items:center}
+  .app-shell:not(.sidebar-collapsed) .sidebar .brand-caption-wrap,
+  .app-shell:not(.sidebar-collapsed) .sidebar .nav-section,
+  .app-shell:not(.sidebar-collapsed) .sidebar .nav-link span,
+  .app-shell:not(.sidebar-collapsed) .sidebar .nav-link em,
+  .app-shell:not(.sidebar-collapsed) .sidebar .shop-chip,
+  .app-shell:not(.sidebar-collapsed) .sidebar .sidebar-primary-action span{display:none}
+  .app-shell:not(.sidebar-collapsed) .sidebar .nav-link{justify-content:center;min-height:46px;min-width:48px}
+  .app-shell:not(.sidebar-collapsed) .sidebar .nav-link svg{width:21px;height:21px}
+  .app-shell:not(.sidebar-collapsed) .sidebar .sidebar-primary-action{min-height:48px;justify-content:center}
+  .app-shell .app-main>.topbar{padding:0 16px;gap:12px}
+  .app-shell .app-main .page{padding:20px 18px}
+  .supplier-os{grid-template-columns:218px minmax(0,1fr)}
+  .supplier-os>main{padding:19px}
+  .supplier-os .supplier-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .supplier-os .supplier-dashboard-grid{grid-template-columns:1fr}
+  .supplier-os .supplier-os-brand span{font-size:11px}
+  .delivery-app.driver-v2>main{max-width:100%;padding:20px 18px}
+  .driver-app .driver-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(max-width:760px){
+  html{scroll-padding-top:68px}
+  body{overflow-x:hidden}
+  .app-shell{grid-template-columns:minmax(0,1fr)}
+  .app-shell>.sidebar{display:none}
+  .app-shell>.app-main{min-width:0;width:100%;padding-bottom:calc(82px + env(safe-area-inset-bottom,0px))}
+  .app-shell>.app-main>.topbar{height:62px;min-height:62px;padding:0 12px;gap:8px;z-index:20}
+  .app-shell .topbar .global-search{flex:1;min-width:0;max-width:unset;width:auto}
+  .app-shell .topbar .global-search span{display:none}
+  .app-shell .topbar .topbar-quick a{min-height:42px}
+  .app-shell .topbar .userbox{gap:5px}
+  .app-shell .topbar .userbox>.user-meta{display:none}
+  .app-shell .topbar .userbox .avatar{height:34px;width:34px}
+  .app-shell .app-main>.system-context-bar{padding:0 12px;min-height:34px}
+  .app-shell .app-main>.page,.app-shell .app-main .page{padding:16px 12px 28px}
+  .app-shell .page-head{gap:12px;flex-wrap:wrap;align-items:flex-start}
+  .app-shell .page-head h1{font-size:clamp(23px,6vw,30px)}
+  .app-shell .stat-grid,.app-shell .cash-kpis,.app-shell .dashboard-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .app-shell .content-grid,.app-shell .dashboard-action-grid{grid-template-columns:1fr}
+  .app-shell .quick-actions{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .app-shell .mobile-ops-nav{padding-bottom:env(safe-area-inset-bottom,0px);min-height:66px}
+  .app-shell .mobile-ops-nav a,.app-shell .mobile-ops-nav button{min-height:60px;touch-action:manipulation}
+  .app-shell .mobile-menu-sheet{max-height:calc(90dvh - env(safe-area-inset-bottom,0px));overflow-y:auto}
+  .app-shell .buyer-due-items>div,.app-shell .buyer-due-payments>div{font-size:12px;line-height:1.5}
+  .app-shell .buyer-due-supplier header small{font-size:11px}
+  .app-shell .buyer-due-sales summary code{font-size:12px}
+  .app-shell .buyer-due-sales summary small{font-size:10px}
+  .app-shell .buyer-due-sales summary>span:last-child b{font-size:12px}
+  .app-shell .buyer-due-items h4,.app-shell .buyer-due-payments h4{font-size:11px}
+  .app-shell .buyer-due-items small{font-size:10px}
+  .app-shell .buyer-due-proof b{font-size:12px}
+  .app-shell .buyer-due-proof small{font-size:11px}
+  .app-shell .buyer-dues-summary span,.app-shell .buyer-dues-summary small{font-size:12px}
+  /* Supplier: true fullscreen mobile with accessible off-canvas module drawer */
+  .supplier-os.supplier-erp{display:block;grid-template-columns:none;min-height:100dvh;width:100%}
+  .supplier-os>main{width:100%;min-width:0;max-width:100%;padding:10px 12px calc(94px + env(safe-area-inset-bottom,0px));}
+  .supplier-os>main>header{display:flex;position:sticky;top:0;z-index:26;min-height:64px;gap:10px;align-items:center;padding:9px 2px 12px;margin:0 0 13px;background:rgba(248,246,243,.97);backdrop-filter:blur(16px);flex-wrap:wrap}
+  .supplier-os .fixi-supplier-menu-button{display:grid}
+  .supplier-os>main>header h1{font-size:clamp(20px,5vw,26px);line-height:1.15;overflow-wrap:anywhere}
+  .supplier-os>main>header .toolbar{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:7px;max-width:100%}
+  .supplier-os>main>header .toolbar>.btn{min-height:42px}
+  .supplier-os>main>header .toolbar>.btn svg{width:16px}
+  .supplier-os>aside.fixi-supplier-drawer{display:flex;position:fixed;inset:0 auto 0 0;top:0;left:0;width:min(330px,86vw);height:100dvh;max-height:100dvh;overflow-y:auto;overscroll-behavior:contain;z-index:1302;box-shadow:22px 0 60px rgba(0,0,0,.24);padding:20px 15px calc(28px + env(safe-area-inset-bottom,0px));transform:translateX(-110%);visibility:hidden;transition:transform .2s ease,visibility .2s;grid-template-columns:none;align-items:stretch}
+  .supplier-os>aside.fixi-supplier-drawer.open{transform:translateX(0);visibility:visible}
+  .supplier-os>aside.fixi-supplier-drawer .supplier-os-brand>div,.supplier-os>aside.fixi-supplier-drawer>button span,.supplier-os>aside.fixi-supplier-drawer .supplier-side-foot>div{display:block}
+  .supplier-os>aside.fixi-supplier-drawer>button:not(.fixi-supplier-drawer-close){display:grid;grid-template-columns:23px 1fr auto;justify-content:stretch;place-items:initial;align-items:center;text-align:left;padding:13px;min-height:47px}
+  .supplier-os>aside.fixi-supplier-drawer>button svg{height:18px;width:18px}
+  .supplier-os .fixi-supplier-drawer-close{position:absolute;display:grid;place-items:center;top:12px;right:10px;border:1px solid rgba(255,255,255,.15);border-radius:12px;width:40px;height:40px;color:#fff;background:rgba(255,255,255,.1)}
+  .fixi-supplier-drawer-backdrop{position:fixed;display:block;inset:0;z-index:1301;background:rgba(13,17,25,.57);border:0;backdrop-filter:blur(3px)}
+  .supplier-os .fixi-supplier-bottom-nav{display:grid;position:fixed;bottom:0;left:0;right:0;z-index:1100;grid-template-columns:repeat(5,minmax(0,1fr));gap:2px;background:rgba(255,255,255,.97);border-top:1px solid #eee1d6;padding:7px 5px calc(7px + env(safe-area-inset-bottom,0px));box-shadow:0 -8px 28px rgba(55,36,20,.08);backdrop-filter:blur(16px)}
+  .supplier-os .fixi-supplier-bottom-nav>button{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px;border:0;background:transparent;color:#82786f;border-radius:11px;min-height:53px;min-width:0;font-weight:750;cursor:pointer}
+  .supplier-os .fixi-supplier-bottom-nav>button>span:last-child{font-size:10px;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;max-width:100%}
+  .supplier-os .fixi-supplier-bottom-nav>button.active{background:#fff2e8;color:#ce5b10}
+  .supplier-os .fixi-supplier-bottom-nav>button svg{height:21px;width:21px}
+  .supplier-os .supplier-kpis,.supplier-os .supplier-kpis-6{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .supplier-os .supplier-kpis>div{padding:13px 12px}
+  .supplier-os .supplier-kpis span{font-size:11px}
+  .supplier-os .supplier-kpis b{font-size:19px}
+  .supplier-os .supplier-dashboard-grid,.supplier-os .supplier-order-grid,.supplier-os .supplier-catalog-layout{grid-template-columns:1fr}
+  .supplier-os .supplier-section-head{flex-wrap:wrap;gap:9px}
+  .supplier-os .supplier-section-head b{font-size:15px}
+  .supplier-os .supplier-section-head span{font-size:12px}
+  .supplier-os .supplier-panel{border-radius:17px}
+  .supplier-os .supplier-mobile-install{margin-top:8px;border-radius:16px}
+  .supplier-os .supplier-mobile-install-actions{flex-wrap:wrap}
+  .supplier-os .supplier-os-brand b{font-size:17px}
+  .supplier-os .supplier-os-brand span{font-size:12px}
+  .supplier-os .supplier-nav-label{font-size:11px}
+  .supplier-os .supplier-delivery-link{min-height:46px;font-size:12px}
+  .supplier-os .table td,.supplier-os .table th{font-size:12px}
+  .supplier-os .supplier-product-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .supplier-os .supplier-modal-backdrop{z-index:1500;padding:8px}
+  .supplier-os .supplier-modal{width:min(100%,600px);max-height:calc(100dvh - 16px);overflow-y:auto;border-radius:17px}
+  /* Driver: thumb-first fixed navigation and fullscreen task cards */
+  .delivery-app.driver-v2{width:100%;min-width:0;max-width:100%}
+  .delivery-app.driver-v2>header{position:sticky;top:0;z-index:60;min-height:60px;padding:8px 12px;display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+  .delivery-app.driver-v2>header .driver-header-brand{margin-right:auto;min-width:110px}
+  .delivery-app.driver-v2>header .driver-header-brand b{font-size:15px}
+  .delivery-app.driver-v2>header .driver-header-brand small{font-size:11px}
+  .delivery-app.driver-v2>header .driver-live-state{font-size:11px}
+  .delivery-app.driver-v2>header>.driver-availability{min-height:40px}
+  .delivery-app.driver-v2>main{width:100%;max-width:100%;padding:14px 12px calc(98px + env(safe-area-inset-bottom,0px))}
+  .delivery-app.driver-v2 .driver-mobile-nav{display:grid;position:fixed;z-index:1100;left:0;right:0;bottom:0;top:auto;grid-template-columns:repeat(4,minmax(0,1fr));border:0;border-top:1px solid #eadfd5;border-radius:0;margin:0;padding:7px 6px calc(7px + env(safe-area-inset-bottom,0px));background:rgba(255,255,255,.97);box-shadow:0 -8px 28px rgba(44,31,19,.09);gap:3px}
+  .delivery-app.driver-v2 .driver-mobile-nav button,
+  .delivery-app.driver-v2 .driver-mobile-nav .fixi-driver-nav-payments{display:flex;flex-direction:column;gap:4px;align-items:center;justify-content:center;min-height:54px;padding:5px 2px;color:#82776d;font-size:10px;font-weight:850;background:transparent;border-radius:11px;white-space:nowrap;position:relative;border:0}
+  .delivery-app.driver-v2 .driver-mobile-nav button.active{background:#fff1e4;color:#bc5613}
+  .delivery-app.driver-v2 .driver-mobile-nav button svg,
+  .delivery-app.driver-v2 .driver-mobile-nav .fixi-driver-nav-payments svg{height:21px;width:21px}
+  .delivery-app.driver-v2 .driver-mobile-nav button b{position:absolute;top:0;right:8%;font-size:10px;min-height:17px;min-width:17px}
+  .delivery-app.driver-v2 .fixi-driver-collections-link{width:100%;min-height:48px}
+  .delivery-app.driver-v2 .driver-command{padding:15px;border-radius:18px}
+  .delivery-app.driver-v2 .driver-command h1{font-size:23px}
+  .delivery-app.driver-v2 .driver-command-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .delivery-app.driver-v2 .driver-command-actions>button{min-width:0;min-height:44px;justify-content:center;font-size:12px}
+  .delivery-app.driver-v2 .driver-kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .delivery-app.driver-v2 .driver-kpis>div{padding:13px;border-radius:16px}
+  .delivery-app.driver-v2 .driver-kpis span{font-size:11px}
+  .delivery-app.driver-v2 .driver-kpis b{font-size:19px}
+  .delivery-app.driver-v2 .driver-route-list,.delivery-app.driver-v2 .driver-available-grid{grid-template-columns:1fr}
+  .delivery-app.driver-v2 .supplier-modal-backdrop{z-index:1300;padding:8px}
+  .delivery-app.driver-v2 .delivery-modal{width:min(100%,560px);max-height:calc(100dvh - 16px);overflow-y:auto;border-radius:17px}
+  .delivery-app.driver-v2 .supplier-modal input,.delivery-app.driver-v2 .supplier-modal textarea{font-size:16px}
+  .delivery-app.driver-v2 .btn,.supplier-os .btn,.app-shell .btn{min-height:42px}
+}
+@media(max-width:430px){
+  .supplier-os .supplier-kpis,.supplier-os .supplier-kpis-6{gap:7px}
+  .supplier-os .supplier-kpis>div{padding:10px}
+  .supplier-os .supplier-product-grid{grid-template-columns:1fr}
+  .delivery-app.driver-v2>header .driver-live-state{display:none}
+  .delivery-app.driver-v2 .driver-command-actions{grid-template-columns:1fr}
+  .delivery-app.driver-v2 .driver-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .app-shell .quick-actions{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media print{
+  .fixi-supplier-bottom-nav,.fixi-supplier-drawer-backdrop,.fixi-supplier-menu-button,.fixi-supplier-drawer-close,.driver-mobile-nav{display:none!important}
+}
