@@ -155,3 +155,22 @@
 @media print{
   .fixi-supplier-bottom-nav,.fixi-supplier-drawer-backdrop,.fixi-supplier-menu-button,.fixi-supplier-drawer-close,.driver-mobile-nav{display:none!important}
 }
+
+/* Final touch-size refinements: prevent accidental tap and iOS keyboard zoom. */
+@media(max-width:760px){
+  .supplier-os .fixi-supplier-menu-button>span{font-size:24px!important;color:#cf641b!important;letter-spacing:0!important}
+  .app-shell input,.app-shell textarea,.app-shell select,
+  .supplier-os input,.supplier-os textarea,.supplier-os select,
+  .delivery-app input,.delivery-app textarea,.delivery-app select{font-size:16px!important}
+  .supplier-os .supplier-panel input,.supplier-os .supplier-panel select,
+  .supplier-os .supplier-panel textarea,.supplier-os .supplier-panel button{min-height:44px}
+  .delivery-app .driver-route-list button,.delivery-app .driver-available-grid button{min-height:44px}
+  .app-shell .table-wrap,.supplier-os .table-wrap,.delivery-app .table-wrap{overscroll-behavior-x:contain}
+  .supplier-os .supplier-order-grid,.supplier-os .supplier-catalog-layout{min-width:0}
+  .supplier-os>main>header .toolbar{overflow:visible}
+  .supplier-os .supplier-panel p,.supplier-os .supplier-panel small,
+  .delivery-app .driver-command p{line-height:1.55}
+}
+@media (prefers-reduced-motion: reduce){
+ .supplier-os .fixi-supplier-drawer{transition:none}
+}
