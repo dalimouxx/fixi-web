@@ -73,6 +73,8 @@ export async function PATCH(req:Request,{params}:{params:Promise<{id:string}>}){
 export async function POST(req:Request,{params}:{params:Promise<{id:string}>}){
  try{
   const s=await requireDeliverySession();const{id}=await params;
+  const driver=await prisma.supplierAccount.findFirst({where:{id:s.id,companyId:s.companyId,role:'DRIVER',isActive:true,driverAvailable:true},select:{id:true}});
+  if(!driver)return bad('Activez votre disponibilité avant de prendre une mission',409);
   const o=await prisma.supplierOrder.findFirst({where:{id,companyId:s.companyId,status:SupplierOrderStatus.READY_FOR_DELIVERY},include:{delivery:true,shop:{select:{name:true}}}});
   if(!o)return bad('Commande indisponible',404);
   if(o.delivery?.driverAccountId===s.id)return ok({ok:true,id:o.id,status:o.status,alreadyAccepted:true});
