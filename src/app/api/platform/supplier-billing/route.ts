@@ -50,7 +50,7 @@ export async function POST(req:Request) {
         status==='TRIAL'?new Date(startsAt.getTime()+plan.trialDays*86400000):
         addDuration(startsAt,plan.durationValue,plan.durationUnit);
       if(Number.isNaN(endsAt.getTime())||endsAt<=startsAt)return bad('Date de fin invalide');
-      const price=b.agreedPrice===undefined?plan.price:b.agreedPrice;
+      const price=b.agreedPrice===undefined?Number(plan.price):b.agreedPrice;
       if(!validMoney(price))return bad('Prix invalide');
       const sub=await prisma.supplierSaasSubscription.create({
         data:{companyId,planId,status:status as SubscriptionStatus,agreedPrice:Number(price),
