@@ -4,7 +4,7 @@ import Link from 'next/link';
 import {
   Boxes,ClipboardList,LogOut,PackagePlus,Truck,CheckCircle2,Plus,RefreshCw,LayoutDashboard,Users,
   ReceiptText,WalletCards,BadgeDollarSign,Warehouse,Search,ArrowDownToLine,AlertTriangle,TrendingUp,
-  Banknote,MapPinned,ShoppingCart,FileText,History
+  Banknote,MapPinned,ShoppingCart,FileText,History,X
 } from 'lucide-react';
 import {api} from './ui';
 import {dateTime,money} from '@/lib/format';
@@ -77,20 +77,25 @@ export function SupplierDashboard({session}:{session:any}){
     ['finance','Finance & bénéfice',TrendingUp],['reports','Rapports',FileText],['delivery','Livraison',Truck],['team','Équipe & accès',Users]
   ] as const;
   const nav=navAll.filter(([key])=>(access[role]||access.ADMIN).includes(key));
+  const [mobileNavOpen,setMobileNavOpen]=useState(false);
+  const mobilePrimary=nav.filter(([key])=>['dashboard','orders','products','delivery','cashier'].includes(key)).slice(0,4);
 
   return <div className="supplier-os supplier-erp"><PwaRegister/>
-    <aside>
+    {mobileNavOpen&&<button aria-label="Fermer le menu fournisseur" className="fixi-supplier-drawer-backdrop" onClick={()=>setMobileNavOpen(false)}/>}
+    <aside className={mobileNavOpen?'fixi-supplier-drawer open':'fixi-supplier-drawer'} aria-label="Navigation Supplier">
+      <button className="fixi-supplier-drawer-close" aria-label="Fermer le menu" onClick={()=>setMobileNavOpen(false)}><X size={20}/></button>
       <div className="supplier-os-brand"><i>F</i><div><b>Fixi Supplier</b><span>{session.companyName}</span></div></div>
       <div className="supplier-nav-label">GESTION</div>
-      {nav.map(([key,label,Icon])=><button key={key} className={tab===key?'active':''} onClick={()=>setTab(key as Tab)}><Icon/><span>{label}</span>{key==='orders'&&activeOrders.length>0&&<em>{activeOrders.length}</em>}</button>)}
-      <Link href="/supplier/settlements" className="supplier-delivery-link"><WalletCards/><span>Comptes & règlements</span></Link>
+      {nav.map(([key,label,Icon])=><button key={key} className={tab===key?'active':''} onClick={()=>{setTab(key as Tab);setMobileNavOpen(false)}}><Icon/><span>{label}</span>{key==='orders'&&activeOrders.length>0&&<em>{activeOrders.length}</em>}</button>)}
+      <Link href="/supplier/settlements" onClick={()=>setMobileNavOpen(false)} className="supplier-delivery-link"><WalletCards/><span>Comptes & règlements</span></Link>
+      <Link href="/supplier/subscription" onClick={()=>setMobileNavOpen(false)} className="supplier-delivery-link"><ReceiptText/><span>Mon abonnement Supplier</span></Link>
       <div className="supplier-nav-label">MOBILE</div>
       <Link href="/delivery/login" target="_blank" className="supplier-delivery-link"><MapPinned/><span>App livreur</span></Link>
       <div className="supplier-side-foot"><div><strong>{session.fullName}</strong><small>{session.role||'ADMIN'} · Compte fournisseur</small></div><button onClick={logout}><LogOut/></button></div>
     </aside>
 
     <main>
-      <header><div><span>FIXI SUPPLIER ERP</span><h1>{nav.find(x=>x[0]===tab)?.[1]}</h1></div><div className="toolbar"><RealtimeNotificationCenter apiUrl="/api/supplier/notifications" eventsUrl="/api/supplier/events" storageKey="fixi-supplier-notifications" onEvent={()=>setRefresh(x=>x+1)} onNavigate={(href)=>{const m=href.match(/[?&]tab=([^&]+)/);if(m&&(nav as any).some((x:any)=>x[0]===m[1]))setTab(m[1] as Tab)}}/><PushToggle subscribeUrl="/api/supplier/push/subscribe"/><InstallAppButton label="Installer"/><button className="btn btn-ghost" onClick={()=>setRefresh(x=>x+1)}><RefreshCw/> Actualiser</button></div></header>
+      <header><div className="fixi-supplier-header-title"><button type="button" className="fixi-supplier-menu-button" aria-label="Ouvrir les modules fournisseur" aria-expanded={mobileNavOpen} onClick={()=>setMobileNavOpen(true)}><span>☰</span></button><div><span>FIXI SUPPLIER ERP</span><h1>{nav.find(x=>x[0]===tab)?.[1]}</h1></div></div><div className="toolbar"><RealtimeNotificationCenter apiUrl="/api/supplier/notifications" eventsUrl="/api/supplier/events" storageKey="fixi-supplier-notifications" onEvent={()=>setRefresh(x=>x+1)} onNavigate={(href)=>{const m=href.match(/[?&]tab=([^&]+)/);if(m&&(nav as any).some((x:any)=>x[0]===m[1]))setTab(m[1] as Tab)}}/><PushToggle subscribeUrl="/api/supplier/push/subscribe"/><InstallAppButton label="Installer"/><button className="btn btn-ghost" onClick={()=>setRefresh(x=>x+1)}><RefreshCw/> Actualiser</button></div></header>
       <section className="supplier-mobile-install">
         <div className="supplier-mobile-install-copy"><i>F</i><span><b>Fixi Supplier sur votre téléphone</b><small>Installez l’ERP comme application et activez les notifications pour les commandes, paiements, retours et livraisons.</small></span></div>
         <div className="supplier-mobile-install-actions"><InstallAppButton label="Installer Fixi Supplier"/><PushToggle subscribeUrl="/api/supplier/push/subscribe" label/></div>
@@ -152,6 +157,15 @@ export function SupplierDashboard({session}:{session:any}){
 {tab==='delivery'&&<SupplierDeliveryCenter orders={orders} drivers={drivers} onChanged={()=>setRefresh(x=>x+1)}/>}
       {tab==='team'&&<SupplierTeam session={session}/>} 
     </main>
+    <nav className="fixi-supplier-bottom-nav" aria-label="Accès rapides Supplier">
+      {mobilePrimary.map(([key,label,Icon])=><button type="button" key={key} className={tab===key?'active':''}
+        aria-current={tab===key?'page':undefined} onClick={()=>{setTab(key as Tab);setMobileNavOpen(false)}}>
+        <Icon size={20}/><span>{label==='Tableau de bord'?'Accueil':label==='Produits & stock'?'Stock':label==='POS / Caisse'?'Caisse':label}</span>
+      </button>)}
+      <button type="button" aria-label="Tous les modules" onClick={()=>setMobileNavOpen(true)}>
+        <span style={{fontSize:23,lineHeight:1}}>≡</span><span>Plus</span>
+      </button>
+    </nav>
     <SupplierActionModal action={actionModal} products={products} vendors={advanced.vendors||[]} methods={master.paymentMethods||[]} warehouses={advanced.warehouses||[]} onClose={()=>setActionModal(null)} onDone={()=>setRefresh(x=>x+1)}/>
   </div>
 }

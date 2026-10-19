@@ -2,6 +2,7 @@ import {prisma} from '@/lib/prisma';
 import {requireSupplierRole,requireSupplierSession} from '@/lib/supplier-auth';
 import {bad,ok} from '@/lib/http';
 import {plain} from '@/lib/serializers';
+import {requireSupplierCreationCapacity} from '@/lib/supplier-saas';
 
 async function resolveMaster(companyId:string,categoryId?:string|null,brandId?:string|null,unitId?:string|null){
  const [category,brand,unit]=await Promise.all([
@@ -28,6 +29,7 @@ export async function POST(req:Request){
   const b=await req.json();
   const price=Number(b.price??b.retailPrice),stock=Math.trunc(Number(b.stock||0)),purchasePrice=Math.max(0,Number(b.purchasePrice||0));
   if(!b.sku||!b.name||!(price>=0)||stock<0)return bad('Produit invalide');
+  await requireSupplierCreationCapacity(s.companyId,'PRODUCT');
   const {category,brand}=await resolveMaster(s.companyId,b.categoryId||null,b.brandId||null,b.unitId||null);
   const x=await prisma.supplierProduct.create({data:{
    companyId:s.companyId,
