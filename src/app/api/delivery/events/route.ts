@@ -35,7 +35,7 @@ export async function POST(req:Request){
      });
      if(arrived.count!==1)return null;
    }
-   const event=await tx.supplierDeliveryEvent.create({data:{companyId:s.companyId,orderId,accountId:s.id,type,note:b.note||null,amount:amount===null?(Number.isFinite(Number(b.amount))?Number(b.amount):null):Number(amount),latitude:Number.isFinite(Number(b.latitude))?Number(b.latitude):null,longitude:Number.isFinite(Number(b.longitude))?Number(b.longitude):null,proofUrl:b.proofUrl||null}});
+   const event=await tx.supplierDeliveryEvent.create({data:{companyId:s.companyId,orderId,accountId:s.id,type,note:b.note||null,amount:amount===null?null:Number(amount),latitude:Number.isFinite(Number(b.latitude))?Number(b.latitude):null,longitude:Number.isFinite(Number(b.longitude))?Number(b.longitude):null,proofUrl:b.proofUrl||null}});
    if(type==='COD_COLLECTED')await tx.supplierDelivery.update({where:{orderId},data:{cashCollected:{increment:Number(amount)}}});
    if(type==='DUE_COLLECTED'&&dueCustomer){let remaining=Number(amount||0);for(const sale of dueSales){if(remaining<=0.0001)break;const due=Math.max(0,Number(sale.total)-Number(sale.paid));const take=Math.min(remaining,due);if(take<=0)continue;const paid=Number(sale.paid)+take;await tx.supplierErpSale.update({where:{id:sale.id},data:{paid,status:paid+0.0001>=Number(sale.total)?'PAID':'PARTIALLY_PAID'}});await tx.supplierErpPayment.create({data:{companyId:s.companyId,customerId:dueCustomer.id,saleId:sale.id,kind:'IN',method:'CASH',amount:take,reference:sale.reference,note:'Ancien dû encaissé par livreur',accountId:s.id}});remaining-=take}}
    if(['CUSTOMER_ABSENT','DELIVERY_REFUSED','INCIDENT'].includes(type))await tx.supplierDelivery.update({where:{orderId},data:{attemptCount:{increment:1}}});
