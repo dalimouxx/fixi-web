@@ -347,3 +347,9 @@
  .delivery-app.driver-v2 .driver-mobile-nav button,.delivery-app.driver-v2 .driver-mobile-nav .fixi-driver-nav-payments{touch-action:manipulation;min-width:0}
  .app-shell .mobile-menu-groups a{font-size:13px}
 }
+
+.fixi-supplier-billing-admin .fixi-billing-switch{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 18px}
+.fixi-supplier-billing-admin .fixi-billing-switch .fixi-supplier-back{font-size:12px;background:#fff}
+@media(max-width:650px){.fixi-supplier-billing-admin .fixi-billing-switch{gap:6px}
+ .fixi-supplier-billing-admin .fixi-billing-switch .fixi-supplier-back{padding:9px 10px;font-size:11px}
+}
