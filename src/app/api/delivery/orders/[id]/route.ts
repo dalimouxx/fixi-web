@@ -48,13 +48,13 @@ export async function PATCH(req:Request,{params}:{params:Promise<{id:string}>}){
    if(status===SupplierOrderStatus.OUT_FOR_DELIVERY){
     await Promise.allSettled([
      notifySupplier(s.companyId,'🚚 Livraison en route',`La commande ${o.reference} est maintenant en route.`,{href:'/supplier?tab=delivery',kind:'DELIVERY',experienceKey:'SUPPLIER_UPDATE',eventId:o.id+'-OUT',roles:['OWNER','ADMIN','MANAGER','DELIVERY_MANAGER'],metadata:{orderId:o.id,reference:o.reference}}),
-     notifyShop(o.shopId,'Votre commande est en route',`La commande ${o.reference} est partie en livraison. Vous pouvez suivre son avancement dans Fixi Supplier.`,'/app/suppliers',NotificationType.INFO,undefined,{experienceKey:'SHOP_ORDER_PROGRESS',eventId:o.id+'-OUT',metadata:{orderId:o.id,reference:o.reference,status:'OUT_FOR_DELIVERY'}})
+     notifyShop(o.shopId,'Votre commande est en route',`La commande ${o.reference} est partie en livraison. Vous pouvez suivre son avancement dans Fixi Supplier.`,'/app/suppliers?tab=orders',NotificationType.INFO,undefined,{experienceKey:'SHOP_ORDER_PROGRESS',eventId:o.id+'-OUT',metadata:{orderId:o.id,reference:o.reference,status:'OUT_FOR_DELIVERY'}})
     ]);
    }
    if(status===SupplierOrderStatus.DELIVERED){
     await Promise.allSettled([
      notifySupplier(s.companyId,'✅ Livraison remise avec preuve',`Commande ${o.reference} remise à ${String(b.recipientName).trim()}.`,{href:'/supplier?tab=delivery',kind:'SUCCESS',priority:'NORMAL',experienceKey:'SUPPLIER_UPDATE',eventId:o.id+'-DELIVERED',roles:['OWNER','ADMIN','MANAGER','DELIVERY_MANAGER','ACCOUNTANT'],metadata:{orderId:o.id,reference:o.reference,recipientName:String(b.recipientName).trim()}}),
-     notifyShop(o.shopId,'🎉 Votre commande est livrée',`La commande ${o.reference} a été remise à ${String(b.recipientName).trim()}. Vérifiez votre réception et les articles.`,'/app/suppliers',NotificationType.SUCCESS,undefined,{
+     notifyShop(o.shopId,'🎉 Votre commande est livrée',`La commande ${o.reference} a été remise à ${String(b.recipientName).trim()}. Vérifiez votre réception et les articles.`,'/app/suppliers?tab=orders',NotificationType.SUCCESS,undefined,{
        experienceKey:'SHOP_ORDER_DELIVERED',eventId:o.id+'-DELIVERED',
        metadata:{orderId:o.id,reference:o.reference,status:'DELIVERED'}
      }),
@@ -87,7 +87,7 @@ export async function POST(req:Request,{params}:{params:Promise<{id:string}>}){
   });
   await Promise.allSettled([
    notifySupplier(s.companyId,'Commande prise par un livreur',o.reference+' · '+s.fullName+' a accepté la livraison.',{href:'/supplier?tab=delivery',kind:'DELIVERY',soundKey:'SUCCESS',roles:['OWNER','ADMIN','MANAGER','DELIVERY_MANAGER'],metadata:{orderId:id,reference:o.reference,driverAccountId:s.id}}),
-   notifyShop(o.shopId,'Votre livreur est affecté',o.reference+' · '+s.fullName+' a accepté votre livraison.','/app/suppliers',NotificationType.INFO,undefined,{
+   notifyShop(o.shopId,'Votre livreur est affecté',o.reference+' · '+s.fullName+' a accepté votre livraison.','/app/suppliers?tab=orders',NotificationType.INFO,undefined,{
      experienceKey:'SHOP_ORDER_PROGRESS',eventId:o.id+'-ASSIGNED',metadata:{orderId:o.id,status:'ASSIGNED'}
    })
   ]);
