@@ -3,6 +3,7 @@ import {prisma} from '@/lib/prisma';
 import {requireSupplierRole} from '@/lib/supplier-auth';
 import {bad,ok} from '@/lib/http';
 import {plain} from '@/lib/serializers';
+import {requireSupplierCreationCapacity} from '@/lib/supplier-saas';
 
 const roles=['OWNER','ADMIN','MANAGER','STOCK','SALES','CASHIER','ACCOUNTANT','DELIVERY_MANAGER'] as const;
 
@@ -20,6 +21,7 @@ export async function POST(req:Request){
   const b=await req.json(),login=String(b.login||'').trim().toLowerCase(),password=String(b.password||''),role=String(b.role||'');
   if(!String(b.fullName||'').trim()||!login||password.length<6||!roles.includes(role as any))return bad('Nom, identifiant, rôle et mot de passe (6 caractères minimum) requis');
   if(role==='OWNER'&&s.role!=='OWNER')return bad('Seul le propriétaire peut créer un autre propriétaire',403);
+  await requireSupplierCreationCapacity(s.companyId,'STAFF');
   const a=await prisma.supplierAccount.create({data:{companyId:s.companyId,fullName:String(b.fullName).trim(),login,passwordHash:await bcrypt.hash(password,10),role,phone:String(b.phone||'').trim()||null,isActive:true}});
   await prisma.supplierAuditEvent.create({data:{companyId:s.companyId,accountId:s.id,action:'CREATE',entity:'ACCOUNT',entityId:a.id,metadata:{fullName:a.fullName,login:a.login,role:a.role}}});
   return ok(plain({id:a.id,fullName:a.fullName,login:a.login,phone:a.phone,role:a.role,isActive:a.isActive}),{status:201});
