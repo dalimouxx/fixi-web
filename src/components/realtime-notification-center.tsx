@@ -182,5 +182,5 @@ export function RealtimeNotificationCenter({apiUrl,eventsUrl,storageKey,allHref,
 function Notif({n}:{n:Incoming}){
   return <><i className={'rt-kind '+String(n.kind||n.type||'info').toLowerCase()+' rt-kind-'+channelFor(n.experienceKey||'GENERAL')}>
     <ExperienceIcon keyName={n.experienceKey||'GENERAL'}/></i>
-    <span><b>{n.title}</b><small>{n.message}</small><time>{dateTime(n.createdAt)}</time></span>{!n.readAt&&<em/>}</>;
+    <span><b>{n.title}</b><small>{n.message}</small><time>{dateTime(n.createdAt||new Date().toISOString())}</time></span>{!n.readAt&&<em/>}</>;
 }
