@@ -974,6 +974,7 @@ model Subscription {
   tenant    Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   planId    String
   plan      Plan               @relation(fields: [planId], references: [id], onDelete: Restrict)
+  agreedPrice Decimal?          @db.Decimal(12,3) // fixed agreed price; plan edits do not overwrite past agreements
   status    SubscriptionStatus @default(TRIAL)
   startsAt  DateTime           @default(now())
   endsAt    DateTime?

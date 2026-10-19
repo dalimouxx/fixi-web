@@ -1,9 +1,9 @@
 'use client';
 import Link from 'next/link';
 import {useEffect,useMemo,useState} from 'react';
-import {ArrowLeft,CheckCircle2,CreditCard,CalendarClock,Plus,RefreshCw,Users,Truck,Package,ShieldCheck} from 'lucide-react';
+import {ArrowLeft,CheckCircle2,CreditCard,CalendarClock,Plus,RefreshCw,Users,Truck,Package,ShieldCheck,Edit3,Archive,Trash2,Save} from 'lucide-react';
 
-type Plan={id:string;code:string;name:string;description:string|null;price:number|string;trialDays:number;maxProducts:number;maxDrivers:number;maxStaff:number;maxOrdersPerMonth:number;active:boolean;durationValue:number;durationUnit:string};
+type Plan={id:string;code:string;name:string;description:string|null;publicVisible:boolean;price:number|string;trialDays:number;maxProducts:number;maxDrivers:number;maxStaff:number;maxOrdersPerMonth:number;active:boolean;durationValue:number;durationUnit:string};
 type Payment={id:string;amount:number|string;method:string;reference:string;paidAt:string};
 type Sub={id:string;plan:Plan;status:string;startsAt:string;endsAt:string|null;agreedPrice:string|number|null;payments:Payment[]};
 type Company={id:string;name:string;region?:string|null;active:boolean;saasSubscriptions:Sub[];_count:{products:number;orders:number;accounts:number}};
@@ -19,10 +19,14 @@ export default function SupplierBillingAdmin(){
  const [msg,setMsg]=useState(''),[err,setErr]=useState(''),[busy,setBusy]=useState(false),[showPlanForm,setShowPlanForm]=useState(false);
  const [newPlan,setNewPlan]=useState({code:'',name:'',description:'',price:'',maxProducts:'500',maxDrivers:'1',maxStaff:'2',maxOrdersPerMonth:'200',durationValue:'1',durationUnit:'MONTH',trialDays:'14'});
  const [planPrices,setPlanPrices]=useState<Record<string,string>>({});
+ const [editPlan,setEditPlan]=useState<Plan|null>(null);
+ const [editSub,setEditSub]=useState<null|{id:string;planId:string;status:string;startsAt:string;endsAt:string;agreedPrice:string;note:string}>(null);
  const selected=data.companies.find(c=>c.id===companyId);
  const current=selected?.saasSubscriptions?.[0];
  const chosenPlan=data.plans.find(p=>p.id===planId);
  const sorted=useMemo(()=>data.companies.slice().sort((a,b)=>a.name.localeCompare(b.name)),[data]);
+ useEffect(()=>{if(editPlan)document.getElementById('supplier-plan-editor')?.scrollIntoView({behavior:'smooth',block:'start'});},[editPlan?.id]);
+ useEffect(()=>{if(editSub)document.getElementById('supplier-sub-editor')?.scrollIntoView({behavior:'smooth',block:'start'});},[editSub?.id]);
  async function load(){setLoading(true);try{
   const r=await fetch('/api/platform/supplier-billing',{cache:'no-store'}),j=await r.json();
   if(!r.ok)throw new Error(j.error||'Impossible de charger les fournisseurs');
@@ -30,7 +34,7 @@ export default function SupplierBillingAdmin(){
   setPlanPrices(Object.fromEntries((j.plans||[]).map((p:Plan)=>[p.id,String(p.price)])));setErr('');
  }catch(e){setErr(e instanceof Error?e.message:'Erreur')}finally{setLoading(false)}}
  useEffect(()=>{void load()},[]);
- async function send(method:'POST'|'PATCH',body:unknown,done:string){
+ async function send(method:'POST'|'PATCH'|'DELETE',body:unknown,done:string){
   if(busy)return false;setBusy(true);setMsg('');setErr('');
   try{const r=await fetch('/api/platform/supplier-billing',{method,headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     const j=await r.json();if(!r.ok)throw new Error(j.error||'Enregistrement impossible');
@@ -55,6 +59,33 @@ export default function SupplierBillingAdmin(){
    const price=planPrices[p.id];if(!confirm('Modifier le prix affiché de '+p.name+' ? Les prix déjà convenus restent enregistrés.'))return;
    await send('PATCH',{action:'PLAN',id:p.id,price},'Tarif de '+p.name+' mis à jour.');
  }
+ function beginEditPlan(p:Plan){setEditPlan({...p});setErr('');setMsg('')}
+ function beginEditSub(s:Sub){setEditSub({id:s.id,planId:s.plan.id,status:s.status,
+   startsAt:s.startsAt.slice(0,10),endsAt:s.endsAt?.slice(0,10)||'',
+   agreedPrice:String(s.agreedPrice??s.plan.price),note:(s as any).note||''});setErr('');}
+ async function savePlan(e:React.FormEvent){e.preventDefault();if(!editPlan)return;
+   if(await send('PATCH',{action:'PLAN',...editPlan,
+     price:Number(editPlan.price),maxProducts:Number(editPlan.maxProducts),
+     maxDrivers:Number(editPlan.maxDrivers),maxStaff:Number(editPlan.maxStaff),
+     maxOrdersPerMonth:Number(editPlan.maxOrdersPerMonth),durationValue:Number(editPlan.durationValue),
+     trialDays:Number(editPlan.trialDays)},'Formule fournisseur mise à jour.'))setEditPlan(null);
+ }
+ async function saveSubscription(e:React.FormEvent){e.preventDefault();if(!editSub)return;
+   if(await send('PATCH',{action:'SUBSCRIPTION',id:editSub.id,planId:editSub.planId,
+     status:editSub.status,startsAt:editSub.startsAt,
+     endsAt:editSub.endsAt||null,agreedPrice:Number(editSub.agreedPrice),note:editSub.note},
+      'Période fournisseur modifiée.'))setEditSub(null);
+ }
+ async function removePlan(p:Plan){
+   if(!confirm('Supprimer la formule '+p.name+' ? Si elle a déjà servi, elle sera archivée sans perte des abonnements.'))return;
+   await send('DELETE',{action:'PLAN',id:p.id},'Formule supprimée ou archivée.');
+ }
+ async function removeSubscription(s:Sub){
+   if(!confirm('Supprimer cette période fournisseur ? Les paiements enregistrés sont toujours conservés.'))return;
+   if(await send('DELETE',{action:'SUBSCRIPTION',id:s.id},'Abonnement fournisseur supprimé ou archivé.'))
+     setEditSub(null);
+ }
+
  async function createPlan(e:React.FormEvent){e.preventDefault();
    if(await send('POST',{action:'PLAN',...newPlan,price:Number(newPlan.price),
       maxProducts:Number(newPlan.maxProducts),maxDrivers:Number(newPlan.maxDrivers),
@@ -64,7 +95,11 @@ export default function SupplierBillingAdmin(){
  }
  const statusLabel=(s:string)=>({ACTIVE:'Actif',TRIAL:'Essai',PAST_DUE:'Impayé',SUSPENDED:'Suspendu',CANCELLED:'Annulé'} as Record<string,string>)[s]||s;
  return <main className="fixi-supplier-billing fixi-supplier-billing-admin">
-  <Link className="fixi-supplier-back" href="/saas/suppliers"><ArrowLeft size={16}/> Réseau fournisseurs</Link>
+  <nav className="fixi-billing-switch" aria-label="Navigation des abonnements Fixi">
+    <Link className="fixi-supplier-back" href="/saas"><ArrowLeft size={16}/> Fixi Control</Link>
+    <Link className="fixi-supplier-back" href="/saas/suppliers"><Users size={16}/> Réseau fournisseurs</Link>
+    <Link className="fixi-supplier-back" href="/saas?tab=subscriptions"><CreditCard size={16}/> Abonnements Atelier</Link>
+  </nav>
   <div className="fixi-supplier-billing-title"><div><span>FIXI CONTROL · BILLING</span><h1>Abonnements fournisseurs</h1>
    <p>Forfaits indépendants des abonnements Atelier. Affectation manuelle, suivi des périodes et paiements horodatés.</p></div>
    <button className="fixi-supplier-back" onClick={()=>void load()} disabled={loading}><RefreshCw size={16}/> Actualiser</button>
@@ -110,7 +145,12 @@ export default function SupplierBillingAdmin(){
      <div><b>Offre actuelle : {current?.plan.name||'Accès historique'}</b>
       <p>{current?statusLabel(current.status)+' · '+day(current.startsAt)+' au '+day(current.endsAt):'Aucune facturation encore attribuée'}</p></div>
     </div>
-    {current&&<><h3>Confirmer un paiement</h3><form className="fixi-billing-form" onSubmit={payment}>
+    {current&&<>
+     <div className="fixi-billing-plan-tools">
+       <button type="button" className="fixi-supplier-back" onClick={()=>beginEditSub(current)}><Edit3 size={16}/> Modifier l’abonnement actuel</button>
+       <button type="button" className="fixi-supplier-back" onClick={()=>void removeSubscription(current)}><Archive size={16}/> Supprimer / archiver</button>
+     </div>
+     <h3>Confirmer un paiement</h3><form className="fixi-billing-form" onSubmit={payment}>
       <label>Montant reçu (DT)<input type="number" min="0.001" step="0.001" inputMode="decimal" required value={payAmount}
         onChange={e=>setPayAmount(e.target.value)} placeholder="Ex. 59"/></label>
       <label>Mode<select value={payMethod} onChange={e=>setPayMethod(e.target.value)}>
@@ -146,15 +186,65 @@ export default function SupplierBillingAdmin(){
    {data.plans.map(p=><article className="fixi-billing-card" key={p.id}>
      <div className="fixi-billing-eyebrow">{p.code} · {p.active?'Activée':'Désactivée'}</div><h3>{p.name}</h3>
      <p>{p.description}</p>
-     <label className="fixi-billing-inline-price">Prix / {p.durationUnit==='MONTH'?'mois':p.durationUnit==='YEAR'?'an':p.durationUnit}
-       <input type="number" step="0.001" min="0" value={planPrices[p.id]??String(p.price)}
-         onChange={e=>setPlanPrices(x=>({...x,[p.id]:e.target.value}))}/></label>
-     <button className="fixi-supplier-back" disabled={busy} onClick={()=>void savePrice(p)}>Enregistrer le tarif</button>
+     <strong className="fixi-billing-price">{fmt(p.price)} <small>/ {p.durationValue} {p.durationUnit==='MONTH'?'mois':p.durationUnit==='YEAR'?'an':p.durationUnit==='WEEK'?'semaine':'jour'}</small></strong>
      <div className="fixi-billing-perks"><span><Package size={16}/> {p.maxProducts} produits</span>
        <span><Truck size={16}/> {p.maxDrivers} livreurs</span>
        <span><Users size={16}/> {p.maxStaff} employés</span>
        <span><CalendarClock size={16}/> {p.trialDays} jours d’essai</span></div>
+     <div className="fixi-billing-plan-tools">
+       <button className="fixi-supplier-back" disabled={busy} onClick={()=>beginEditPlan(p)}><Edit3 size={15}/> Modifier l’offre</button>
+       <button className="fixi-supplier-back" disabled={busy} onClick={()=>void removePlan(p)}><Archive size={15}/> Supprimer</button>
+     </div>
    </article>)}
   </div>
+  {editPlan&&<section className="fixi-billing-card fixi-billing-edit" id="supplier-plan-editor">
+   <div className="fixi-billing-title-row"><div><span className="fixi-billing-eyebrow">MODIFICATION DE FORMULE</span><h2>{editPlan.name}</h2></div>
+    <button type="button" className="fixi-supplier-back" onClick={()=>setEditPlan(null)}>Fermer</button></div>
+   <form className="fixi-billing-form" onSubmit={savePlan}>
+     <div className="fixi-billing-form-grid">
+       <label>Nom de l’offre<input required value={editPlan.name} onChange={e=>setEditPlan(p=>p&&({...p,name:e.target.value}))}/></label>
+       <label>Prix (DT)<input type="number" step=".001" min="0" required value={editPlan.price} onChange={e=>setEditPlan(p=>p&&({...p,price:e.target.value}))}/></label>
+       <label>Durée<input type="number" min="1" max="120" required value={editPlan.durationValue} onChange={e=>setEditPlan(p=>p&&({...p,durationValue:Number(e.target.value)}))}/></label>
+       <label>Unité<select value={editPlan.durationUnit} onChange={e=>setEditPlan(p=>p&&({...p,durationUnit:e.target.value}))}>
+         <option value="DAY">Jours</option><option value="WEEK">Semaines</option><option value="MONTH">Mois</option><option value="YEAR">Années</option>
+       </select></label>
+       <label>Produits max<input type="number" min="1" required value={editPlan.maxProducts} onChange={e=>setEditPlan(p=>p&&({...p,maxProducts:Number(e.target.value)}))}/></label>
+       <label>Livreurs max<input type="number" min="1" required value={editPlan.maxDrivers} onChange={e=>setEditPlan(p=>p&&({...p,maxDrivers:Number(e.target.value)}))}/></label>
+       <label>Collaborateurs max<input type="number" min="1" required value={editPlan.maxStaff} onChange={e=>setEditPlan(p=>p&&({...p,maxStaff:Number(e.target.value)}))}/></label>
+       <label>Commandes / mois<input type="number" min="1" required value={editPlan.maxOrdersPerMonth} onChange={e=>setEditPlan(p=>p&&({...p,maxOrdersPerMonth:Number(e.target.value)}))}/></label>
+       <label>Essai (jours)<input type="number" min="0" max="365" required value={editPlan.trialDays} onChange={e=>setEditPlan(p=>p&&({...p,trialDays:Number(e.target.value)}))}/></label>
+       <label>Description<input value={editPlan.description||''} onChange={e=>setEditPlan(p=>p&&({...p,description:e.target.value}))}/></label>
+     </div>
+     <div className="fixi-billing-plan-tools">
+       <label className="fixi-billing-toggle"><input type="checkbox" checked={editPlan.active} onChange={e=>setEditPlan(p=>p&&({...p,active:e.target.checked}))}/> Active</label>
+       <label className="fixi-billing-toggle"><input type="checkbox" checked={(editPlan as any).publicVisible!==false} onChange={e=>setEditPlan(p=>p&&({...p,publicVisible:e.target.checked}))}/> Visible publiquement</label>
+     </div>
+     {err&&<div role="alert" className="fixi-billing-error">{err}</div>}
+     <button className="fixi-billing-button" disabled={busy}><Save size={16}/> Enregistrer toutes les modifications</button>
+   </form>
+  </section>}
+  {editSub&&<section className="fixi-billing-card fixi-billing-edit" id="supplier-sub-editor">
+   <div className="fixi-billing-title-row"><div><span className="fixi-billing-eyebrow">PÉRIODE FOURNISSEUR</span><h2>Modifier l’abonnement</h2></div>
+     <button type="button" className="fixi-supplier-back" onClick={()=>setEditSub(null)}>Fermer</button></div>
+   <form className="fixi-billing-form" onSubmit={saveSubscription}>
+     <div className="fixi-billing-form-grid">
+       <label>Formule<select value={editSub.planId} onChange={e=>setEditSub(p=>p&&({...p,planId:e.target.value}))}>
+         {data.plans.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
+       </select></label>
+       <label>Statut<select value={editSub.status} onChange={e=>setEditSub(p=>p&&({...p,status:e.target.value}))}>
+         {['TRIAL','ACTIVE','PAST_DUE','SUSPENDED','CANCELLED'].map(x=><option key={x} value={x}>{statusLabel(x)}</option>)}
+       </select></label>
+       <label>Prix convenu (DT)<input type="number" step=".001" min="0" required value={editSub.agreedPrice} onChange={e=>setEditSub(p=>p&&({...p,agreedPrice:e.target.value}))}/></label>
+       <label>Date de début<input type="date" required value={editSub.startsAt} onChange={e=>setEditSub(p=>p&&({...p,startsAt:e.target.value}))}/></label>
+       <label>Date de fin<input type="date" value={editSub.endsAt} onChange={e=>setEditSub(p=>p&&({...p,endsAt:e.target.value}))}/></label>
+       <label>Note interne<textarea value={editSub.note} onChange={e=>setEditSub(p=>p&&({...p,note:e.target.value}))}/></label>
+     </div>
+     {err&&<div role="alert" className="fixi-billing-error">{err}</div>}
+     <div className="fixi-billing-plan-tools">
+       <button className="fixi-billing-button" disabled={busy}><Save size={15}/> Enregistrer la période</button>
+       <button type="button" className="fixi-supplier-back" disabled={busy} onClick={()=>{const match=selected?.saasSubscriptions.find(x=>x.id===editSub.id);if(match)void removeSubscription(match)}}><Archive size={15}/> Supprimer / archiver</button>
+     </div>
+   </form>
+  </section>}
  </main>;
 }
