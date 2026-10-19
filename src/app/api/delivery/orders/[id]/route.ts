@@ -39,7 +39,7 @@ export async function PATCH(req:Request,{params}:{params:Promise<{id:string}>}){
     proofCode:status===SupplierOrderStatus.DELIVERED?(String(b.proofCode||'').trim()||null):undefined,
     proofUrl:status===SupplierOrderStatus.DELIVERED?(b.proofUrl||undefined):undefined
    }});
-   if(status===SupplierOrderStatus.DELIVERED)await tx.supplierDeliveryEvent.create({data:{companyId:s.companyId,orderId:id,accountId:s.id,type:'DELIVERY_PROOF',note:'Reçu par '+String(b.recipientName).trim()+(b.proofCode?' · Code '+String(b.proofCode):''),proofUrl:b.proofUrl||null}});
+   if(status===SupplierOrderStatus.DELIVERED)await tx.supplierDeliveryEvent.create({data:{companyId:s.companyId,orderId:id,accountId:s.id,type:'DELIVERY_PROOF',note:'Reçu par '+String(b.recipientName).trim()+' · Code de remise vérifié',proofUrl:b.proofUrl||null}});
    if(Number.isFinite(Number(b.latitude))&&Number.isFinite(Number(b.longitude)))await tx.supplierDriverLocation.create({data:{companyId:s.companyId,orderId:id,accountId:s.id,latitude:Number(b.latitude),longitude:Number(b.longitude),accuracy:Number.isFinite(Number(b.accuracy))?Number(b.accuracy):null}});
    return order;
   });
@@ -89,6 +89,6 @@ export async function POST(req:Request,{params}:{params:Promise<{id:string}>}){
      experienceKey:'SHOP_ORDER_PROGRESS',eventId:o.id+'-ASSIGNED',metadata:{orderId:o.id,status:'ASSIGNED'}
    })
   ]);
-  return ok(plain(result));
+  return ok({ok:true,id:result?.id,reference:result?.reference});
  }catch(e:any){return bad(e.message,e.status||500)}
 }
