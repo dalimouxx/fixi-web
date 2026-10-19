@@ -63,11 +63,12 @@ export function DriverApp({session}:{session:any}){
   <header><div className="driver-header-brand"><Truck/><span><b>Fixi Delivery</b><small>{session.companyName}</small></span></div><div className="driver-live-state">{online?<><Wifi/><span>En ligne</span></>:<><WifiOff/><span>Hors ligne</span></>}</div><button className={'driver-availability '+(driverAvailable?'on':'off')} onClick={toggleAvailable} title="Disponibilité livreur"><Radio/><span>{driverAvailable?'Disponible':'Indisponible'}</span></button><RealtimeNotificationCenter apiUrl="/api/delivery/notifications" eventsUrl="/api/delivery/events-stream" storageKey="fixi-delivery-notifications" onEvent={load}/><PushToggle subscribeUrl="/api/delivery/push/subscribe"/><InstallAppButton label="Installer"/><div><b>{session.fullName}</b><span>Livreur</span></div><button onClick={logout} title="Déconnexion"><LogOut/></button></header>
   <main>
    <DeliveryInstall/>
-   <Link href="/delivery/encaissements" style={{display:'inline-block',padding:12,marginBottom:12,border:'1px solid currentColor',borderRadius:8}}>Encaissements & caisse livreur</Link>
+   <Link href="/delivery/encaissements" className="fixi-driver-collections-link"><Banknote size={17}/> Encaissements & caisse livreur</Link>
    <nav className="driver-mobile-nav">
-    <button className={view==='orders'?'active':''} onClick={()=>setView('orders')}><Truck/> Commandes <b>{available.length+active.length}</b></button>
-    <button className={view==='dues'?'active':''} onClick={()=>setView('dues')}><WalletCards/> Dus <b>{active.filter(o=>Number(o.customerDue||0)>0).length}</b></button>
-    <button className={view==='history'?'active':''} onClick={()=>setView('history')}><History/> Historique <b>{done.length}</b></button>
+    <button className={view==='orders'?'active':''} onClick={()=>setView('orders')}><Truck/> <span>Commandes</span> <b>{available.length+active.length}</b></button>
+    <button className={view==='dues'?'active':''} onClick={()=>setView('dues')}><WalletCards/> <span>Dus</span> <b>{active.filter(o=>Number(o.customerDue||0)>0).length}</b></button>
+    <button className={view==='history'?'active':''} onClick={()=>setView('history')}><History/> <span>Historique</span> <b>{done.length}</b></button>
+    <Link href="/delivery/encaissements" className="fixi-driver-nav-payments"><Banknote/><span>Caisse</span></Link>
    </nav>
    <section className="driver-command">
     <div className="driver-command-title"><span className="smart-kicker"><Route size={13}/> JOURNÉE & TOURNÉE</span><h1>{shift.current?'Tournée active':'Prêt à démarrer'}</h1><p>{shift.current?'GPS actif uniquement pendant les livraisons en cours.':'Ouvrez votre journée avant de prendre la route.'}</p></div>
