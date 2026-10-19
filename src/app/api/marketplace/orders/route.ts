@@ -18,7 +18,9 @@ export async function GET(){
     const s=await requireSession([UserRole.ADMIN,UserRole.RECEPTION],'CONNECT');
     const rows=await prisma.supplierOrder.findMany({
       where:{shopId:s.shopId},
-      include:{company:true,items:{include:{product:true}},delivery:true},
+      include:{company:{select:{id:true,name:true,region:true,phone:true,logoUrl:true,verified:true}},
+        items:{include:{product:{select:{id:true,name:true,sku:true,brand:true,category:true,imageUrl:true,qualityGrade:true}}}},
+        delivery:true},
       orderBy:{createdAt:'desc'},take:200
     });
     return ok(plain(rows));
@@ -87,7 +89,8 @@ export async function POST(req:Request){
       while(await tx.supplierOrder.findFirst({where:{deliveryCode:code},select:{id:true}}))code=deliveryCode();
       const order=await tx.supplierOrder.create({
         data:{shopId:s.shopId,companyId,reference:ref(),deliveryCode:code,total,deliveryAddress:b.deliveryAddress||shop.address||null,note:b.note||null,items:{create:rows}},
-        include:{company:true,shop:{select:{name:true}},items:{include:{product:true}}}
+        include:{company:{select:{id:true,name:true,region:true}},
+          shop:{select:{name:true}},items:{include:{product:{select:{id:true,name:true,sku:true}}}}}
       });
       if(allocations.length)await tx.supplierOrderStockAllocation.createMany({data:allocations.map(x=>({...x,orderId:order.id}))});
       return order;
