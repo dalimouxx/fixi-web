@@ -49,7 +49,7 @@ export async function POST(req:Request){
       }),
     notifyShop(order.shopId,'Livreur affecté',
       `${driver.fullName} a été affecté à votre commande ${order.reference}.`,
-      '/app/suppliers',NotificationType.INFO,undefined,{
+      '/app/suppliers?tab=orders',NotificationType.INFO,undefined,{
         experienceKey:'SHOP_ORDER_PROGRESS',eventId:order.id+'-ASSIGNED',
         metadata:{orderId:order.id,status:'ASSIGNED'}
       })
