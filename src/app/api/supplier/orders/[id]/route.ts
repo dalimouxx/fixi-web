@@ -26,7 +26,7 @@ if(status===SupplierOrderStatus.OUT_FOR_DELIVERY&&o.delivery?.driverAccountId)
   DELIVERED:{title:'Commande livrée',message:'Votre commande fournisseur a été marquée comme livrée.',type:NotificationType.SUCCESS},
   CANCELLED:{title:'Commande annulée',message:'Votre commande fournisseur a été annulée.',type:NotificationType.WARNING}
  };
- const n=shopMessage[status];if(n)await notifyShop(o.shopId,n.title,n.message,'/app/suppliers',n.type,undefined,{
+ const n=shopMessage[status];if(n)await notifyShop(o.shopId,n.title,n.message,'/app/suppliers?tab=orders',n.type,undefined,{
   experienceKey:status===SupplierOrderStatus.DELIVERED?'SHOP_ORDER_DELIVERED':'SHOP_ORDER_PROGRESS',
   eventId:o.id+'-'+status,metadata:{orderId:o.id,reference:o.reference,status}
 }).catch(err=>console.error('Notification boutique état commande',err));
