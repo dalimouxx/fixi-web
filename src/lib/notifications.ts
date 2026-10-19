@@ -27,7 +27,7 @@ export async function notifyShop(
   });
   if(!users.length)return;
   const config=getNotificationExperience(experienceKey);
-  const safeHref=href?.startsWith('/app/')?href:'/app/notifications';
+  const safeHref=href&&href.startsWith('/')&&!href.startsWith('//')?href:'/app/notifications';
   await prisma.notification.createMany({data:users.map(u=>({
     shopId,userId:u.id,title,message,href:safeHref,type,
     experienceKey,soundKey:config.sound,priority:options.priority||'NORMAL'
