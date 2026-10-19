@@ -6,7 +6,7 @@ import {dateOnly,money} from '@/lib/format';
 
 const units:Record<string,string>={DAY:'jour',WEEK:'semaine',MONTH:'mois',YEAR:'an'};
 const blank={code:'',name:'',description:'',price:0,durationValue:1,durationUnit:'MONTH',trialDays:0,publicVisible:true,maxShops:1,maxUsersPerShop:5,active:true};
-const emptySubscription={tenantId:'',planId:'',status:'ACTIVE',startsAt:'',endsAt:'',notes:''};
+const emptySubscription={tenantId:'',planId:'',status:'ACTIVE',startsAt:'',endsAt:'',agreedPrice:'',notes:''};
 const states=['TRIAL','ACTIVE','PAST_DUE','SUSPENDED','CANCELLED'] as const;
 const stateNames:Record<string,string>={TRIAL:'Essai',ACTIVE:'Actif',PAST_DUE:'Impayé',SUSPENDED:'Suspendu',CANCELLED:'Annulé'};
 type Screen='plans'|'clients'|'requests';
@@ -65,6 +65,7 @@ export function SaasSubscriptionsV8(){
  function editSubscription(s:any){setSubEdit({
   ...s,startsAt:s.startsAt?String(s.startsAt).slice(0,10):'',
   endsAt:s.endsAt?String(s.endsAt).slice(0,10):'',
+  agreedPrice:s.agreedPrice==null?'':String(s.agreedPrice),
  })}
  async function saveSub(e:React.FormEvent){
   e.preventDefault();
@@ -72,6 +73,7 @@ export function SaasSubscriptionsV8(){
     method:'PATCH',body:JSON.stringify({
       status:subEdit.status,planId:subEdit.planId,startsAt:subEdit.startsAt,
       endsAt:subEdit.endsAt||null,notes:subEdit.notes||'',
+      agreedPrice:subEdit.agreedPrice===''?undefined:Number(subEdit.agreedPrice),
     })
   }),'Abonnement modifié.'))setSubEdit(null);
  }
@@ -155,7 +157,7 @@ export function SaasSubscriptionsV8(){
     <thead><tr><th>Client</th><th>Boutiques</th><th>Formule</th><th>État</th><th>Échéance</th><th>Actions</th></tr></thead>
     <tbody>{openClients.map((t:any)=>{const sub=t.subscriptions?.[0];return <tr key={t.id}>
       <td><strong>{t.name}</strong></td><td>{(t.shops||[]).map((x:any)=>x.name).join(', ')||'—'}</td>
-      <td>{sub?.plan?.name||'Fixi Connect (sans période)'}</td>
+      <td>{sub?.plan?.name||'Fixi Connect (sans période)'}{sub?.agreedPrice!=null&&<small>Prix convenu : {money(sub.agreedPrice)}</small>}</td>
       <td><span className={'status-pill '+String(sub?.status||'active').toLowerCase()}>{sub?stateNames[sub.status]||sub.status:'Connect gratuit'}</span></td>
       <td>{sub?.endsAt?dateOnly(sub.endsAt):'Sans limite'}</td>
       <td><div className="fixi-subs-actions">
@@ -216,7 +218,10 @@ export function SaasSubscriptionsV8(){
       {states.map(x=><option key={x} value={x}>{stateNames[x]}</option>)}
     </select></div>
     <div className="field"><label className="label">Date de début (auto si vide)</label><input className="input" type="date" value={sf.startsAt} onChange={e=>setSf({...sf,startsAt:e.target.value})}/></div>
-    <div className="field span-2"><label className="label">Date de fin (calculée si vide)</label><input className="input" type="date" value={sf.endsAt} onChange={e=>setSf({...sf,endsAt:e.target.value})}/></div>
+    <div className="field"><label className="label">Prix personnalisé (DT) · optionnel</label>
+      <input className="input" type="number" min="0" step=".001" placeholder="Prix public par défaut"
+        value={sf.agreedPrice} onChange={e=>setSf({...sf,agreedPrice:e.target.value})}/></div>
+    <div className="field"><label className="label">Date de fin (calculée si vide)</label><input className="input" type="date" value={sf.endsAt} onChange={e=>setSf({...sf,endsAt:e.target.value})}/></div>
     <div className="field span-2"><label className="label">Note interne</label><textarea className="textarea" value={sf.notes} onChange={e=>setSf({...sf,notes:e.target.value})}/></div>
     <p className="span-2 fixi-subs-help">Chaque nouvelle période est conservée dans l’historique. Les paiements sont gérés depuis « Facturation Fixi ».</p>
     <div className="span-2"><button className="btn btn-primary btn-block" disabled={busy}>Enregistrer l’abonnement</button></div>
@@ -231,7 +236,9 @@ export function SaasSubscriptionsV8(){
       {states.map(x=><option value={x} key={x}>{stateNames[x]}</option>)}
     </select></div>
     <div className="field"><label className="label">Date de début</label><input className="input" type="date" required value={subEdit?.startsAt||''} onChange={e=>setSubEdit({...subEdit,startsAt:e.target.value})}/></div>
-    <div className="field span-2"><label className="label">Expiration (vide = sans limite)</label><input className="input" type="date" value={subEdit?.endsAt||''} onChange={e=>setSubEdit({...subEdit,endsAt:e.target.value})}/></div>
+    <div className="field"><label className="label">Prix convenu (DT)</label><input className="input" type="number" min="0" step=".001"
+       value={subEdit?.agreedPrice??''} onChange={e=>setSubEdit({...subEdit,agreedPrice:e.target.value})}/></div>
+    <div className="field"><label className="label">Expiration (vide = sans limite)</label><input className="input" type="date" value={subEdit?.endsAt||''} onChange={e=>setSubEdit({...subEdit,endsAt:e.target.value})}/></div>
     <div className="field span-2"><label className="label">Note</label><textarea className="textarea" value={subEdit?.notes||''} onChange={e=>setSubEdit({...subEdit,notes:e.target.value})}/></div>
     <div className="span-2 fixi-subs-actions"><button className="btn btn-primary" disabled={busy}>Enregistrer les modifications</button>
       <button className="btn btn-soft" type="button" disabled={busy} onClick={()=>void deleteSub(subEdit)}><Archive size={15}/> Supprimer / archiver</button>
