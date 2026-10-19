@@ -11,6 +11,8 @@ export async function POST(req:Request){
   const s=await requireDeliverySession();const b=await req.json();const orderId=String(b.orderId||''),type=String(b.type||'NOTE');
   const o=await prisma.supplierOrder.findFirst({where:{id:orderId,companyId:s.companyId,delivery:{is:{driverAccountId:s.id}}},include:{delivery:true,shop:{select:{name:true}}}});
   if(!o)return bad('Livraison introuvable',404);
+  if(type==='ARRIVED_AT_SHOP'&&o.status!==SupplierOrderStatus.OUT_FOR_DELIVERY)
+    return bad('Démarrez la livraison avant de signaler votre arrivée.',409);
   let amount:number|null=null;let dueCustomer:any=null;let dueSales:any[]=[];
   if(['COD_COLLECTED','DUE_COLLECTED'].includes(type)){const shift=await prisma.supplierDeliveryShift.findFirst({where:{companyId:s.companyId,driverAccountId:s.id,status:'OPEN'}});if(!shift)return bad('Ouvrez votre journée livreur avant tout encaissement.',409)}
   if(type==='COD_COLLECTED'){
@@ -26,6 +28,13 @@ export async function POST(req:Request){
    if(n>due+0.001)return bad('Le règlement dépasse le dû client ('+due.toFixed(3)+' DT)',409);amount=n;
   }
   const x=await prisma.$transaction(async tx=>{
+   if(type==='ARRIVED_AT_SHOP'){
+     const arrived=await tx.supplierDelivery.updateMany({
+       where:{orderId,driverAccountId:s.id,arrivedAt:null},
+       data:{arrivedAt:new Date()}
+     });
+     if(arrived.count!==1)return null;
+   }
    const event=await tx.supplierDeliveryEvent.create({data:{companyId:s.companyId,orderId,accountId:s.id,type,note:b.note||null,amount:amount===null?(Number.isFinite(Number(b.amount))?Number(b.amount):null):Number(amount),latitude:Number.isFinite(Number(b.latitude))?Number(b.latitude):null,longitude:Number.isFinite(Number(b.longitude))?Number(b.longitude):null,proofUrl:b.proofUrl||null}});
    if(type==='COD_COLLECTED')await tx.supplierDelivery.update({where:{orderId},data:{cashCollected:{increment:Number(amount)}}});
    if(type==='DUE_COLLECTED'&&dueCustomer){let remaining=Number(amount||0);for(const sale of dueSales){if(remaining<=0.0001)break;const due=Math.max(0,Number(sale.total)-Number(sale.paid));const take=Math.min(remaining,due);if(take<=0)continue;const paid=Number(sale.paid)+take;await tx.supplierErpSale.update({where:{id:sale.id},data:{paid,status:paid+0.0001>=Number(sale.total)?'PAID':'PARTIALLY_PAID'}});await tx.supplierErpPayment.create({data:{companyId:s.companyId,customerId:dueCustomer.id,saleId:sale.id,kind:'IN',method:'CASH',amount:take,reference:sale.reference,note:'Ancien dû encaissé par livreur',accountId:s.id}});remaining-=take}}
@@ -36,7 +45,29 @@ export async function POST(req:Request){
    }
    return event;
   });
+  if(type==='ARRIVED_AT_SHOP'&&!x)
+    return ok({alreadyRecorded:true,message:'Arrivée déjà signalée'});
   const managers=['OWNER','ADMIN','MANAGER','DELIVERY_MANAGER'];
+  if(type==='ARRIVED_AT_SHOP'){
+    await Promise.allSettled([
+      notifySupplier(s.companyId,'📍 Vous êtes arrivé',o.reference+' · '+o.shop.name+'. Votre arrivée est enregistrée.',{
+        href:'/delivery',kind:'SUCCESS',priority:'NORMAL',
+        experienceKey:'DRIVER_ARRIVED',eventId:orderId,accountIds:[s.id],
+        metadata:{orderId,reference:o.reference,eventType:type}
+      }),
+      notifySupplier(s.companyId,'Livreur arrivé chez la boutique',s.fullName+' est arrivé pour '+o.reference+' · '+o.shop.name+'.',{
+        href:'/supplier?tab=delivery',kind:'DELIVERY',
+        experienceKey:'SUPPLIER_UPDATE',eventId:orderId+'-ARRIVED',
+        roles:managers,metadata:{orderId,reference:o.reference,eventType:type}
+      }),
+      notifyShop(o.shopId,'📍 Votre livreur est arrivé',
+        'Commande '+o.reference+' : '+s.fullName+' est arrivé. Préparez la réception et le code de remise.',
+        '/app/suppliers',NotificationType.INFO,undefined,{
+          experienceKey:'SHOP_ORDER_PROGRESS',eventId:orderId+'-ARRIVED',
+          metadata:{orderId,reference:o.reference,status:'ARRIVED'}
+        })
+    ]);
+  }
   if(type==='COD_COLLECTED'){
    await Promise.allSettled([
     notifySupplier(s.companyId,'COD encaissé',`${Number(amount||0).toFixed(3)} DT encaissé sur ${o.reference} · ${o.shop.name}`,{href:'/supplier?tab=delivery',kind:'PAYMENT',soundKey:'SUCCESS',roles:[...managers,'ACCOUNTANT'],metadata:{orderId:o.id,reference:o.reference,amount:Number(amount||0)}}),
