@@ -62,7 +62,7 @@ export async function POST(req:Request){
       }),
       notifyShop(o.shopId,'📍 Votre livreur est arrivé',
         'Commande '+o.reference+' : '+s.fullName+' est arrivé. Préparez la réception et le code de remise.',
-        '/app/suppliers',NotificationType.INFO,undefined,{
+        '/app/suppliers?tab=orders',NotificationType.INFO,undefined,{
           experienceKey:'SHOP_ORDER_PROGRESS',eventId:orderId+'-ARRIVED',
           metadata:{orderId,reference:o.reference,status:'ARRIVED'}
         })
@@ -71,13 +71,13 @@ export async function POST(req:Request){
   if(type==='COD_COLLECTED'){
    await Promise.allSettled([
     notifySupplier(s.companyId,'COD encaissé',`${Number(amount||0).toFixed(3)} DT encaissé sur ${o.reference} · ${o.shop.name}`,{href:'/supplier?tab=delivery',kind:'PAYMENT',soundKey:'SUCCESS',roles:[...managers,'ACCOUNTANT'],metadata:{orderId:o.id,reference:o.reference,amount:Number(amount||0)}}),
-    notifyShop(o.shopId,'Paiement livraison enregistré',`${Number(amount||0).toFixed(3)} DT a été enregistré sur la commande ${o.reference}.`,'/app/suppliers',NotificationType.PAYMENT)
+    notifyShop(o.shopId,'Paiement livraison enregistré',`${Number(amount||0).toFixed(3)} DT a été enregistré sur la commande ${o.reference}.`,'/app/suppliers?tab=orders',NotificationType.PAYMENT)
    ]);
   }
   if(type==='DUE_COLLECTED'){
    await Promise.allSettled([
     notifySupplier(s.companyId,'Ancien dû encaissé',`${Number(amount||0).toFixed(3)} DT encaissé par ${s.fullName} chez ${o.shop.name}.`,{href:'/supplier?tab=dues',kind:'PAYMENT',soundKey:'SUCCESS',roles:[...managers,'ACCOUNTANT'],metadata:{orderId:o.id,shopId:o.shopId,amount:Number(amount||0),eventType:type}}),
-    notifyShop(o.shopId,'Règlement de créance enregistré',`${Number(amount||0).toFixed(3)} DT a été déduit de votre solde fournisseur.`,'/app/suppliers',NotificationType.PAYMENT)
+    notifyShop(o.shopId,'Règlement de créance enregistré',`${Number(amount||0).toFixed(3)} DT a été déduit de votre solde fournisseur.`,'/app/suppliers?tab=orders',NotificationType.PAYMENT)
    ]);
   }
   const incidentLabels:Record<string,string>={
