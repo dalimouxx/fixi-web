@@ -77,6 +77,24 @@ export function SupplierDashboard({session}:{session:any}){
     ['finance','Finance & bénéfice',TrendingUp],['reports','Rapports',FileText],['delivery','Livraison',Truck],['team','Équipe & accès',Users]
   ] as const;
   const nav=navAll.filter(([key])=>(access[role]||access.ADMIN).includes(key));
+  useEffect(()=>{
+    const fromUrl=new URLSearchParams(window.location.search).get('tab');
+    const match=nav.find(([key])=>key===fromUrl);
+    if(match)setTab(match[0] as Tab);
+  },[]);
+  function navigateNotification(href:string){
+    if(href.startsWith('/supplier?')){
+      const target=new URL(href,window.location.origin).searchParams.get('tab');
+      const allowed=nav.find(([key])=>key===target);
+      if(allowed){setTab(allowed[0] as Tab);setMobileNavOpen(false);return;}
+    }
+    // The finance, delivery and other supplier pages are separate routes.
+    if(href.startsWith('/supplier/')||href==='/supplier'){
+      window.location.assign(href);return;
+    }
+    window.location.assign('/supplier');
+  }
+
   const [mobileNavOpen,setMobileNavOpen]=useState(false);
   const mobilePrimary=nav.filter(([key])=>['dashboard','orders','products','delivery','cashier'].includes(key)).slice(0,4);
 
@@ -95,7 +113,7 @@ export function SupplierDashboard({session}:{session:any}){
     </aside>
 
     <main>
-      <header><div className="fixi-supplier-header-title"><button type="button" className="fixi-supplier-menu-button" aria-label="Ouvrir les modules fournisseur" aria-expanded={mobileNavOpen} onClick={()=>setMobileNavOpen(true)}><span>☰</span></button><div><span>FIXI SUPPLIER ERP</span><h1>{nav.find(x=>x[0]===tab)?.[1]}</h1></div></div><div className="toolbar"><RealtimeNotificationCenter apiUrl="/api/supplier/notifications" eventsUrl="/api/supplier/events" storageKey="fixi-supplier-notifications" onEvent={()=>setRefresh(x=>x+1)} onNavigate={(href)=>{const m=href.match(/[?&]tab=([^&]+)/);if(m&&(nav as any).some((x:any)=>x[0]===m[1]))setTab(m[1] as Tab)}}/><PushToggle subscribeUrl="/api/supplier/push/subscribe"/><InstallAppButton label="Installer"/><button className="btn btn-ghost" onClick={()=>setRefresh(x=>x+1)}><RefreshCw/> Actualiser</button></div></header>
+      <header><div className="fixi-supplier-header-title"><button type="button" className="fixi-supplier-menu-button" aria-label="Ouvrir les modules fournisseur" aria-expanded={mobileNavOpen} onClick={()=>setMobileNavOpen(true)}><span>☰</span></button><div><span>FIXI SUPPLIER ERP</span><h1>{nav.find(x=>x[0]===tab)?.[1]}</h1></div></div><div className="toolbar"><RealtimeNotificationCenter apiUrl="/api/supplier/notifications" eventsUrl="/api/supplier/events" storageKey="fixi-supplier-notifications" onEvent={()=>setRefresh(x=>x+1)} onNavigate={navigateNotification}/><PushToggle subscribeUrl="/api/supplier/push/subscribe"/><InstallAppButton label="Installer"/><button className="btn btn-ghost" onClick={()=>setRefresh(x=>x+1)}><RefreshCw/> Actualiser</button></div></header>
       <section className="supplier-mobile-install">
         <div className="supplier-mobile-install-copy"><i>F</i><span><b>Fixi Supplier sur votre téléphone</b><small>Installez l’ERP comme application et activez les notifications pour les commandes, paiements, retours et livraisons.</small></span></div>
         <div className="supplier-mobile-install-actions"><InstallAppButton label="Installer Fixi Supplier"/><PushToggle subscribeUrl="/api/supplier/push/subscribe" label/></div>
