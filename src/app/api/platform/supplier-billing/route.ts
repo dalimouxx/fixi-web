@@ -33,7 +33,7 @@ export async function GET() {
 
 export async function POST(req:Request) {
   try {
-    const admin=await requirePlatformSession();
+    await requirePlatformSession();
     const b=await req.json(),action=String(b.action||'');
     if(action==='ASSIGN'){
       const companyId=String(b.companyId||''),planId=String(b.planId||'');
@@ -42,7 +42,7 @@ export async function POST(req:Request) {
         prisma.supplierSaasPlan.findFirst({where:{id:planId,active:true}}),
       ]);
       if(!company||!plan)return bad('Fournisseur ou offre introuvable',404);
-      const status:String=String(b.status||'TRIAL');
+      const status=String(b.status||'TRIAL');
       if(!activeStatuses.has(String(status)))return bad('Statut invalide');
       const startsAt=b.startsAt?new Date(b.startsAt):new Date();
       if(Number.isNaN(startsAt.getTime()))return bad('Date de début invalide');
