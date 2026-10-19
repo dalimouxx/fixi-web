@@ -1,0 +1,84 @@
+/* FIXI Supplier SaaS billing: professional mobile-first company accounting */
+.fixi-supplier-billing{width:min(1180px,100%);margin:auto;padding:28px 22px 70px;background:transparent;color:#231a14;font-family:inherit}
+.fixi-supplier-billing *{box-sizing:border-box;min-width:0}
+.fixi-supplier-billing-head{display:grid;gap:18px;margin-bottom:20px}
+.fixi-supplier-back{display:inline-flex;gap:8px;align-items:center;justify-content:center;width:max-content;max-width:100%;min-height:43px;border:1px solid #e6dbd1;border-radius:12px;background:#fff;color:#4c3a2e;text-decoration:none;font-size:12px;font-weight:850;padding:10px 15px;cursor:pointer}
+.fixi-supplier-back:hover{border-color:#f8a568;color:#cb5d12}
+.fixi-supplier-billing-title{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;margin:6px 0 22px}
+.fixi-supplier-billing-title>div>span,.fixi-billing-eyebrow{font-size:11px;font-weight:900;letter-spacing:.1em;color:#d56319;text-transform:uppercase}
+.fixi-supplier-billing-title h1{margin:7px 0;font-size:clamp(26px,4vw,38px);font-weight:900;letter-spacing:-.04em;line-height:1.12}
+.fixi-supplier-billing-title p{margin:0;color:#8a7c71;font-size:13px;line-height:1.7}
+.fixi-billing-overview,.fixi-billing-admin-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:16px 0 24px}
+.fixi-billing-card{background:#fff;border:1px solid #ede3db;border-radius:19px;padding:23px;box-shadow:0 8px 35px rgba(64,40,15,.04)}
+.fixi-billing-highlight{background:linear-gradient(145deg,#fff9f3,#fff);border-color:#ffd7b4}
+.fixi-billing-card h2{font-size:22px;line-height:1.2;letter-spacing:-.035em;margin:10px 0}
+.fixi-billing-card h3{font-size:17px;margin:11px 0;font-weight:850}
+.fixi-billing-card p{font-size:13px;line-height:1.65;color:#86796f;margin:8px 0 15px}
+.fixi-billing-badge{display:inline-flex;padding:8px 13px;border-radius:99px;font-size:12px;font-weight:850}
+.fixi-billing-badge.good{background:#e2f8ec;color:#15744c}
+.fixi-billing-badge.attention{background:#fff0d9;color:#975a0e}
+.fixi-billing-dates,.fixi-billing-perks{display:grid;gap:12px;margin-top:17px}
+.fixi-billing-dates div,.fixi-billing-perks span{display:flex;align-items:center;gap:10px;font-size:12px;font-weight:650;color:#68584b}
+.fixi-billing-dates svg,.fixi-billing-perks svg{color:#ef7825;flex:0 0 auto}
+.fixi-billing-usage{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;margin-top:22px}
+.fixi-billing-usage-label{display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:space-between;margin-bottom:10px;font-size:12px}
+.fixi-billing-usage-label span{display:flex;align-items:center;gap:7px;color:#71665e}
+.fixi-billing-usage-label strong{font-variant-numeric:tabular-nums}
+.fixi-billing-track{height:9px;border-radius:99px;background:#f0eae5;overflow:hidden}
+.fixi-billing-track i{display:block;height:100%;background:linear-gradient(90deg,#ffac5d,#ef7224);border-radius:99px}
+.fixi-billing-section-title{font-size:21px;margin:28px 0 14px;letter-spacing:-.03em}
+.fixi-billing-plans{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.fixi-billing-plans .fixi-billing-card{display:flex;flex-direction:column;gap:9px}
+.fixi-billing-plans .fixi-billing-card.selected{border:2px solid #ee7d30}
+.fixi-billing-plans .fixi-billing-card h3{font-size:18px;margin:0}
+.fixi-billing-plans .fixi-billing-card p{margin:0}
+.fixi-billing-price{font-size:clamp(22px,3vw,30px);letter-spacing:-.05em;margin-top:2px;color:#e56b1a;font-variant-numeric:tabular-nums}
+.fixi-billing-price small{font-size:12px;letter-spacing:0;font-weight:500;color:#82756c}
+.fixi-billing-plan-bottom{border-top:1px solid #f0e9e3;margin-top:auto;padding-top:17px;color:#af4c12;font-size:12px;font-weight:900}
+.fixi-billing-scroll{width:100%;max-width:100%;overflow:auto;-webkit-overflow-scrolling:touch}
+.fixi-billing-scroll table{width:100%;min-width:750px;border-collapse:collapse;font-size:12px}
+.fixi-billing-scroll th{text-align:left;color:#85796f;background:#faf6f2;white-space:nowrap;font-size:11px;letter-spacing:.04em;padding:12px}
+.fixi-billing-scroll td{padding:13px 12px;vertical-align:top;border-bottom:1px solid #eee6df}
+.fixi-billing-pay{font-size:12px;padding:10px 0;border-bottom:1px solid #f1e8e0}
+.fixi-billing-pay:last-child{border-bottom:0}
+.fixi-billing-pay b{color:#227955}
+.fixi-billing-pay small{display:block;margin-top:5px;color:#a38f80;overflow-wrap:anywhere}
+.fixi-billing-footnote{border:1px solid #eae2da;border-radius:14px;margin:21px 0;padding:16px;font-size:13px;display:flex;align-items:center;gap:11px;background:#fff}
+.fixi-billing-footnote svg{color:#e16d1f;flex:0 0 auto}
+.fixi-billing-error,.fixi-billing-success{margin:13px 0;padding:13px 16px;border-radius:12px;font-size:13px;border:1px solid}
+.fixi-billing-error{color:#b23d35;background:#fff2ef;border-color:#f4c6c0}
+.fixi-billing-success{display:flex;gap:9px;align-items:center;color:#167b50;background:#eafaf0;border-color:#bce9ce}
+.fixi-billing-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:18px}
+.fixi-billing-stats>div{background:#fff;border:1px solid #eadfd6;border-radius:15px;padding:17px;display:grid;grid-template-columns:32px 1fr;column-gap:10px}
+.fixi-billing-stats svg{grid-row:span 2;color:#ed7526}
+.fixi-billing-stats span{font-size:12px;color:#85766e}
+.fixi-billing-stats strong{font-size:26px;letter-spacing:-.04em}
+.fixi-billing-form{display:grid;gap:15px;margin-top:17px}
+.fixi-billing-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.fixi-billing-form label{display:grid;gap:7px;font-size:12px;font-weight:800;color:#3f332b}
+.fixi-billing-form input,.fixi-billing-form select,.fixi-billing-inline-price input{min-height:45px;border:1px solid #dfd4cb;border-radius:11px;padding:10px 12px;background:#fff;color:#241b15;font-size:14px;font:inherit;width:100%;max-width:100%}
+.fixi-billing-form input:focus,.fixi-billing-form select:focus{outline:2px solid #ffd1ae;border-color:#f18c43}
+.fixi-billing-button{display:flex;justify-content:center;align-items:center;gap:9px;border:0;min-height:49px;border-radius:11px;background:linear-gradient(110deg,#ff812e,#e86314);color:#fff;font-size:13px;font-weight:850;padding:12px 18px;cursor:pointer}
+.fixi-billing-button:disabled,.fixi-supplier-back:disabled{opacity:.55;cursor:not-allowed}
+.fixi-billing-selection{display:flex;align-items:flex-start;gap:12px;background:#fff6ee;border:1px solid #f9ddc8;padding:13px;border-radius:12px;font-size:12px;line-height:1.6}
+.fixi-billing-selection svg{flex-shrink:0;color:#e5731e}
+.fixi-billing-selection p{margin:3px 0 0}
+.fixi-billing-inline-price{display:grid;gap:6px;font-size:12px}
+.fixi-billing-title-row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin:30px 0 15px}
+.fixi-billing-title-row h2{margin:0;font-size:20px}
+@media(max-width:950px){
+ .fixi-billing-plans{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .fixi-billing-usage{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+}
+@media(max-width:700px){
+ .fixi-supplier-billing{padding:18px 12px calc(35px + env(safe-area-inset-bottom,0px))}
+ .fixi-billing-overview,.fixi-billing-admin-grid,.fixi-billing-plans{grid-template-columns:1fr}
+ .fixi-billing-card{padding:17px;border-radius:16px}
+ .fixi-billing-card h2{font-size:21px}
+ .fixi-billing-usage{grid-template-columns:1fr}
+ .fixi-billing-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .fixi-billing-stats>div:last-child{grid-column:1/-1}
+ .fixi-billing-form-grid{grid-template-columns:1fr}
+ .fixi-supplier-billing-title{align-items:flex-start}
+ .fixi-billing-price{font-size:27px}
+}
