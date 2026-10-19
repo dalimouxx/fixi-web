@@ -24,7 +24,7 @@ export async function POST(req: Request) {
     const startsAt=b.startsAt?new Date(b.startsAt):new Date();
     if(!Number.isFinite(startsAt.getTime()))return bad('Date de début invalide',400);
     const endsAt=free?null:b.endsAt===null?null:b.endsAt?new Date(b.endsAt):
-      status==='TRIAL'?new Date(startsAt.getTime()+plan.trialDays*86400000):
+      status==='TRIAL'&&plan.trialDays>0?new Date(startsAt.getTime()+plan.trialDays*86400000):
       addDuration(startsAt,plan.durationValue,plan.durationUnit);
     if(endsAt&&(!Number.isFinite(endsAt.getTime())||endsAt<=startsAt))
       return bad('Date de fin invalide',400);
