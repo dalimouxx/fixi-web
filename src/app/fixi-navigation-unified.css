@@ -1,0 +1,300 @@
+/* Fixi Design System 2026 · Shared administration/navigation coherence.
+   Desktop: visible, readable menus. Mobile & tablet: accessible drawers and bottom actions. */
+:root{
+  --fixi-brand:#ed741d;
+  --fixi-brand-dark:#bd500c;
+  --fixi-ink:#292018;
+  --fixi-muted:#7d7067;
+  --fixi-paper:#fff;
+  --fixi-canvas:#f7f6f4;
+  --fixi-line:#ebe2da;
+}
+/* CONTROL CENTER: replaces the isolated black UI with the Atelier/Supplier palette. */
+.saas-v4{
+  --panel:#fff;--bg:#f7f6f4;--border:#e8dfd7;--line:#e9dfd6;
+  --text:#282019;--muted:#83756c;--surface:#fff;
+  min-width:0;background:var(--fixi-canvas);color:var(--fixi-ink);
+  grid-template-columns:262px minmax(0,1fr);
+  font-size:14px;
+}
+.saas-v4 *{box-sizing:border-box;min-width:0}
+.saas-v4 .control-side{
+  background:linear-gradient(180deg,#fff 0%,#fffcf9 100%);
+  border-right:1px solid var(--fixi-line);color:var(--fixi-ink);
+  padding:18px 13px;gap:10px;z-index:60;overflow-y:auto;
+}
+.saas-v4 .control-logo{padding:6px 11px 16px;border-bottom:1px solid var(--fixi-line)}
+.saas-v4 .control-logo>i{background:linear-gradient(145deg,#ff932e,#e76113);color:white}
+.saas-v4 .control-logo b{color:#241b16;font-size:24px}
+.saas-v4 .control-logo small{color:#ac7d60;font-size:10px;letter-spacing:.09em;font-weight:850}
+.saas-v4 .control-side nav{gap:2px}
+.saas-v4 .fixi-control-nav-heading{
+  color:#a78d7a;font-size:10px;font-weight:900;letter-spacing:.1em;
+  text-transform:uppercase;margin:14px 10px 8px;
+}
+.saas-v4 .fixi-control-nav-row{margin:0}
+.saas-v4 .control-side nav button{
+  width:100%;min-height:45px;height:auto;display:flex;align-items:center;gap:12px;
+  padding:10px 13px;border-radius:12px;color:#72665b;
+  font-size:13px;font-weight:760;line-height:1.3;text-align:left;
+  transition:background .15s,color .15s;
+}
+.saas-v4 .control-side nav button svg{width:19px;height:19px;flex-shrink:0}
+.saas-v4 .control-side nav button:hover{background:#f9ede4;color:#ad510f}
+.saas-v4 .control-side nav button.active{
+  background:linear-gradient(90deg,#fff0e2,#fff8f1);
+  color:#b8540e;box-shadow:inset 3px 0 0 #f67b25,inset 0 0 0 1px #f7d8bd;
+}
+.saas-v4 .control-side nav button em{
+  margin-left:auto;background:#fff1e6;color:#d4691e;font-size:11px;
+  font-weight:900;border-radius:99px;padding:2px 7px;
+}
+.saas-v4 .fixi-control-related{border-top:1px solid var(--fixi-line);margin-top:10px;padding-top:3px}
+.saas-v4 .control-supplier-link{
+  display:flex;align-items:center;gap:12px;padding:12px 13px;margin:2px 0;
+  font-size:12px;font-weight:790;background:transparent;color:#5e5147;
+  border:1px solid transparent;border-radius:12px;text-decoration:none;
+}
+.saas-v4 .control-supplier-link svg{width:19px;height:19px;flex:0 0 auto;color:#e97727}
+.saas-v4 .control-supplier-link:hover{background:#fff3e8;border-color:#f5dcc9;color:#be5411}
+.saas-v4 .control-admin{border-top:1px solid var(--fixi-line);padding:14px 7px 0;gap:10px}
+.saas-v4 .control-admin strong{font-size:12px;color:#382a20}
+.saas-v4 .control-admin small{color:#907f72;font-size:11px}
+.saas-v4 .control-admin button{color:#87776c;min-width:38px;min-height:38px}
+.saas-v4 .control-avatar{background:#fff0e2;color:#d16818}
+.saas-v4 .control-main{background:var(--fixi-canvas);min-width:0}
+.saas-v4 .control-top{
+  background:rgba(255,255,255,.94);border-bottom:1px solid var(--fixi-line);
+  min-height:76px;height:auto;padding:12px clamp(14px,3vw,30px);
+  box-shadow:0 2px 18px rgba(60,30,10,.025);
+}
+.saas-v4 .control-kicker{font-size:10px;letter-spacing:.105em;color:#d16d25}
+.saas-v4 .control-top h1{font-size:clamp(22px,2.4vw,29px);line-height:1.17;margin:5px 0 0;color:#2c201a}
+.saas-v4 .control-actions{display:flex;align-items:center;gap:8px}
+.saas-v4 .control-icon,.saas-v4 .control-arrow,.saas-v4 .icon-danger{
+  min-width:42px;height:42px;border:1px solid var(--fixi-line);
+  background:#fff;color:#866f5e;border-radius:12px;
+}
+.saas-v4 .control-icon svg,.saas-v4 .control-arrow svg,.saas-v4 .icon-danger svg{width:18px;height:18px}
+.saas-v4 .control-content{padding:24px clamp(13px,2.5vw,31px);max-width:1650px}
+.saas-v4 .overview-toolbar,.saas-v4 .section-toolbar{gap:12px;flex-wrap:wrap;align-items:center}
+.saas-v4 .overview-toolbar b,.saas-v4 .section-toolbar h2{color:#30241e;font-size:17px}
+.saas-v4 .overview-toolbar span,.saas-v4 .section-toolbar p{font-size:12px;line-height:1.5;color:#85756a}
+.saas-v4 .control-kpi,.saas-v4 .control-panel,.saas-v4 .control-table-wrap,
+.saas-v4 .saas-plan-card,.saas-v4 .overview-toolbar,.saas-v4 .control-alert{
+  background:#fff;border:1px solid var(--fixi-line);
+  color:#282019;box-shadow:0 9px 27px rgba(45,28,13,.035);
+}
+.saas-v4 .control-kpi{padding:17px;border-radius:16px}
+.saas-v4 .control-kpi span{font-size:12px;color:#84776b;line-height:1.3}
+.saas-v4 .control-kpi b{font-size:clamp(18px,2vw,25px);font-variant-numeric:tabular-nums;margin-top:9px}
+.saas-v4 .control-kpi>i{background:#fff2e8;color:#d46f24;width:39px;height:39px}
+.saas-v4 .control-kpi>i svg{width:19px;height:19px}
+.saas-v4 .control-panel{border-radius:18px;padding:18px}
+.saas-v4 .panel-head h3{font-size:15px;color:#302319}
+.saas-v4 .panel-head p{font-size:12px;color:#83776e;line-height:1.5}
+.saas-v4 .panel-head h3 svg{width:18px;color:#e66e1f}
+.saas-v4 .period-chip{background:#fff0e5;color:#a95518;font-size:11px}
+.saas-v4 .control-table-wrap{border-radius:17px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.saas-v4 .control-table{min-width:680px;width:100%}
+.saas-v4 .control-table th,.saas-v4 .control-table td{
+  color:#35291f;padding:13px 12px;border-bottom:1px solid #f0e8e0;font-size:12px;line-height:1.45;
+}
+.saas-v4 .control-table th{background:#fffaf6;color:#847269;font-size:10px;font-weight:850;letter-spacing:.05em}
+.saas-v4 .control-table td strong{color:#241c16}
+.saas-v4 .control-table td small{font-size:11px;color:#8b7d72}
+.saas-v4 .control-table tr:hover td{background:rgba(250,125,30,.025)}
+.saas-v4 .status-pill{font-size:10px;padding:6px 10px;color:#71665c;background:#f2efeb}
+.saas-v4 .status-pill.active,.saas-v4 .status-pill.success{background:#e1f8ed;color:#168258}
+.saas-v4 .status-pill.trial,.saas-v4 .status-pill.info{background:#fff0d4;color:#9b621d}
+.saas-v4 .status-pill.suspended,.saas-v4 .status-pill.cancelled,.saas-v4 .status-pill.error{background:#ffe7e4;color:#a13a3a}
+.saas-v4 .status-pill.past_due,.saas-v4 .status-pill.warning{background:#fff0d7;color:#966114}
+.saas-v4 .saas-plan-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(245px,1fr));gap:13px}
+.saas-v4 .saas-plan-card{border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:8px}
+.saas-v4 .saas-plan-card h3{font-size:18px;color:#282019;line-height:1.3;margin:5px 0}
+.saas-v4 .saas-plan-card p{font-size:12px;line-height:1.6;color:#807267;margin:0;flex:1}
+.saas-v4 .saas-plan-top>span{font-size:11px;color:#d16519}
+.saas-v4 .saas-plan-top button{min-width:40px;min-height:40px;border-radius:10px;color:#746a5f}
+.saas-v4 .saas-plan-top button:hover{background:#fff0e2;color:#ba5116}
+.saas-v4 .saas-plan-top svg{width:18px;height:18px}
+.saas-v4 .saas-plan-price{margin:11px 0 8px;display:grid;gap:4px}
+.saas-v4 .saas-plan-price b{font-size:26px;color:#ca6119}
+.saas-v4 .saas-plan-price span,.saas-v4 .saas-plan-card>small{font-size:11px;color:#897a6e;line-height:1.55}
+.saas-v4 .saas-plan-card.disabled{opacity:.68}
+.saas-v4 .select.compact,.saas-v4 .select,.saas-v4 .input{
+  background:#fff;color:#30251d;border-color:#e6dbd0;font-size:13px;
+}
+.saas-v4 .btn.btn-primary{background:linear-gradient(115deg,#f58936,#ea691b);border-color:#e87926;color:white}
+.saas-v4 .btn.btn-soft{background:#fff;border-color:#e5dace;color:#635344}
+.saas-v4 .control-alert{padding:13px;border-radius:13px;margin-bottom:9px}
+.saas-v4 .control-alert strong{font-size:12px;color:#3d3027}
+.saas-v4 .control-alert span{font-size:11px;color:#86796f}
+.saas-v4 .rank-row{border-bottom-color:#f0e8df}
+.saas-v4 .rank-row strong{color:#30251c}
+.saas-v4 .section-toolbar,.saas-v4 .overview-toolbar{background:transparent;box-shadow:none;border:0}
+.saas-v4 .control-supplier-link:focus-visible,.saas-v4 button:focus-visible{outline:3px solid #eaa15b;outline-offset:2px}
+.saas-v4 .fixi-control-nav-row button svg{stroke-width:2}
+.fixi-control-menu-button,.fixi-control-close,.fixi-control-bottom-nav,.fixi-control-backdrop{display:none}
+.fixi-control-head-title{display:flex;align-items:center;gap:12px}
+.fixi-subs-title{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:17px}
+.fixi-subs-title h2{font-size:clamp(20px,2.8vw,27px);margin:7px 0;color:#292018}
+.fixi-subs-title p{font-size:12px;line-height:1.6;color:#817368;max-width:680px;margin:0}
+.fixi-subs-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:20px 0}
+.fixi-subs-metrics>div{background:#fff;border:1px solid #eee1d6;border-radius:15px;padding:16px;display:grid;grid-template-columns:28px 1fr;gap:4px 8px}
+.fixi-subs-metrics>div svg{grid-row:1/span 2;color:#ed7620}
+.fixi-subs-metrics span{color:#877a6e;font-size:11px}
+.fixi-subs-metrics strong{font-size:24px}
+.fixi-subs-tabs{display:flex;flex-wrap:wrap;gap:9px;margin:0 0 24px;border-bottom:1px solid #e9dfd6;padding-bottom:13px}
+.fixi-subs-tabs button{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:45px;border-radius:11px;padding:10px 16px;color:#75675d;font-size:12px;font-weight:850;border:1px solid #ebe0d7;background:#fff;cursor:pointer}
+.fixi-subs-tabs button.active{background:#fff0e4;color:#bd5919;border-color:#f3d1b8}
+.fixi-subs-tabs button b{background:#f2741b;color:#fff;border-radius:99px;min-width:18px;padding:3px;font-size:10px}
+.fixi-subs-search{display:flex;align-items:center;gap:8px;border:1px solid #e9dfd4;background:#fff;padding:0 12px;border-radius:12px;min-height:44px}
+.fixi-subs-search svg{color:#b37342;flex-shrink:0}
+.fixi-subs-search input{border:0;outline:0;min-width:155px;max-width:100%;font:inherit;font-size:13px}
+.fixi-subs-actions{display:flex;flex-wrap:wrap;gap:7px;align-items:center;min-width:270px}
+.fixi-subs-actions .btn{min-height:39px;white-space:nowrap}
+.fixi-subs-feedback{padding:12px 16px;border-radius:12px;font-size:13px;margin:14px 0}
+.fixi-subs-feedback.success{background:#eaf9f0;border:1px solid #c2ebd2;color:#13734e}
+.fixi-subs-feedback.error{background:#ffeded;border:1px solid #f0c7c7;color:#9c2f32}
+.fixi-subs-help{color:#826e5d;font-size:12px;line-height:1.6}
+.saas-v4 .fixi-subscription-admin{max-width:none}
+/* Supplier Control (standalone) shares the same light theme and nav hierarchy. */
+.saas.supplier-admin{background:var(--fixi-canvas);color:var(--fixi-ink);min-height:100dvh}
+.saas.supplier-admin .supplier-admin-top{background:#fff;border-bottom:1px solid var(--fixi-line);display:flex;align-items:center;flex-wrap:wrap;gap:18px;padding:18px clamp(13px,3vw,35px)}
+.saas.supplier-admin .supplier-admin-top>div{flex:1;min-width:160px}
+.saas.supplier-admin .supplier-admin-top h1{font-size:clamp(22px,3vw,30px);margin:4px 0;color:#30251e}
+.saas.supplier-admin .supplier-admin-top span{color:#c86927;font-size:10px}
+.saas.supplier-admin .supplier-admin-top>a{font-size:12px;color:#b85a15;min-height:44px}
+.saas.supplier-admin .supplier-admin-grid{gap:18px;grid-template-columns:minmax(0,1.2fr) minmax(340px,.8fr);max-width:1450px;margin:auto;padding:23px}
+.saas.supplier-admin .saas-card{background:#fff;color:#2a201b;border:1px solid #eadfd5;border-radius:18px;box-shadow:0 9px 31px rgba(36,22,9,.045)}
+.saas.supplier-admin .saas-card h2{color:#30251d;font-size:19px}
+.saas.supplier-admin .saas-card p{color:#796e66;font-size:13px}
+.saas.supplier-admin .supplier-admin-list>div{border-color:#ebe0d5;background:#fffcfa;padding:14px}
+.saas.supplier-admin .supplier-admin-list b{font-size:15px;color:#302218}
+.saas.supplier-admin .supplier-admin-list span,.saas.supplier-admin .supplier-admin-list small{font-size:12px;color:#88796b}
+.saas.supplier-admin .label{font-size:12px;color:#5c4a3d}
+.saas.supplier-admin .input{background:#fff;color:#30251d;border-color:#e4d9cf;font-size:15px;min-height:45px}
+.saas.supplier-admin .smart-kicker{color:#d96b1c}
+/* Supplier billing styles supplement */
+.fixi-supplier-billing-admin .fixi-billing-plan-tools{display:flex;flex-wrap:wrap;gap:9px;margin-top:15px}
+.fixi-supplier-billing-admin .fixi-billing-plan-tools .fixi-supplier-back{min-height:43px}
+.fixi-supplier-billing-admin .fixi-billing-edit{margin:20px 0;scroll-margin-top:25px;border:1px solid #efc5a5}
+.fixi-supplier-billing-admin .fixi-billing-toggle{display:flex!important;align-items:center;gap:8px;font-size:12px}
+.fixi-supplier-billing-admin .fixi-billing-toggle input{width:18px;height:18px}
+.fixi-supplier-billing-admin .fixi-billing-form textarea{font:inherit;font-size:14px;min-height:80px;border-radius:11px;border:1px solid #ddd2c9;padding:12px;resize:vertical}
+/* Delivery desktop: actual sidebar-style navigation with legible text and visible counts. */
+@media(min-width:1180px){
+ .delivery-app.driver-v2>main{
+  max-width:1480px!important;width:100%;display:grid;align-items:start;gap:0 20px;
+  grid-template-columns:228px minmax(0,1fr);
+  padding:24px clamp(14px,2vw,30px) 65px;
+ }
+ .delivery-app.driver-v2>main>.driver-mobile-nav{
+  position:sticky!important;top:94px!important;left:auto!important;bottom:auto!important;
+  grid-column:1;grid-row:1/span 30;align-self:start;
+  display:flex!important;flex-direction:column!important;gap:7px;
+  width:100%;max-width:none!important;margin:0!important;
+  padding:17px 12px!important;min-height:360px;
+  border-radius:19px!important;background:#fff!important;
+  border:1px solid #eae0d7!important;box-shadow:0 9px 28px rgba(47,29,12,.045);
+ }
+ .delivery-app.driver-v2>main>.driver-mobile-nav:before{
+  content:'MENU LIVREUR';display:block;color:#a27a5d;font-size:11px;
+  font-weight:950;letter-spacing:.09em;padding:6px 9px 13px;border-bottom:1px solid #efe4dc;margin-bottom:3px;
+ }
+ .delivery-app.driver-v2>main>.driver-mobile-nav button,
+ .delivery-app.driver-v2>main>.driver-mobile-nav a.fixi-driver-nav-payments{
+  min-height:52px;display:flex!important;flex-direction:row!important;justify-content:flex-start!important;
+  align-items:center;gap:11px;padding:11px 13px!important;border:1px solid transparent;
+  color:#615449;font-weight:850;font-size:13px!important;border-radius:12px;text-align:left;width:100%;
+  text-decoration:none;
+ }
+ .delivery-app.driver-v2>main>.driver-mobile-nav button:hover,
+ .delivery-app.driver-v2>main>.driver-mobile-nav a.fixi-driver-nav-payments:hover{background:#fff1e5;border-color:#f5d7bf;color:#b95215}
+ .delivery-app.driver-v2>main>.driver-mobile-nav button.active{background:#fff0e5;color:#ad4d0c;border-color:#f7d6c0}
+ .delivery-app.driver-v2>main>.driver-mobile-nav svg{width:21px!important;height:21px!important;flex:0 0 auto}
+ .delivery-app.driver-v2>main>.driver-mobile-nav button span,
+ .delivery-app.driver-v2>main>.driver-mobile-nav a span{font-size:13px;font-weight:820;white-space:nowrap}
+ .delivery-app.driver-v2>main>.driver-mobile-nav button b{
+  position:static!important;margin-left:auto!important;background:#fff2e6;color:#ad5d23;
+  font-size:11px!important;min-width:23px;min-height:23px;border-radius:99px;display:grid;place-items:center;
+ }
+ .delivery-app.driver-v2>main>*:not(.driver-mobile-nav){grid-column:2;min-width:0}
+ .delivery-app.driver-v2>main>.fixi-driver-collections-link{margin:4px 0 14px}
+ .delivery-app.driver-v2>header{min-height:73px;padding:10px clamp(15px,3vw,35px);gap:12px}
+ .delivery-app.driver-v2>header>.driver-header-brand b{font-size:17px!important}
+ .delivery-app.driver-v2>header>.driver-header-brand small{font-size:12px!important}
+ .delivery-app.driver-v2>header>div:not(.driver-header-brand):not(.driver-live-state){font-size:12px}
+}
+@media(min-width:761px) and (max-width:1179px){
+ .delivery-app.driver-v2>main>.driver-mobile-nav{
+   position:sticky;top:68px;max-width:100%;width:100%;
+   display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;
+   padding:9px;border:1px solid #e9dbd0;background:rgba(255,255,255,.97);
+ }
+ .delivery-app.driver-v2>main>.driver-mobile-nav button,
+ .delivery-app.driver-v2>main>.driver-mobile-nav a{display:flex;align-items:center;justify-content:center;gap:8px;font-size:13px;font-weight:830;min-height:49px}
+ .delivery-app.driver-v2>main>.driver-mobile-nav button svg,
+ .delivery-app.driver-v2>main>.driver-mobile-nav a svg{width:19px;height:19px}
+ .delivery-app.driver-v2>main>.driver-mobile-nav button b{font-size:10px}
+}
+/* Tablet: consistent visual hierarchies with bigger targets and readable controls. */
+@media(max-width:1100px){
+ .saas-v4{grid-template-columns:minmax(0,1fr)}
+ .saas-v4 .control-side{
+  position:fixed;top:0;bottom:0;left:0;width:min(315px,87vw);height:100dvh;
+  transform:translateX(-110%);visibility:hidden;transition:transform .22s ease,visibility .22s;
+  z-index:1203;box-shadow:24px 0 65px rgba(30,19,10,.17);overflow-y:auto;
+ }
+ .saas-v4.menu-open .control-side{transform:translateX(0);visibility:visible}
+ .saas-v4 .fixi-control-close{display:grid;place-items:center;width:39px;height:39px;flex:0 0 39px;margin-left:auto;background:#fff5ed;border:1px solid #f1d7c3;border-radius:11px;color:#ae5517;cursor:pointer}
+ .saas-v4 .fixi-control-menu-button{display:grid;place-items:center;flex:0 0 45px;width:45px;height:45px;background:#fff;border:1px solid #e9dbd0;color:#b75d1c;border-radius:12px;cursor:pointer}
+ .saas-v4 .fixi-control-backdrop{display:block;position:fixed;inset:0;background:rgba(25,18,15,.51);border:0;z-index:1202;backdrop-filter:blur(2px)}
+ .saas-v4 .control-main{padding-bottom:calc(83px + env(safe-area-inset-bottom,0px))}
+ .saas-v4 .fixi-control-bottom-nav{display:grid;position:fixed;bottom:0;left:0;right:0;z-index:1100;grid-template-columns:repeat(5,minmax(0,1fr));background:rgba(255,255,255,.98);border-top:1px solid #e9dfd7;padding:7px 6px calc(7px + env(safe-area-inset-bottom,0px));box-shadow:0 -6px 24px rgba(50,30,12,.07);gap:4px}
+ .saas-v4 .fixi-control-bottom-nav button,.saas-v4 .fixi-control-bottom-nav a{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px;min-height:54px;border:0;border-radius:11px;background:transparent;color:#75675d;text-decoration:none;font-size:10px;font-weight:850;cursor:pointer;white-space:nowrap}
+ .saas-v4 .fixi-control-bottom-nav button.active{background:#fff0e5;color:#b65313}
+ .saas-v4 .fixi-control-bottom-nav button svg,.saas-v4 .fixi-control-bottom-nav a svg{width:21px;height:21px}
+ .saas-v4 .control-top{padding:10px 14px;min-height:68px}
+ .saas-v4 .control-top h1{font-size:clamp(19px,3vw,26px)}
+ .saas-v4 .control-content{padding:17px 14px}
+ .saas-v4 .control-stats{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .saas-v4 .control-grid{grid-template-columns:1fr}
+ .saas-v4 .control-panel.span2{grid-column:1}
+ .saas-v4 .fixi-subs-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .saas.supplier-admin .supplier-admin-grid{grid-template-columns:1fr}
+}
+@media(max-width:650px){
+ .saas-v4 .control-top{gap:10px;flex-wrap:wrap}
+ .saas-v4 .control-actions{flex-shrink:0}
+ .saas-v4 .control-actions .btn span{display:none}
+ .saas-v4 .control-actions .btn{min-height:43px;min-width:43px;padding:11px}
+ .saas-v4 .control-top h1{font-size:21px}
+ .saas-v4 .control-stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ .saas-v4 .control-kpi{padding:12px}
+ .saas-v4 .control-kpi span{font-size:11px}
+ .saas-v4 .control-kpi b{font-size:20px}
+ .saas-v4 .control-content{padding:15px 11px}
+ .saas-v4 .control-panel{padding:14px}
+ .saas-v4 .saas-plan-grid{grid-template-columns:1fr}
+ .saas-v4 .fixi-subs-metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+ .saas-v4 .fixi-subs-metrics>div{padding:11px}
+ .saas-v4 .fixi-subs-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+ .saas-v4 .fixi-subs-tabs button{padding:9px 6px;gap:5px;font-size:11px;min-height:48px}
+ .saas-v4 .fixi-subs-tabs button svg{width:15px;height:15px}
+ .saas-v4 .fixi-subs-actions{min-width:180px}
+ .saas-v4 .control-content .btn{min-height:42px}
+ .saas.supplier-admin .supplier-admin-grid{padding:12px}
+ .saas.supplier-admin .supplier-admin-top{gap:12px}
+ .saas.supplier-admin .supplier-admin-top>a{min-height:42px;font-size:11px}
+ .delivery-app.driver-v2>main>.driver-mobile-nav button span{font-size:10px}
+ .delivery-app.driver-v2>main>.driver-mobile-nav a span{font-size:10px}
+ .delivery-app.driver-v2>header .driver-header-brand b{font-size:15px!important}
+ .delivery-app.driver-v2>header .driver-header-brand small{font-size:11px!important}
+}
+@media(prefers-reduced-motion:reduce){
+ .saas-v4 .control-side{transition:none}
+}
+@media print{
+ .fixi-control-bottom-nav,.fixi-control-backdrop,.fixi-control-menu-button{display:none!important}
+}
