@@ -25,6 +25,8 @@ export default function SupplierBillingAdmin(){
  const current=selected?.saasSubscriptions?.[0];
  const chosenPlan=data.plans.find(p=>p.id===planId);
  const sorted=useMemo(()=>data.companies.slice().sort((a,b)=>a.name.localeCompare(b.name)),[data]);
+ useEffect(()=>{if(editPlan)document.getElementById('supplier-plan-editor')?.scrollIntoView({behavior:'smooth',block:'start'});},[editPlan?.id]);
+ useEffect(()=>{if(editSub)document.getElementById('supplier-sub-editor')?.scrollIntoView({behavior:'smooth',block:'start'});},[editSub?.id]);
  async function load(){setLoading(true);try{
   const r=await fetch('/api/platform/supplier-billing',{cache:'no-store'}),j=await r.json();
   if(!r.ok)throw new Error(j.error||'Impossible de charger les fournisseurs');
@@ -93,7 +95,11 @@ export default function SupplierBillingAdmin(){
  }
  const statusLabel=(s:string)=>({ACTIVE:'Actif',TRIAL:'Essai',PAST_DUE:'Impayé',SUSPENDED:'Suspendu',CANCELLED:'Annulé'} as Record<string,string>)[s]||s;
  return <main className="fixi-supplier-billing fixi-supplier-billing-admin">
-  <Link className="fixi-supplier-back" href="/saas/suppliers"><ArrowLeft size={16}/> Réseau fournisseurs</Link>
+  <nav className="fixi-billing-switch" aria-label="Navigation des abonnements Fixi">
+    <Link className="fixi-supplier-back" href="/saas"><ArrowLeft size={16}/> Fixi Control</Link>
+    <Link className="fixi-supplier-back" href="/saas/suppliers"><Users size={16}/> Réseau fournisseurs</Link>
+    <Link className="fixi-supplier-back" href="/saas?tab=subscriptions"><CreditCard size={16}/> Abonnements Atelier</Link>
+  </nav>
   <div className="fixi-supplier-billing-title"><div><span>FIXI CONTROL · BILLING</span><h1>Abonnements fournisseurs</h1>
    <p>Forfaits indépendants des abonnements Atelier. Affectation manuelle, suivi des périodes et paiements horodatés.</p></div>
    <button className="fixi-supplier-back" onClick={()=>void load()} disabled={loading}><RefreshCw size={16}/> Actualiser</button>
@@ -213,6 +219,7 @@ export default function SupplierBillingAdmin(){
        <label className="fixi-billing-toggle"><input type="checkbox" checked={editPlan.active} onChange={e=>setEditPlan(p=>p&&({...p,active:e.target.checked}))}/> Active</label>
        <label className="fixi-billing-toggle"><input type="checkbox" checked={(editPlan as any).publicVisible!==false} onChange={e=>setEditPlan(p=>p&&({...p,publicVisible:e.target.checked}))}/> Visible publiquement</label>
      </div>
+     {err&&<div role="alert" className="fixi-billing-error">{err}</div>}
      <button className="fixi-billing-button" disabled={busy}><Save size={16}/> Enregistrer toutes les modifications</button>
    </form>
   </section>}
@@ -232,6 +239,7 @@ export default function SupplierBillingAdmin(){
        <label>Date de fin<input type="date" value={editSub.endsAt} onChange={e=>setEditSub(p=>p&&({...p,endsAt:e.target.value}))}/></label>
        <label>Note interne<textarea value={editSub.note} onChange={e=>setEditSub(p=>p&&({...p,note:e.target.value}))}/></label>
      </div>
+     {err&&<div role="alert" className="fixi-billing-error">{err}</div>}
      <div className="fixi-billing-plan-tools">
        <button className="fixi-billing-button" disabled={busy}><Save size={15}/> Enregistrer la période</button>
        <button type="button" className="fixi-supplier-back" disabled={busy} onClick={()=>{const match=selected?.saasSubscriptions.find(x=>x.id===editSub.id);if(match)void removeSubscription(match)}}><Archive size={15}/> Supprimer / archiver</button>
