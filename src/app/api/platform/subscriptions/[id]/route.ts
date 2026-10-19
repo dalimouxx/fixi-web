@@ -20,9 +20,12 @@ export async function PATCH(req:Request,{params}:{params:Promise<{id:string}>}){
   if(!Number.isFinite(startsAt.getTime())||endsAt&&!Number.isFinite(endsAt.getTime()))
     return bad('Date invalide',400);
   if(endsAt&&endsAt<=startsAt)return bad('La fin doit être postérieure au début',400);
+  const agreedPrice=free?0:b.agreedPrice===undefined?undefined:Number(b.agreedPrice);
+  if(agreedPrice!==undefined&&(!Number.isFinite(agreedPrice)||agreedPrice<0||agreedPrice>10000000))return bad('Prix négocié invalide',400);
   const updated=await prisma.subscription.update({where:{id},data:{
     status:free?SubscriptionStatus.ACTIVE:b.status||undefined,
     planId:selected?.id,
+    agreedPrice,
     startsAt:b.startsAt!==undefined?startsAt:undefined,
     endsAt,
     notes:b.notes===undefined?undefined:String(b.notes||'').slice(0,1500),
