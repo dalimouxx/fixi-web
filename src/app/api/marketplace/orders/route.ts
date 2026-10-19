@@ -94,11 +94,12 @@ export async function POST(req:Request){
     },{isolationLevel:Prisma.TransactionIsolationLevel.Serializable});
 
     await audit(s.shopId,s.id,'CREATE','SUPPLIER_ORDER',result.id,{reference:result.reference,total:Number(result.total)});
-    await notifySupplier(result.companyId,'Nouvelle commande Fixi',`${result.shop.name} a passé la commande ${result.reference} · ${Number(result.total).toFixed(3)} DT`,{
-      href:'/supplier?tab=orders',kind:'ORDER',priority:'HIGH',soundKey:'CHIME',
+    await notifySupplier(result.companyId,'📦 Nouvelle commande à traiter',`${result.shop.name} · ${result.reference} · ${Number(result.total).toFixed(3)} DT. Ouvrez les commandes pour la préparer.`,{
+      href:'/supplier?tab=orders',kind:'ORDER',priority:'HIGH',
+      experienceKey:'SUPPLIER_NEW_ORDER',eventId:result.id,
       roles:['OWNER','ADMIN','MANAGER','SALES','STOCK'],
       metadata:{orderId:result.id,reference:result.reference,shopId:s.shopId}
-    });
+    }).catch(err=>console.error('Notification nouvelle commande Supplier',err));
     await Promise.allSettled(result.items.map(i=>notifySupplierLowStock(result.companyId,i.productId)));
     return ok(plain(result),{status:201});
   }catch(e:any){
