@@ -122,7 +122,9 @@
  .supplier-invoice-table{display:block;overflow-x:auto;min-width:0}
 }
 @media print{
- @page{size:A4;margin:12mm}
+ /* Browser/printer paper settings decide between A4 and an 80mm roll.
+    A global A4 @page would force thermal receipts onto full sheets. */
+ @page{size:auto;margin:0}
  body:has(.fixi-thermal-ticket) *,body:has(.fixi-thermal-ticket) *::before{box-shadow:none!important;text-shadow:none!important}
  body:has(.fixi-thermal-ticket),body:has(.fixi-thermal-ticket) .supplier-document-page{
    background:#fff!important;margin:0!important;padding:0!important}
@@ -132,7 +134,7 @@
    font-size:10pt!important;break-inside:avoid}
  .fixi-thermal-ticket *{color:#000!important}
  .fixi-thermal-ticket header h1{font-size:16pt}
- .supplier-invoice-sheet{box-shadow:none!important}
+ .supplier-invoice-sheet{box-shadow:none!important;padding:12mm!important;margin:auto!important}
  .fixi-invoice-terms,.fixi-delivery-signatures{break-inside:avoid}
 }
 @media(prefers-reduced-motion:reduce){.fixi-pos-cash-dashboard *{transition:none!important}}
