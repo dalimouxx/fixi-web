@@ -38,14 +38,20 @@ export default function Dashboard(){
       <Link href="/app/compatibility"><Link2/><span><b>Compatibilité</b><small>Tester une pièce</small></span></Link>
     </div>
 
-    <div className="stat-grid dashboard-stat-grid">
-      {data.permissions.finance&&<StatCard label="CA aujourd'hui" value={money(data.todayRevenue)} note="Encaissements du jour" icon={<DollarSign size={19}/>}/>}
-      <StatCard label="Réparations actives" value={active} note={`${diagnosis} diagnostic · ${inRepair} en réparation`} icon={<Wrench size={19}/>}/>
-      {data.permissions.profit&&<StatCard label="Résultat du mois" value={money(data.grossProfit)} note="CA - pièces - dépenses" icon={<TrendingUp size={19}/>}/>}
-      <StatCard label="Appareils prêts" value={data.ready} note="À remettre aux clients" icon={<PackageCheck size={19}/>}/>
-      {!data.permissions.finance&&!data.permissions.profit&&<StatCard label="Suivi opérationnel" value="En direct" note="Données limitées à votre rôle" icon={<ShieldCheck size={19}/>}/>}
-    </div>
-
+    <FixiSmartWidgets area="atelier" subtitle="Réparations, encaissements et urgences de votre atelier, en temps réel."
+      widgets={[
+        ...(data.permissions.finance?[{id:'atelier-revenue',label:"Encaissements aujourd'hui",value:money(data.todayRevenue),description:'Paiements réellement enregistrés',icon:'finance' as const,accent:'success' as const,href:'/app/payments'}]:[]),
+        {id:'atelier-active',label:'Réparations actives',value:active,
+         description:diagnosis+' diagnostics · '+inRepair+' en réparation',icon:'repairs',href:'/app/repairs'},
+        {id:'atelier-ready',label:'Prêtes à remettre',value:Number(data.ready||0),
+         description:'Appareils à remettre aux clients',icon:'ready',accent:'success',href:'/app/repairs'},
+        ...(data.permissions.stock?[{id:'atelier-lowstock',label:'Stock faible',value:Number(data.lowStock||0),
+         description:'Produits à réapprovisionner',icon:'stock' as const,accent:'warning' as const,urgent:Number(data.lowStock||0)>0,href:'/app/stock'}]:[]),
+        ...(data.permissions.profit?[{id:'atelier-profit',label:'Résultat du mois',value:money(data.grossProfit),
+         description:'CA moins pièces et dépenses',icon:'finance' as const,accent:'info' as const,href:'/app/insights'}]:[]),
+        ...(data.permissions.warranty?[{id:'atelier-warranty',label:'SAV en attente',value:Number(data.openWarranty||0),
+         description:'Garanties et dossiers à examiner',icon:'alert' as const,accent:'warning' as const,urgent:Number(data.openWarranty||0)>0,href:'/app/warranties'}]:[]),
+      ]}/>
     <div className="dashboard-action-grid">
       <section className="card card-pad attention-card">
         <div className="section-head-inline"><div><h2 className="section-title">À traiter maintenant</h2><div className="page-sub">Ce qui nécessite une action dans l’atelier.</div></div><BellRing size={18}/></div>
