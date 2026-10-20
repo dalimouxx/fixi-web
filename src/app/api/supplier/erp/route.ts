@@ -71,7 +71,15 @@ export async function POST(req:Request){
 
   if(action==='SALE'){
    if(!allow(s.role,['OWNER','ADMIN','MANAGER','SALES','CASHIER']))return bad('FORBIDDEN',403);
+   const saleReference=String(b.reference||'').trim();
+   if(saleReference){
+    const prior=await prisma.supplierErpSale.findFirst({where:{companyId:s.companyId,reference:saleReference}});
+    if(prior)return ok(plain(prior));
+   }
    const items=Array.isArray(b.items)?b.items:[];if(!items.length)return bad('Aucun article');
+   if(items.length>150)return bad('Trop de lignes de vente',400);
+   if(new Set(items.map((x:any)=>String(x.productId||''))).size!==items.length)return bad('Regroupez les lignes du même produit',400);
+   if(items.some((x:any)=>!Number.isInteger(Number(x.quantity))||Number(x.quantity)<1||Number(x.quantity)>10000))return bad('Quantité invalide',400);
    const ids:string[]=[...new Set<string>(items.map((i:any)=>String(i.productId||'')).filter((x:string)=>Boolean(x)))];
    const warehouseId=String(b.warehouseId||'')||null;
    if(warehouseId){const w=await prisma.supplierWarehouse.findFirst({where:{id:warehouseId,companyId:s.companyId,active:true}});if(!w)return bad('Dépôt invalide',404)}
@@ -110,8 +118,12 @@ export async function POST(req:Request){
     for(const x of normalized){
      await tx.supplierErpSaleItem.create({data:{saleId:sale.id,productId:x.p.id,sku:x.p.sku,name:x.p.name,quantity:x.q,unitCost:Number(x.p.averageCost||x.p.purchasePrice||0),unitPrice:x.price}});
      const before=x.p.stock,after=before-x.q;
-     await tx.supplierProduct.update({where:{id:x.p.id},data:{stock:after}});
-     if(warehouseId&&x.warehouseRow)await tx.supplierWarehouseStock.update({where:{id:x.warehouseRow.id},data:{quantity:{decrement:x.q}}});
+     const updated=await tx.supplierProduct.updateMany({where:{id:x.p.id,companyId:s.companyId,stock:{gte:x.q+Number(x.p.reservedStock||0)}},data:{stock:{decrement:x.q}}});
+     if(updated.count!==1)throw Object.assign(new Error('Stock modifié entre-temps pour '+x.p.name+'. Actualisez avant de valider.'),{status:409});
+     if(warehouseId&&x.warehouseRow){
+      const w=await tx.supplierWarehouseStock.updateMany({where:{id:x.warehouseRow.id,quantity:{gte:x.q+Number(x.warehouseRow.reserved||0)}},data:{quantity:{decrement:x.q}}});
+      if(w.count!==1)throw Object.assign(new Error('Stock du dépôt insuffisant pour '+x.p.name),{status:409});
+     }
      if(!warehouseId&&x.warehouseConsumption>0){let remaining=x.warehouseConsumption;for(const row of x.productWarehouseRows){if(remaining<=0)break;const take=Math.min(remaining,Math.max(0,Number(row.quantity||0)-Number(row.reserved||0)));if(take>0){await tx.supplierWarehouseStock.update({where:{id:row.id},data:{quantity:{decrement:take}}});remaining-=take}}}
      await tx.supplierErpStockMovement.create({data:{companyId:s.companyId,productId:x.p.id,type:'SALE',quantity:-x.q,beforeQty:before,afterQty:after,unitCost:x.p.averageCost||x.p.purchasePrice,reference:ref,accountId:s.id}});
     }
