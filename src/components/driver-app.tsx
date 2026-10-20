@@ -113,7 +113,24 @@ export function DriverApp({session}:{session:any}){
     <div className="driver-command-title"><span className="smart-kicker"><Route size={13}/> JOURNÉE & TOURNÉE</span><h1>{shift.current?'Tournée active':'Prêt à démarrer'}</h1><p>{shift.current?'GPS actif uniquement pendant les livraisons en cours.':'Ouvrez votre journée avant de prendre la route.'}</p></div>
     <div className="driver-command-actions"><button className={'driver-availability '+(driverAvailable?'active':'')} onClick={toggleAvailable}><span/>{driverAvailable?'Disponible':'Indisponible'}</button><button className={'driver-tracking '+(tracking?'active':'')} disabled={!shift.current} onClick={()=>setTracking(v=>!v)}><Map/>{tracking?'GPS automatique':'GPS en pause'}</button><button className="btn btn-soft" onClick={load}><RefreshCw/> Actualiser</button>{!shift.current&&!shift.pendingCashier?<button className="btn btn-primary" onClick={()=>setShiftModal('open')}><PlayCircle/> Démarrer journée</button>:shift.current?<button className="btn btn-danger" onClick={()=>{setShiftForm(x=>({...x,remittedCod:String(codToday)}));setShiftModal('close')}}><PauseCircle/> Fin de journée</button>:<span className="driver-wait-cashier">Validation caisse requise</span>}</div>
    </section>
-   <div className="driver-kpis"><div><Truck/><span>À traiter</span><b>{active.length}</b></div><div><CheckCircle2/><span>Livrées aujourd’hui</span><b>{deliveredToday.length}</b></div><div><WalletCards/><span>Valeur livrée</span><b>{money(deliveredValueToday)}</b></div><div><Banknote/><span>COD encaissé</span><b>{money(codToday)}</b></div><div><WalletCards/><span>Anciens dus encaissés</span><b>{money(dueCollectedToday)}</b></div><div><AlertTriangle/><span>Incidents</span><b>{exceptionsToday}</b></div></div>
+   <FixiSmartWidgets area="delivery" onAction={action=>setView(action as 'orders'|'dues'|'history')}
+     subtitle="Vos missions, les sommes réellement enregistrées et les validations de votre tournée."
+     widgets={[
+       {id:'delivery-active',label:'Missions à traiter',value:active.length,
+        description:'Livraisons réservées pour vous',icon:'orders',action:'orders',urgent:active.length>0},
+       {id:'delivery-new',label:'Missions disponibles',value:available.length,
+        description:'Nouvelles courses à accepter',icon:'delivery',action:'orders',accent:'info',urgent:available.length>0},
+       {id:'delivery-completed',label:"Livrées aujourd'hui",value:deliveredToday.length,
+        description:'Livraisons confirmées',icon:'success',accent:'success',action:'history'},
+       {id:'delivery-delivered',label:'Valeur livrée',value:money(deliveredValueToday),
+        description:'Total des commandes livrées',icon:'finance',accent:'neutral',action:'history'},
+       {id:'delivery-collected',label:'Encaissements du jour',value:money(codToday),
+        description:'Événements de collecte enregistrés',icon:'finance',accent:'success',href:'/delivery/encaissements'},
+       {id:'delivery-dues',label:'Anciens dus encaissés',value:money(dueCollectedToday),
+        description:'Collectes de dettes déclarées',icon:'due',action:'dues'},
+       {id:'delivery-incidents',label:'Incidents aujourd’hui',value:exceptionsToday,
+        description:'Événements à vérifier',icon:'alert',accent:'warning',urgent:exceptionsToday>0,action:'history'},
+     ]}/>
    {err&&<div className="driver-banner error"><AlertTriangle/>{err}</div>}{msg&&<div className="driver-banner success"><CheckCircle2/>{msg}</div>}
    {shift.pendingCashier&&<div className="driver-shift-lock pending"><ShieldCheck/><div><h2>Remise caisse en attente</h2><p>Attendu {money(shift.pendingCashier.expectedCod||shift.pendingCashier.collectedCod||0)} · déclaré {money(shift.pendingCashier.declaredRemit||0)}. Le caissier doit recompter et confirmer avant votre prochaine journée.</p></div></div>}{!shift.current&&!shift.pendingCashier&&<div className="driver-shift-lock"><ShieldCheck/><div><h2>Journée non ouverte</h2><p>Les commandes restent visibles, mais une livraison ne peut pas être démarrée tant que le livreur n’a pas ouvert sa journée.</p></div><button className="btn btn-primary" onClick={()=>setShiftModal('open')}>Ouvrir ma journée</button></div>}
    {view==='orders'&&available.length>0&&<section id="driver-orders" className="driver-available"><div className="supplier-section-head"><div><b>Nouvelles missions disponibles</b><span>Le premier livreur qui accepte réserve la commande.</span></div><em>{available.length}</em></div><div className="driver-available-grid">{available.map(o=>{const address=o.deliveryAddress||o.shop?.address||o.shop?.region||'';return <article key={o.id}><div><code>{o.reference}</code><h3>{o.shop?.name}</h3><span><MapPinned/> {address||'Adresse non renseignée'}</span><strong>{money(o.total)}</strong></div><button className="btn btn-primary" disabled={busy===o.id} onClick={()=>accept(o)}><CheckCircle2/> Accepter</button></article>})}</div></section>}
