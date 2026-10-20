@@ -997,6 +997,7 @@ model SubscriptionRequest {
   durationUnit  DurationUnit?
   status        SubscriptionRequestStatus @default(PENDING)
   paymentMethod String?
+  transferReference String?
   proofDataUrl  String?
   note          String?
   adminNote     String?
