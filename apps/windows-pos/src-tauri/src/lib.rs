@@ -69,11 +69,12 @@ async fn supplier_refresh(state: State<'_, Arc<DesktopState>>) -> Result<serde_j
 }
 
 #[tauri::command]
-async fn supplier_logout(state: State<'_, Arc<DesktopState>>) {
+async fn supplier_logout(state: State<'_, Arc<DesktopState>>) -> Result<(), String> {
     let connection = state.connection.lock().await.take();
     if let Some(s) = connection {
         let _ = s.client.post(format!("{}/api/supplier/auth/logout",s.origin)).send().await;
     }
+    Ok(())
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
