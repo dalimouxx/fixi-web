@@ -1,18 +1,24 @@
 'use client';
 import Link from 'next/link';
 import {useEffect,useMemo,useState} from 'react';
-import {ArrowLeft,CheckCircle2,CreditCard,CalendarClock,Plus,RefreshCw,Users,Truck,Package,ShieldCheck,Edit3,Archive,Trash2,Save} from 'lucide-react';
+import {ArrowLeft,CheckCircle2,CreditCard,CalendarClock,Plus,RefreshCw,Users,Truck,Package,ShieldCheck,Edit3,Archive,Trash2,Save,FileCheck2,Eye,AlertTriangle} from 'lucide-react';
 
 type Plan={id:string;code:string;name:string;description:string|null;publicVisible:boolean;price:number|string;trialDays:number;maxProducts:number;maxDrivers:number;maxStaff:number;maxOrdersPerMonth:number;active:boolean;durationValue:number;durationUnit:string};
 type Payment={id:string;amount:number|string;method:string;reference:string;paidAt:string};
 type Sub={id:string;plan:Plan;status:string;startsAt:string;endsAt:string|null;agreedPrice:string|number|null;payments:Payment[]};
 type Company={id:string;name:string;region?:string|null;active:boolean;saasSubscriptions:Sub[];_count:{products:number;orders:number;accounts:number}};
 type Data={plans:Plan[];companies:Company[]};
+type RequestRow={id:string;companyId:string;status:string;createdAt:string;reviewedAt:string|null;
+ requestedPrice:number|string;paymentMethod:string;transferReference:string|null;hasProof:boolean;
+ adminNote:string|null;company:{name:string;region:string|null;phone:string|null}|null;
+ plan:{name:string;price:number|string;durationValue:number;durationUnit:string}|null};
 const fmt=(v:any)=>Number(v||0).toFixed(3)+' DT';
 const day=(v:any)=>v?new Date(v).toLocaleDateString('fr-TN'):'—';
 
 export default function SupplierBillingAdmin(){
  const [data,setData]=useState<Data>({plans:[],companies:[]}),[loading,setLoading]=useState(true);
+ const [requests,setRequests]=useState<RequestRow[]>([]);
+ const [proofPreview,setProofPreview]=useState<{id:string;dataUrl:string}|null>(null);
  const [companyId,setCompanyId]=useState(''),[planId,setPlanId]=useState(''),[status,setStatus]=useState('TRIAL');
  const [endsAt,setEndsAt]=useState(''),[agreedPrice,setAgreedPrice]=useState(''),[note,setNote]=useState('');
  const [payAmount,setPayAmount]=useState(''),[payMethod,setPayMethod]=useState('ESPECES'),[payReference,setPayReference]=useState('');
@@ -28,9 +34,13 @@ export default function SupplierBillingAdmin(){
  useEffect(()=>{if(editPlan)document.getElementById('supplier-plan-editor')?.scrollIntoView({behavior:'smooth',block:'start'});},[editPlan?.id]);
  useEffect(()=>{if(editSub)document.getElementById('supplier-sub-editor')?.scrollIntoView({behavior:'smooth',block:'start'});},[editSub?.id]);
  async function load(){setLoading(true);try{
-  const r=await fetch('/api/platform/supplier-billing',{cache:'no-store'}),j=await r.json();
-  if(!r.ok)throw new Error(j.error||'Impossible de charger les fournisseurs');
-  setData(j);setCompanyId(x=>x||j.companies?.[0]?.id||'');setPlanId(x=>x||j.plans?.[0]?.id||'');
+  const [r,rq]=await Promise.all([
+    fetch('/api/platform/supplier-billing',{cache:'no-store'}),
+    fetch('/api/platform/supplier-subscription-requests',{cache:'no-store'})
+  ]);
+  const [j,q]=await Promise.all([r.json(),rq.json()]);
+  if(!r.ok||!rq.ok)throw new Error(j.error||q.error||'Impossible de charger les fournisseurs');
+  setData(j);setRequests(Array.isArray(q)?q:[]);setCompanyId(x=>x||j.companies?.[0]?.id||'');setPlanId(x=>x||j.plans?.[0]?.id||'');
   setPlanPrices(Object.fromEntries((j.plans||[]).map((p:Plan)=>[p.id,String(p.price)])));setErr('');
  }catch(e){setErr(e instanceof Error?e.message:'Erreur')}finally{setLoading(false)}}
  useEffect(()=>{void load()},[]);
@@ -86,6 +96,46 @@ export default function SupplierBillingAdmin(){
      setEditSub(null);
  }
 
+ async function previewProof(x:RequestRow){
+  if(!x.hasProof)return setErr('Aucune preuve jointe.');
+  setBusy(true);setErr('');
+  try{
+   const r=await fetch('/api/platform/supplier-subscription-requests/'+x.id,{cache:'no-store'});
+   const j=await r.json();if(!r.ok)throw new Error(j.error||'Preuve inaccessible');
+   if(!j.proofDataUrl)throw new Error('Aucune preuve jointe.');
+   setProofPreview({id:x.id,dataUrl:j.proofDataUrl});
+  }catch(e){setErr(e instanceof Error?e.message:'Impossible de charger la preuve')}
+  finally{setBusy(false)}
+ }
+ async function reviewRequest(x:RequestRow,action:'APPROVE'|'REJECT'){
+  if(busy)return;
+  const adminNote=window.prompt(action==='APPROVE'?'Note interne de vérification (optionnelle)':'Motif du refus (obligatoire)','');
+  if(adminNote===null)return;
+  if(action==='REJECT'&&!adminNote.trim()){setErr('Précisez le motif du refus.');return;}
+  let verifiedAmount:number|undefined,reference:string|undefined;
+  if(action==='APPROVE'){
+    const amount=window.prompt('Montant réellement vérifié sur D17 / relevé bancaire (DT)',String(x.requestedPrice));
+    if(amount===null)return;
+    verifiedAmount=Number(amount.replace(',','.'));
+    if(!Number.isFinite(verifiedAmount)||verifiedAmount<=0){setErr('Montant invalide');return}
+    const answer=window.prompt('Référence de virement ou référence du rapprochement',x.transferReference||'');
+    if(answer===null)return;
+    reference=answer.trim();
+    if(!reference&&!adminNote.trim()){setErr('Référence ou note de rapprochement obligatoire');return;}
+    if(!window.confirm('CONFIRMATION FINANCIÈRE : Vous avez vérifié ce versement dans votre compte D17 ou bancaire ? Cette action enregistrera le paiement et activera l’abonnement.'))return;
+  }
+  setBusy(true);setErr('');setMsg('');
+  try{
+    const r=await fetch('/api/platform/supplier-subscription-requests/'+x.id,{
+      method:'PATCH',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action,adminNote,verified:true,verifiedAmount,transferReference:reference})
+    });
+    const j=await r.json();if(!r.ok)throw new Error(j.error||'Validation impossible');
+    setProofPreview(null);
+    await load();setMsg(action==='APPROVE'?'Versement contrôlé et abonnement activé.':'Demande refusée avec traçabilité.');
+  }catch(e){setErr(e instanceof Error?e.message:'Erreur')}
+  finally{setBusy(false)}
+ }
  async function createPlan(e:React.FormEvent){e.preventDefault();
    if(await send('POST',{action:'PLAN',...newPlan,price:Number(newPlan.price),
       maxProducts:Number(newPlan.maxProducts),maxDrivers:Number(newPlan.maxDrivers),
@@ -111,6 +161,44 @@ export default function SupplierBillingAdmin(){
    <div><CheckCircle2 size={19}/><span>Avec une offre</span><strong>{data.companies.filter(c=>c.saasSubscriptions.length>0).length}</strong></div>
    <div><ShieldCheck size={19}/><span>Accès historique conservé</span><strong>{data.companies.filter(c=>!c.saasSubscriptions.length).length}</strong></div>
   </div>
+  <section className="fixi-billing-card fixi-supplier-requests-admin" id="fixi-supplier-requests">
+   <div className="fixi-billing-title-row">
+     <div><span className="fixi-billing-eyebrow"><FileCheck2 size={15}/> VERSEMENTS À VÉRIFIER</span>
+       <h2>Centre de validation des abonnements Supplier</h2>
+       <p>Les captures transmises ne sont pas des paiements. Confirmez le crédit réellement reçu sur D17 ou votre relevé avant toute activation.</p></div>
+     <strong className="fixi-supplier-requests-count">{requests.filter(x=>x.status==='PENDING').length} demande(s) à traiter</strong>
+   </div>
+   <div className="fixi-billing-scroll"><table>
+     <thead><tr><th>Fournisseur</th><th>Formule</th><th>Montant demandé</th><th>Moyen</th><th>Preuve / référence</th><th>Statut</th><th>Actions</th></tr></thead>
+     <tbody>{requests.map(x=><tr key={x.id}>
+       <td><strong>{x.company?.name||'Entreprise'}</strong><small>{day(x.createdAt)} · {x.company?.region||''}</small></td>
+       <td>{x.plan?.name||x.planId}</td><td><b>{fmt(x.requestedPrice)}</b></td>
+       <td>{x.paymentMethod}</td>
+       <td>{x.hasProof?<button type="button" className="fixi-supplier-back" disabled={busy}
+         onClick={()=>void previewProof(x)}><Eye size={16}/> Consulter</button>:'Non joint'}
+         {x.transferReference&&<small>Réf. {x.transferReference}</small>}</td>
+       <td><strong>{({PENDING:'En attente',APPROVED:'Approuvée',REJECTED:'Refusée'} as Record<string,string>)[x.status]||x.status}</strong>
+         {x.adminNote&&<small>{x.adminNote}</small>}</td>
+       <td>{x.status==='PENDING'?<div className="fixi-billing-plan-tools">
+         <button type="button" disabled={busy} className="fixi-billing-button"
+           onClick={()=>void reviewRequest(x,'APPROVE')}><CheckCircle2 size={15}/> Vérifier et activer</button>
+         <button type="button" disabled={busy} className="fixi-supplier-back"
+           onClick={()=>void reviewRequest(x,'REJECT')}>Refuser</button>
+       </div>:'—'}</td>
+     </tr>)}
+     {!requests.length&&<tr><td colSpan={7}>Aucune demande enregistrée.</td></tr>}
+     </tbody>
+   </table></div>
+   {proofPreview&&<div className="fixi-proof-preview">
+      <div><b>Justificatif transmis par le fournisseur</b><button type="button"
+        onClick={()=>setProofPreview(null)}>Fermer</button></div>
+      {proofPreview.dataUrl.startsWith('data:application/pdf;')?
+        <a href={proofPreview.dataUrl} target="_blank" rel="noreferrer noopener">
+          <FileCheck2 size={18}/> Ouvrir le PDF fourni</a>:
+        <img src={proofPreview.dataUrl} alt="Justificatif de transfert soumis pour vérification"/>}
+      <p><AlertTriangle size={15}/> Vérifiez le mouvement sur D17 ou le compte bancaire : une image seule n’atteste pas du crédit.</p>
+    </div>}
+  </section>
   <div className="fixi-billing-admin-grid">
    <section className="fixi-billing-card">
     <h2>Affecter ou renouveler une offre</h2>
