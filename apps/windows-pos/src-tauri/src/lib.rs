@@ -69,6 +69,25 @@ async fn supplier_refresh(state: State<'_, Arc<DesktopState>>) -> Result<serde_j
 }
 
 #[tauri::command]
+async fn supplier_checkout(
+    state: State<'_, Arc<DesktopState>>,
+    sale: serde_json::Value,
+) -> Result<serde_json::Value, String> {
+    let guard=state.connection.lock().await;
+    let session=guard.as_ref().ok_or("Connectez-vous à FIXI Supplier")?;
+    let response=session.client.post(format!("{}/api/supplier/desktop/sales",session.origin))
+        .json(&sale).send().await
+        .map_err(|_| "Connexion interrompue : vérifiez la vente dans l'historique avant de réessayer".to_string())?;
+    let status=response.status();
+    let result:serde_json::Value=response.json().await.map_err(|_| "Réponse invalide : vérifiez l'historique avant de réessayer".to_string())?;
+    if !status.is_success(){
+        let message=result.get("error").and_then(|v|v.as_str()).unwrap_or("Vente refusée par le serveur");
+        return Err(message.to_string());
+    }
+    Ok(result)
+}
+
+#[tauri::command]
 async fn supplier_logout(state: State<'_, Arc<DesktopState>>) -> Result<(), String> {
     let connection = state.connection.lock().await.take();
     if let Some(s) = connection {
@@ -81,7 +100,7 @@ async fn supplier_logout(state: State<'_, Arc<DesktopState>>) -> Result<(), Stri
 pub fn run() {
     tauri::Builder::default()
         .manage(Arc::new(DesktopState{connection:Mutex::new(None)}))
-        .invoke_handler(tauri::generate_handler![supplier_login,supplier_refresh,supplier_logout])
+        .invoke_handler(tauri::generate_handler![supplier_login,supplier_refresh,supplier_logout,supplier_checkout])
         .run(tauri::generate_context!())
         .expect("error while running FIXI Caisse Windows");
 }
