@@ -5,6 +5,7 @@ import {plain} from '@/lib/serializers';
 import {notifySupplier,notifySupplierLowStock} from '@/lib/supplier-notifications';
 import {notifyShop} from '@/lib/notifications';
 import {NotificationType} from '@prisma/client';
+import {supplierCashSummary} from '@/lib/supplier-cash-ledger';
 
 const allow=(role:SupplierRole,roles:SupplierRole[])=>roles.includes(role);
 const money=(v:any)=>Math.round(Number(v||0)*1000)/1000;
@@ -232,21 +233,34 @@ export async function POST(req:Request){
   if(action==='CASH_OPEN'){
    if(!allow(s.role,['OWNER','ADMIN','MANAGER','CASHIER','SALES']))return bad('FORBIDDEN',403);
    const exists=await openCash(s.companyId,s.id);if(exists)return bad('Votre caisse est déjà ouverte',409);
-   const warehouseId=String(b.warehouseId||'')||null;if(warehouseId){const w=await prisma.supplierWarehouse.findFirst({where:{id:warehouseId,companyId:s.companyId,active:true}});if(!w)return bad('Dépôt invalide',404)}const x=await prisma.supplierErpCashSession.create({data:{companyId:s.companyId,accountId:s.id,warehouseId,openingAmount:money(b.openingAmount||0)}});await audit(s.companyId,s.id,'OPEN','CASH_SESSION',x.id);return ok(plain(x),{status:201});
+   const openingAmount=Number(b.openingAmount??0);
+   if(!Number.isFinite(openingAmount)||openingAmount<0||openingAmount>100000000)return bad('Fond de caisse invalide',400);
+   const warehouseId=String(b.warehouseId||'')||null;
+   if(warehouseId){const w=await prisma.supplierWarehouse.findFirst({where:{id:warehouseId,companyId:s.companyId,active:true}});if(!w)return bad('Dépôt invalide',404)}
+   const x=await prisma.supplierErpCashSession.create({data:{companyId:s.companyId,accountId:s.id,warehouseId,openingAmount:money(openingAmount),note:String(b.note||'').slice(0,500)||null}});
+   await audit(s.companyId,s.id,'OPEN','CASH_SESSION',x.id,{openingAmount:money(openingAmount)});
+   return ok(plain(x),{status:201});
   }
 
   if(action==='CASH_CLOSE'){
    if(!allow(s.role,['OWNER','ADMIN','MANAGER','CASHIER','SALES']))return bad('FORBIDDEN',403);
    const cs=await openCash(s.companyId,s.id);if(!cs)return bad('Aucune caisse ouverte',404);
-   const closing=money(b.closingAmount||0);
-   const [incoming,outgoing,expenses]=await Promise.all([
-    prisma.supplierErpPayment.aggregate({where:{companyId:s.companyId,cashSessionId:cs.id,kind:'IN'},_sum:{amount:true}}),
-    prisma.supplierErpPayment.aggregate({where:{companyId:s.companyId,cashSessionId:cs.id,kind:'OUT'},_sum:{amount:true}}),
-    prisma.supplierErpExpense.aggregate({where:{companyId:s.companyId,cashSessionId:cs.id},_sum:{amount:true}})
+   const rawClosing=Number(b.closingAmount);
+   if(!Number.isFinite(rawClosing)||rawClosing<0||rawClosing>100000000)return bad('Montant compté invalide',400);
+   const closing=money(rawClosing);
+   const [payments,expenses]=await Promise.all([
+    prisma.supplierErpPayment.findMany({where:{companyId:s.companyId,cashSessionId:cs.id},select:{kind:true,method:true,amount:true}}),
+    prisma.supplierErpExpense.findMany({where:{companyId:s.companyId,cashSessionId:cs.id},select:{method:true,amount:true}})
    ]);
-   const expected=money(Number(cs.openingAmount)+Number(incoming._sum.amount||0)-Number(outgoing._sum.amount||0)-Number(expenses._sum.amount||0));
-   const x=await prisma.supplierErpCashSession.update({where:{id:cs.id},data:{status:'CLOSED',expectedCash:expected,closingAmount:closing,difference:money(closing-expected),closedAt:new Date(),note:b.note||null}});
-   await audit(s.companyId,s.id,'CLOSE','CASH_SESSION',x.id,{expected,closing,difference:closing-expected});
+   const summary=supplierCashSummary(cs.openingAmount,payments,expenses);
+   const expected=summary.expected,difference=money(closing-expected);
+   const note=String(b.note||'').trim().slice(0,500);
+   if(Math.abs(difference)>=0.001&&!note)return bad('Expliquez l’écart avant de clôturer la caisse.',400);
+   const x=await prisma.supplierErpCashSession.update({
+     where:{id:cs.id},data:{status:'CLOSED',expectedCash:expected,closingAmount:closing,
+     difference,closedAt:new Date(),note:note||null}
+   });
+   await audit(s.companyId,s.id,'CLOSE','CASH_SESSION',x.id,{...summary,closing,difference});
    if(Math.abs(closing-expected)>=0.001)await notifySupplier(s.companyId,'Écart de caisse',`Session clôturée avec un écart de ${money(closing-expected).toFixed(3)} DT.`,{href:'/supplier?tab=finance',kind:'WARNING',priority:'HIGH',soundKey:'WARNING',roles:['OWNER','ADMIN','MANAGER','ACCOUNTANT'],metadata:{cashSessionId:x.id,expected,closing,difference:money(closing-expected)}});
    return ok(plain(x));
   }
