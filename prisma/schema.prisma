@@ -997,6 +997,7 @@ model SubscriptionRequest {
   durationUnit  DurationUnit?
   status        SubscriptionRequestStatus @default(PENDING)
   paymentMethod String?
+  transferReference String?
   proofDataUrl  String?
   note          String?
   adminNote     String?
@@ -1096,6 +1097,11 @@ model PlatformSettings {
   adsDefaultCpm      Decimal  @default(12) @db.Decimal(12,3)
   adsDefaultCpc      Decimal  @default(0.5) @db.Decimal(12,3)
   supplierMarketplaceEnabled Boolean @default(true)
+  // Configurable payee instructions, never fabricated and never auto-charge.
+  paymentD17Phone    String?
+  paymentBankName    String?
+  paymentBankRib     String?
+  paymentInstructions String?
   updatedAt          DateTime @default(now()) @updatedAt
 }
 
@@ -1538,6 +1544,17 @@ model SupplierCompany {
   region      String?
   taxId       String?
   description String?
+  // Optional legal/contact and print details, configured by the supplier owner.
+  legalName   String?
+  tradeRegister String?
+  secondaryPhone String?
+  website     String?
+  bankName    String?
+  bankRib     String?
+  documentFooter String?
+  invoiceTerms String?
+  deliveryInstructions String?
+  receiptMessage String?
   currency    String   @default("DT")
   defaultTaxRate Decimal @default(0) @db.Decimal(5,2)
   invoicePrefix String @default("FAC")
@@ -2511,6 +2528,30 @@ model SupplierSaasSubscription {
   payments    SupplierSaasPayment[]
 
   @@index([companyId, createdAt])
+  @@index([planId])
+}
+
+/* Manual Supplier subscription requests: the submitted transfer is evidence,
+   not a confirmed payment. Admin approval is an explicit separate action. */
+model SupplierSubscriptionRequest {
+  id                 String   @id @default(cuid())
+  companyId          String
+  planId             String
+  requestedPrice     Decimal  @db.Decimal(12,3)
+  durationValue      Int
+  durationUnit       DurationUnit
+  paymentMethod      String
+  transferReference  String?
+  proofDataUrl       String?
+  note               String?
+  status             String   @default("PENDING")
+  adminNote          String?
+  reviewedById       String?
+  reviewedAt         DateTime?
+  subscriptionId     String?
+  createdAt          DateTime @default(now())
+  @@index([companyId, status, createdAt])
+  @@index([status, createdAt])
   @@index([planId])
 }
 

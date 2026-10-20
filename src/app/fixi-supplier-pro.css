@@ -1,0 +1,228 @@
+/* Fixi Supplier Pro: cashier reconciliation, fiscal document branding and payment center.
+   Loaded after all legacy styles to prevent collapsed mobile dialogs. */
+.driver-shift-form-error,.fixi-pos-cash-error{display:flex;align-items:center;gap:9px;
+  background:#fff1ef;border:1px solid #f6c6ba;color:#a7382b;
+  font-size:12px;font-weight:750;line-height:1.5;border-radius:11px;padding:11px 12px}
+.driver-shift-form-error svg,.fixi-pos-cash-error svg{flex:0 0 17px}
+.driver-shift-form-help{color:#83776e;font-size:11px;line-height:1.6;margin:10px 0 14px}
+.delivery-modal{max-height:min(91dvh,790px);overflow-y:auto;overscroll-behavior:contain}
+.delivery-modal .btn-block{min-height:49px}
+.fixi-pos-cash-dashboard{background:linear-gradient(125deg,#fff,#fffaf7);
+  border:1px solid #eadfd5;border-radius:18px;padding:19px 20px;
+  margin:0 0 15px;box-shadow:0 7px 21px rgba(45,31,19,.035);color:#33261c}
+.fixi-pos-cash-heading{display:flex;align-items:flex-start;justify-content:space-between;
+  gap:15px;flex-wrap:wrap}
+.fixi-pos-cash-heading h3{margin:7px 0 4px;font-size:20px;font-weight:900;letter-spacing:-.04em}
+.fixi-pos-cash-heading p{color:#83766d;font-size:12px;line-height:1.5;margin:0 0 12px}
+.fixi-pos-cash-heading>.toolbar{margin-left:auto;display:flex;gap:7px;flex-wrap:wrap}
+.fixi-pos-cash-heading .btn{min-height:42px;font-size:12px}
+.fixi-pos-cash-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:10px}
+.fixi-pos-cash-stats>div{display:flex;flex-direction:column;gap:8px;
+  border-radius:13px;border:1px solid #eee3da;background:#fff;
+  padding:15px;min-height:83px}
+.fixi-pos-cash-stats>div.important{background:#fff2e7;border-color:#f3cfae}
+.fixi-pos-cash-stats span{color:#786b61;font-size:11px;font-weight:750}
+.fixi-pos-cash-stats b{color:#35291f;font-size:clamp(17px,2vw,23px);line-height:1.22;font-variant-numeric:tabular-nums}
+.fixi-pos-cash-stats .important b{color:#bc5417}
+.fixi-pos-cash-empty{font-size:12px;color:#88796d}
+.fixi-pos-cash-details{margin-top:19px;border-top:1px solid #eee3da;padding-top:16px}
+.fixi-pos-cash-details h4{margin:7px 0 12px;color:#493628;font-size:14px;font-weight:900}
+.fixi-pos-cash-movements{max-height:315px;overflow-y:auto}
+.fixi-pos-cash-movements>div,.fixi-pos-cash-history>div{
+  display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;
+  gap:8px 14px;border-bottom:1px solid #f0e8df;padding:11px 2px;
+  font-size:12px}
+.fixi-pos-cash-movements>div>span{display:grid;gap:4px;flex:1;min-width:160px}
+.fixi-pos-cash-movements strong{color:#3a2f27;font-weight:850}
+.fixi-pos-cash-movements small{color:#85756b;font-size:11px}
+.fixi-pos-cash-movements b{font-size:13px;white-space:nowrap}
+.fixi-pos-cash-details .plus{color:#15834e}
+.fixi-pos-cash-details .minus{color:#b34d2b}
+.fixi-pos-cash-history{display:grid;grid-template-columns:repeat(1,minmax(0,1fr))}
+.fixi-pos-cash-history>div>span{color:#75685b}
+.fixi-pos-cash-history>div>b{border-radius:99px;background:#f1f7ed;color:#518034;padding:5px 9px}
+.fixi-pos-cash-modal{max-height:91dvh;overflow-y:auto;width:min(520px,100%)}
+.fixi-pos-cash-review{display:grid;gap:8px;padding:12px;margin:12px 0 17px;
+  background:#fff9f1;border:1px solid #f6dfc7;border-radius:13px}
+.fixi-pos-cash-review>div{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px}
+.fixi-pos-cash-review>div span{color:#77685e}
+.fixi-pos-cash-review>div b{font-variant-numeric:tabular-nums}
+.fixi-pos-cash-review>div.total{border-top:1px solid #ecd4bd;padding-top:9px;font-weight:900}
+.fixi-pos-cash-review>div.total b{color:#b45a17;font-size:19px}
+.fixi-pos-cash-difference{display:flex;align-items:center;gap:9px;padding:11px;
+  font-size:12px;font-weight:800;border:1px solid;border-radius:11px;margin:4px 0 13px}
+.fixi-pos-cash-difference.balanced{background:#eaf9ef;border-color:#bce5c6;color:#147d48}
+.fixi-pos-cash-difference.mismatch{background:#fff0e7;border-color:#f6c5a9;color:#ae491c}
+.fixi-pos-cash-note{min-height:70px;width:100%;resize:vertical;padding:10px 12px!important;margin:7px 0 12px}
+.fixi-doc-settings-subhead{font-size:12px;font-weight:900;color:#b65919;
+  letter-spacing:.035em;background:#fff6ed;padding:11px 13px;border-radius:11px;
+  margin:18px 0 13px;border:1px solid #f6dac4}
+.fixi-doc-textarea-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.fixi-doc-textarea-grid textarea{width:100%;min-height:93px;line-height:1.5;resize:vertical}
+.fixi-doc-settings-note{font-size:12px;line-height:1.7;color:#79695a;background:#fbf8f4;
+  border:1px solid #eee3d7;padding:11px 14px;border-radius:11px}
+.fixi-invoice-terms{display:grid;gap:9px;background:#fff9f2;border:1px solid #ecdccf;
+  border-radius:10px;padding:13px 17px;margin:18px 0;font-size:11px;line-height:1.6;
+  white-space:pre-line;overflow-wrap:anywhere}
+.fixi-invoice-terms strong{font-size:11px;font-weight:900;color:#573e30}
+.fixi-invoice-terms p{margin:5px 0 0;color:#55483d}
+.fixi-delivery-signatures{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:15px;margin:25px 0 15px}
+.fixi-delivery-signatures>div{padding:13px;border:1px solid #dad7d2;min-height:135px;border-radius:9px}
+.fixi-delivery-signatures strong{font-size:12px;color:#2a211c}
+.fixi-delivery-signatures p{font-size:11px;color:#71645a;line-height:1.7;margin:10px 0}
+.delivery-ticket-brand>img.fixi-delivery-company-logo{width:45px;height:45px;object-fit:contain;border-radius:9px}
+.supplier-document-actions>.fixi-doc-action-group{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.supplier-document-actions .fixi-doc-action-group a{border:1px solid #e6d9cf;
+  border-radius:10px;background:#fff;display:inline-flex;gap:8px;align-items:center;
+  padding:9px 12px;font-size:11px;font-weight:850;color:#655348}
+.supplier-document-actions .fixi-doc-action-group a.selected{background:#fff1e6;color:#bd5815;border-color:#f0c8aa}
+.supplier-document-actions .fixi-doc-action-group svg{width:16px;height:16px}
+.supplier-document-page.fixi-thermal-page{background:#efeee9}
+.fixi-thermal-ticket{width:min(80mm,100%);box-sizing:border-box;margin:8px auto 30px;
+ padding:9mm 5mm 10mm;background:#fff;color:#171717;
+ font-family:ui-monospace,Menlo,Consolas,monospace;
+ font-size:10.5px;line-height:1.45;overflow-wrap:anywhere;
+ box-shadow:0 12px 35px rgba(0,0,0,.13)}
+.fixi-thermal-ticket header,.fixi-thermal-ticket footer{display:grid;justify-items:center;text-align:center;gap:3px}
+.fixi-thermal-ticket header h1{font-size:19px;font-weight:950;line-height:1.15;margin:6px 0 4px}
+.fixi-thermal-ticket header div{font-size:10.5px}
+.fixi-thermal-ticket .fixi-ticket-logo{width:47px;height:47px;object-fit:contain}
+.fixi-thermal-separator{height:0;margin:12px 0;border-top:1px dashed #777}
+.fixi-thermal-line{display:flex;justify-content:space-between;align-items:baseline;
+ gap:10px;margin:5px 0;font-variant-numeric:tabular-nums}
+.fixi-thermal-line>span:first-child{flex:1;min-width:0}
+.fixi-thermal-line>b{white-space:nowrap}
+.fixi-thermal-head{display:flex;justify-content:space-between;gap:8px;font-weight:900}
+.fixi-thermal-item{margin:9px 0}
+.fixi-thermal-item>strong{display:block;font-size:10.5px}
+.fixi-thermal-line.total{font-weight:950;font-size:15px;border-top:1px solid #333;border-bottom:1px solid #333;padding:10px 0;margin:10px 0}
+.fixi-thermal-message{text-align:center;white-space:pre-line;font-size:10px;line-height:1.5;margin:10px 0}
+.fixi-thermal-ticket footer{margin-top:17px;font-size:10px}
+.fixi-thermal-ticket footer span{color:#777;margin-top:8px}
+@media(max-width:980px){
+ .fixi-pos-cash-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .fixi-doc-textarea-grid{grid-template-columns:1fr}
+}
+@media(max-width:650px){
+ .fixi-pos-cash-dashboard{padding:14px 12px}
+ .fixi-pos-cash-heading .toolbar{margin-left:0;width:100%}
+ .fixi-pos-cash-heading .toolbar button{flex:1;min-height:45px;justify-content:center}
+ .fixi-pos-cash-stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+ .fixi-pos-cash-stats>div{padding:12px}
+ .fixi-pos-cash-stats b{font-size:16px;overflow-wrap:anywhere}
+ .fixi-pos-cash-history>div{gap:7px}
+ .supplier-document-actions{flex-wrap:wrap;gap:9px}
+ .supplier-document-actions .fixi-doc-action-group{flex:1 1 100%}
+ .supplier-document-actions>.fixi-doc-action-group>a{flex:1;justify-content:center}
+ .supplier-document-actions>.fixi-doc-action-group>button{flex:1 1 100%}
+ .fixi-delivery-signatures{grid-template-columns:1fr}
+ .supplier-invoice-sheet{padding:22px 15px;min-height:auto}
+ .supplier-invoice-sheet>header{flex-wrap:wrap}
+ .supplier-invoice-table{display:block;overflow-x:auto;min-width:0}
+}
+@media print{
+ /* Browser/printer paper settings decide between A4 and an 80mm roll.
+    A global A4 @page would force thermal receipts onto full sheets. */
+ @page{size:auto;margin:0}
+ body:has(.fixi-thermal-ticket) *,body:has(.fixi-thermal-ticket) *::before{box-shadow:none!important;text-shadow:none!important}
+ body:has(.fixi-thermal-ticket),body:has(.fixi-thermal-ticket) .supplier-document-page{
+   background:#fff!important;margin:0!important;padding:0!important}
+ body:has(.fixi-thermal-ticket) .no-print{display:none!important}
+ .fixi-thermal-ticket{padding:0!important;margin:0!important;width:80mm!important;
+   max-width:80mm!important;min-height:0;box-shadow:none!important;border:0!important;
+   font-size:10pt!important;break-inside:avoid}
+ .fixi-thermal-ticket *{color:#000!important}
+ .fixi-thermal-ticket header h1{font-size:16pt}
+ .supplier-invoice-sheet{box-shadow:none!important;padding:12mm!important;margin:auto!important}
+ .fixi-invoice-terms,.fixi-delivery-signatures{break-inside:avoid}
+}
+@media(prefers-reduced-motion:reduce){.fixi-pos-cash-dashboard *{transition:none!important}}
+
+/* Offline-only Fixi subscription center: clear payment state and safe evidence flow. */
+.fixi-billing-setting-heading{padding:13px 16px;border:1px solid #efddcc;background:#fff7ed;border-radius:12px}
+.fixi-billing-setting-heading strong{color:#aa5117;font-size:15px}
+.fixi-billing-setting-heading p{font-size:12px;color:#816858;line-height:1.6;margin:6px 0 0}
+.fixi-supplier-payment-center{margin:25px 0;scroll-margin-top:34px}
+.fixi-payment-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px;margin:19px 0}
+.fixi-payment-option{display:flex;flex-direction:column;gap:8px;min-height:168px;
+  padding:18px 16px;border:1px solid #eae1d9;border-radius:15px;background:#fffcfa}
+.fixi-payment-option>svg{color:#eb7421}
+.fixi-payment-option h3{margin:0;font-size:15px;font-weight:900}
+.fixi-payment-option>b,.fixi-payment-option>a{color:#443225;font-size:15px;
+  overflow-wrap:anywhere;line-height:1.5}
+.fixi-payment-option small,.fixi-payment-option>span{font-size:12px;color:#817167}
+.fixi-payment-option button{display:inline-flex;gap:7px;align-items:center;justify-content:center;
+  width:max-content;max-width:100%;min-height:39px;border-radius:10px;
+  border:1px solid #efd8c4;background:#fff3e8;color:#ab5c20;
+  padding:8px 11px;font-size:11px;font-weight:850;cursor:pointer}
+.fixi-payment-instructions{display:flex;gap:10px;background:#fff6e7;color:#7d5b35;
+  border:1px solid #f5d8af;border-radius:13px;padding:13px;
+  white-space:pre-line;line-height:1.6;font-size:12px}
+.fixi-payment-instructions svg{color:#df8526;flex:0 0 auto}
+.fixi-payment-request-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:13px;margin-top:20px;padding:19px;
+  border:1px solid #f1ccad;border-radius:16px;background:#fff9f4}
+.fixi-payment-request-head{grid-column:1/-1;display:flex;align-items:center;
+  justify-content:space-between;gap:10px;flex-wrap:wrap;border-bottom:1px solid #efdaca;padding-bottom:13px}
+.fixi-payment-request-head>div{display:grid;gap:6px}
+.fixi-payment-request-head strong{font-size:16px;color:#423125}
+.fixi-payment-request-head span{font-size:12px;color:#827065}
+.fixi-payment-request-head button{background:#fff;border:1px solid #e7d5c6;
+  min-height:40px;border-radius:10px;padding:8px 11px;cursor:pointer}
+.fixi-payment-request-form>label{display:grid;gap:7px;font-size:12px;font-weight:850;color:#54443a}
+.fixi-payment-request-form>label:has(textarea){grid-column:1/-1}
+.fixi-payment-request-form input:not([type=file]),.fixi-payment-request-form select,.fixi-payment-request-form textarea{
+  width:100%;min-height:45px;background:#fff;border:1px solid #e3d6ca;border-radius:11px;
+  padding:11px 13px;color:#322923;font-size:13px;line-height:1.5}
+.fixi-payment-request-form textarea{min-height:90px;resize:vertical}
+.fixi-payment-request-form .fixi-payment-upload{
+  display:flex;flex-direction:row;align-items:center;justify-content:center;gap:10px;
+  min-height:55px;border:1px dashed #dca777;border-radius:12px;background:#fff;
+  color:#ae5a21;padding:10px 14px;position:relative;cursor:pointer;line-height:1.5}
+.fixi-payment-upload input[type=file]{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+.fixi-payment-request-form>.fixi-billing-button{grid-column:1/-1}
+.fixi-payment-safety{grid-column:1/-1;display:flex;gap:8px;color:#78695e!important;
+  font-size:11px!important;line-height:1.5!important;margin:0!important}
+.fixi-payment-safety svg{flex:0 0 16px}
+.fixi-payment-hint{color:#947968!important;font-size:12px!important;margin:14px 0 0!important}
+.fixi-payment-request-note{display:block;font-size:11px;color:#836f63;margin-top:5px;line-height:1.4}
+.fixi-payment-actions{display:flex;align-items:center;gap:9px;flex-wrap:wrap;grid-column:1/-1}
+.fixi-payment-actions .fixi-billing-button{flex:1 1 auto}
+.fixi-supplier-requests-admin{margin:20px 0 25px;scroll-margin-top:30px}
+.fixi-supplier-requests-admin .fixi-billing-title-row{margin:0 0 14px}
+.fixi-supplier-requests-count{color:#be5c1c;background:#fff0e1;border:1px solid #f1cfb2;
+  border-radius:12px;padding:10px 15px;font-size:13px}
+.fixi-supplier-requests-admin th{font-size:11px}
+.fixi-supplier-requests-admin td{vertical-align:middle}
+.fixi-supplier-requests-admin td small{display:block;color:#816f62;font-size:11px;margin-top:5px;line-height:1.4}
+.fixi-supplier-requests-admin .fixi-billing-plan-tools{margin:0;gap:6px}
+.fixi-supplier-requests-admin .fixi-billing-button{font-size:11px;min-height:40px;padding:8px 10px}
+.fixi-supplier-requests-admin .fixi-supplier-back{font-size:11px;min-height:40px;padding:8px 10px}
+.fixi-proof-preview{margin:18px 0 0;border-radius:15px;padding:17px;
+  background:#fffbf4;border:1px solid #e4d8c8;display:grid;gap:12px}
+.fixi-proof-preview>div{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
+.fixi-proof-preview>div button{padding:9px 13px;background:#fff;border:1px solid #ddd;
+  border-radius:10px;cursor:pointer}
+.fixi-proof-preview>img{display:block;max-width:min(440px,100%);max-height:530px;object-fit:contain;border-radius:11px}
+.fixi-proof-preview>a{display:flex;gap:9px;align-items:center;font-weight:850;color:#a75824}
+.fixi-proof-preview p{display:flex;gap:9px;align-items:flex-start;
+  font-size:12px;line-height:1.55;color:#9e551d;margin:0}
+@media(max-width:950px){.fixi-payment-options{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:650px){
+ .fixi-payment-options{grid-template-columns:1fr}
+ .fixi-payment-option{min-height:135px}
+ .fixi-payment-request-form{grid-template-columns:1fr;padding:14px}
+ .fixi-payment-request-form>label,.fixi-payment-request-form>label:has(textarea){grid-column:1}
+ .fixi-payment-request-form .fixi-billing-button{grid-column:1}
+ .fixi-payment-safety{grid-column:1}
+ .fixi-supplier-requests-count{max-width:100%}
+}
+
+.fixi-pos-sale-note{display:grid;gap:7px;padding:10px 15px}
+.fixi-pos-sale-note>span{font-size:12px;color:#655548;font-weight:850}
+.fixi-pos-sale-note textarea{min-height:59px;border:1px solid #e3d9cf;border-radius:11px;
+  font:inherit;font-size:12px;line-height:1.5;padding:9px 11px;background:#fff;
+  color:#33261c;width:100%;resize:vertical}
+.supplier-pos-alert.success{flex-wrap:wrap}
+.supplier-pos-alert.success button{min-height:39px;white-space:nowrap}

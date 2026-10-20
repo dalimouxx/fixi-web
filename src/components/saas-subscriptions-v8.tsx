@@ -85,24 +85,45 @@ export function SaasSubscriptionsV8(){
  }
  async function review(r:any,action:string){
   if(action==='REJECT'){
-   const adminNote=window.prompt('Motif du refus','');
-   if(adminNote===null)return;
+   const adminNote=window.prompt('Motif obligatoire du refus','');
+   if(!adminNote?.trim())return;
    await mutate(()=>api('/api/platform/subscription-requests/'+r.id,{
-      method:'PATCH',body:JSON.stringify({action:'REJECT',adminNote})
-   }),'Demande refusée.');
-  }else{
-   const raw=window.prompt('Prix validé',String(r.requestedPrice??r.plan?.price??0));
-   if(raw===null)return;
-   const price=Number(raw);
-   if(!Number.isFinite(price)||price<0){setError('Prix invalide');return;}
-   const durationValue=Number(window.prompt('Durée',String(r.durationValue??r.plan?.durationValue??1)));
-   if(!Number.isSafeInteger(durationValue)||durationValue<1){setError('Durée invalide');return;}
-   const durationUnit=window.prompt('Unité : DAY / WEEK / MONTH / YEAR',r.durationUnit??r.plan?.durationUnit??'MONTH');
-   if(!durationUnit||!units[durationUnit]){setError('Unité de durée invalide');return;}
-   await mutate(()=>api('/api/platform/subscription-requests/'+r.id,{
-    method:'PATCH',body:JSON.stringify({action:'APPROVE',planId:r.planId,price,durationValue,durationUnit,paymentMethod:r.paymentMethod})
-   }),'Demande approuvée.');
+     method:'PATCH',body:JSON.stringify({action:'REJECT',adminNote})
+   }),'Demande refusée avec motif.');
+   return;
   }
+  const raw=window.prompt('Prix convenu (DT)',String(r.requestedPrice??r.plan?.price??0));
+  if(raw===null)return;
+  const price=Number(raw.replace(',','.'));
+  if(!Number.isFinite(price)||price<0){setError('Prix invalide');return;}
+  const value=window.prompt('Durée',String(r.durationValue??r.plan?.durationValue??1));
+  if(value===null)return;
+  const durationValue=Number(value);
+  if(!Number.isSafeInteger(durationValue)||durationValue<1||durationValue>120){setError('Durée invalide');return;}
+  const durationUnit=window.prompt('Unité : DAY / WEEK / MONTH / YEAR',r.durationUnit??r.plan?.durationUnit??'MONTH');
+  if(!durationUnit||!units[durationUnit]){setError('Unité de durée invalide');return;}
+  let verified=false,verifiedAmount=0,reference='',adminNote='';
+  if(price>0){
+    const amount=window.prompt('Montant effectivement crédité sur D17 / relevé bancaire (DT)',String(price));
+    if(amount===null)return;
+    verifiedAmount=Number(amount.replace(',','.'));
+    if(!Number.isFinite(verifiedAmount)||verifiedAmount<price){setError('Montant vérifié insuffisant');return;}
+    const ref=window.prompt('Référence transaction / rapprochement',r.transferReference||'');
+    if(ref===null)return;
+    reference=ref.trim();
+    if(!reference){
+     const note=window.prompt('Note obligatoire expliquant le rapprochement manuel','');
+     if(!note?.trim())return;
+     adminNote=note;
+    }
+    verified=window.confirm('CONFIRMATION FINANCIÈRE : vous avez constaté le versement sur votre compte réel ? Fixi enregistrera le paiement et activera la période.');
+    if(!verified)return;
+  }
+  await mutate(()=>api('/api/platform/subscription-requests/'+r.id,{
+    method:'PATCH',body:JSON.stringify({action:'APPROVE',planId:r.planId,price,
+      durationValue,durationUnit,paymentMethod:r.paymentMethod,
+      verified,verifiedAmount,reference,adminNote})
+  }),'Demande approuvée après contrôle.');
  }
  return <section className="control-content subscriptions-v8 fixi-subscription-admin">
   <div className="fixi-subs-title">
@@ -204,7 +225,11 @@ export function SaasSubscriptionsV8(){
     <td>{r.plan?.name||'Personnalisée'}</td>
     <td>{r.durationValue?r.durationValue+' '+units[r.durationUnit]:'—'}</td>
     <td>{r.requestedPrice!=null?money(r.requestedPrice):'—'}</td>
-    <td>{r.paymentMethod||'—'}{r.proofDataUrl&&<small>Preuve jointe</small>}</td>
+    <td>{r.paymentMethod||'—'}{r.proofDataUrl&&
+      (String(r.proofDataUrl).startsWith('data:image/')||String(r.proofDataUrl).startsWith('data:application/pdf;'))?
+        <a href={r.proofDataUrl} target="_blank" rel="noopener noreferrer" className="fixi-subs-proof-link">Voir preuve jointe</a>:
+        r.proofDataUrl?<small>Preuve à vérifier (format inconnu)</small>:null}
+     {r.transferReference&&<small>Réf. {r.transferReference}</small>}</td>
     <td><span className={'status-pill '+String(r.status).toLowerCase()}>{r.status}</span></td>
     <td>{r.status==='PENDING'&&<div className="fixi-subs-actions">
       <button type="button" className="btn btn-success btn-sm" onClick={()=>void review(r,'APPROVE')}><Check size={14}/> Approuver</button>
