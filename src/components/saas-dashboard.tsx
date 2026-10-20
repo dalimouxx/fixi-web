@@ -1,5 +1,7 @@
 'use client';
-import { useMemo,useState,useEffect } from 'react';import { useRouter } from 'next/navigation';import { Activity,AlertTriangle,BarChart3,BellRing,Menu,Truck,CreditCard,Building2,CalendarClock,ChevronRight,CircleDollarSign,Gift,Headphones,ImagePlus,LayoutDashboard,LogOut,Megaphone,MessageSquareText,MonitorUp,Palette,Pause,Play,Plus,RefreshCw,Settings2,ShieldCheck,Store,Trash2,Trophy,Users,Wrench,X,ReceiptText,BadgePercent,UserPlus,PackageOpen,MapPin } from 'lucide-react';import { api,Modal,useApi } from './ui';import { SaasDirectory } from './saas-directory';import { SaasSubscriptionsV8 } from './saas-subscriptions-v8';import { SaasBillingV8 } from './saas-billing-v8';import { dateOnly,dateTime,money } from '@/lib/format';
+import { useMemo,useState,useEffect } from 'react';import { useRouter } from 'next/navigation';import { Activity,AlertTriangle,BarChart3,BellRing,Menu,Truck,CreditCard,Building2,CalendarClock,ChevronRight,CircleDollarSign,Gift,Headphones,ImagePlus,LayoutDashboard,LogOut,Megaphone,MessageSquareText,MonitorUp,Palette,Pause,Play,Plus,RefreshCw,Settings2,ShieldCheck,Store,Trash2,Trophy,Users,Wrench,X,ReceiptText,BadgePercent,UserPlus,PackageOpen,MapPin } from 'lucide-react';import { api,Modal,useApi } from './ui';
+import {FixiMark} from './fixi-mark';
+import {FixiSmartWidgets} from './fixi-smart-widgets';import { SaasDirectory } from './saas-directory';import { SaasSubscriptionsV8 } from './saas-subscriptions-v8';import { SaasBillingV8 } from './saas-billing-v8';import { dateOnly,dateTime,money } from '@/lib/format';
 type Tab='overview'|'shops'|'directory'|'subscriptions'|'billing'|'messages'|'ads'|'support'|'brand'|'tools';
 const emptyClient={tenantName:'',shopName:'',slug:'',region:'Gabès',adminName:'',loginCode:'admin',pin:'',planId:'',status:'TRIAL',phone:'',address:'',endsAt:''};
 export function SaasDashboard({admin}:{admin:any}){const r=useRouter();const[tab,setTab]=useState<Tab>('overview');
@@ -46,7 +48,7 @@ useEffect(()=>{
 return <div className={'saas-v4'+(menuOpen?' menu-open':'')}>
 {menuOpen&&<button type="button" aria-label="Fermer le menu" className="fixi-control-backdrop" onClick={()=>setMenuOpen(false)}/>}
 <aside id="fixi-control-navigation" className="control-side" aria-label="Administration Fixi">
- <div className="control-logo"><i>F</i><div><b>fixi</b><small>CONTROL CENTER · ADMIN</small></div>
+ <div className="control-logo"><FixiMark/><div><b>fixi</b><small>CONTROL CENTER · ADMIN</small></div>
   <button type="button" className="fixi-control-close" aria-label="Fermer la navigation" onClick={()=>setMenuOpen(false)}><X size={18}/></button>
  </div>
  <nav aria-label="Sections Fixi Control">
