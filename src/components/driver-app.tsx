@@ -9,6 +9,7 @@ import {PushToggle} from './push-toggle';
 import {PwaRegister} from './pwa-register';
 import {InstallAppButton} from './install-app-button';
 import {DeliveryInstall} from './delivery-install';
+import {FixiSmartWidgets} from './fixi-smart-widgets';
 import {BarcodeCamera} from './barcode-camera';
 import {dateTime,money} from '@/lib/format';
 
