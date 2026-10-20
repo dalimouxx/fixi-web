@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - feature/windows-pos-labels-design
+      - feature/windows-pos-v3-sales
     paths:
       - 'apps/windows-pos/**'
       - '.github/workflows/windows-exe-build.yml'
