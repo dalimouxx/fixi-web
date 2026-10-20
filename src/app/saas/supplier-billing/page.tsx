@@ -8,7 +8,7 @@ type Payment={id:string;amount:number|string;method:string;reference:string;paid
 type Sub={id:string;plan:Plan;status:string;startsAt:string;endsAt:string|null;agreedPrice:string|number|null;payments:Payment[]};
 type Company={id:string;name:string;region?:string|null;active:boolean;saasSubscriptions:Sub[];_count:{products:number;orders:number;accounts:number}};
 type Data={plans:Plan[];companies:Company[]};
-type RequestRow={id:string;companyId:string;status:string;createdAt:string;reviewedAt:string|null;
+type RequestRow={id:string;companyId:string;planId:string;status:string;createdAt:string;reviewedAt:string|null;
  requestedPrice:number|string;paymentMethod:string;transferReference:string|null;hasProof:boolean;
  adminNote:string|null;company:{name:string;region:string|null;phone:string|null}|null;
  plan:{name:string;price:number|string;durationValue:number;durationUnit:string}|null};
