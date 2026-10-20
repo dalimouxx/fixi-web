@@ -28,6 +28,8 @@ jobs:
           workspaces: apps/windows-pos/src-tauri -> target
       - name: Install dependencies
         run: npm install --no-audit --no-fund
+      - name: Generate FIXI Windows icon
+        run: python scripts/generate_icon.py
       - name: Build Windows NSIS EXE
         run: npm run tauri build -- --bundles nsis
       - name: Upload Windows installer
