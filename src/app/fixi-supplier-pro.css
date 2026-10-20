@@ -218,3 +218,11 @@
  .fixi-payment-safety{grid-column:1}
  .fixi-supplier-requests-count{max-width:100%}
 }
+
+.fixi-pos-sale-note{display:grid;gap:7px;padding:10px 15px}
+.fixi-pos-sale-note>span{font-size:12px;color:#655548;font-weight:850}
+.fixi-pos-sale-note textarea{min-height:59px;border:1px solid #e3d9cf;border-radius:11px;
+  font:inherit;font-size:12px;line-height:1.5;padding:9px 11px;background:#fff;
+  color:#33261c;width:100%;resize:vertical}
+.supplier-pos-alert.success{flex-wrap:wrap}
+.supplier-pos-alert.success button{min-height:39px;white-space:nowrap}
