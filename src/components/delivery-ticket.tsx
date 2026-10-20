@@ -7,11 +7,17 @@ export function DeliveryTicket({order,qr,viewer}:{order:any;qr:string;viewer:'su
   <div className="delivery-ticket-toolbar no-print"><div><b>Bon de livraison</b><span>{order.reference}</span></div><PrintButton/></div>
   <article className="delivery-ticket">
    <header>
-    <div className="delivery-ticket-brand"><i>F</i><span><b>FIXI · BON DE LIVRAISON</b><small>Traçabilité fournisseur → livreur → atelier</small></span></div>
+    <div className="delivery-ticket-brand">
+      {order.company.logoUrl?<img className="fixi-delivery-company-logo" src={order.company.logoUrl} alt=""/>:<i>F</i>}
+      <span><b>{order.company.name} · BON DE LIVRAISON</b><small>Traçabilité fournisseur → livreur → atelier</small></span>
+    </div>
     <div className="delivery-ticket-ref"><span>Commande</span><b>{order.reference}</b><small>{dateTime(order.confirmedAt||order.createdAt)}</small></div>
    </header>
    <section className="delivery-ticket-parties">
-    <div><span>FOURNISSEUR</span><b>{order.company.name}</b><small>{order.company.phone||'Téléphone —'}</small><small>{order.company.address||order.company.region||'Adresse —'}</small></div>
+    <div><span>FOURNISSEUR</span><b>{order.company.name}</b><small>{order.company.phone||'Téléphone —'}</small><small>{order.company.address||order.company.region||'Adresse —'}</small>
+      {order.company.taxId&&<small>Matricule fiscal : {order.company.taxId}</small>}
+      {order.company.tradeRegister&&<small>RC / RNE : {order.company.tradeRegister}</small>}
+    </div>
     <div><span>ATELIER DESTINATAIRE</span><b>{order.shop.name}</b><small>{order.shop.phone||'Téléphone —'}</small><small>{order.deliveryAddress||order.shop.address||order.shop.region||'Adresse —'}</small></div>
     <div><span>LIVREUR</span><b>{order.delivery?.driverName||'À affecter / à accepter'}</b><small>{order.delivery?.driverPhone||'Téléphone —'}</small><small>{order.delivery?.acceptedAt?'Accepté '+dateTime(order.delivery.acceptedAt):'En attente de prise en charge'}</small></div>
    </section>
@@ -26,13 +32,18 @@ export function DeliveryTicket({order,qr,viewer}:{order:any;qr:string;viewer:'su
     <div className="delivery-ticket-qr"><img src={qr} alt="QR d’identification du bon de livraison"/><span><b>QR DU BON LOGISTIQUE</b><small>Ce QR identifie uniquement la commande. Il ne valide pas la remise. Le code sécurisé est affiché dans Fixi Atelier.</small></span></div>
     <div className="delivery-ticket-code"><span>VALIDATION SÉCURISÉE</span><b style={{fontSize:15}}>Code fourni par la boutique</b><small>Le livreur demande le QR/code secret sur l’application Atelier au moment de remettre physiquement les produits.</small></div>
    </section>
+   {order.company.deliveryInstructions&&<section className="fixi-invoice-terms">
+      <div><strong>Consignes de livraison</strong><p>{order.company.deliveryInstructions}</p></div>
+    </section>}
    <section className="delivery-ticket-chain">
     <div><span>1 · FOURNISSEUR</span><b>Commande contrôlée et remise</b><small>Nom / signature : ____________________</small><small>Date/heure : ____________________</small></div>
     <div><span>2 · LIVREUR</span><b>Produits pris en charge</b><small>Nom / signature : ____________________</small><small>Date/heure : ____________________</small></div>
     <div><span>3 · ATELIER</span><b>Produits reçus et contrôlés</b><small>Nom / signature : ____________________</small><small>Date/heure : ____________________</small></div>
    </section>
    <footer>
-    <b>Preuve Fixi</b><span>Le QR/code confirme la réception numérique. Les paiements, dus, retours et incidents restent liés à cette commande dans les trois applications.</span><code>{order.id}</code>
+    <b>Preuve Fixi</b><span>Le QR/code confirme la réception numérique. Les paiements, dus, retours et incidents restent liés à cette commande dans les trois applications.</span>
+    {order.company.documentFooter&&<span>{order.company.documentFooter}</span>}
+    <code>{order.id}</code>
    </footer>
   </article>
   <div className="delivery-ticket-viewer no-print">Vue : {viewer==='supplier'?'Fournisseur':viewer==='driver'?'Livreur':'Atelier'}</div>
