@@ -39,6 +39,7 @@ export function RealtimeNotificationCenter({apiUrl,eventsUrl,storageKey,allHref,
   const[rows,setRows]=useState<Incoming[]>([]);
   const[unread,setUnread]=useState(0);
   const[open,setOpen]=useState(false);
+  const[filter,setFilter]=useState<'ALL'|'UNREAD'>('ALL');
   const[sound,setSound]=useState(true);
   const[desktop,setDesktop]=useState(false);
   const[toast,setToast]=useState<Incoming|null>(null);
@@ -148,23 +149,33 @@ export function RealtimeNotificationCenter({apiUrl,eventsUrl,storageKey,allHref,
   function dismiss(){setToast(null);if(dismissTimer.current)clearTimeout(dismissTimer.current);}
 
   return <div className={'rt-notifications '+(compact?'compact':'')}>
-    <button className={'rt-bell '+(unread?'active':'')} onClick={()=>setOpen(v=>!v)}
+    <button type="button" className={'rt-bell '+(unread?'active':'')} onClick={()=>setOpen(v=>!v)} aria-expanded={open}
       aria-label={'Notifications'+(unread?' — '+unread+' non lues':'')} title="Notifications temps réel">
       {unread?<BellRing/>:<Bell/>}{unread>0&&<span>{unread>99?'99+':unread}</span>}
     </button>
     {open&&<div className="rt-panel">
-      <div className="rt-head"><div><b>Notifications</b><span>{unread?unread+' non lue(s)':'Tout est lu'}</span></div><button onClick={()=>setOpen(false)} aria-label="Fermer"><X/></button></div>
+      <div className="rt-head"><div><b>Centre de notifications</b><span>{unread?unread+' non lue(s)':'Tout est lu'}</span></div><button onClick={()=>setOpen(false)} aria-label="Fermer"><X/></button></div>
       <div className="rt-controls">
         <button className={sound?'on':''} onClick={toggleSound}>{sound?<Volume2/>:<VolumeX/>}{sound?'Son activé':'Son coupé'}</button>
         <button className={desktop?'on':''} onClick={enableDesktop}><MonitorUp/>{desktop?'Bureau activé':'Activer bureau'}</button>
         {unread>0&&<button onClick={()=>void markAll()}><CheckCheck/>Tout lire</button>}
       </div>
+      <div className="rt-filter-tabs" role="group" aria-label="Afficher les notifications">
+        <button type="button" className={filter==='ALL'?'active':''} aria-pressed={filter==='ALL'}
+          onClick={()=>setFilter('ALL')}>Toutes <span>{rows.length}</span></button>
+        <button type="button" className={filter==='UNREAD'?'active':''} aria-pressed={filter==='UNREAD'}
+          onClick={()=>setFilter('UNREAD')}>Non lues <span>{unread}</span></button>
+      </div>
       <div className="rt-list">
-        {rows.slice(0,20).map(n=>n.href&&!onNavigate?
+        {rows.filter(n=>filter==='ALL'||!n.readAt).slice(0,20).map(n=>n.href&&!onNavigate?
           <Link href={n.href} key={n.id} className={n.readAt?'':'unread'} onClick={()=>go(n)}><Notif n={n}/></Link>:
           <button key={n.id} className={n.readAt?'':'unread'} onClick={()=>go(n)}><Notif n={n}/></button>
         )}
-        {!rows.length&&<div className="rt-empty"><Bell/><b>Aucune notification</b><span>Les événements importants apparaîtront ici.</span></div>}
+        {!rows.filter(n=>filter==='ALL'||!n.readAt).length&&
+          <div className="rt-empty"><Bell/>
+            <b>{filter==='UNREAD'?'Tout est à jour':'Aucune notification'}</b>
+            <span>{filter==='UNREAD'?'Toutes les notifications sont lues.':'Les événements importants apparaîtront ici.'}</span>
+          </div>}
       </div>
       {allHref&&<Link className="rt-all" href={allHref} onClick={()=>setOpen(false)}>Voir toutes les notifications</Link>}
     </div>}

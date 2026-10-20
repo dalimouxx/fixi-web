@@ -1,1 +1,15 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#4d7dff"/><stop offset="1" stop-color="#11c6df"/></linearGradient></defs><rect width="512" height="512" rx="130" fill="#08101e"/><rect x="70" y="70" width="372" height="372" rx="100" fill="url(#g)"/><path fill="#fff" d="M176 128h190v70H255v50h99v69h-99v93h-79z"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Fixi">
+  <defs>
+    <linearGradient id="fixiBrand" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#FF9A42"/>
+      <stop offset="1" stop-color="#EA580C"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="121" fill="#FFF9F5"/>
+  <rect x="40" y="40" width="432" height="432" rx="112" fill="url(#fixiBrand)"/>
+  <g fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M167 374V151a25 25 0 0 1 25-25h156" stroke-width="65"/>
+    <path d="M167 244h140" stroke-width="65"/>
+    <path d="m296 375 76-76m0 76-76-76" stroke-width="43"/>
+  </g>
+</svg>
