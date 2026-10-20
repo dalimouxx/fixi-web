@@ -11,7 +11,9 @@ type PaymentLine={method:string;amount:number};
 
 export function SupplierPos({products,customers,cashSessions,methods,warehouses,warehouseStock,session,onChanged}:Props){
  const[q,setQ]=useState('');const[category,setCategory]=useState('ALL');const[pricing,setPricing]=useState<'retail'|'wholesale'>('retail');const[warehouseId,setWarehouseId]=useState('');
- const[cart,setCart]=useState<CartLine[]>([]);const[customerId,setCustomerId]=useState('');const[discount,setDiscount]=useState(0);const[payments,setPayments]=useState<PaymentLine[]>([{method:'CASH',amount:0}]);
+ const[cart,setCart]=useState<CartLine[]>([]);
+ const[customerId,setCustomerId]=useState('');
+ const[discount,setDiscount]=useState(0),[saleNote,setSaleNote]=useState('');const[payments,setPayments]=useState<PaymentLine[]>([{method:'CASH',amount:0}]);
  const[draftReady,setDraftReady]=useState(false);const[busy,setBusy]=useState(false);const[msg,setMsg]=useState('');const[err,setErr]=useState('');const[scanner,setScanner]=useState(false);const[cashModal,setCashModal]=useState<'open'|'close'|null>(null);
  const[cashAmount,setCashAmount]=useState('0'),[cashNote,setCashNote]=useState('');
  const[cashOverview,setCashOverview]=useState<any>(null),[cashBusy,setCashBusy]=useState(false);
@@ -26,8 +28,9 @@ export function SupplierPos({products,customers,cashSessions,methods,warehouses,
  }
  useEffect(()=>{void refreshCash()},[cashSessions,session.id]);
 
- useEffect(()=>{try{const raw=localStorage.getItem('fixi-supplier-pos-draft');if(raw){const d=JSON.parse(raw);if(Array.isArray(d.cart))setCart(d.cart);if(d.customerId)setCustomerId(d.customerId);if(Number.isFinite(Number(d.discount)))setDiscount(Number(d.discount));if(Array.isArray(d.payments)&&d.payments.length)setPayments(d.payments);if(d.pricing)setPricing(d.pricing);if(d.warehouseId)setWarehouseId(d.warehouseId)}}catch{}finally{setDraftReady(true)}},[]);
- useEffect(()=>{if(!draftReady)return;try{localStorage.setItem('fixi-supplier-pos-draft',JSON.stringify({cart,customerId,discount,payments,pricing,warehouseId,updatedAt:new Date().toISOString()}))}catch{}},[draftReady,cart,customerId,discount,payments,pricing,warehouseId]);
+ useEffect(()=>{try{const raw=localStorage.getItem('fixi-supplier-pos-draft');if(raw){const d=JSON.parse(raw);if(Array.isArray(d.cart))setCart(d.cart);if(d.customerId)setCustomerId(d.customerId);if(Number.isFinite(Number(d.discount)))setDiscount(Number(d.discount));
+  if(d.saleNote)setSaleNote(String(d.saleNote).slice(0,500));if(Array.isArray(d.payments)&&d.payments.length)setPayments(d.payments);if(d.pricing)setPricing(d.pricing);if(d.warehouseId)setWarehouseId(d.warehouseId)}}catch{}finally{setDraftReady(true)}},[]);
+ useEffect(()=>{if(!draftReady)return;try{localStorage.setItem('fixi-supplier-pos-draft',JSON.stringify({cart,customerId,discount,saleNote,payments,pricing,warehouseId,updatedAt:new Date().toISOString()}))}catch{}},[draftReady,cart,customerId,discount,saleNote,payments,pricing,warehouseId]);
   const categories=useMemo(()=>['ALL',...Array.from(new Set(products.filter(p=>p.active!==false).map(p=>p.category||'Sans catégorie'))).sort()],[products]);
  const filtered=useMemo(()=>products.filter(p=>p.active!==false&&(!q||[p.sku,p.barcode,p.name,p.brand,p.category].join(' ').toLowerCase().includes(q.toLowerCase()))&&(category==='ALL'||(p.category||'Sans catégorie')===category)),[products,q,category]);
  const subtotal=cart.reduce((a,l)=>a+l.unitPrice*l.quantity,0);
@@ -53,8 +56,8 @@ export function SupplierPos({products,customers,cashSessions,methods,warehouses,
   if(paid>total+0.001)return setErr('Le total des paiements dépasse le total de la vente.');
   setBusy(true);setErr('');setMsg('');
   try{
-   const sale=await api('/api/supplier/erp',{method:'POST',body:JSON.stringify({action:'SALE',warehouseId:effectiveWarehouseId||null,customerId:customerId||null,items:cart.map(l=>({productId:l.product.id,quantity:l.quantity,unitPrice:l.unitPrice})),discount,tax,payments:payments.filter(p=>p.amount>0),dueAt:due>0?new Date(Date.now()+7*86400000).toISOString():null})});
-   setLastSale(sale);setMsg('Vente '+sale.reference+' enregistrée avec succès.');try{localStorage.removeItem('fixi-supplier-pos-draft')}catch{}setCart([]);setDiscount(0);setPayments([{method:'CASH',amount:0}]);setCustomerId('');onChanged();void refreshCash();
+   const sale=await api('/api/supplier/erp',{method:'POST',body:JSON.stringify({action:'SALE',warehouseId:effectiveWarehouseId||null,customerId:customerId||null,items:cart.map(l=>({productId:l.product.id,quantity:l.quantity,unitPrice:l.unitPrice})),discount,tax,note:saleNote.trim()||null,payments:payments.filter(p=>p.amount>0),dueAt:due>0?new Date(Date.now()+7*86400000).toISOString():null})});
+   setLastSale(sale);setMsg('Vente '+sale.reference+' enregistrée avec succès.');try{localStorage.removeItem('fixi-supplier-pos-draft')}catch{}setCart([]);setDiscount(0);setSaleNote('');setPayments([{method:'CASH',amount:0}]);setCustomerId('');onChanged();void refreshCash();
   }catch(e:any){setErr(e.message||'Vente impossible')}finally{setBusy(false)}
  }
  async function cashAction(){
@@ -73,7 +76,10 @@ export function SupplierPos({products,customers,cashSessions,methods,warehouses,
    <div><span className="smart-kicker"><WalletCards size={13}/> FIXI POS</span><h2>Point de vente</h2><p>Vente comptoir rapide, prix détail/grossiste et règlement multiple.</p></div>
    <div className={'supplier-register '+(openSession?'open':'closed')}><i/><span><b>{openSession?'Caisse ouverte':'Caisse fermée'}</b><small>{openSession?'Depuis '+new Date(openSession.openedAt).toLocaleTimeString('fr-TN',{hour:'2-digit',minute:'2-digit'}):'Ouvrez une session avant les espèces'}</small></span><button className="btn btn-soft btn-sm" onClick={()=>{setCashNote('');setCashAmount(openSession?'': '0');void refreshCash();setCashModal(openSession?'close':'open')}}>{openSession?<LockKeyhole/>:<UnlockKeyhole/>}{openSession?'Clôturer':'Ouvrir'}</button></div>
   </div>
-  {err&&<div className="supplier-pos-alert error"><X/>{err}</div>}{msg&&<div className="supplier-pos-alert success"><CheckCircle2/>{msg}{lastSale&&<button onClick={()=>window.open('/supplier/documents/'+lastSale.id,'_blank')}><Printer/> Facture</button>}</div>}
+  {err&&<div className="supplier-pos-alert error"><X/>{err}</div>}{msg&&<div className="supplier-pos-alert success"><CheckCircle2/>{msg}{lastSale&&<><button type="button" onClick={()=>window.open('/supplier/documents/'+lastSale.id,'_blank')}>
+     <Printer/> Facture A4</button>
+     <button type="button" onClick={()=>window.open('/supplier/documents/'+lastSale.id+'?format=ticket','_blank')}>
+       <ReceiptText/> Ticket 80 mm</button></>}</div>}
   <section className="fixi-pos-cash-dashboard" aria-label="Suivi de caisse du fournisseur">
     <div className="fixi-pos-cash-heading">
       <div><span className="smart-kicker"><ClipboardCheck size={15}/> CONTRÔLE DE CAISSE</span>
@@ -125,7 +131,15 @@ export function SupplierPos({products,customers,cashSessions,methods,warehouses,
     <label className="supplier-pos-customer"><UserRound/><select value={customerId} onChange={e=>setCustomerId(e.target.value)}><option value="">Client comptoir</option>{customers.filter(c=>c.active!==false).map(c=><option key={c.id} value={c.id}>{c.name}{Number(c.creditLimit)>0?' · crédit '+money(c.creditLimit):''}</option>)}</select></label>
     <div className="supplier-pos-lines">{cart.map(l=><div className="supplier-pos-line" key={l.product.id}><div className="supplier-pos-line-main"><div><b>{l.product.name}</b><span>{l.product.sku}</span></div><button onClick={()=>remove(l.product.id)}><Trash2/></button></div><div className="supplier-pos-line-controls"><div><button onClick={()=>qty(l.product.id,-1)}><Minus/></button><b>{l.quantity}</b><button onClick={()=>qty(l.product.id,1)}><Plus/></button></div><label><input type="number" min={0} step="0.001" value={l.unitPrice} onChange={e=>setPrice(l.product.id,Number(e.target.value))}/><span>DT</span></label><strong>{money(l.unitPrice*l.quantity)}</strong></div></div>)}{!cart.length&&<div className="supplier-pos-cart-empty"><ShoppingCart/><b>Panier vide</b><span>Scannez ou choisissez un produit.</span></div>}</div>
     <div className="supplier-pos-totals"><div><span>Sous-total</span><b>{money(subtotal)}</b></div><label><span><Percent/> Remise</span><input type="number" min={0} max={subtotal} step="0.001" value={discount} onChange={e=>setDiscount(Number(e.target.value))}/></label><div><span>Taxes</span><b>{money(tax)}</b></div><div className="grand"><span>Total</span><b>{money(total)}</b></div></div>
-    <div className="supplier-pos-payments"><div className="supplier-pos-pay-head"><b>Règlements</b><button onClick={addPayment}><Plus/> Ajouter</button></div>{payments.map((p,i)=><div key={i} className="supplier-payment-line"><select value={p.method} onChange={e=>payment(i,'method',e.target.value)}>{methods.filter(m=>m.active&&m.code!=='CREDIT').map(m=><option key={m.id||m.code} value={m.code}>{m.name}</option>)}</select><input type="number" min={0} step="0.001" value={p.amount||''} placeholder="0.000" onChange={e=>payment(i,'amount',e.target.value)}/>{payments.length>1&&<button onClick={()=>setPayments(cur=>cur.filter((_,n)=>n!==i))}><X/></button>}</div>)}<button className="supplier-pay-balance" onClick={()=>setPayments(cur=>cur.map((p,i)=>i===0?{...p,amount:total}:p))}><Banknote/> Régler la totalité</button></div>
+    <div className="supplier-pos-payments"><div className="supplier-pos-pay-head"><b>Règlements</b><button onClick={addPayment}><Plus/> Ajouter</button></div>{payments.map((p,i)=><div key={i} className="supplier-payment-line"><select value={p.method} onChange={e=>payment(i,'method',e.target.value)}>{methods.filter(m=>m.active&&m.code!=='CREDIT').map(m=><option key={m.id||m.code} value={m.code}>{m.name}</option>)}</select><input type="number" min={0} step="0.001" value={p.amount||''} placeholder="0.000" onChange={e=>payment(i,'amount',e.target.value)}/>{payments.length>1&&<button onClick={()=>setPayments(cur=>cur.filter((_,n)=>n!==i))}><X/></button>}</div>)}<button className="supplier-pay-balance" onClick={()=>setPayments(cur=>{
+    const others=cur.slice(1).reduce((sum,p)=>sum+Math.max(0,Number(p.amount||0)),0);
+    return cur.map((p,i)=>i===0?{...p,amount:Math.max(0,Math.round((total-others)*1000)/1000)}:p);
+  })}><Banknote/> Régler la totalité</button></div>
+    <label className="fixi-pos-sale-note"><span>Observation sur la facture (facultative)</span>
+       <textarea value={saleNote} maxLength={500} rows={2}
+         onChange={e=>setSaleNote(e.target.value)}
+         placeholder="Ex. garantie 3 mois, livraison prévue, référence client…"/>
+    </label>
     <div className="supplier-pos-balance"><span>Payé <b>{money(paid)}</b></span><span className={due>0?'due':''}>Reste <b>{money(due)}</b></span></div>
     <button disabled={busy||!cart.length} onClick={checkout} className="btn btn-primary btn-block supplier-pos-checkout"><ReceiptText/>{busy?'Validation…':'Valider la vente'} <b>{money(total)}</b></button>
    </aside>
