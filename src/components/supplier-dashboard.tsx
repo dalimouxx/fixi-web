@@ -133,11 +133,22 @@ export function SupplierDashboard({session}:{session:any}){
       </section>
 
       {tab==='dashboard'&&<>
-        <div className="supplier-kpis supplier-kpis-6">
-          <K icon={ClipboardList} label="Commandes actives" value={activeOrders.length}/><K icon={BadgeDollarSign} label="CA livré" value={money(revenue)}/>
-          <K icon={Boxes} label="Unités en stock" value={stockUnits}/><K icon={Warehouse} label="Valeur vente stock" value={money(stockValue)}/>
-          <K icon={AlertTriangle} label="Stock faible" value={lowStock}/><K icon={Users} label="Clients actifs" value={clients.length+(erp.customers?.length||0)}/>
-        </div>
+        <FixiSmartWidgets area="supplier" onAction={target=>setTab(target as Tab)}
+          subtitle="Commandes, ventes, stock et clients de votre société, actualisés automatiquement."
+          widgets={[
+            {id:'supplier-orders',label:'Commandes actives',value:activeOrders.length,
+             description:'À préparer ou à livrer',icon:'orders',action:'orders',urgent:activeOrders.some(o=>o.status==='PENDING')},
+            {id:'supplier-revenue',label:'CA livré',value:money(revenue),
+             description:'Commandes livrées enregistrées',icon:'finance',accent:'success',action:'finance'},
+            {id:'supplier-stock',label:'Unités en stock',value:stockUnits,
+             description:'Stock disponible dans le catalogue',icon:'stock',action:'products'},
+            {id:'supplier-value',label:'Valeur vente stock',value:money(stockValue),
+             description:'Estimation aux prix de vente',icon:'finance',accent:'info',action:'inventory'},
+            {id:'supplier-warning',label:'Stock faible',value:lowStock,
+             description:'Produits à réapprovisionner',icon:'alert',accent:'warning',urgent:lowStock>0,action:'products'},
+            {id:'supplier-clients',label:'Clients professionnels',value:clients.length+(erp.customers?.length||0),
+             description:'Boutiques connectées et clients ERP',icon:'clients',action:'clients'},
+          ]}/>
         <div className="supplier-dashboard-grid">
           <section className="supplier-panel"><div className="supplier-section-head"><div><b>À traiter maintenant</b><span>Actions prioritaires pour aujourd’hui</span></div></div>
             <div className="supplier-action-list">
