@@ -24,6 +24,8 @@ import {RealtimeNotificationCenter} from './realtime-notification-center';
 import {PushToggle} from './push-toggle';
 import {PwaRegister} from './pwa-register';
 import {InstallAppButton} from './install-app-button';
+import {FixiMark} from './fixi-mark';
+import {FixiSmartWidgets} from './fixi-smart-widgets';
 
 const nextStatus:Record<string,string|undefined>={PENDING:'CONFIRMED',CONFIRMED:'PREPARING',PREPARING:'READY_FOR_DELIVERY',READY_FOR_DELIVERY:undefined,OUT_FOR_DELIVERY:undefined};
 const labels:Record<string,string>={PENDING:'Nouvelle',CONFIRMED:'Confirmée',PREPARING:'Préparation',READY_FOR_DELIVERY:'Disponible livreurs',OUT_FOR_DELIVERY:'En livraison',RETURNING:'Retour fournisseur',RETURNED:'Retour reçu à traiter',DELIVERED:'Livrée',CANCELLED:'Annulée'};
@@ -102,7 +104,7 @@ export function SupplierDashboard({session}:{session:any}){
     {mobileNavOpen&&<button aria-label="Fermer le menu fournisseur" className="fixi-supplier-drawer-backdrop" onClick={()=>setMobileNavOpen(false)}/>}
     <aside className={mobileNavOpen?'fixi-supplier-drawer open':'fixi-supplier-drawer'} aria-label="Navigation Supplier">
       <button className="fixi-supplier-drawer-close" aria-label="Fermer le menu" onClick={()=>setMobileNavOpen(false)}><X size={20}/></button>
-      <div className="supplier-os-brand"><i>F</i><div><b>Fixi Supplier</b><span>{session.companyName}</span></div></div>
+      <div className="supplier-os-brand"><FixiMark/><div><b>Fixi Supplier</b><span>{session.companyName}</span></div></div>
       <div className="fixi-supplier-menu-scroll" role="navigation" aria-label="Modules du fournisseur" tabIndex={0}>
         {nav.map(([key,label,Icon])=><div key={key} className="fixi-supplier-nav-item">
           {key==='dashboard'&&<div className="supplier-nav-label">VUE GÉNÉRALE</div>}
