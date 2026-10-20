@@ -21,7 +21,7 @@ export async function GET(){
    prisma.supplierBrand.findMany({where:{companyId:s.companyId},orderBy:{name:'asc'}}),
    prisma.supplierUnit.findMany({where:{companyId:s.companyId},orderBy:{name:'asc'}}),
    prisma.supplierPaymentMethod.findMany({where:{companyId:s.companyId},orderBy:[{sortOrder:'asc'},{name:'asc'}]}),
-   prisma.supplierCompany.findUnique({where:{id:s.companyId},select:{id:true,name:true,logoUrl:true,phone:true,email:true,address:true,region:true,taxId:true,currency:true,defaultTaxRate:true,invoicePrefix:true,receiptPrefix:true,purchasePrefix:true,allowNegativeStock:true,verified:true}})
+   prisma.supplierCompany.findUnique({where:{id:s.companyId},select:{id:true,name:true,logoUrl:true,phone:true,email:true,address:true,region:true,taxId:true,legalName:true,tradeRegister:true,secondaryPhone:true,website:true,bankName:true,bankRib:true,documentFooter:true,invoiceTerms:true,deliveryInstructions:true,receiptMessage:true,currency:true,defaultTaxRate:true,invoicePrefix:true,receiptPrefix:true,purchasePrefix:true,allowNegativeStock:true,verified:true,updatedAt:true}})
   ]);
   return ok(plain({categories,brands,units,paymentMethods,company}));
  }catch(e:any){return bad(e.message,e.status||500)}
@@ -63,8 +63,27 @@ export async function POST(req:Request){
   if(action==='COMPANY_SETTINGS'){
    const a=await requireSupplierRole(['OWNER','ADMIN']);
    const data:any={};
-   for(const k of ['name','phone','email','address','region','taxId','currency','invoicePrefix','receiptPrefix','purchasePrefix'])if(b[k]!==undefined)data[k]=String(b[k]||'').trim()||null;
-   if(b.defaultTaxRate!==undefined)data.defaultTaxRate=Math.max(0,Number(b.defaultTaxRate||0));
+   const freeText={
+     name:150,legalName:180,phone:35,secondaryPhone:35,email:150,address:400,region:100,taxId:75,
+     tradeRegister:80,website:220,bankName:120,bankRib:130,documentFooter:500,invoiceTerms:800,
+     deliveryInstructions:800,receiptMessage:350,currency:8,invoicePrefix:16,receiptPrefix:16,purchasePrefix:16
+   } as const;
+   for(const key of Object.keys(freeText) as (keyof typeof freeText)[]){
+     if(b[key]===undefined)continue;
+     const value=String(b[key]??'').trim();
+     if(value.length>freeText[key])return bad('Champ trop long : '+key,400);
+     if(key==='name'&&!value)return bad('Raison sociale requise',400);
+     data[key]=value||null;
+   }
+   if(b.website&&String(b.website).trim()&&!/^https?:\/\//i.test(String(b.website).trim()))
+     return bad('Le site web doit commencer par https://',400);
+   if(b.email&&String(b.email).trim()&&!/^\S+@\S+\.\S+$/.test(String(b.email).trim()))
+     return bad('E-mail invalide',400);
+   if(b.defaultTaxRate!==undefined){
+     const value=Number(b.defaultTaxRate);
+     if(!Number.isFinite(value)||value<0||value>100)return bad('TVA par défaut invalide',400);
+     data.defaultTaxRate=value;
+   }
    if(b.allowNegativeStock!==undefined)data.allowNegativeStock=!!b.allowNegativeStock;
    const x=await prisma.supplierCompany.update({where:{id:a.companyId},data});
    return ok(plain(x));
