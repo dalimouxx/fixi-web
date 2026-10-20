@@ -8,7 +8,7 @@ on:
       - '.github/workflows/windows-pos-check.yml'
   push:
     branches:
-      - feature/windows-pos-labels-design
+      - feature/windows-pos-v3-sales
 jobs:
   frontend:
     runs-on: ubuntu-latest
