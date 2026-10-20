@@ -4,6 +4,7 @@ import {useCallback} from 'react';
 import {DollarSign,Wrench,TrendingUp,PackageCheck,ArrowRight,ShieldCheck,BrainCircuit,Sparkles,PlusCircle,CreditCard,Users,Boxes,AlertTriangle,Clock3,Link2,BellRing,Zap,ReceiptText} from 'lucide-react';
 import {AreaChart,Area,XAxis,YAxis,Tooltip,ResponsiveContainer} from 'recharts';
 import {StatCard} from '@/components/stat-card';
+import {FixiSmartWidgets} from '@/components/fixi-smart-widgets';
 import {StatusBadge,useApi,useRealtimeRefresh} from '@/components/ui';
 import {money,dateTime} from '@/lib/format';
 
