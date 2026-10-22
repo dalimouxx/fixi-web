@@ -149,6 +149,16 @@ async fn supplier_debt_payment(state: State<'_, Arc<DesktopState>>, payment: ser
 }
 
 #[tauri::command]
+async fn supplier_returns(state: State<'_, Arc<DesktopState>>) -> Result<serde_json::Value,String> {
+ let guard=state.connection.lock().await;
+ let connection=guard.as_ref().ok_or("Veuillez vous connecter")?;
+ let response=connection.client.get(format!("{}/api/supplier/desktop/returns",connection.origin))
+    .send().await.map_err(connection_error)?;
+ if !response.status().is_success(){return Err(format!("Retours indisponibles (HTTP {})",response.status().as_u16()));}
+ response.json().await.map_err(|_| "Réponse retours invalide".to_string())
+}
+
+#[tauri::command]
 async fn supplier_checkout(
     state: State<'_, Arc<DesktopState>>,
     sale: serde_json::Value,
@@ -198,7 +208,7 @@ async fn supplier_logout(state: State<'_, Arc<DesktopState>>) -> Result<(), Stri
 pub fn run() {
     tauri::Builder::default()
         .manage(Arc::new(DesktopState{connection:Mutex::new(None)}))
-        .invoke_handler(tauri::generate_handler![supplier_login,supplier_refresh,supplier_logout,supplier_checkout,supplier_history,supplier_cash_action,supplier_orders,supplier_order_transition,supplier_debts,supplier_debt_payment])
+        .invoke_handler(tauri::generate_handler![supplier_login,supplier_refresh,supplier_logout,supplier_checkout,supplier_history,supplier_cash_action,supplier_orders,supplier_order_transition,supplier_debts,supplier_debt_payment,supplier_returns])
         .run(tauri::generate_context!())
         .expect("error while running FIXI Caisse Windows");
 }
