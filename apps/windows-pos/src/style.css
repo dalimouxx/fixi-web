@@ -43,3 +43,5 @@
 .scan-strip button:hover{background:#dc7112}
 
 .uncertain-sale{padding:12px;border:2px solid #f59e0b;background:#fffbeb;border-radius:9px;display:grid;gap:8px;color:#78350f}.uncertain-sale p{margin:0;font-size:12px}.uncertain-sale button{padding:9px;border:1px solid #e9b66b;border-radius:7px;color:#78350f;background:white;cursor:pointer}
+
+.stock-warning{padding:14px;border:1px solid #f0ad4e;border-radius:10px;background:#fff7e9;color:#854d0e;margin:16px 0;font-weight:650}
