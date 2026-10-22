@@ -109,6 +109,25 @@ async fn supplier_orders(state: State<'_, Arc<DesktopState>>) -> Result<serde_js
 }
 
 #[tauri::command]
+async fn supplier_order_transition(
+    state: State<'_, Arc<DesktopState>>,
+    order_id: String,
+    status: String,
+) -> Result<serde_json::Value, String> {
+    let guard=state.connection.lock().await;
+    let session=guard.as_ref().ok_or("Veuillez vous connecter")?;
+    let response=session.client.post(format!("{}/api/supplier/desktop/orders/transition",session.origin))
+        .json(&serde_json::json!({"orderId":order_id,"status":status}))
+        .send().await.map_err(connection_error)?;
+    let code=response.status();
+    let value:serde_json::Value=response.json().await.map_err(|_| "Réponse commande invalide".to_string())?;
+    if !code.is_success(){
+        return Err(value.get("error").and_then(|v|v.as_str()).unwrap_or("Transition refusée").to_string());
+    }
+    Ok(value)
+}
+
+#[tauri::command]
 async fn supplier_checkout(
     state: State<'_, Arc<DesktopState>>,
     sale: serde_json::Value,
@@ -158,7 +177,7 @@ async fn supplier_logout(state: State<'_, Arc<DesktopState>>) -> Result<(), Stri
 pub fn run() {
     tauri::Builder::default()
         .manage(Arc::new(DesktopState{connection:Mutex::new(None)}))
-        .invoke_handler(tauri::generate_handler![supplier_login,supplier_refresh,supplier_logout,supplier_checkout,supplier_history,supplier_cash_action,supplier_orders])
+        .invoke_handler(tauri::generate_handler![supplier_login,supplier_refresh,supplier_logout,supplier_checkout,supplier_history,supplier_cash_action,supplier_orders,supplier_order_transition])
         .run(tauri::generate_context!())
         .expect("error while running FIXI Caisse Windows");
 }
