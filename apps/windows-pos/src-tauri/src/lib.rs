@@ -1,4 +1,7 @@
 use std::sync::Arc;
+use std::time::{Duration, Instant};
+use argon2::{Argon2, PasswordHasher, PasswordVerifier};
+use argon2::password_hash::{SaltString, PasswordHash, rand_core::OsRng};
 use tauri::State;
 use tokio::sync::Mutex;
 
@@ -8,7 +11,40 @@ struct Connection {
 }
 struct DesktopState {
     connection: Mutex<Option<Connection>>,
+    pin: Mutex<Option<PinLock>>,
 }
+struct PinLock {hash: String, locked: bool, failed: u32, blocked_until: Option<Instant>}
+async fn unlocked(state: &State<'_, Arc<DesktopState>>) -> Result<(),String> {
+ let guard=state.pin.lock().await;
+ if guard.as_ref().map(|x| x.locked).unwrap_or(false){return Err("Caisse verrouillée : saisissez votre PIN".into());}
+ Ok(())
+}
+#[tauri::command]
+async fn pin_setup(state: State<'_, Arc<DesktopState>>, pin: String) -> Result<(),String> {
+ if state.connection.lock().await.is_none(){return Err("Connectez-vous d’abord avec votre compte fournisseur".into());}
+ if pin.len()!=4 || !pin.bytes().all(|b|b.is_ascii_digit()){return Err("Le PIN doit contenir exactement 4 chiffres".into());}
+ let salt=SaltString::generate(&mut OsRng);
+ let hash=Argon2::default().hash_password(pin.as_bytes(), &salt).map_err(|_|"PIN indisponible")?.to_string();
+ let mut g=state.pin.lock().await;
+ if g.is_some(){return Err("PIN déjà défini pour cette session".into());}
+ *g=Some(PinLock{hash,locked:false,failed:0,blocked_until:None});Ok(())
+}
+#[tauri::command]
+async fn pin_lock(state: State<'_, Arc<DesktopState>>) -> Result<(),String> {
+ let mut g=state.pin.lock().await;
+ let guard=g.as_mut().ok_or("Configurez un PIN avant de verrouiller")?;
+ guard.locked=true;Ok(())
+}
+#[tauri::command]
+async fn pin_unlock(state: State<'_, Arc<DesktopState>>, pin: String) -> Result<(),String> {
+ let mut g=state.pin.lock().await;
+ let guard=g.as_mut().ok_or("Aucun code PIN actif")?;
+ if let Some(until)=guard.blocked_until{if Instant::now()<until{return Err("Trop de tentatives : réessayez après une minute".into());}}
+ let parsed=PasswordHash::new(&guard.hash).map_err(|_|"PIN invalide")?;
+ if Argon2::default().verify_password(pin.as_bytes(),&parsed).is_err(){guard.failed+=1;if guard.failed>=5{guard.blocked_until=Some(Instant::now()+Duration::from_secs(60));guard.failed=0;}return Err("PIN incorrect".into());}
+ guard.locked=false;guard.failed=0;guard.blocked_until=None;Ok(())
+}
+
 
 fn validate_origin(raw: &str) -> Result<String, String> {
     let u = url::Url::parse(raw.trim()).map_err(|_| "Adresse du serveur invalide".to_string())?;
@@ -72,11 +108,13 @@ async fn supplier_login(
     }
     let data: serde_json::Value = response.json().await.map_err(|_| "Réponse serveur invalide".to_string())?;
     *state.connection.lock().await = Some(Connection{origin,client});
+    *state.pin.lock().await=None;
     Ok(data)
 }
 
 #[tauri::command]
 async fn supplier_refresh(state: State<'_, Arc<DesktopState>>) -> Result<serde_json::Value, String> {
+    unlocked(&state).await?;
     let guard = state.connection.lock().await;
     let session = guard.as_ref().ok_or("Veuillez vous connecter")?;
     let response = session.client.get(format!("{}/api/supplier/desktop/bootstrap",session.origin))
@@ -90,6 +128,7 @@ async fn supplier_refresh(state: State<'_, Arc<DesktopState>>) -> Result<serde_j
 
 #[tauri::command]
 async fn supplier_history(state: State<'_, Arc<DesktopState>>) -> Result<serde_json::Value, String> {
+    unlocked(&state).await?;
     let guard=state.connection.lock().await;
     let session=guard.as_ref().ok_or("Veuillez vous connecter")?;
     let response=session.client.get(format!("{}/api/supplier/desktop/history",session.origin))
@@ -100,6 +139,7 @@ async fn supplier_history(state: State<'_, Arc<DesktopState>>) -> Result<serde_j
 
 #[tauri::command]
 async fn supplier_orders(state: State<'_, Arc<DesktopState>>) -> Result<serde_json::Value, String> {
+    unlocked(&state).await?;
     let guard=state.connection.lock().await;
     let session=guard.as_ref().ok_or("Veuillez vous connecter")?;
     let response=session.client.get(format!("{}/api/supplier/desktop/orders",session.origin))
@@ -114,6 +154,7 @@ async fn supplier_order_transition(
     order_id: String,
     status: String,
 ) -> Result<serde_json::Value, String> {
+    unlocked(&state).await?;
     let guard=state.connection.lock().await;
     let session=guard.as_ref().ok_or("Veuillez vous connecter")?;
     let response=session.client.post(format!("{}/api/supplier/desktop/orders/transition",session.origin))
@@ -129,6 +170,7 @@ async fn supplier_order_transition(
 
 #[tauri::command]
 async fn supplier_debts(state: State<'_, Arc<DesktopState>>) -> Result<serde_json::Value, String> {
+    unlocked(&state).await?;
     let guard=state.connection.lock().await;
     let session=guard.as_ref().ok_or("Veuillez vous connecter")?;
     let response=session.client.get(format!("{}/api/supplier/desktop/debts",session.origin))
@@ -139,6 +181,7 @@ async fn supplier_debts(state: State<'_, Arc<DesktopState>>) -> Result<serde_jso
 
 #[tauri::command]
 async fn supplier_debt_payment(state: State<'_, Arc<DesktopState>>, payment: serde_json::Value) -> Result<serde_json::Value,String> {
+    unlocked(&state).await?;
  let guard=state.connection.lock().await;
  let session=guard.as_ref().ok_or("Veuillez vous connecter")?;
  let response=session.client.post(format!("{}/api/supplier/desktop/debts/payment",session.origin)).json(&payment).send().await.map_err(connection_error)?;
@@ -150,6 +193,7 @@ async fn supplier_debt_payment(state: State<'_, Arc<DesktopState>>, payment: ser
 
 #[tauri::command]
 async fn supplier_returns(state: State<'_, Arc<DesktopState>>) -> Result<serde_json::Value,String> {
+    unlocked(&state).await?;
  let guard=state.connection.lock().await;
  let connection=guard.as_ref().ok_or("Veuillez vous connecter")?;
  let response=connection.client.get(format!("{}/api/supplier/desktop/returns",connection.origin))
@@ -163,6 +207,7 @@ async fn supplier_checkout(
     state: State<'_, Arc<DesktopState>>,
     sale: serde_json::Value,
 ) -> Result<serde_json::Value, String> {
+    unlocked(&state).await?;
     let guard=state.connection.lock().await;
     let session=guard.as_ref().ok_or("Connectez-vous à FIXI Supplier")?;
     let response=session.client.post(format!("{}/api/supplier/desktop/sales",session.origin))
@@ -182,6 +227,7 @@ async fn supplier_cash_action(
     state: State<'_, Arc<DesktopState>>,
     operation: serde_json::Value,
 ) -> Result<serde_json::Value, String> {
+    unlocked(&state).await?;
     let guard=state.connection.lock().await;
     let session=guard.as_ref().ok_or("Connectez-vous à FIXI Supplier")?;
     let response=session.client.post(format!("{}/api/supplier/desktop/cash",session.origin))
@@ -197,6 +243,7 @@ async fn supplier_cash_action(
 
 #[tauri::command]
 async fn supplier_logout(state: State<'_, Arc<DesktopState>>) -> Result<(), String> {
+    *state.pin.lock().await=None;
     let connection = state.connection.lock().await.take();
     if let Some(s) = connection {
         let _ = s.client.post(format!("{}/api/supplier/auth/logout",s.origin)).send().await;
@@ -207,8 +254,8 @@ async fn supplier_logout(state: State<'_, Arc<DesktopState>>) -> Result<(), Stri
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
-        .manage(Arc::new(DesktopState{connection:Mutex::new(None)}))
-        .invoke_handler(tauri::generate_handler![supplier_login,supplier_refresh,supplier_logout,supplier_checkout,supplier_history,supplier_cash_action,supplier_orders,supplier_order_transition,supplier_debts,supplier_debt_payment,supplier_returns])
+        .manage(Arc::new(DesktopState{connection:Mutex::new(None),pin:Mutex::new(None)}))
+        .invoke_handler(tauri::generate_handler![supplier_login,supplier_refresh,supplier_logout,supplier_checkout,supplier_history,supplier_cash_action,supplier_orders,supplier_order_transition,supplier_debts,supplier_debt_payment,supplier_returns,pin_setup,pin_lock,pin_unlock])
         .run(tauri::generate_context!())
         .expect("error while running FIXI Caisse Windows");
 }
