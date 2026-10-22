@@ -1,6 +1,6 @@
 import {prisma} from '@/lib/prisma';
 import {requireSupplierRole} from '@/lib/supplier-auth';
-import {bad} from '@/lib/http';
+import {bad,ok} from '@/lib/http';
 import {POST as advancedPost} from '@/app/api/supplier/advanced/route';
 
 /** Desktop returns call the already-shared Supplier ledger and inventory workflow.
@@ -12,6 +12,10 @@ export async function POST(req:Request){
   if(process.env.FIXI_WINDOWS_RETURNS_ENABLED!=='true')return bad('Retours Windows non activés sur FIXI Cloud',403);
   const body=await req.json();
   const sourceSaleId=String(body.sourceSaleId||'');
+  const reference=String(body.reference||'');
+  if(!/^WINRET-[a-f0-9-]{36}$/i.test(reference))return bad('Référence de retour Windows invalide',400);
+  const previous=await prisma.supplierReturn.findFirst({where:{companyId:s.companyId,reference,type:'SALE_RETURN'}});
+  if(previous){if(previous.sourceSaleId!==sourceSaleId)return bad('Référence déjà utilisée pour une autre vente',409);return ok({id:previous.id,reference:previous.reference,replayed:true});}
   const items=Array.isArray(body.items)?body.items:[];
   if(!sourceSaleId||items.length<1||items.length>50)return bad('Vente et lignes de retour nécessaires',400);
   if(new Set(items.map((x:any)=>String(x.saleItemId))).size!==items.length)return bad('Lignes de retour en double',400);
@@ -23,7 +27,7 @@ export async function POST(req:Request){
   const refund=Number(body.refund||0);
   if(!Number.isFinite(refund)||refund<0||refund>100000000||Math.abs(Math.round(refund*1000)-refund*1000)>.001)return bad('Remboursement invalide',400);
   if(!['CASH','CARD','TRANSFER'].includes(String(body.refundMethod||'CASH')))return bad('Moyen de remboursement invalide',400);
-  const payload={action:'RETURN',type:'SALE_RETURN',sourceSaleId,items:items.map((x:any)=>({
+  const payload={action:'RETURN',reference,type:'SALE_RETURN',sourceSaleId,items:items.map((x:any)=>({
     saleItemId:x.saleItemId,quantity:x.quantity,restock:x.restock,condition:x.condition,
     reason:String(x.reason||'Retour client').slice(0,200)
   })),refund,refundMethod:body.refundMethod||'CASH',note:String(body.note||'').slice(0,500)};
