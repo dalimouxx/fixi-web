@@ -41,3 +41,5 @@
 .scan-strip input:focus{outline:3px solid rgba(255,136,32,.32);border-color:#f28c28}
 .scan-strip button{background:#ed8224;color:#fff}
 .scan-strip button:hover{background:#dc7112}
+
+.uncertain-sale{padding:12px;border:2px solid #f59e0b;background:#fffbeb;border-radius:9px;display:grid;gap:8px;color:#78350f}.uncertain-sale p{margin:0;font-size:12px}.uncertain-sale button{padding:9px;border:1px solid #e9b66b;border-radius:7px;color:#78350f;background:white;cursor:pointer}
