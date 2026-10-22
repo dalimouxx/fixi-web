@@ -98,6 +98,24 @@ async fn supplier_checkout(
 }
 
 #[tauri::command]
+async fn supplier_cash_action(
+    state: State<'_, Arc<DesktopState>>,
+    operation: serde_json::Value,
+) -> Result<serde_json::Value, String> {
+    let guard=state.connection.lock().await;
+    let session=guard.as_ref().ok_or("Connectez-vous à FIXI Supplier")?;
+    let response=session.client.post(format!("{}/api/supplier/desktop/cash",session.origin))
+        .json(&operation).send().await
+        .map_err(|_| "Réseau interrompu : vérifiez la session sur FIXI Web avant de retenter".to_string())?;
+    let code=response.status();
+    let result:serde_json::Value=response.json().await.map_err(|_| "Réponse caisse invalide".to_string())?;
+    if !code.is_success() {
+        return Err(result.get("error").and_then(|v|v.as_str()).unwrap_or("Opération de caisse refusée").to_string());
+    }
+    Ok(result)
+}
+
+#[tauri::command]
 async fn supplier_logout(state: State<'_, Arc<DesktopState>>) -> Result<(), String> {
     let connection = state.connection.lock().await.take();
     if let Some(s) = connection {
@@ -110,7 +128,7 @@ async fn supplier_logout(state: State<'_, Arc<DesktopState>>) -> Result<(), Stri
 pub fn run() {
     tauri::Builder::default()
         .manage(Arc::new(DesktopState{connection:Mutex::new(None)}))
-        .invoke_handler(tauri::generate_handler![supplier_login,supplier_refresh,supplier_logout,supplier_checkout,supplier_history])
+        .invoke_handler(tauri::generate_handler![supplier_login,supplier_refresh,supplier_logout,supplier_checkout,supplier_history,supplier_cash_action])
         .run(tauri::generate_context!())
         .expect("error while running FIXI Caisse Windows");
 }
