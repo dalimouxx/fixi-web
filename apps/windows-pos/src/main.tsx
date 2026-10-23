@@ -80,7 +80,11 @@ function App(){
    if(draftScope){try{localStorage.removeItem(draftScope);lastSavedRef.current=''}catch{}}
    setUncertainSale(false);setTicket({...receipt,reference:sale.reference||reference});setSaleMessage('Vente enregistrée : '+(sale.reference||reference));setCart({});setAmount('');setSaleKey('');setCustomerId('');
    const fresh=await invoke<Bootstrap>('supplier_refresh');setData(fresh);focusScanner();
-  }catch(e){const message=String(e);setError(message);if(/interrompue|réponse invalide|historique/i.test(message)){setUncertainSale(true);setError(message+' — Vérifiez l’historique FIXI avant toute nouvelle tentative. Référence : '+reference)} }finally{setBusy(false)}
+  }catch(e){const message=String(e);setError(message);
+    const definitiveRefusal=/HTTP 40[134]|non activée|désactivées|accès refusé|API Windows ventes absente|Vente refusée/i.test(message);
+    if(definitiveRefusal){setSaleKey('');setUncertainSale(false);}
+    else {setUncertainSale(true);setError(message+' — Opération à vérifier avant toute nouvelle tentative. Référence : '+reference)}
+   }finally{setBusy(false)}
  }
  async function setupPin(){setPinError('');try{await invoke('pin_setup',{pin:pinValue});setPinConfigured(true);setPinValue('')}catch(e){setPinError(String(e))}}
  async function lockPin(){setPinError('');try{await invoke('pin_lock');setPinLocked(true);setPinValue('')}catch(e){setPinError(String(e))}}
