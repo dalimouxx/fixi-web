@@ -107,7 +107,7 @@ function App(){
   const reference=debtPaymentKey||'WINPAY-'+crypto.randomUUID();setDebtPaymentKey(reference);setDebtBusy(true);setDebtsError('');setDebtMessage('');
   try{const response=await invoke<{remaining:number}>('supplier_debt_payment',{payment:{saleId:sale.id,reference,amount:n,method:debtMethod}});
     setDebtMessage('Paiement reçu. Reste : '+dt(response.remaining));setDebtPaymentKey('');setDebtAmount('');await loadDebts()
-  }catch(e){setDebtsError(String(e)+' — en cas de coupure, vérifiez le journal avant de recommencer. Référence : '+reference)}finally{setDebtBusy(false)}
+  }catch(e){const message=String(e);if(/HTTP 40[134]|désactivés|accès refusé|absente du serveur/i.test(message)){setDebtPaymentKey('');setDebtsError(message)}else setDebtsError(message+' — vérifiez le journal avant de recommencer. Référence : '+reference)}finally{setDebtBusy(false)}
  }
  async function createReturn(){
   if(returnUncertain){setReturnsError('Retour à vérifier dans les avoirs avant de renvoyer. Référence : '+returnReference);return}
@@ -120,7 +120,7 @@ function App(){
   const reference=returnReference||'WINRET-'+crypto.randomUUID();setReturnReference(reference);
   setReturnBusy(true);setReturnsError('');setReturnMessage('');
   try{await invoke('supplier_return_create',{request:{reference,sourceSaleId:sale.id,items:lines,refund,refundMethod:'CASH',note:returnReason}});setReturnMessage('Avoir enregistré : '+reference);setReturnReference('');setReturnUncertain(false);setReturnSaleId('');setReturnQty({});setReturnRefund('0');await loadReturns()}
-  catch(e){setReturnUncertain(true);setReturnsError(String(e)+' — vérifiez dans les avoirs avant de retenter. Référence : '+reference)}
+  catch(e){const message=String(e);if(/HTTP 40[134]|désactivés|accès refusé|absente du serveur/i.test(message)){setReturnUncertain(false);setReturnReference('');setReturnsError(message)}else {setReturnUncertain(true);setReturnsError(message+' — vérifiez dans les avoirs avant de retenter. Référence : '+reference)}}
   finally{setReturnBusy(false)}
  }
  async function loadReturns(){if(!data||data.role==='DEMO')return;setReturnsError('');try{setReturnsData(await invoke<ReturnsData>('supplier_returns'))}catch(e){setReturnsError(String(e))}}
