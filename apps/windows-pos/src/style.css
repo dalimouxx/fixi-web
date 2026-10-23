@@ -51,3 +51,23 @@
 .pin-create{display:inline-flex;align-items:center;gap:8px;padding:6px 8px;border-radius:8px;border:1px solid #e1e7f0;font-size:12px;font-weight:700}.pin-create input{width:80px;border:1px solid #cbd5e1;border-radius:6px;padding:8px}.pin-lock{position:fixed;inset:0;background:rgba(10,22,43,.96);z-index:100;display:grid;place-items:center}.pin-lock form{max-width:420px;width:calc(100% - 32px);background:white;border-radius:18px;padding:30px;display:flex;flex-direction:column;gap:14px;box-shadow:0 20px 65px #0005}.pin-lock h2{color:#ec7a21;letter-spacing:.05em;margin:0}.pin-lock input{font-size:32px;letter-spacing:12px;text-align:center;padding:14px;border:2px solid #ed8224;border-radius:10px}.pin-lock button{background:#ed8224;color:white;padding:13px;border:0;border-radius:9px;font-weight:800}.pin-error{position:fixed;right:20px;bottom:20px;background:#fff1f2;border:1px solid #fecaca;border-radius:10px;padding:12px;z-index:30;color:#b91c1c}
 
 .return-editor{display:grid;gap:10px;border:1px solid #d6e0ec;background:#f8fafc;border-radius:12px;padding:16px;margin:16px 0}.return-editor label{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:13px}.return-editor input:not([type=checkbox]),.return-editor select{min-width:130px;max-width:270px;width:50%;padding:10px;border:1px solid #cbd5e1;border-radius:8px;background:white}.return-editor button{padding:12px;border:0;border-radius:8px;background:#eb7a22;color:white;font-weight:700;cursor:pointer}.return-editor button:disabled{opacity:.5;cursor:default}
+
+/* FIXI workstation: keep controls accessible, show the basket only at checkout. */
+.app.app-detail{grid-template-columns:215px minmax(0,1fr)}
+.nav{min-height:0;overflow-y:auto;overflow-x:hidden}
+.nav-item{border:0;background:transparent;text-align:left;cursor:pointer;flex-shrink:0}
+main{min-width:0;overflow-x:hidden}
+.data-table{min-width:0;max-width:100%;overflow-x:auto;overflow-y:auto}
+.data-table table{max-width:100%;border-collapse:collapse}
+.return-editor{min-width:0;width:100%;overflow:hidden}
+.return-editor label{min-width:0;flex-wrap:wrap}
+.return-editor input:not([type=checkbox]),.return-editor select{min-width:0;max-width:100%;width:min(100%,320px)}
+.return-editor .uncertain-sale{width:100%;min-width:0;overflow-wrap:anywhere}
+.uncertain-sale{min-width:0;overflow-wrap:anywhere}
+.uncertain-sale button{white-space:normal;min-height:44px}
+.checkout{min-width:0}
+.checkout-form .connect-error{overflow-wrap:anywhere}
+main>div[style]{flex-wrap:wrap}
+.scan-strip{min-width:0}
+.scan-strip input{min-width:0;flex:1}
+@media(max-width:1100px){.app.app-detail{grid-template-columns:170px minmax(0,1fr)}}
