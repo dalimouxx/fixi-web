@@ -186,8 +186,10 @@ async fn supplier_debt_payment(state: State<'_, Arc<DesktopState>>, payment: ser
  let session=guard.as_ref().ok_or("Veuillez vous connecter")?;
  let response=session.client.post(format!("{}/api/supplier/desktop/debts/payment",session.origin)).json(&payment).send().await.map_err(connection_error)?;
  let code=response.status();
- let value:serde_json::Value=response.json().await.map_err(|_| "Réponse paiement invalide".to_string())?;
- if !code.is_success(){return Err(value.get("error").and_then(|v|v.as_str()).unwrap_or("Paiement refusé").to_string());}
+ if code==reqwest::StatusCode::NOT_FOUND{return Err("API des règlements Windows absente du serveur (HTTP 404). Aucun paiement confirmé.".into())}
+ if code==reqwest::StatusCode::FORBIDDEN{return Err("Règlements Windows désactivés ou accès refusé (HTTP 403). Aucun paiement confirmé.".into())}
+ if !code.is_success(){return Err(format!("Règlement refusé par FIXI (HTTP {})",code.as_u16()))}
+ let value:serde_json::Value=response.json().await.map_err(|_| "Réponse paiement invalide après succès HTTP : vérifiez le journal".to_string())?;
  Ok(value)
 }
 
@@ -213,8 +215,10 @@ async fn supplier_return_create(
     let response=connection.client.post(format!("{}/api/supplier/desktop/returns/create",connection.origin))
         .json(&request).send().await.map_err(|_| "Réseau interrompu : vérifiez les avoirs avant de recommencer".to_string())?;
     let status=response.status();
-    let value:serde_json::Value=response.json().await.map_err(|_| "Réponse invalide : vérifiez les avoirs".to_string())?;
-    if !status.is_success(){return Err(value.get("error").and_then(|x|x.as_str()).unwrap_or("Retour refusé").to_string())}
+    if status==reqwest::StatusCode::NOT_FOUND{return Err("API de retour Windows absente du serveur (HTTP 404). Aucun retour confirmé.".into())}
+    if status==reqwest::StatusCode::FORBIDDEN{return Err("Retours Windows désactivés ou accès refusé (HTTP 403). Aucun retour confirmé.".into())}
+    if !status.is_success(){return Err(format!("Retour refusé par FIXI (HTTP {})",status.as_u16()))}
+    let value:serde_json::Value=response.json().await.map_err(|_| "Réponse invalide après succès HTTP : vérifiez les avoirs".to_string())?;
     Ok(value)
 }
 
