@@ -122,7 +122,7 @@ async fn supplier_refresh(state: State<'_, Arc<DesktopState>>) -> Result<serde_j
     if response.status() == reqwest::StatusCode::UNAUTHORIZED {
         return Err("Session expirée : reconnectez-vous".into());
     }
-    if !response.status().is_success(){return Err("Synchronisation impossible".into());}
+    if !response.status().is_success(){return Err(format!("Synchronisation impossible (HTTP {})",response.status().as_u16()));}
     response.json().await.map_err(|_| "Réponse serveur invalide".to_string())
 }
 
@@ -133,7 +133,7 @@ async fn supplier_history(state: State<'_, Arc<DesktopState>>) -> Result<serde_j
     let session=guard.as_ref().ok_or("Veuillez vous connecter")?;
     let response=session.client.get(format!("{}/api/supplier/desktop/history",session.origin))
         .send().await.map_err(|_| "Historique indisponible".to_string())?;
-    if !response.status().is_success(){return Err("Impossible de charger l'historique du serveur".into())}
+    if !response.status().is_success(){return Err(format!("Historique FIXI indisponible (HTTP {}). Si 404 : API non déployée sur le serveur.",response.status().as_u16()))}
     response.json().await.map_err(|_| "Réponse historique invalide".to_string())
 }
 
@@ -230,10 +230,24 @@ async fn supplier_checkout(
         .json(&sale).send().await
         .map_err(|_| "Connexion interrompue : vérifiez la vente dans l'historique avant de réessayer".to_string())?;
     let status=response.status();
-    let result:serde_json::Value=response.json().await.map_err(|_| "Réponse invalide : vérifiez l'historique avant de réessayer".to_string())?;
+    if status==reqwest::StatusCode::NOT_FOUND {
+        return Err("API Windows ventes absente sur FIXI Cloud (HTTP 404). Aucune confirmation de vente reçue. Mise à jour du serveur requise.".into());
+    }
+    if status==reqwest::StatusCode::FORBIDDEN {
+        return Err("Ventes Windows désactivées ou accès refusé sur FIXI Cloud (HTTP 403).".into());
+    }
+    if status==reqwest::StatusCode::UNAUTHORIZED {
+        return Err("Session fournisseur expirée (HTTP 401) : reconnectez-vous.".into());
+    }
+    if status.is_server_error(){
+        return Err(format!("Serveur FIXI en erreur (HTTP {}). Vérifiez l’historique avant de retenter.",status.as_u16()));
+    }
+    let result:serde_json::Value=response.json().await.map_err(|_| {
+      if status.is_success(){"Vente potentiellement enregistrée, mais réponse invalide : vérifiez l'historique.".to_string()}
+      else{format!("Vente refusée : réponse non JSON (HTTP {}).",status.as_u16())}
+    })?;
     if !status.is_success(){
-        let message=result.get("error").and_then(|v|v.as_str()).unwrap_or("Vente refusée par le serveur");
-        return Err(message.to_string());
+        return Err(format!("Vente refusée (HTTP {}) : {}",status.as_u16(),result.get("error").and_then(|v|v.as_str()).unwrap_or("Erreur inconnue")));
     }
     Ok(result)
 }
