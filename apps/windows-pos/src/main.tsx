@@ -222,7 +222,7 @@ function App(){
  async function loadOrders(){if(!data||data.role==='DEMO')return;setOrdersError('');try{setOnlineOrders(await invoke<OnlineOrders>('supplier_orders'))}catch(e){setOrdersError(String(e))}}
  async function loadHistory(){if(!data||data.role==='DEMO')return;setHistoryError('');try{setHistory(await invoke<History>('supplier_history'))}catch(e){setHistoryError(String(e))}}
  function navigate(next:typeof screen){setScreen(next);if(next==='historique'||next==='session')void loadHistory();if(next==='commandes')void loadOrders();if(next==='dettes')void loadDebts();if(next==='retours')void loadReturns()}
- function printTicket(){if(!ticket)return;document.body.dataset.printMode='ticket';window.print();delete document.body.dataset.printMode;}
+ function printTicket(){if(!ticket)return;document.body.dataset.printMode='ticket';const reset=()=>{delete document.body.dataset.printMode};window.addEventListener('afterprint',reset,{once:true});requestAnimationFrame(()=>window.print())}
  async function logout(){setDeviceProfile(null);setShowPasswordLogin(false);setPinConfigured(false);setPinLocked(false);setDraftScope('');setUncertainSale(false);await invoke('supplier_logout');setData(null);setCart({});setSaleKey('');setCustomerId('')}
  
  return <>{!data&&<div className="connection">
