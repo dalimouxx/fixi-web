@@ -50,7 +50,7 @@ function App(){
  const catalog=data?.products||sample;
  const categories=['Tous',...new Set(catalog.map(p=>p.category||'Autres'))];
  const products=catalog.filter(p=>(category==='Tous'||(p.category||'Autres')===category)&&(!q||[p.name,p.sku,p.barcode||''].join(' ').toLowerCase().includes(q.toLowerCase())));
- const entries=Object.entries(cart).filter(([,n])=>n>0&&catalog.some(p=>p.id===id)).map(([id,n])=>({product:catalog.find(p=>p.id===id)!,quantity:n}));
+ const entries=Object.entries(cart).filter(([id,n])=>n>0&&catalog.some(p=>p.id===id)).map(([id,n])=>({product:catalog.find(p=>p.id===id)!,quantity:n}));
  const subtotal=useMemo(()=>entries.reduce((v,x)=>v+x.quantity*x.product.price,0),[entries]);
  const total=subtotal; // Discounts require server-side amount/tax support; leave disabled for safe V3.
  // Only unsent sales are kept locally, scoped to the server and supplier login.
