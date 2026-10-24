@@ -71,3 +71,82 @@ main>div[style]{flex-wrap:wrap}
 .scan-strip{min-width:0}
 .scan-strip input{min-width:0;flex:1}
 @media(max-width:1100px){.app.app-detail{grid-template-columns:170px minmax(0,1fr)}}
+
+/* FIXI Pro design system — cashier-first desktop workspace. */
+:root{--fx-navy:#142746;--fx-blue:#245db9;--fx-orange:#f08020;--fx-bg:#f2f5fa;--fx-text:#192b45;--fx-border:#dae3ee}
+body{background:var(--fx-bg);color:var(--fx-text);font-family:Inter,"Segoe UI Variable","Segoe UI",Arial,sans-serif}
+.app{grid-template-columns:224px minmax(0,1fr) 370px;min-height:0}
+.app.app-detail{grid-template-columns:224px minmax(0,1fr)}
+.nav{background:linear-gradient(160deg,#152849 0%,#142442 60%,#10213a 100%);padding:27px 12px;gap:5px}
+.logo{font-size:31px;letter-spacing:1.4px;padding:0 10px 22px;margin:0 6px 19px;border-bottom:1px solid rgba(255,255,255,.13)}
+.logo small{margin-top:5px;color:#a9c9ff}
+.nav .nav-item{width:100%;border-radius:10px;padding:12px 14px;line-height:1.4;font-size:14px;font-weight:650;transition:background .14s,color .14s}
+.nav .nav-item.active{background:#3063b4;box-shadow:inset 3px 0 0 #ff952e,0 5px 18px #0002}
+.nav .nav-item:hover:not(.active){background:#293d60}
+.bottom{padding:14px 11px;margin-top:auto;border-top:1px solid #ffffff1e;color:#bfcee4;font-weight:600}
+main{padding:27px 29px 18px;gap:0}
+header{padding-bottom:2px}
+header h1{font-size:28px;font-weight:800;letter-spacing:-.7px;color:#152c50}
+header p{font-size:13px}
+.status{padding:10px 14px;border-radius:100px;background:#e9f8ef;color:#177346;font-size:11px;border:1px solid #c6edda}
+main>div[style]{gap:8px!important;align-items:center;margin:14px 0 8px!important}
+main>div[style] button{background:white;border:1px solid var(--fx-border);padding:10px 13px;border-radius:9px;color:#345071;cursor:pointer;font-size:12px;font-weight:700;box-shadow:0 2px 5px #12284605}
+main>div[style] button:hover:not(:disabled){border-color:var(--fx-blue);background:#f7faff;color:var(--fx-blue)}
+main>div[style] button:disabled{opacity:.45;cursor:default}
+.scan-strip{margin-top:8px;padding:12px 0 15px;background:var(--fx-bg);border-bottom:0;display:flex;gap:10px}
+.scan-strip input{font-size:14px;padding:16px 15px;border-radius:12px;border:2px solid #3174ca;box-shadow:0 3px 12px #144cad12}
+.scan-strip input::placeholder{font-size:12px;color:#778ba9}
+.scan-strip button{flex-shrink:0;min-width:152px;padding:12px 19px;border-radius:11px;box-shadow:0 3px 9px #e37d2033;background:var(--fx-orange)}
+.search input{margin:7px 0 16px;border-radius:11px;box-shadow:0 1px 5px #18345a08;padding:15px}
+.tabs{margin-bottom:18px}
+.tabs button{font-weight:650;font-size:12px}
+.products{grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:13px}
+.product{border:1px solid #dfe7f1;border-radius:14px;box-shadow:0 3px 12px #172b4b0a;min-height:180px;transition:transform .14s,box-shadow .14s,border-color .14s}
+.product:hover{transform:translateY(-2px);box-shadow:0 7px 22px #17396f17;border-color:#5585ca}
+.product:active{transform:translateY(0)}
+.product strong{font-size:16px}
+.checkout{padding:25px 19px 18px;overflow-y:auto;scrollbar-width:thin}
+.checkout h2{margin:0 0 20px;font-size:22px}
+.customer{border:1px solid #e2eafa;background:#f3f7fd;border-radius:11px;padding:13px}
+.customer select{width:calc(100% - 32px);outline:0;cursor:pointer}
+.lines{flex:1 1 auto;min-height:125px;max-height:45%;scrollbar-width:thin}
+.line{gap:7px;padding:13px 3px}
+.line b{font-size:14px}
+.line .controls button{width:32px;height:32px;background:white;border-color:#cedaeb;font-weight:750}
+.line .controls button:hover{background:#eaf2ff;color:var(--fx-blue);border-color:var(--fx-blue)}
+.totals{padding-top:13px;flex-shrink:0}
+.totals>div{margin-bottom:10px;font-size:14px}
+.totals .grand{margin:15px 0;font-size:20px}
+.checkout-form{padding:15px 0 11px;flex-shrink:0}
+.checkout-form select,.checkout-form input{font-size:14px;padding:13px 12px;border-radius:9px}
+.checkout-form .due{font-size:13px;color:#9a560e}
+.checkout-form .connect-error{background:#fff3f0;border:1px solid #ffd1c8;padding:10px 12px;border-radius:9px;line-height:1.5}
+.disabledpay{width:100%;background:var(--fx-orange);border-radius:11px;color:white;font-weight:800;padding:16px;cursor:pointer;flex-shrink:0;box-shadow:0 6px 14px #f0802030}
+.disabledpay:hover:not(:disabled){background:#d96b0b}
+.disabledpay:disabled{background:#a9bcd9;box-shadow:none;cursor:not-allowed}
+.reset{flex-shrink:0;padding:10px;font-size:12px}
+.data-table{border-radius:15px;padding:20px;box-shadow:0 5px 18px #172b4b09}
+.data-table h2{font-size:21px;font-weight:800;color:#19355a}
+.data-table h3{margin-top:22px;font-size:16px}
+.data-table>p{color:#63758e;font-size:13px;line-height:1.5}
+.data-table>button{padding:11px 15px;border:1px solid #d3dfed;background:#fff;color:var(--fx-blue);border-radius:8px;cursor:pointer;font-weight:700}
+.data-table tr:hover td{background:#f7faff}
+.data-table th{letter-spacing:.045em}
+.data-table td{white-space:normal}
+.debt-settlement,.return-editor{background:#f8faff;border:1px solid #dfe8f3;border-radius:13px}
+.debt-settlement button,.return-editor>button{background:var(--fx-orange);box-shadow:0 3px 11px #f0802030}
+.uncertain-sale{border:1px solid #f3c37a;border-left:4px solid #f08020;background:#fffbf2;border-radius:10px;padding:14px}
+.uncertain-sale button{background:white;color:#84500c;border:1px solid #efcd95;font-weight:700}
+.pin-create{flex-wrap:wrap;background:#fff}
+.quick-login .login-server{font-size:12px;color:#71819b;word-break:break-all}
+.quick-login input{font-size:25px;text-align:center;letter-spacing:12px}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #ffa53b80;outline-offset:2px}
+@media(max-width:1160px){
+ .app{grid-template-columns:178px minmax(0,1fr) 320px}
+ .app.app-detail{grid-template-columns:178px minmax(0,1fr)}
+ .nav .nav-item{padding:11px 8px;font-size:12px}
+ main{padding:20px}
+ .checkout{padding:20px 13px}
+ .scan-strip button{min-width:116px;padding:10px}
+}
+@media(max-height:790px){.checkout{padding-top:16px}.checkout h2{margin-bottom:13px}.lines{min-height:95px;max-height:30%}.line{padding:9px 3px}}
