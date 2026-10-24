@@ -267,6 +267,20 @@ async fn supplier_return_create(
 }
 
 #[tauri::command]
+async fn supplier_operation_status(state: State<'_, Arc<DesktopState>>, kind: String, reference: String) -> Result<serde_json::Value,String> {
+    unlocked(&state).await?;
+    if !["sale","debt","return"].contains(&kind.as_str()) || reference.len()>70 || !reference.chars().all(|c|c.is_ascii_alphanumeric()||c=='-') {
+      return Err("Référence d’opération invalide".into())
+    }
+    let guard=state.connection.lock().await;
+    let session=guard.as_ref().ok_or("Veuillez vous connecter")?;
+    let address=format!("{}/api/supplier/desktop/operations?kind={}&reference={}",session.origin,kind,reference);
+    let response=session.client.get(address).send().await.map_err(connection_error)?;
+    if !response.status().is_success(){return Err(format!("Vérification des opérations indisponible (HTTP {})",response.status().as_u16()))}
+    response.json().await.map_err(|_|"Réponse de vérification invalide".to_string())
+}
+
+#[tauri::command]
 async fn supplier_checkout(
     state: State<'_, Arc<DesktopState>>,
     sale: serde_json::Value,
@@ -334,7 +348,7 @@ async fn supplier_logout(state: State<'_, Arc<DesktopState>>) -> Result<(), Stri
 pub fn run() {
     tauri::Builder::default()
         .manage(Arc::new(DesktopState{connection:Mutex::new(None),pin:Mutex::new(None)}))
-        .invoke_handler(tauri::generate_handler![supplier_login,supplier_refresh,supplier_logout,supplier_checkout,supplier_history,supplier_cash_action,supplier_orders,supplier_order_transition,supplier_debts,supplier_debt_payment,supplier_returns,supplier_return_create,pin_setup,pin_lock,pin_unlock,supplier_saved_profile,supplier_pin_login])
+        .invoke_handler(tauri::generate_handler![supplier_login,supplier_refresh,supplier_logout,supplier_checkout,supplier_history,supplier_cash_action,supplier_orders,supplier_order_transition,supplier_debts,supplier_debt_payment,supplier_returns,supplier_return_create,pin_setup,pin_lock,pin_unlock,supplier_saved_profile,supplier_pin_login,supplier_operation_status])
         .run(tauri::generate_context!())
         .expect("error while running FIXI Caisse Windows");
 }
