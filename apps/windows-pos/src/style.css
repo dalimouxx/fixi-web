@@ -150,3 +150,12 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
  .scan-strip button{min-width:116px;padding:10px}
 }
 @media(max-height:790px){.checkout{padding-top:16px}.checkout h2{margin-bottom:13px}.lines{min-height:95px;max-height:30%}.line{padding:9px 3px}}
+
+.inventory-pulse{display:flex;justify-content:space-between;align-items:center;gap:12px;background:#fff6e8;border:1px solid #f4d4a3;border-left:4px solid #ee8425;border-radius:10px;padding:11px 14px;margin:12px 0;font-size:12px;font-weight:750;color:#8b4c08}
+.inventory-pulse button{background:#fff;border:1px solid #e8bb7d;color:#884a0c;padding:8px 10px;border-radius:8px;font-weight:750;cursor:pointer}
+.inventory-pulse button:hover{background:#fff0d8}
+.product-out{opacity:.62;background:#f3f4f6;cursor:not-allowed}
+.product-out:hover{transform:none;box-shadow:none;border-color:#dfe7f1}
+.stock-pill{display:inline-flex;align-self:start;background:#fff0e1;color:#a85b00;font-size:10px;font-weight:850;padding:5px 9px;border-radius:100px;letter-spacing:.035em}
+.product-out .stock-pill{background:#fee2e2;color:#b42318}
+.stock-low{color:#ac5806;font-weight:800}
