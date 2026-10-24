@@ -8,7 +8,7 @@ import {POST as advancedPost} from '@/app/api/supplier/advanced/route';
  */
 export async function POST(req:Request){
  try{
-  const s=await requireSupplierRole(['OWNER','ADMIN','MANAGER','SALES','CASHIER']);
+  const s=await requireSupplierRole(['OWNER','ADMIN','MANAGER']);
   if(process.env.FIXI_WINDOWS_RETURNS_ENABLED!=='true')return bad('Retours Windows non activés sur FIXI Cloud',403);
   const body=await req.json();
   const sourceSaleId=String(body.sourceSaleId||'');
