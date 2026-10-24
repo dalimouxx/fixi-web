@@ -24,8 +24,9 @@ export function WindowsLabelStudio({products,companyName,onClose}:Props){
   if(lines.some(p=>!escapeCode(p)||!/^[\x20-\x7e]{1,80}$/.test(escapeCode(p))))return setError('Code-barres manquant ou incompatible Code 128. Vérifiez les références.');
   setError('');document.body.dataset.printMode='labels';
   document.body.dataset.labelFormat=format;
-  window.print();
-  delete document.body.dataset.printMode;delete document.body.dataset.labelFormat;
+  const reset=()=>{delete document.body.dataset.printMode;delete document.body.dataset.labelFormat};
+  window.addEventListener('afterprint',reset,{once:true});
+  requestAnimationFrame(()=>window.print());
  }
  return <div className="label-studio"><div className="label-controls"><header><h2>Étiquettes Code 128</h2><button onClick={onClose}>Fermer</button></header><p>Fournisseur, produit, prix, référence et marque FIXI · impression par lot</p><label>Nom fournisseur<input value={supplier} maxLength={100} onChange={e=>setSupplier(e.target.value)}/></label><label>Format<select value={format} onChange={e=>setFormat(e.target.value as '50x30'|'60x40')}><option value="50x30">50 × 30 mm</option><option value="60x40">60 × 40 mm</option></select></label><input placeholder="Rechercher les produits..." value={filter} onChange={e=>setFilter(e.target.value)}/><div className="label-catalog">{products.filter(p=>(p.name+' '+p.sku).toLowerCase().includes(filter.toLowerCase())).map(p=><label key={p.id}><span><b>{p.name}</b><small>{p.sku}</small></span><input type="number" min={0} max={300} value={quantities[p.id]||0} onChange={e=>setCopies(p.id,Number(e.target.value))} aria-label={'Copies '+p.name}/></label>)}</div><b>{lines.length} produit(s), {total} étiquette(s)</b>{error&&<p role="alert" className="connect-error">{error}</p>}<button className="print-action" onClick={print} disabled={!total}>Imprimer les étiquettes</button><p>Définissez les dimensions de papier correspondantes dans votre pilote d'imprimante. Les étiquettes ne modifient pas le stock.</p></div><div className="labels-print-area">{selected.map(({p,i})=><article key={p.id+'-'+i} className="fixi-label"><header><b>{p.name}</b><strong>FIXI</strong></header><small>{supplier}</small><Barcode code={escapeCode(p)}/><footer><span>{p.sku}</span><b>{p.price.toFixed(3)} DT</b></footer></article>)}</div></div>;
 }
