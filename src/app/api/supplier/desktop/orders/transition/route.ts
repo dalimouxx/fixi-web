@@ -5,7 +5,7 @@ import {prisma} from '@/lib/prisma';
 
 export async function POST(req:Request){
  try{
-  const s=await requireSupplierRole(['OWNER','ADMIN','MANAGER','SALES']);
+  const s=await requireSupplierRole(['OWNER','ADMIN','MANAGER','SALES','CASHIER']);
   // Deliberate separate switch: read-only Windows features do not authorize order mutations.
   if(process.env.FIXI_WINDOWS_ORDERS_ENABLED!=='true')return bad('Confirmation Windows non activée',403);
   const b=await req.json();
