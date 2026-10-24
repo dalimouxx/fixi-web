@@ -22,10 +22,16 @@ export async function POST(req:Request){
   if(items.some((x:any)=>!Number.isInteger(x.quantity)||x.quantity<1||x.quantity>500||typeof x.saleItemId!=='string'
        ||typeof x.restock!=='boolean'||!['BON','DAMAGED'].includes(x.condition)))
     return bad('Article, quantité ou état incorrect',400);
-  const sale=await prisma.supplierErpSale.findFirst({where:{id:sourceSaleId,companyId:s.companyId,status:{not:'CANCELLED'}},select:{id:true}});
+  const sale=await prisma.supplierErpSale.findFirst({where:{id:sourceSaleId,companyId:s.companyId,status:{not:'CANCELLED'}},select:{id:true,paid:true}});
   if(!sale)return bad('Vente introuvable',404);
   const refund=Number(body.refund||0);
   if(!Number.isFinite(refund)||refund<0||refund>100000000||Math.abs(Math.round(refund*1000)-refund*1000)>.001)return bad('Remboursement invalide',400);
+  const alreadyRefunded=await prisma.supplierReturn.aggregate({
+   where:{companyId:s.companyId,sourceSaleId,type:'SALE_RETURN',status:'COMPLETED'},
+   _sum:{refund:true}
+  });
+  const refundable=Math.max(0,Number(sale.paid)-Number(alreadyRefunded._sum.refund||0));
+  if(refund>refundable+0.001)return bad('Remboursement supérieur aux sommes effectivement encaissées sur cette vente',409);
   if(!['CASH','CARD','TRANSFER'].includes(String(body.refundMethod||'CASH')))return bad('Moyen de remboursement invalide',400);
   const payload={action:'RETURN',reference,type:'SALE_RETURN',sourceSaleId,items:items.map((x:any)=>({
     saleItemId:x.saleItemId,quantity:x.quantity,restock:x.restock,condition:x.condition,
