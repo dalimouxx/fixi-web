@@ -1,0 +1,30 @@
+name: FIXI Windows POS validation
+on:
+  pull_request:
+    paths:
+      - 'apps/windows-pos/**'
+      - 'src/components/supplier-label-studio.tsx'
+      - 'src/components/supplier-pos.tsx'
+      - '.github/workflows/windows-pos-check.yml'
+  push:
+    branches:
+      - feature/windows-pos-labels-design
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - run: npx prisma generate
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/fixi?schema=public
+      - run: npm run typecheck
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/fixi?schema=public
+      - working-directory: apps/windows-pos
+        run: npm install --no-audit --no-fund
+      - working-directory: apps/windows-pos
+        run: npm run build

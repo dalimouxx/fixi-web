@@ -1,0 +1,41 @@
+name: FIXI Windows EXE build
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/windows-pos-labels-design
+    paths:
+      - 'apps/windows-pos/**'
+      - '.github/workflows/windows-exe-build.yml'
+jobs:
+  windows-installer:
+    runs-on: windows-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: apps/windows-pos
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: apps/windows-pos/src-tauri -> target
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Generate FIXI Windows icon
+        run: python scripts/generate_icon.py
+      - name: Build Windows NSIS EXE
+        run: npm run tauri build -- --bundles nsis
+      - name: Upload Windows installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: FIXI-Caisse-Windows-Setup
+          path: apps/windows-pos/src-tauri/target/release/bundle/nsis/*.exe
+          if-no-files-found: error
+          retention-days: 14
