@@ -231,8 +231,10 @@ async fn supplier_debt_payment(state: State<'_, Arc<DesktopState>>, payment: ser
  let response=session.client.post(format!("{}/api/supplier/desktop/debts/payment",session.origin)).json(&payment).send().await.map_err(connection_error)?;
  let code=response.status();
  if code==reqwest::StatusCode::NOT_FOUND{return Err("API des règlements Windows absente du serveur (HTTP 404). Aucun paiement confirmé.".into())}
- if code==reqwest::StatusCode::FORBIDDEN{return Err("Règlements Windows désactivés ou accès refusé (HTTP 403). Aucun paiement confirmé.".into())}
- if !code.is_success(){return Err(format!("Règlement refusé par FIXI (HTTP {})",code.as_u16()))}
+ if !code.is_success(){
+   let detail:serde_json::Value=response.json().await.unwrap_or(serde_json::Value::Null);
+   return Err(format!("Règlement refusé (HTTP {}) : {}",code.as_u16(),detail.get("error").and_then(|x|x.as_str()).unwrap_or("Accès refusé ou erreur métier")));
+ }
  let value:serde_json::Value=response.json().await.map_err(|_| "Réponse paiement invalide après succès HTTP : vérifiez le journal".to_string())?;
  Ok(value)
 }
@@ -260,8 +262,10 @@ async fn supplier_return_create(
         .json(&request).send().await.map_err(|_| "Réseau interrompu : vérifiez les avoirs avant de recommencer".to_string())?;
     let status=response.status();
     if status==reqwest::StatusCode::NOT_FOUND{return Err("API de retour Windows absente du serveur (HTTP 404). Aucun retour confirmé.".into())}
-    if status==reqwest::StatusCode::FORBIDDEN{return Err("Retours Windows désactivés ou accès refusé (HTTP 403). Aucun retour confirmé.".into())}
-    if !status.is_success(){return Err(format!("Retour refusé par FIXI (HTTP {})",status.as_u16()))}
+    if !status.is_success(){
+       let detail:serde_json::Value=response.json().await.unwrap_or(serde_json::Value::Null);
+       return Err(format!("Retour refusé (HTTP {}) : {}",status.as_u16(),detail.get("error").and_then(|x|x.as_str()).unwrap_or("Accès refusé ou erreur métier")));
+    }
     let value:serde_json::Value=response.json().await.map_err(|_| "Réponse invalide après succès HTTP : vérifiez les avoirs".to_string())?;
     Ok(value)
 }
@@ -296,7 +300,8 @@ async fn supplier_checkout(
         return Err("API Windows ventes absente sur FIXI Cloud (HTTP 404). Aucune confirmation de vente reçue. Mise à jour du serveur requise.".into());
     }
     if status==reqwest::StatusCode::FORBIDDEN {
-        return Err("Ventes Windows désactivées ou accès refusé sur FIXI Cloud (HTTP 403).".into());
+        let detail:serde_json::Value=response.json().await.unwrap_or(serde_json::Value::Null);
+        return Err(format!("Vente refusée (HTTP 403) : {}",detail.get("error").and_then(|x|x.as_str()).unwrap_or("Accès refusé ou fonctionnalité non activée")));
     }
     if status==reqwest::StatusCode::UNAUTHORIZED {
         return Err("Session fournisseur expirée (HTTP 401) : reconnectez-vous.".into());
