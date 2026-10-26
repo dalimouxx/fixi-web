@@ -85,6 +85,21 @@ export async function POST(req:Request){
    }
    const ref=String(b.reference||('AV-'+Date.now()));
    const ret=await prisma.$transaction(async tx=>{
+    // Serialize all returns for a sale before checking remaining units or refundable cash.
+    // Outside checks above are only fast preflight; THESE checks protect concurrent requests.
+    const locked=await tx.$queryRaw<{id:string}[]>`SELECT "id" FROM "SupplierErpSale" WHERE "id"=${sale.id} AND "companyId"=${s.companyId} FOR UPDATE`;
+    if(locked.length!==1)throw Object.assign(new Error('Vente source introuvable'),{status:404});
+    const currentSale=await tx.supplierErpSale.findFirst({where:{id:sale.id,companyId:s.companyId},select:{paid:true}});
+    const previous=await tx.supplierReturn.findMany({where:{companyId:s.companyId,sourceSaleId:sale.id,status:'COMPLETED'},select:{id:true,refund:true}});
+    const previouslyReturned=previous.length?await tx.supplierReturnItem.findMany({where:{returnId:{in:previous.map(x=>x.id)}},select:{saleItemId:true,quantity:true}}):[];
+    const used=new Map<string,number>();
+    for(const item of previouslyReturned)if(item.saleItemId)used.set(item.saleItemId,(used.get(item.saleItemId)||0)+item.quantity);
+    for(const item of normalized){
+      const left=item.saleItem.quantity-(used.get(item.saleItem.id)||0);
+      if(item.q>left)throw Object.assign(new Error('Quantité déjà retournée pour '+item.saleItem.name+'. Reste : '+Math.max(0,left)),{status:409});
+    }
+    const refundableNow=Math.max(0,Number(currentSale?.paid||0)-previous.reduce((sum,p)=>sum+Number(p.refund),0));
+    if(refund>refundableNow+0.001)throw Object.assign(new Error('Remboursement supérieur au montant réellement encaissé'),{status:409});
     const r=await tx.supplierReturn.create({data:{companyId:s.companyId,type:'SALE_RETURN',reference:ref,sourceRef:sale.reference,sourceSaleId:sale.id,warehouseId,customerId:sale.customerId,refundMethod:refund>0?refundMethod:null,status:'COMPLETED',total,refund,note:b.note||null,createdById:s.id,completedAt:new Date()}});
     for(const x of normalized){
      await tx.supplierReturnItem.create({data:{returnId:r.id,saleItemId:x.saleItem.id,productId:x.saleItem.productId,sku:x.saleItem.sku,name:x.saleItem.name,quantity:x.q,unitCost:Number(x.saleItem.unitCost),unitPrice:Number(x.saleItem.unitPrice),reason:x.reason,condition:x.condition,restock:x.restock}});
