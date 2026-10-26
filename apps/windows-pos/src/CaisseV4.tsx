@@ -2,6 +2,7 @@ import React,{useEffect,useMemo,useRef,useState} from 'react';
 import {createRoot} from 'react-dom/client';
 import {invoke} from '@tauri-apps/api/core';
 import {WindowsLabelStudio} from './labels';
+import './style.css';
 import './v4.css';
 
 type Product={id:string;name:string;sku:string;barcode?:string|null;category:string|null;price:number;stock:number};
