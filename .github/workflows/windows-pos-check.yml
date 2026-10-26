@@ -9,6 +9,7 @@ on:
   push:
     branches:
       - feature/windows-pos-v3-sales
+      - rebuild/fixi-windows-v4
 jobs:
   frontend:
     runs-on: ubuntu-latest

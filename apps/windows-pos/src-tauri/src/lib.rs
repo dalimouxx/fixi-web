@@ -201,8 +201,8 @@ async fn supplier_order_transition(
     unlocked(&state).await?;
     let guard=state.connection.lock().await;
     let session=guard.as_ref().ok_or("Veuillez vous connecter")?;
-    let response=session.client.post(format!("{}/api/supplier/desktop/orders/transition",session.origin))
-        .json(&serde_json::json!({"orderId":order_id,"status":status}))
+    let response=session.client.patch(format!("{}/api/supplier/orders/{}",session.origin,order_id))
+        .json(&serde_json::json!({"status":status}))
         .send().await.map_err(connection_error)?;
     let code=response.status();
     let value:serde_json::Value=response.json().await.map_err(|_| "Réponse commande invalide".to_string())?;
@@ -228,7 +228,7 @@ async fn supplier_debt_payment(state: State<'_, Arc<DesktopState>>, payment: ser
     unlocked(&state).await?;
  let guard=state.connection.lock().await;
  let session=guard.as_ref().ok_or("Veuillez vous connecter")?;
- let response=session.client.post(format!("{}/api/supplier/desktop/debts/payment",session.origin)).json(&payment).send().await.map_err(connection_error)?;
+ let response=session.client.post(format!("{}/api/supplier/desktop/v4/debt-payment",session.origin)).json(&payment).send().await.map_err(connection_error)?;
  let code=response.status();
  if code==reqwest::StatusCode::NOT_FOUND{return Err("API des règlements Windows absente du serveur (HTTP 404). Aucun paiement confirmé.".into())}
  if !code.is_success(){
@@ -258,7 +258,7 @@ async fn supplier_return_create(
     unlocked(&state).await?;
     let guard=state.connection.lock().await;
     let connection=guard.as_ref().ok_or("Veuillez vous connecter")?;
-    let response=connection.client.post(format!("{}/api/supplier/desktop/returns/create",connection.origin))
+    let response=connection.client.post(format!("{}/api/supplier/desktop/v4/returns",connection.origin))
         .json(&request).send().await.map_err(|_| "Réseau interrompu : vérifiez les avoirs avant de recommencer".to_string())?;
     let status=response.status();
     if status==reqwest::StatusCode::NOT_FOUND{return Err("API de retour Windows absente du serveur (HTTP 404). Aucun retour confirmé.".into())}
@@ -287,17 +287,19 @@ async fn supplier_operation_status(state: State<'_, Arc<DesktopState>>, kind: St
 #[tauri::command]
 async fn supplier_checkout(
     state: State<'_, Arc<DesktopState>>,
-    sale: serde_json::Value,
+    mut sale: serde_json::Value,
 ) -> Result<serde_json::Value, String> {
     unlocked(&state).await?;
+    let obj=sale.as_object_mut().ok_or("Panier de caisse invalide")?;
+    obj.insert("action".into(),serde_json::json!("SALE"));
     let guard=state.connection.lock().await;
     let session=guard.as_ref().ok_or("Connectez-vous à FIXI Supplier")?;
-    let response=session.client.post(format!("{}/api/supplier/desktop/sales",session.origin))
+    let response=session.client.post(format!("{}/api/supplier/erp",session.origin))
         .json(&sale).send().await
         .map_err(|_| "Connexion interrompue : vérifiez la vente dans l'historique avant de réessayer".to_string())?;
     let status=response.status();
     if status==reqwest::StatusCode::NOT_FOUND {
-        return Err("API Windows ventes absente sur FIXI Cloud (HTTP 404). Aucune confirmation de vente reçue. Mise à jour du serveur requise.".into());
+        return Err("API FIXI Supplier ERP indisponible (HTTP 404). Vérifiez l'adresse du serveur.".into());
     }
     if status==reqwest::StatusCode::FORBIDDEN {
         let detail:serde_json::Value=response.json().await.unwrap_or(serde_json::Value::Null);
@@ -327,7 +329,7 @@ async fn supplier_cash_action(
     unlocked(&state).await?;
     let guard=state.connection.lock().await;
     let session=guard.as_ref().ok_or("Connectez-vous à FIXI Supplier")?;
-    let response=session.client.post(format!("{}/api/supplier/desktop/cash",session.origin))
+    let response=session.client.post(format!("{}/api/supplier/erp",session.origin))
         .json(&operation).send().await
         .map_err(|_| "Réseau interrompu : vérifiez la session sur FIXI Web avant de retenter".to_string())?;
     let code=response.status();
