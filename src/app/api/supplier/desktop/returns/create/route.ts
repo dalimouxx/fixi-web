@@ -14,9 +14,20 @@ export async function POST(req:Request){
   const sourceSaleId=String(body.sourceSaleId||'');
   const reference=String(body.reference||'');
   if(!/^WINRET-[a-f0-9-]{36}$/i.test(reference))return bad('Référence de retour Windows invalide',400);
-  const previous=await prisma.supplierReturn.findFirst({where:{companyId:s.companyId,reference,type:'SALE_RETURN'}});
-  if(previous){if(previous.sourceSaleId!==sourceSaleId)return bad('Référence déjà utilisée pour une autre vente',409);return ok({id:previous.id,reference:previous.reference,replayed:true});}
   const items=Array.isArray(body.items)?body.items:[];
+  const previous=await prisma.supplierReturn.findFirst({where:{companyId:s.companyId,reference,type:'SALE_RETURN'}});
+  if(previous){
+   const lines=await prisma.supplierReturnItem.findMany({where:{returnId:previous.id},select:{saleItemId:true,quantity:true,restock:true,condition:true,reason:true}});
+   const norm=(x:any)=>[String(x.saleItemId||''),Number(x.quantity),Boolean(x.restock),String(x.condition||'BON'),String(x.reason||'Retour client')].join('|');
+   const expected=items.map(norm).sort(),actual=lines.map(norm).sort();
+   const matches=previous.sourceSaleId===sourceSaleId&&previous.status==='COMPLETED'&&
+    actual.length===expected.length&&actual.every((line,i)=>line===expected[i])&&
+    Math.abs(Number(previous.refund)-Number(body.refund||0))<0.0005&&
+    String(previous.note||'')===String(body.note||'')&&
+    (Number(previous.refund)===0||String(previous.refundMethod||'')===String(body.refundMethod||'CASH'));
+   if(!matches)return bad('Cette référence appartient à un autre retour : vérifiez les avoirs avant toute nouvelle tentative',409);
+   return ok({id:previous.id,reference:previous.reference,replayed:true});
+  }
   if(!sourceSaleId||items.length<1||items.length>50)return bad('Vente et lignes de retour nécessaires',400);
   if(new Set(items.map((x:any)=>String(x.saleItemId))).size!==items.length)return bad('Lignes de retour en double',400);
   if(items.some((x:any)=>!Number.isInteger(x.quantity)||x.quantity<1||x.quantity>500||typeof x.saleItemId!=='string'
