@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - feature/windows-pos-labels-design
+      - feature/windows-pos-v3-sales
     paths:
       - 'apps/windows-pos/**'
       - '.github/workflows/windows-exe-build.yml'
@@ -16,8 +16,8 @@ jobs:
       run:
         working-directory: apps/windows-pos
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: '22'
       - uses: dtolnay/rust-toolchain@stable
