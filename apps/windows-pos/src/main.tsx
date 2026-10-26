@@ -105,7 +105,7 @@ function App(){
    setUncertainSale(false);setTicket({...receipt,reference:sale.reference||reference});setSaleMessage('Vente enregistrée : '+(sale.reference||reference));setCart({});setAmount('');setSaleKey('');setCustomerId('');
    const fresh=await invoke<Bootstrap>('supplier_refresh');setData(fresh);focusScanner();
   }catch(e){const message=String(e);setError(message);
-    const definitiveRefusal=/HTTP 40[134]|non activée|désactivées|accès refusé|API Windows ventes absente|Vente refusée/i.test(message);
+    const definitiveRefusal=/HTTP 40[1349]|non activée|désactivées|accès refusé|API Windows ventes absente|Vente refusée/i.test(message);
     if(definitiveRefusal){setSaleKey('');setUncertainSale(false);}
     else {setUncertainSale(true);setError(message+' — Opération à vérifier avant toute nouvelle tentative. Référence : '+reference)}
    }finally{setBusy(false)}
@@ -161,7 +161,7 @@ function App(){
    setDebtPaymentKey('');setDebtAmount('');await loadDebts()
   }catch(e){
    const message=String(e);
-   if(/HTTP 40[134]|désactivés|accès refusé|absente du serveur/i.test(message)){
+   if(/HTTP 40[1349]|désactivés|accès refusé|absente du serveur/i.test(message)){
     if(draftScope)localStorage.removeItem(draftScope+':debt');
     setPendingDebt(null);setDebtPaymentKey('');setDebtsError(message)
    }else setDebtsError(message+' — paiement à vérifier, référence conservée : '+operation.reference)
@@ -199,7 +199,7 @@ function App(){
    setReturnReference('');setReturnSaleId('');setReturnQty({});setReturnRefund('0');await loadReturns()
   }catch(e){
    const message=String(e);
-   if(/HTTP 40[134]|désactivés|accès refusé|absente du serveur/i.test(message)){
+   if(/HTTP 40[1349]|désactivés|accès refusé|absente du serveur/i.test(message)){
     if(draftScope)localStorage.removeItem(draftScope+':return');
     setPendingReturn(null);setReturnUncertain(false);setReturnReference('');setReturnsError(message)
    }else{setReturnUncertain(true);setReturnsError(message+' — retour à vérifier : '+operation.reference)}
