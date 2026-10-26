@@ -1,6 +1,7 @@
 import React,{useEffect,useMemo,useRef,useState} from 'react';
 import {createRoot} from 'react-dom/client';
 import {invoke} from '@tauri-apps/api/core';
+import {getCurrentWindow} from '@tauri-apps/api/window';
 import {WindowsLabelStudio} from './labels';
 import './style.css';
 import './v4.css';
@@ -197,7 +198,7 @@ function App(){
  }
  async function lock(){setError('');try{await invoke('pin_lock');setLocked(true);setLockPin('')}catch(e){setError(String(e))}}
  async function unlock(e:React.FormEvent){e.preventDefault();try{await invoke('pin_unlock',{pin:lockPin});setLocked(false);setLockPin('');focusScan()}catch(e){setError(String(e));setLockPin('')}}
- async function logout(){try{await invoke('supplier_logout')}catch(e){setError(String(e));return}
+ async function logout(){if(!window.confirm('Changer de compte supprimera le PIN enregistré sur ce PC. Continuer ?'))return;try{await invoke('supplier_logout')}catch(e){setError(String(e));return}
   setBoot(null);setProfile({configured:false});setDraftKey('');setPasswordMode(false);setLocked(false);setSaleRef('');setCart({})}
  function printTicket(){if(!ticket)return;document.body.dataset.printMode='ticket';window.addEventListener('afterprint',()=>delete document.body.dataset.printMode,{once:true});requestAnimationFrame(()=>window.print())}
  const canRefund=['OWNER','ADMIN','MANAGER'].includes(boot?.role||'');
@@ -219,7 +220,7 @@ function App(){
     <button onClick={()=>void refresh()} disabled={busy||boot.role==='DEMO'}>↻ Synchroniser</button>
     <button onClick={()=>setLabels(true)}>▦ Étiquettes</button>
     {pinConfigured?<button onClick={()=>void lock()}>▣ Verrouiller</button>:boot.role!=='DEMO'?<div className="v4-inline-pin"><input type="password" inputMode="numeric" maxLength={4} value={setupPin} onChange={e=>setSetupPin(e.target.value.replace(/\D/g,'').slice(0,4))} placeholder="PIN 4 chiffres"/><button disabled={busy||setupPin.length!==4} onClick={()=>void changePin()}>Activer PIN</button></div>:null}
-    <button onClick={()=>void logout()}>Quitter</button>
+    <button onClick={()=>void getCurrentWindow().close()}>Fermer</button><button onClick={()=>void logout()}>Changer de compte</button>
    </div></header>
    {error&&<div role="alert" className="v4-error">{error}<button onClick={()=>setError('')}>×</button></div>}
    {message&&<div role="status" className="v4-message">{message}<button onClick={()=>setMessage('')}>×</button></div>}
