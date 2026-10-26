@@ -96,12 +96,16 @@ function App(){
    if(target==='historique'||target==='session'){setHistory(await invoke<Hist>('supplier_history'))}
   }catch(e){setError(String(e))}
  }
+ useEffect(()=>{if(page!=='commandes'||!boot||boot.role==='DEMO')return;
+  const interval=window.setInterval(()=>{void invoke<{orders:Order[]}>('supplier_orders').then(data=>setOrders(data.orders)).catch(()=>{})},20000);
+  return()=>window.clearInterval(interval)
+ },[page,boot?.role]);
  function navigate(target:Page){setPage(target);setSearch('');setMessage('');void load(target)}
  function add(id:string,delta:number){
    if(busy||saleRef){setError('Une vente est en cours ou à vérifier. Le panier est verrouillé.');return}
    const p=products.find(x=>x.id===id);if(!p)return;
    if(delta>0&&(cart[id]||0)>=p.stock){setError('Stock insuffisant pour '+p.name);return}
-   setCart(c=>({...c,[id]:Math.max(0,(c[id]||0)+delta)}));setError('')
+   setCart(c=>({...c,[id]:Math.max(0,(c[id]||0)+delta)}));setError('');focusScan()
  }
  function barcode(){const value=scan.trim().toLowerCase();if(!value)return;
   const p=products.find(x=>[x.barcode,x.sku].some(c=>c?.trim().toLowerCase()===value));
