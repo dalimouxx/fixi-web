@@ -69,7 +69,17 @@ function App(){
  },[boot,locked]);
  function connectData(data:Boot,origin:string,user:string){
    const key='fixi:v4:draft:'+encodeURIComponent(origin.trim().toLowerCase())+':'+encodeURIComponent(user.trim().toLowerCase());
-   let draft:Draft|null=null;try{draft=JSON.parse(localStorage.getItem(key)||'null')}catch{}
+   let draft:Draft|null=null;
+   try{
+     const existing=localStorage.getItem(key);
+     if(existing){draft=JSON.parse(existing)}
+     else{
+       // Import the previous FIXI V3 unpaid cart without deleting its backup.
+       const oldKey='fixi:windows-pos:draft:v1:'+encodeURIComponent(origin.trim().toLowerCase())+':'+encodeURIComponent(user.trim().toLowerCase());
+       const original=localStorage.getItem(oldKey);
+       if(original){const old=JSON.parse(original);draft={cart:old.cart||{},customerId:old.customerId||'',amount:old.amount||'',method:old.payMethod||'CASH',reference:old.saleKey||''}}
+     }
+   }catch{setError('Ancien panier illisible : ouvrez la V3 pour vérifier son contenu avant une vente.')}
    const saved:Record<string,number>={};
    if(draft?.cart)for(const [id,q] of Object.entries(draft.cart)){const prod=data.products.find(p=>p.id===id);if(prod&&Number.isInteger(q)&&q>0)saved[id]=Math.min(q,prod.stock)}
    setCart(saved);setCustomerId(data.customers.some(x=>x.id===draft?.customerId)?draft!.customerId:'');
