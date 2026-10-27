@@ -4,6 +4,7 @@ import {Search,ShoppingCart,Plus,Minus,Trash2,Banknote,WalletCards,UserRound,Rec
 import {api} from './ui';
 import {money} from '@/lib/format';
 import {BarcodeCamera} from './barcode-camera';
+import {SupplierLabelStudio} from './supplier-label-studio';
 
 type Props={products:any[];customers:any[];cashSessions:any[];methods:any[];warehouses:any[];warehouseStock:any[];session:any;onChanged:()=>void};
 type CartLine={product:any;quantity:number;unitPrice:number};
@@ -74,6 +75,7 @@ export function SupplierPos({products,customers,cashSessions,methods,warehouses,
  return <div className="supplier-pos">
   <div className="supplier-pos-top">
    <div><span className="smart-kicker"><WalletCards size={13}/> FIXI POS</span><h2>Point de vente</h2><p>Vente comptoir rapide, prix détail/grossiste et règlement multiple.</p></div>
+   <SupplierLabelStudio products={products}/>
    <div className={'supplier-register '+(openSession?'open':'closed')}><i/><span><b>{openSession?'Caisse ouverte':'Caisse fermée'}</b><small>{openSession?'Depuis '+new Date(openSession.openedAt).toLocaleTimeString('fr-TN',{hour:'2-digit',minute:'2-digit'}):'Ouvrez une session avant les espèces'}</small></span><button className="btn btn-soft btn-sm" onClick={()=>{setCashNote('');setCashAmount(openSession?'': '0');void refreshCash();setCashModal(openSession?'close':'open')}}>{openSession?<LockKeyhole/>:<UnlockKeyhole/>}{openSession?'Clôturer':'Ouvrir'}</button></div>
   </div>
   {err&&<div className="supplier-pos-alert error"><X/>{err}</div>}{msg&&<div className="supplier-pos-alert success"><CheckCircle2/>{msg}{lastSale&&<><button type="button" onClick={()=>window.open('/supplier/documents/'+lastSale.id,'_blank')}>
