@@ -44,7 +44,8 @@ export async function POST(req:Request){
   if(!Number.isFinite(amount)||amount<=0||amount>100000000||Math.abs(money(amount)-amount)>0.00001)return bad('Montant non valide (3 décimales)',400);
   if(!['CASH','CARD','TRANSFER'].includes(method))return bad('Moyen de paiement invalide',400);
   const result=await prisma.$transaction(async tx=>{
-   // One aggregate customer payment at a time, including retries from another workstation.
+   // Serialize both the global reference and the customer account to prevent cross-customer replay.
+   await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${s.companyId}),hashtext(${reference}))`;
    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${s.companyId}),hashtext(${customerId}))`;
    const previous=await tx.supplierErpPayment.findMany({where:{companyId:s.companyId,reference,kind:'IN'}});
    if(previous.length){
