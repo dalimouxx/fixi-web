@@ -28,7 +28,7 @@ export async function GET(){
   const customers=grouped.size?await prisma.supplierErpCustomer.findMany({
    where:{companyId:s.companyId,id:{in:[...grouped.keys()]}},select:{id:true,name:true,phone:true}
   }):[];
-  return ok({customers:customers.map(c=>({...grouped.get(c.id),customer:c.name,phone:c.phone||''}))
+  return ok({customers:customers.map(c=>({...grouped.get(c.id)!,customer:c.name,phone:c.phone||''}))
    .sort((a,b)=>b.due-a.due)});
  }catch(e:any){return bad(e.message||'Créances clients indisponibles',e.status||500)}
 }
