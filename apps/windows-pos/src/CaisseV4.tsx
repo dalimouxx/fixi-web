@@ -50,7 +50,7 @@ function App(){
  const [returnSale,setReturnSale]=useState(''),[returnQty,setReturnQty]=useState<Record<string,number>>({}),[returnDamage,setReturnDamage]=useState(false),[refund,setRefund]=useState('0'),[refundMethod,setRefundMethod]=useState('CASH'),[returnNote,setReturnNote]=useState('Retour client'),[returnPending,setReturnPending]=useState<ReturnRequest|null>(null);
  const [cashAmount,setCashAmount]=useState(''),[cashNote,setCashNote]=useState('');
  const [ticket,setTicket]=useState<ReceiptData|null>(null),[priceMode,setPriceMode]=useState<'RETAIL'|'WHOLESALE'>('RETAIL');
- const [receiptWarning,setReceiptWarning]=useState('');
+ const [receiptWarning,setReceiptWarning]=useState(''),[printRequest,setPrintRequest]=useState(0);
  const [customerDebts,setCustomerDebts]=useState<CustomerDebt[]>([]),[clientDebtId,setClientDebtId]=useState('');
  const [newClientName,setNewClientName]=useState(''),[newClientPhone,setNewClientPhone]=useState(''),[newClientAddress,setNewClientAddress]=useState('');
  const [ticketQuery,setTicketQuery]=useState(''),[ticketFrom,setTicketFrom]=useState(''),[ticketTo,setTicketTo]=useState('');
@@ -153,7 +153,7 @@ function App(){
   catch{setError('Impossible de protéger le panier localement : vente non envoyée.');return}
   setSaleRef(reference);setBusy(true);setError('');setMessage('');
   try{const result=await invoke<{reference?:string}>('supplier_checkout',{sale:{reference,items:entries.map(e=>({productId:e.product.id,quantity:e.quantity,unitPrice:priceFor(e.product)})),customerId:customerId||null,paid:amount,method}});
-   setTicket({reference:result.reference||reference,lines:entries.map(x=>({name:x.product.name,quantity:x.quantity,price:priceFor(x.product)})),paid:amount,total,company:boot.companyName,date:new Date().toLocaleString('fr-TN'),customer:boot.customers.find(x=>x.id===customerId)?.name});
+   setTicket({reference:result.reference||reference,lines:entries.map(x=>({name:x.product.name,quantity:x.quantity,price:priceFor(x.product)})),paid:amount,total,company:boot.companyName,date:new Date().toLocaleString('fr-TN'),customer:boot.customers.find(x=>x.id===customerId)?.name});setPrintRequest(n=>n+1);
    setMessage('Vente enregistrée : '+(result.reference||reference));localClearSale();await refresh();focusScan()
   }catch(e){const msg=String(e);setError(msg);if(/HTTP 40[1349]|Vente refusée|Stock insuffisant/i.test(msg)){setSaleRef('')}else setMessage('Vente à vérifier, référence conservée : '+reference)}
   finally{setBusy(false)}
@@ -201,7 +201,7 @@ function App(){
  function showTicket(x:TicketSearch){
   if(!boot)return;
   setTicket({reference:x.reference,company:boot.companyName,date:new Date(x.createdAt).toLocaleString('fr-TN'),
-   customer:x.customer,lines:x.items,total:x.total,paid:x.paid});
+   customer:x.customer,lines:x.items,total:x.total,paid:x.paid});setPrintRequest(n=>n+1);
   setMessage('Ticket '+x.reference+' prêt à être réimprimé.')
  }
  async function selectReturnFromTicket(x:TicketSearch){
@@ -284,15 +284,13 @@ function App(){
   requestAnimationFrame(()=>requestAnimationFrame(()=>window.print()))
  }
  const canRefund=['OWNER','ADMIN','MANAGER'].includes(boot?.role||'');
- const receiptAutoPrintRef=useRef('');
  useEffect(()=>{
-  if(!ticket||receiptAutoPrintRef.current===ticket.reference)return;
-  receiptAutoPrintRef.current=ticket.reference;
+  if(!ticket||printRequest===0)return;
   document.body.dataset.printMode='ticket';
   const clean=()=>{delete document.body.dataset.printMode;setReceiptWarning('Ticket imprimé ou dialogue fermé : vérifiez la sortie papier, réimprimez si nécessaire.')};
   window.addEventListener('afterprint',clean,{once:true});
   requestAnimationFrame(()=>requestAnimationFrame(()=>window.print()))
- },[ticket?.reference]);
+ },[ticket?.reference,printRequest]);
  if(!boot)return <div className="v4-login">
   <div className="v4-login-identity"><div className="v4-mark">F</div><h1>FIXI Caisse</h1><p>Point de vente professionnel · Windows V4</p><ul><li>Scanner rapide et panier sauvegardé</li><li>Gestion intégrée FIXI Supplier</li><li>Comptabilité, commandes et retours</li></ul></div>
   <div className="v4-login-panel">{profile?.configured&&!passwordMode?
