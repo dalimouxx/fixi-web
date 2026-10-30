@@ -1,7 +1,9 @@
 import {useEffect,useRef} from 'react';
 import JsBarcode from 'jsbarcode';
 
+export type ReceiptBusinessProfile={legalName?:string|null;phone?:string|null;address?:string|null;taxId?:string|null;tradeRegister?:string|null;receiptMessage?:string|null};
 export type ReceiptData={
+ profile?:ReceiptBusinessProfile|null;
  reference:string;company:string;date:string;
  lines:{name:string;quantity:number;price:number}[];
  total:number;paid:number;customer?:string;
@@ -20,7 +22,7 @@ export function TicketBarcode({reference}:{reference:string}){
 export function TicketPrint({ticket}:{ticket:ReceiptData|null}){
  if(!ticket)return null;
  return <div className="v4-receipt" aria-label="Ticket de caisse imprimable"><article>
-  <header><strong>FIXI · {ticket.company}</strong><small>{ticket.date}</small></header>
+  <header><strong>{ticket.profile?.legalName||ticket.company}</strong>{ticket.profile?.address&&<small>{ticket.profile.address}</small>}{ticket.profile?.phone&&<small>Tél. {ticket.profile.phone}</small>}{ticket.profile?.taxId&&<small>Matricule fiscal : {ticket.profile.taxId}</small>}{ticket.profile?.tradeRegister&&<small>Registre : {ticket.profile.tradeRegister}</small>}<small>{ticket.date}</small></header>
   <h3>Ticket de caisse</h3>
   <p className="v4-receipt-reference">{ticket.reference}</p>
   {ticket.customer&&<p>Client : {ticket.customer}</p>}
@@ -30,6 +32,6 @@ export function TicketPrint({ticket}:{ticket:ReceiptData|null}){
   <p>Reste : <span>{money(Math.max(0,ticket.total-ticket.paid))}</span></p>
   <TicketBarcode reference={ticket.reference}/>
   <small>Présentez ce code-barres pour retrouver le ticket, effectuer un retour ou demander une copie.</small>
-  <small>Merci de votre confiance</small>
+  <small>{ticket.profile?.receiptMessage||'Merci de votre confiance'}</small>
  </article></div>;
 }
