@@ -337,7 +337,7 @@ function App(){
  </div>
  <table><thead><tr><th>Client</th><th>Statut</th><th>Action</th></tr></thead><tbody>
  {boot.customers.map(c=><tr key={c.id}><td>{c.name}</td><td>Actif</td><td><button onClick={()=>{setCustomerId(c.id);setPage('caisse')}}>Vendre à ce client</button></td></tr>)}
- </tbody></table></section>
+ </tbody></table></section>}
    {page==='commandes'&&<section className="v4-panel"><div className="v4-panel-head"><div><h2>Commandes en ligne</h2><p>Confirmer, préparer et mettre à disposition du livreur.</p></div><button onClick={()=>void load('commandes')}>↻ Actualiser</button></div><div className="v4-order-grid">{orders.map(o=><div className="v4-order" key={o.id}><div><strong>{o.customer}</strong><span className="v4-status">{o.status}</span></div><small>{new Date(o.createdAt).toLocaleString('fr-TN')}</small><ul>{o.items.map((i,n)=><li key={n}>{i.name} · {i.sku} <b>× {i.quantity}</b></li>)}</ul><button disabled={busy||!['PENDING','CONFIRMED','PREPARING'].includes(o.status)} onClick={()=>void orderTransition(o)}>{o.status==='PENDING'?'Confirmer':o.status==='CONFIRMED'?'Commencer préparation':o.status==='PREPARING'?'Prête pour livreur':'En attente du livreur'}</button></div>)}</div>{orders.length===0&&<p>Aucune commande en attente.</p>}</section>}
    {page==='dettes'&&<section className="v4-panel">
  <div className="v4-panel-head"><div><h2>Dettes globales par client</h2><p>Un versement peut régler plusieurs anciennes factures : le serveur répartit automatiquement la somme, de la plus ancienne à la plus récente.</p></div><button onClick={()=>void load('dettes')}>↻ Actualiser</button></div>
@@ -358,7 +358,7 @@ function App(){
  <table><thead><tr><th>Nom du client</th><th>Téléphone</th><th>Factures dues</th><th>Dette totale</th><th>Action</th></tr></thead><tbody>
  {customerDebts.map(c=><tr key={c.customerId}><td><strong>{c.customer}</strong></td><td>{c.phone||'—'}</td><td>{c.invoices}</td><td><strong>{money(c.due)}</strong></td>
   <td><button disabled={busy||!!debtPending} onClick={()=>setClientDebtId(c.customerId)}>Recevoir un paiement</button></td></tr>)}
- </tbody></table></section>
+ </tbody></table></section>}
    {page==='retours'&&<section className="v4-panel"><div className="v4-panel-head"><h2>Retours & avoirs</h2><button onClick={()=>void load('retours')}>↻ Actualiser</button></div><p>Scanner le ticket, ou rechercher la vente par date, client, téléphone ou référence.</p>
  <TicketSearchV4 query={ticketQuery} from={ticketFrom} to={ticketTo} busy={busy} results={ticketMatches}
  onQuery={setTicketQuery} onFrom={setTicketFrom} onTo={setTicketTo} onSearch={()=>void searchTickets()}
@@ -373,7 +373,7 @@ function App(){
  {history?.sales.map(x=><tr key={x.id}><td>{x.reference}</td><td>{new Date(x.createdAt).toLocaleString('fr-TN')}</td><td>{money(x.total)}</td><td>{money(x.paid)}</td><td>{x.status}</td></tr>)}
  </tbody></table>
  {ticket&&<button disabled={busy} onClick={printTicket}>Réimprimer le ticket : {ticket.reference}</button>}
- </section>
+ </section>}
    {page==='session'&&<section className="v4-panel"><h2>Session de caisse</h2><p>Ouvrez la caisse avant les encaissements en espèces.</p><div className="v4-form-grid"><label>Montant (DT)<input type="number" min="0" step=".001" value={cashAmount} onChange={e=>setCashAmount(e.target.value)}/></label><label>Observation<input value={cashNote} onChange={e=>setCashNote(e.target.value)}/></label><button className="v4-primary" disabled={busy} onClick={()=>void cash('CASH_OPEN')}>Ouvrir la caisse</button><button disabled={busy} onClick={()=>void cash('CASH_CLOSE')}>Clôturer la caisse</button></div><h3>Dernières sessions</h3><table><thead><tr><th>Ouverture</th><th>Clôture</th><th>Statut</th></tr></thead><tbody>{history?.sessions.map(x=><tr key={x.id}><td>{new Date(x.openedAt).toLocaleString('fr-TN')}</td><td>{x.closedAt?new Date(x.closedAt).toLocaleString('fr-TN'):'—'}</td><td>{x.status}</td></tr>)}</tbody></table></section>}
    {page==='livreurs'&&<section className="v4-panel">
  <div className="v4-panel-head"><div><h2>Clôture des recettes livreurs</h2><p>Validez les remises COD des livreurs dans la session de caisse ouverte, avec preuve du montant et justification des écarts.</p></div><button onClick={()=>void load('livreurs')}>↻ Actualiser</button></div>
