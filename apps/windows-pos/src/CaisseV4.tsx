@@ -10,7 +10,7 @@ import './v4.css';
 
 type Product={id:string;name:string;sku:string;barcode?:string|null;category:string|null;price:number;wholesalePrice?:number|null;minStock?:number;stock:number};
 type Customer={id:string;name:string};
-type Boot={companyName:string;role:string;products:Product[];customers:Customer[];pinConfigured?:boolean};
+type Boot={companyName:string;role:string;products:Product[];customers:Customer[];pinConfigured?:boolean;receiptProfile?:import('./TicketV4').ReceiptBusinessProfile|null};
 type Order={id:string;customer:string;createdAt:string;status:string;items:{name:string;sku:string;quantity:number}[]};
 type Debt={id:string;reference:string;customer:string;total:number;paid:number;due:number};
 type CustomerDebt={customerId:string;customer:string;phone:string;due:number;invoices:number};
@@ -153,7 +153,7 @@ function App(){
   catch{setError('Impossible de protéger le panier localement : vente non envoyée.');return}
   setSaleRef(reference);setBusy(true);setError('');setMessage('');
   try{const result=await invoke<{reference?:string}>('supplier_checkout',{sale:{reference,items:entries.map(e=>({productId:e.product.id,quantity:e.quantity,unitPrice:priceFor(e.product)})),customerId:customerId||null,paid:amount,method}});
-   setTicket({reference:result.reference||reference,lines:entries.map(x=>({name:x.product.name,quantity:x.quantity,price:priceFor(x.product)})),paid:amount,total,company:boot.companyName,date:new Date().toLocaleString('fr-TN'),customer:boot.customers.find(x=>x.id===customerId)?.name});setPrintRequest(n=>n+1);
+   setTicket({reference:result.reference||reference,lines:entries.map(x=>({name:x.product.name,quantity:x.quantity,price:priceFor(x.product)})),paid:amount,total,company:boot.companyName,profile:boot.receiptProfile,date:new Date().toLocaleString('fr-TN'),customer:boot.customers.find(x=>x.id===customerId)?.name});setPrintRequest(n=>n+1);
    setMessage('Vente enregistrée : '+(result.reference||reference));localClearSale();await refresh();focusScan()
   }catch(e){const msg=String(e);setError(msg);if(/HTTP 40[1349]|Vente refusée|Stock insuffisant/i.test(msg)){setSaleRef('')}else setMessage('Vente à vérifier, référence conservée : '+reference)}
   finally{setBusy(false)}
@@ -200,7 +200,7 @@ function App(){
  }
  function showTicket(x:TicketSearch){
   if(!boot)return;
-  setTicket({reference:x.reference,company:boot.companyName,date:new Date(x.createdAt).toLocaleString('fr-TN'),
+  setTicket({reference:x.reference,company:boot.companyName,profile:boot.receiptProfile,date:new Date(x.createdAt).toLocaleString('fr-TN'),
    customer:x.customer,lines:x.items,total:x.total,paid:x.paid});setPrintRequest(n=>n+1);
   setMessage('Ticket '+x.reference+' prêt à être réimprimé.')
  }
