@@ -39,3 +39,41 @@
  body[data-print-mode="ticket"] .v4-receipt{visibility:visible!important;display:block!important;position:static!important;inset:auto!important;width:78mm!important;background:#fff!important;color:#000!important}
  body[data-print-mode="ticket"] .v4-receipt *{visibility:visible!important}
 }
+
+/* FIXI Counter V4.1 — wholesale/retail, receipt archive, remittances and barcode printing */
+.v4-price-switch{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:7px 0 17px;padding:12px;background:#eaf1fc;border:1px solid #d2e0f4;border-radius:12px;font-size:12px;color:#244b7b}
+.v4-price-switch button{padding:10px 18px;background:white;color:#295a9e;font-weight:850;border-radius:8px;border:1px solid #c8d9f0}
+.v4-price-switch button.active{background:#295fb3;color:white;border-color:#295fb3}
+.v4-price-switch small{flex-basis:100%;color:#6881a3;font-size:10px}
+.v4-price-pair{display:grid;gap:4px;align-self:stretch;border-top:1px solid #ebeff5;padding-top:9px;font-size:10px;color:#637d9b}
+.v4-price-pair small{font-size:10px;color:#6681a2}
+.v4-basket-price{display:flex;justify-content:space-between;align-items:center;padding:8px 4px;font-size:12px;color:#526b8a}
+.v4-basket-price button{padding:8px 10px;background:#eaf4ff;border:1px solid #cfe2f8;color:#295fa2;border-radius:8px;font-weight:800;font-size:11px}
+.v4-print-warning{padding:11px 12px;margin:0;border-radius:9px;background:#fff9e8;color:#8c521a;font-size:11px;line-height:1.5;border:1px solid #f4d3a0}
+.v4-ticket-finder{margin:16px 0 23px;padding:14px;border-radius:13px;background:#f6f9ff;border:1px solid #dfe9f7;max-width:100%;overflow-x:auto}
+.v4-ticket-filters{display:grid;grid-template-columns:minmax(220px,2fr) minmax(125px,1fr) minmax(125px,1fr) auto;gap:9px;align-items:end}
+.v4-ticket-filters label{display:flex;flex-direction:column;gap:6px;color:#4d668b;font-weight:750;font-size:11px}
+.v4-ticket-filters input{padding:11px 12px;border:1px solid #ccdaea;border-radius:9px;background:#fff;color:#193657;width:100%;min-width:0}
+.v4-ticket-filters button,.v4-ticket-actions button{background:#285eab;border:1px solid #285eab;color:#fff;border-radius:8px;padding:11px 13px;font-weight:850;font-size:11px}
+.v4-found-tickets{margin-top:16px;border-top:1px solid #dbe6f5;padding-top:10px}
+.v4-found-tickets td small{display:block;margin-top:4px;color:#8090a6;font-size:11px}
+.v4-ticket-actions{display:flex;gap:6px;flex-wrap:wrap}.v4-ticket-actions button:nth-child(2){background:#fff;color:#295fa3;border-color:#bed5ee}
+.v4-receipt article{margin:0;width:100%;font-size:11px;color:#000}
+.v4-receipt-reference{font-weight:800;text-align:center;word-break:break-word;font-size:11px}
+.v4-receipt table{border-collapse:collapse;width:100%;font-size:10px}
+.v4-receipt td{padding:5px 0;border-bottom:1px dotted #777;vertical-align:top}
+.v4-receipt td:last-child{text-align:right;white-space:nowrap}
+.v4-ticket-barcode{max-width:100%;height:auto;display:block;margin:10px auto 4px}
+@media(max-width:1290px){.v4-ticket-filters{grid-template-columns:repeat(2,minmax(0,1fr))}.v4-ticket-filters label:first-child{grid-column:1/-1}}
+@media(max-width:1000px){.v4-ticket-filters{grid-template-columns:1fr}.v4-ticket-filters label:first-child{grid-column:auto}}
+@media print{
+ @page{size:80mm auto;margin:0}
+ body[data-print-mode="ticket"] .v4-receipt{display:block!important;visibility:visible!important;background:#fff!important;color:#000!important;
+ width:78mm!important;max-width:78mm!important;margin:0!important;padding:4mm 2mm!important;box-shadow:none!important}
+ body[data-print-mode="ticket"] .v4-receipt *{visibility:visible!important}
+ body[data-print-mode="ticket"] .v4-receipt article{width:100%!important;font-family:Arial,sans-serif!important;break-inside:avoid}
+ body[data-print-mode="ticket"] .v4-ticket-barcode{height:auto!important;max-width:100%!important;break-inside:avoid}
+ body[data-print-mode="ticket"] .v4-receipt table{min-width:0!important;width:100%!important;table-layout:auto}
+ body[data-print-mode="ticket"] .v4-receipt article>p{display:flex;justify-content:space-between;gap:4mm}
+ body[data-print-mode="labels"] .v4-receipt{display:none!important}
+}
