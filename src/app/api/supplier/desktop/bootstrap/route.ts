@@ -8,7 +8,7 @@ import {bad,ok} from '@/lib/http';
 export async function GET(){
  try{
   const s=await requireSupplierRole(['OWNER','ADMIN','MANAGER','SALES','CASHIER']);
-  const [products,customers]=await Promise.all([
+  const [products,customers,profile]=await Promise.all([
    prisma.supplierProduct.findMany({
     where:{companyId:s.companyId,active:true},orderBy:{name:'asc'},take:5000,
     select:{id:true,name:true,sku:true,barcode:true,category:true,brand:true,retailPrice:true,wholesalePrice:true,price:true,minStock:true,stock:true,reservedStock:true,updatedAt:true}
@@ -16,9 +16,12 @@ export async function GET(){
    prisma.supplierErpCustomer.findMany({
     where:{companyId:s.companyId,active:true},orderBy:{name:'asc'},take:2000,
     select:{id:true,name:true}
-   })
+   }),
+   prisma.supplierCompany.findUnique({where:{id:s.companyId},select:{
+    legalName:true,phone:true,address:true,taxId:true,receiptMessage:true,tradeRegister:true
+   }})
   ]);
-  return ok({connected:true,companyName:s.companyName,role:s.role,products:products.map(p=>({
+  return ok({connected:true,companyName:s.companyName,role:s.role,receiptProfile:profile,products:products.map(p=>({
    id:p.id,name:p.name,sku:p.sku,barcode:p.barcode,category:p.category,brand:p.brand,
    price:Number(p.retailPrice??p.price),wholesalePrice:p.wholesalePrice===null?null:Number(p.wholesalePrice),minStock:p.minStock,stock:Math.max(0,p.stock-p.reservedStock),
    updatedAt:p.updatedAt
