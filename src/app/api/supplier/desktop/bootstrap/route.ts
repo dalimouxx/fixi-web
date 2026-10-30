@@ -11,7 +11,7 @@ export async function GET(){
   const [products,customers]=await Promise.all([
    prisma.supplierProduct.findMany({
     where:{companyId:s.companyId,active:true},orderBy:{name:'asc'},take:5000,
-    select:{id:true,name:true,sku:true,barcode:true,category:true,brand:true,retailPrice:true,price:true,stock:true,reservedStock:true,updatedAt:true}
+    select:{id:true,name:true,sku:true,barcode:true,category:true,brand:true,retailPrice:true,wholesalePrice:true,price:true,minStock:true,stock:true,reservedStock:true,updatedAt:true}
    }),
    prisma.supplierErpCustomer.findMany({
     where:{companyId:s.companyId,active:true},orderBy:{name:'asc'},take:2000,
@@ -20,7 +20,7 @@ export async function GET(){
   ]);
   return ok({connected:true,companyName:s.companyName,role:s.role,products:products.map(p=>({
    id:p.id,name:p.name,sku:p.sku,barcode:p.barcode,category:p.category,brand:p.brand,
-   price:Number(p.retailPrice??p.price),stock:Math.max(0,p.stock-p.reservedStock),
+   price:Number(p.retailPrice??p.price),wholesalePrice:p.wholesalePrice===null?null:Number(p.wholesalePrice),minStock:p.minStock,stock:Math.max(0,p.stock-p.reservedStock),
    updatedAt:p.updatedAt
   })),customers});
  }catch(e:any){return bad(e.message,e.status||500)}
