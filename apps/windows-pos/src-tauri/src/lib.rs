@@ -317,6 +317,14 @@ async fn supplier_find_tickets(state: State<'_,Arc<DesktopState>>, query:String,
 }
 
 #[tauri::command]
+async fn supplier_return_source(state: State<'_,Arc<DesktopState>>, reference:String) -> Result<serde_json::Value,String>{
+ if reference.len()>100||reference.is_empty(){return Err("Référence invalide".into())}
+ let mut params=url::form_urlencoded::Serializer::new(String::new());
+ params.append_pair("reference",&reference);
+ v4_request(&state,&format!("/api/supplier/desktop/v4/returns-source?{}",params.finish()),None).await
+}
+
+#[tauri::command]
 async fn supplier_customer_debts(state: State<'_,Arc<DesktopState>>) -> Result<serde_json::Value,String>{
  v4_request(&state,"/api/supplier/desktop/v4/customer-debts",None).await
 }
@@ -415,7 +423,7 @@ async fn supplier_logout(state: State<'_, Arc<DesktopState>>) -> Result<(), Stri
 pub fn run() {
     tauri::Builder::default()
         .manage(Arc::new(DesktopState{connection:Mutex::new(None),pin:Mutex::new(None)}))
-        .invoke_handler(tauri::generate_handler![supplier_login,supplier_refresh,supplier_logout,supplier_checkout,supplier_history,supplier_cash_action,supplier_orders,supplier_order_transition,supplier_debts,supplier_debt_payment,supplier_returns,supplier_return_create,pin_setup,pin_lock,pin_unlock,supplier_saved_profile,supplier_pin_login,supplier_operation_status,supplier_find_tickets,supplier_customer_debts,supplier_customer_payment,supplier_create_customer,supplier_delivery_shifts,supplier_delivery_close])
+        .invoke_handler(tauri::generate_handler![supplier_login,supplier_refresh,supplier_logout,supplier_checkout,supplier_history,supplier_cash_action,supplier_orders,supplier_order_transition,supplier_debts,supplier_debt_payment,supplier_returns,supplier_return_create,pin_setup,pin_lock,pin_unlock,supplier_saved_profile,supplier_pin_login,supplier_operation_status,supplier_find_tickets,supplier_return_source,supplier_customer_debts,supplier_customer_payment,supplier_create_customer,supplier_delivery_shifts,supplier_delivery_close])
         .run(tauri::generate_context!())
         .expect("error while running FIXI Caisse Windows");
 }
