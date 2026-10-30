@@ -10,7 +10,7 @@ export async function GET(req:Request){
   const kind=url.searchParams.get('kind')||'';
   const reference=url.searchParams.get('reference')||'';
   if(!['sale','debt','return'].includes(kind))return bad('Type d’opération invalide',400);
-  const regex=kind==='sale'?/^WIN-[a-f0-9-]{36}$/i:kind==='debt'?/^WINPAY-[a-f0-9-]{36}$/i:/^WINRET-[a-f0-9-]{36}$/i;
+  const regex=kind==='sale'?/^WIN-[a-f0-9-]{36}$/i:kind==='debt'?/^WIN(?:PAY|CUST)-[a-f0-9-]{36}$/i:/^WINRET-[a-f0-9-]{36}$/i;
   if(!regex.test(reference))return bad('Référence invalide',400);
   if(kind==='sale'){
    const sale=await prisma.supplierErpSale.findFirst({where:{companyId:s.companyId,reference},select:{id:true,reference:true,total:true,paid:true,status:true}});
