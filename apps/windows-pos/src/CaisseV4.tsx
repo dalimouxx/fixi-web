@@ -3,23 +3,27 @@ import {createRoot} from 'react-dom/client';
 import {invoke} from '@tauri-apps/api/core';
 import {getCurrentWindow} from '@tauri-apps/api/window';
 import {WindowsLabelStudio} from './labels';
+import {TicketPrint,type ReceiptData} from './TicketV4';
 import './style.css';
 import './v4.css';
 
-type Product={id:string;name:string;sku:string;barcode?:string|null;category:string|null;price:number;stock:number};
+type Product={id:string;name:string;sku:string;barcode?:string|null;category:string|null;price:number;wholesalePrice?:number|null;minStock?:number;stock:number};
 type Customer={id:string;name:string};
 type Boot={companyName:string;role:string;products:Product[];customers:Customer[];pinConfigured?:boolean};
 type Order={id:string;customer:string;createdAt:string;status:string;items:{name:string;sku:string;quantity:number}[]};
 type Debt={id:string;reference:string;customer:string;total:number;paid:number;due:number};
+type CustomerDebt={customerId:string;customer:string;phone:string;due:number;invoices:number};
+type TicketSearch={id:string;reference:string;createdAt:string;customer:string;phone:string;total:number;paid:number;status:string;items:{name:string;sku:string|null;quantity:number;price:number}[]};
+type CourierShift={id:string;status:string;expectedCod:number;declaredRemit:number;openedAt:string;submittedAt?:string;driver?:{fullName:string;phone?:string}|null};
 type ReturnLine={id:string;name:string;quantity:number;remaining:number;unitPrice:number};
 type SaleSource={id:string;reference:string;total:number;items:ReturnLine[]};
 type Credit={id:string;reference:string;sourceRef:string;total:number;refund:number;status:string;createdAt:string};
 type Hist={sales:{id:string;reference:string;total:number;paid:number;status:string;createdAt:string}[];sessions:{id:string;status:string;openedAt:string;closedAt?:string}[]};
-type Draft={cart:Record<string,number>;customerId:string;amount:string;method:string;reference:string};
-type DebtRequest={saleId:string;amount:number;method:string;reference:string};
+type Draft={cart:Record<string,number>;customerId:string;amount:string;method:string;reference:string;priceMode?:'RETAIL'|'WHOLESALE'};
+type DebtRequest={saleId?:string;customerId?:string;amount:number;method:string;reference:string};
 type ReturnRequest={sourceSaleId:string;items:{saleItemId:string;quantity:number;restock:boolean;condition:string;reason:string}[];refund:number;refundMethod:string;note:string;reference:string};
 type Result={exists:boolean;reference:string;record?:{reference?:string;remaining?:number}|null};
-type Page='caisse'|'produits'|'stock'|'clients'|'commandes'|'dettes'|'retours'|'historique'|'session';
+type Page='caisse'|'produits'|'stock'|'clients'|'commandes'|'dettes'|'retours'|'historique'|'session'|'livreurs';
 const money=(n:number)=>new Intl.NumberFormat('fr-TN',{minimumFractionDigits:3,maximumFractionDigits:3}).format(n)+' DT';
 const initialServer='https://fixi-web.onrender.com';
 const nav:{id:Page;icon:string;label:string}[]=[
@@ -27,7 +31,7 @@ const nav:{id:Page;icon:string;label:string}[]=[
  {id:'stock',icon:'▤',label:'Stock'}, {id:'commandes',icon:'▧',label:'Commandes en ligne'},
  {id:'dettes',icon:'◈',label:'Dettes & règlements'},{id:'retours',icon:'↶',label:'Retours & avoirs'},
  {id:'clients',icon:'♙',label:'Clients'}, {id:'historique',icon:'▤',label:'Historique'},
- {id:'session',icon:'◉',label:'Session de caisse'}
+ {id:'session',icon:'◉',label:'Session de caisse'},{id:'livreurs',icon:'♜',label:'Recettes livreurs'}
 ];
 const demo:Boot={companyName:'Mode démonstration',role:'DEMO',products:[
  {id:'d1',name:'Écran Samsung A04',sku:'A04-LCD',price:89,stock:12,category:'Afficheurs'},
@@ -44,11 +48,18 @@ function App(){
  const [debtSale,setDebtSale]=useState(''),[debtAmount,setDebtAmount]=useState(''),[debtMethod,setDebtMethod]=useState('CASH'),[debtPending,setDebtPending]=useState<DebtRequest|null>(null);
  const [returnSale,setReturnSale]=useState(''),[returnQty,setReturnQty]=useState<Record<string,number>>({}),[returnDamage,setReturnDamage]=useState(false),[refund,setRefund]=useState('0'),[refundMethod,setRefundMethod]=useState('CASH'),[returnNote,setReturnNote]=useState('Retour client'),[returnPending,setReturnPending]=useState<ReturnRequest|null>(null);
  const [cashAmount,setCashAmount]=useState(''),[cashNote,setCashNote]=useState('');
- const [ticket,setTicket]=useState<{reference:string;lines:{name:string;quantity:number;price:number}[];total:number;paid:number;date:string;company:string}|null>(null);
+ const [ticket,setTicket]=useState<ReceiptData|null>(null),[priceMode,setPriceMode]=useState<'RETAIL'|'WHOLESALE'>('RETAIL');
+ const [receiptWarning,setReceiptWarning]=useState('');
+ const [customerDebts,setCustomerDebts]=useState<CustomerDebt[]>([]),[clientDebtId,setClientDebtId]=useState('');
+ const [newClientName,setNewClientName]=useState(''),[newClientPhone,setNewClientPhone]=useState(''),[newClientAddress,setNewClientAddress]=useState('');
+ const [ticketQuery,setTicketQuery]=useState(''),[ticketFrom,setTicketFrom]=useState(''),[ticketTo,setTicketTo]=useState('');
+ const [ticketMatches,setTicketMatches]=useState<TicketSearch[]>([]);
+ const [courierShifts,setCourierShifts]=useState<CourierShift[]>([]),[selectedShift,setSelectedShift]=useState(''),[courierAmount,setCourierAmount]=useState(''),[courierNote,setCourierNote]=useState('');
  const scanRef=useRef<HTMLInputElement>(null);
  const products=boot?.products||[];
  const entries=Object.entries(cart).filter(([id,q])=>q>0&&products.some(p=>p.id===id)).map(([id,quantity])=>({product:products.find(p=>p.id===id)!,quantity}));
- const total=useMemo(()=>entries.reduce((v,x)=>v+x.quantity*x.product.price,0),[entries]);
+ const priceFor=(p:Product)=>priceMode==='WHOLESALE'&&p.wholesalePrice!==null&&p.wholesalePrice!==undefined?p.wholesalePrice:p.price;
+ const total=useMemo(()=>entries.reduce((v,x)=>v+x.quantity*priceFor(x.product),0),[entries,priceMode]);
  const amount=paid.trim()===''?total:Number(paid);
  const due=Math.max(0,total-(Number.isFinite(amount)?amount:0));
  const categories=['Tous',...new Set(products.map(p=>p.category||'Autres'))];
@@ -57,9 +68,9 @@ function App(){
  const focusScan=()=>{if(page==='caisse'&&!locked&&!labels)requestAnimationFrame(()=>scanRef.current?.focus())};
  useEffect(()=>{void invoke<{configured:boolean;server?:string;login?:string}>('supplier_saved_profile').then(p=>{setProfile(p);if(p.configured){setServer(p.server||initialServer);setLogin(p.login||'')}}).catch(()=>setProfile({configured:false}))},[]);
  useEffect(()=>{if(!draftKey||!boot||boot.role==='DEMO')return;
-  try{const d:Draft={cart,customerId,amount:paid,method,reference:saleRef};localStorage.setItem(draftKey,JSON.stringify(d))}
+  try{const d:Draft={cart,customerId,amount:paid,method,reference:saleRef,priceMode};localStorage.setItem(draftKey,JSON.stringify(d))}
   catch{setError('Impossible de conserver le panier sur cet ordinateur.')}
- },[draftKey,boot,cart,customerId,paid,method,saleRef]);
+ },[draftKey,boot,cart,customerId,paid,method,saleRef,priceMode]);
  useEffect(()=>{if(!draftKey)return;try{
    const debt=localStorage.getItem(draftKey+':debt');setDebtPending(debt?JSON.parse(debt):null);
    const ret=localStorage.getItem(draftKey+':return');setReturnPending(ret?JSON.parse(ret):null)
@@ -78,13 +89,13 @@ function App(){
        // Import the previous FIXI V3 unpaid cart without deleting its backup.
        const oldKey='fixi:windows-pos:draft:v1:'+encodeURIComponent(origin.trim().toLowerCase())+':'+encodeURIComponent(user.trim().toLowerCase());
        const original=localStorage.getItem(oldKey);
-       if(original){const old=JSON.parse(original);draft={cart:old.cart||{},customerId:old.customerId||'',amount:old.amount||'',method:old.payMethod||'CASH',reference:old.saleKey||''}}
+       if(original){const old=JSON.parse(original);draft={cart:old.cart||{},customerId:old.customerId||'',amount:old.amount||'',method:old.payMethod||'CASH',reference:old.saleKey||'',priceMode:'RETAIL'}}
      }
    }catch{setError('Ancien panier illisible : ouvrez la V3 pour vérifier son contenu avant une vente.')}
    const saved:Record<string,number>={};
    if(draft?.cart)for(const [id,q] of Object.entries(draft.cart)){const prod=data.products.find(p=>p.id===id);if(prod&&Number.isInteger(q)&&q>0)saved[id]=Math.min(q,prod.stock)}
    setCart(saved);setCustomerId(data.customers.some(x=>x.id===draft?.customerId)?draft!.customerId:'');
-   setPaid(draft?.amount||'');setMethod(['CASH','CARD','TRANSFER'].includes(draft?.method||'')?draft!.method:'CASH');
+   setPaid(draft?.amount||'');setPriceMode(draft?.priceMode==='WHOLESALE'?'WHOLESALE':'RETAIL');setMethod(['CASH','CARD','TRANSFER'].includes(draft?.method||'')?draft!.method:'CASH');
    setSaleRef(draft?.reference||'');setDraftKey(key);setBoot(data);setPage('caisse');setPinConfigured(Boolean(data.pinConfigured));setPassword('');setError('');setMessage(draft?.reference?'Vente interrompue à vérifier avant de continuer.':'');
  }
  async function connect(e:React.FormEvent){e.preventDefault();setBusy(true);setError('');
@@ -133,8 +144,8 @@ function App(){
   try{if(!draftKey)throw Error('Profil de caisse absent');localStorage.setItem(draftKey,JSON.stringify({cart,customerId,amount:paid,method,reference}))}
   catch{setError('Impossible de protéger le panier localement : vente non envoyée.');return}
   setSaleRef(reference);setBusy(true);setError('');setMessage('');
-  try{const result=await invoke<{reference?:string}>('supplier_checkout',{sale:{reference,items:entries.map(e=>({productId:e.product.id,quantity:e.quantity})),customerId:customerId||null,paid:amount,method}});
-   setTicket({reference:result.reference||reference,lines:entries.map(x=>({name:x.product.name,quantity:x.quantity,price:x.product.price})),paid:amount,total,company:boot.companyName,date:new Date().toLocaleString('fr-TN')});
+  try{const result=await invoke<{reference?:string}>('supplier_checkout',{sale:{reference,items:entries.map(e=>({productId:e.product.id,quantity:e.quantity,unitPrice:priceFor(e.product)})),customerId:customerId||null,paid:amount,method}});
+   setTicket({reference:result.reference||reference,lines:entries.map(x=>({name:x.product.name,quantity:x.quantity,price:priceFor(x.product)})),paid:amount,total,company:boot.companyName,date:new Date().toLocaleString('fr-TN'),customer:boot.customers.find(x=>x.id===customerId)?.name});
    setMessage('Vente enregistrée : '+(result.reference||reference));localClearSale();await refresh();focusScan()
   }catch(e){const msg=String(e);setError(msg);if(/HTTP 40[1349]|Vente refusée|Stock insuffisant/i.test(msg)){setSaleRef('')}else setMessage('Vente à vérifier, référence conservée : '+reference)}
   finally{setBusy(false)}
@@ -200,7 +211,13 @@ function App(){
  async function unlock(e:React.FormEvent){e.preventDefault();try{await invoke('pin_unlock',{pin:lockPin});setLocked(false);setLockPin('');focusScan()}catch(e){setError(String(e));setLockPin('')}}
  async function logout(){if(!window.confirm('Changer de compte supprimera le PIN enregistré sur ce PC. Continuer ?'))return;try{await invoke('supplier_logout')}catch(e){setError(String(e));return}
   setBoot(null);setProfile({configured:false});setDraftKey('');setPasswordMode(false);setLocked(false);setSaleRef('');setCart({})}
- function printTicket(){if(!ticket)return;document.body.dataset.printMode='ticket';window.addEventListener('afterprint',()=>delete document.body.dataset.printMode,{once:true});requestAnimationFrame(()=>window.print())}
+ function printTicket(){
+  if(!ticket)return;
+  document.body.dataset.printMode='ticket';
+  window.addEventListener('afterprint',()=>{delete document.body.dataset.printMode;
+    setReceiptWarning('Vérifiez que le ticket est bien sorti de l’imprimante. Sinon utilisez Réimprimer.');},{once:true});
+  requestAnimationFrame(()=>requestAnimationFrame(()=>window.print()))
+ }
  const canRefund=['OWNER','ADMIN','MANAGER'].includes(boot?.role||'');
  if(!boot)return <div className="v4-login">
   <div className="v4-login-identity"><div className="v4-mark">F</div><h1>FIXI Caisse</h1><p>Point de vente professionnel · Windows V4</p><ul><li>Scanner rapide et panier sauvegardé</li><li>Gestion intégrée FIXI Supplier</li><li>Comptabilité, commandes et retours</li></ul></div>
@@ -228,7 +245,7 @@ function App(){
     {low.length>0&&boot.role!=='DEMO'&&<div className="v4-low"><strong>⚠ {low.filter(p=>p.stock===0).length} rupture(s) · {low.length} stock(s) faible(s)</strong><button onClick={()=>navigate('stock')}>Voir les stocks</button></div>}
     <div className="v4-search"><input placeholder="Rechercher un produit, une référence…" value={search} onChange={e=>setSearch(e.target.value)}/></div>
     <div className="v4-categories">{categories.map(x=><button key={x} className={x===category?'active':''} onClick={()=>setCategory(x)}>{x}</button>)}</div>
-    <section className="v4-products">{visible.map(p=><button key={p.id} disabled={p.stock<=0||busy||!!saleRef} className="v4-product" onClick={()=>add(p.id,1)}><span className="v4-product-picture">▣</span><strong>{p.name}</strong><small>{p.sku}</small><span className={'v4-quantity '+(p.stock<=5?'alert':'')}>{p.stock===0?'RUPTURE':p.stock<=5?'Stock faible · '+p.stock:'En stock · '+p.stock}</span><b>{money(p.price)}</b></button>)}</section>
+    <section className="v4-products">{visible.map(p=><button key={p.id} disabled={p.stock<=0||busy||!!saleRef} className="v4-product" onClick={()=>add(p.id,1)}><span className="v4-product-picture">▣</span><strong>{p.name}</strong><small>{p.sku}</small><span className={'v4-quantity '+(p.stock<=5?'alert':'')}>{p.stock===0?'RUPTURE':p.stock<=5?'Stock faible · '+p.stock:'En stock · '+p.stock}</span><b>{money(priceFor(p))}</b></button>)}</section>
    </>}
    {page==='produits'&&<section className="v4-panel"><h2>Catalogue fournisseur</h2><div className="v4-search"><input placeholder="Rechercher par nom ou SKU" value={search} onChange={e=>setSearch(e.target.value)}/></div><table><thead><tr><th>Produit</th><th>SKU</th><th>Catégorie</th><th>Prix</th><th>Disponible</th></tr></thead><tbody>{products.filter(p=>(p.name+' '+p.sku).toLowerCase().includes(search.toLowerCase())).map(p=><tr key={p.id}><td>{p.name}</td><td>{p.sku}</td><td>{p.category||'—'}</td><td>{money(p.price)}</td><td>{p.stock}</td></tr>)}</tbody></table></section>}
    {page==='stock'&&<section className="v4-panel"><h2>Disponibilité des articles</h2><p>Les ruptures apparaissent en premier.</p><table><thead><tr><th>Produit</th><th>Référence</th><th>Stock disponible</th><th>État</th></tr></thead><tbody>{[...products].sort((a,b)=>a.stock-b.stock).map(p=><tr key={p.id}><td>{p.name}</td><td>{p.sku}</td><td><b>{p.stock}</b></td><td><span className={p.stock<=5?'v4-danger':''}>{p.stock===0?'Rupture':p.stock<=5?'Stock faible':'Disponible'}</span></td></tr>)}</tbody></table></section>}
@@ -241,7 +258,7 @@ function App(){
   </main>
   {page==='caisse'&&<aside className="v4-basket"><div className="v4-basket-title"><h2>Panier</h2><span>{entries.reduce((n,e)=>n+e.quantity,0)} article(s)</span></div>
    {saleRef&&<div className="v4-risk"><strong>Vente à vérifier</strong><p>{saleRef}</p><button disabled={busy} onClick={()=>void verify('sale',saleRef)}>Vérifier la vente</button><button disabled={busy} onClick={()=>void sale(true)}>Renvoyer même référence</button></div>}
-   <div className="v4-basket-items">{entries.length?entries.map(e=><div className="v4-cart-line" key={e.product.id}><div><strong>{e.product.name}</strong><small>{e.product.sku} · {money(e.product.price)}</small></div><div className="v4-counter"><button disabled={busy||!!saleRef} onClick={()=>add(e.product.id,-1)}>−</button><span>{e.quantity}</span><button disabled={busy||!!saleRef} onClick={()=>add(e.product.id,1)}>+</button></div><b>{money(e.quantity*e.product.price)}</b></div>):<div className="v4-empty"><span>▦</span><h3>Panier vide</h3><p>Scannez un produit ou choisissez-le dans le catalogue.</p></div>}</div>
+   <div className="v4-basket-items">{entries.length?entries.map(e=><div className="v4-cart-line" key={e.product.id}><div><strong>{e.product.name}</strong><small>{e.product.sku} · {money(priceFor(e.product))}</small></div><div className="v4-counter"><button disabled={busy||!!saleRef} onClick={()=>add(e.product.id,-1)}>−</button><span>{e.quantity}</span><button disabled={busy||!!saleRef} onClick={()=>add(e.product.id,1)}>+</button></div><b>{money(e.quantity*priceFor(e.product))}</b></div>):<div className="v4-empty"><span>▦</span><h3>Panier vide</h3><p>Scannez un produit ou choisissez-le dans le catalogue.</p></div>}</div>
    <div className="v4-basket-bottom"><label>Client<select disabled={busy||!!saleRef} value={customerId} onChange={e=>setCustomerId(e.target.value)}><option value="">Vente comptoir (sans client)</option>{boot.customers.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
     <div className="v4-total"><span>Total à payer</span><strong>{money(total)}</strong></div>
     <div className="v4-form-grid"><label>Mode<select disabled={busy||!!saleRef} value={method} onChange={e=>setMethod(e.target.value)}><option value="CASH">Espèces</option><option value="CARD">Carte</option><option value="TRANSFER">Virement</option></select></label><label>Reçu (DT)<input disabled={busy||!!saleRef} min="0" max={total} step=".001" type="number" placeholder={total.toFixed(3)} value={paid} onChange={e=>setPaid(e.target.value)}/></label></div>
@@ -253,7 +270,7 @@ function App(){
   </aside>}
   {labels&&<WindowsLabelStudio products={products} companyName={boot.companyName} onClose={()=>setLabels(false)}/>}
   {locked&&<div className="v4-lock"><form onSubmit={unlock}><div className="v4-mark">F</div><h2>Caisse verrouillée</h2><p>Code PIN à 4 chiffres</p><input autoFocus type="password" inputMode="numeric" maxLength={4} value={lockPin} onChange={e=>setLockPin(e.target.value.replace(/\D/g,'').slice(0,4))}/><button className="v4-primary" disabled={lockPin.length!==4}>Déverrouiller</button>{error&&<p className="v4-error">{error}</p>}</form></div>}
-  <div className="v4-receipt">{ticket&&<article><header><strong>FIXI · {ticket.company}</strong><small>{ticket.date}</small></header><h3>Ticket de caisse</h3><p>{ticket.reference}</p>{ticket.lines.map((l,i)=><p key={i}>{l.name} ×{l.quantity}<span>{money(l.price*l.quantity)}</span></p>)}<hr/><p><strong>Total</strong><b>{money(ticket.total)}</b></p><p>Payé <span>{money(ticket.paid)}</span></p><small>Merci de votre confiance</small></article>}</div>
+  <TicketPrint ticket={ticket}/>
  </div>;
 }
 createRoot(document.getElementById('root')!).render(<App/>);
