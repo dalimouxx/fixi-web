@@ -113,9 +113,16 @@ function App(){
  async function load(target:Page){if(!boot||boot.role==='DEMO')return;
   setError('');try{
    if(target==='commandes'){const data=await invoke<{orders:Order[]}>('supplier_orders');setOrders(data.orders)}
-   if(target==='dettes'){const data=await invoke<{debts:Debt[]}>('supplier_debts');setDebts(data.debts)}
+   if(target==='dettes'){
+    const [old,grouped]=await Promise.all([
+      invoke<{debts:Debt[]}>('supplier_debts'),
+      invoke<{customers:CustomerDebt[]}>('supplier_customer_debts')
+    ]);
+    setDebts(old.debts);setCustomerDebts(grouped.customers)
+   }
    if(target==='retours'){const data=await invoke<{sales:SaleSource[];returns:Credit[]}>('supplier_returns');setSources(data.sales);setCredits(data.returns)}
    if(target==='historique'||target==='session'){setHistory(await invoke<Hist>('supplier_history'))}
+   if(target==='livreurs'){const shifts=await invoke<CourierShift[]>('supplier_delivery_shifts');setCourierShifts(shifts)}
   }catch(e){setError(String(e))}
  }
  useEffect(()=>{if(page!=='commandes'||!boot||boot.role==='DEMO')return;
@@ -160,21 +167,78 @@ function App(){
   }catch(e){setError(String(e))}finally{setBusy(false)}
  }
  async function debtPay(op?:DebtRequest){
-  if(busy)return;
+  if(busy||!boot)return;
   let request=op;
-  if(!request){const d=debts.find(x=>x.id===debtSale),v=Number(debtAmount);
-   if(!d||!Number.isFinite(v)||v<=0||v>d.due){setError('Sélectionnez une facture et un montant inférieur au dû.');return}
-   if(!window.confirm('Encaisser '+money(v)+' sur '+d.reference+' ?'))return;
-   request={saleId:d.id,amount:v,method:debtMethod,reference:'WINPAY-'+crypto.randomUUID()};
-   try{localStorage.setItem(draftKey+':debt',JSON.stringify(request))}catch{setError('Enregistrement local impossible. Paiement non envoyé.');return}
+  if(!request){
+   const c=customerDebts.find(x=>x.customerId===clientDebtId),v=Number(debtAmount);
+   if(!c||!Number.isFinite(v)||v<=0||v>c.due){setError('Choisissez un client et un versement inférieur au solde total.');return}
+   if(!window.confirm('Encaisser '+money(v)+' sur le compte '+c.customer+' (dette : '+money(c.due)+') ?'))return;
+   request={customerId:c.customerId,amount:v,method:debtMethod,reference:'WINCUST-'+crypto.randomUUID()};
+   try{localStorage.setItem(draftKey+':debt',JSON.stringify(request))}
+   catch{setError('Sauvegarde locale impossible : aucun paiement envoyé');return}
    setDebtPending(request)
   }
+  if(!request.customerId){setError('Ancien versement par facture en attente : vérifiez-le sur FIXI Supplier avant de commencer un règlement global.');return}
   setBusy(true);setError('');
-  try{const r=await invoke<{remaining:number}>('supplier_debt_payment',{payment:request});
-   localStorage.removeItem(draftKey+':debt');setDebtPending(null);setDebtAmount('');setMessage('Versement enregistré. Nouveau solde : '+money(r.remaining));await load('dettes')
+  try{
+   const r=await invoke<{remaining:number;allocated:number}>('supplier_customer_payment',{payment:request});
+   localStorage.removeItem(draftKey+':debt');setDebtPending(null);setDebtAmount('');
+   setMessage('Règlement global confirmé : '+money(request.amount)+' sur '+r.allocated+' facture(s). Solde : '+money(r.remaining));
+   await load('dettes')
   }catch(e){const msg=String(e);setError(msg);
-   if(/HTTP 40[1349]|Règlement refusé/i.test(msg)){localStorage.removeItem(draftKey+':debt');setDebtPending(null)}
+   if(/HTTP 40[1349]|versement refusé|Montant non valide/i.test(msg)){localStorage.removeItem(draftKey+':debt');setDebtPending(null)}
   }finally{setBusy(false)}
+ }
+ async function searchTickets(q=ticketQuery,from=ticketFrom,to=ticketTo){
+  if(!boot||boot.role==='DEMO')return;
+  setBusy(true);setError('');
+  try{const data=await invoke<{sales:TicketSearch[]}>('supplier_find_tickets',{query:q,from,to});
+   setTicketMatches(data.sales);
+   if(data.sales.length===0)setMessage('Aucun ticket trouvé pour ces critères.')
+  }catch(e){setError(String(e))}finally{setBusy(false)}
+ }
+ function showTicket(x:TicketSearch){
+  if(!boot)return;
+  setTicket({reference:x.reference,company:boot.companyName,date:new Date(x.createdAt).toLocaleString('fr-TN'),
+   customer:x.customer,lines:x.items,total:x.total,paid:x.paid});
+  setMessage('Ticket '+x.reference+' prêt à être réimprimé.')
+ }
+ async function selectReturnFromTicket(x:TicketSearch){
+  setBusy(true);setError('');
+  try{
+   const result=await invoke<{sale:SaleSource}>('supplier_return_source',{reference:x.reference});
+   setSources(rows=>[result.sale,...rows.filter(row=>row.id!==result.sale.id)]);
+   setReturnSale(result.sale.id);setReturnQty({});
+   setMessage('Vente '+x.reference+' chargée pour retour — vérifiez les articles et quantités.')
+  }catch(e){setError(String(e))}finally{setBusy(false)}
+ }
+ async function createClient(){
+  const name=newClientName.trim(),phone=newClientPhone.trim(),address=newClientAddress.trim();
+  if(name.length<2){setError('Indiquez un nom de client valide.');return}
+  if(!window.confirm('Créer le client '+name+' dans FIXI Supplier ?'))return;
+  setBusy(true);setError('');
+  try{
+   const client=await invoke<Customer>('supplier_create_customer',{customer:{name,phone:phone||null,address:address||null}});
+   const refreshed=await invoke<Boot>('supplier_refresh');
+   setBoot({...refreshed,pinConfigured});setCustomerId(client.id);
+   setNewClientName('');setNewClientPhone('');setNewClientAddress('');
+   setMessage('Client '+name+' ajouté et sélectionné pour la caisse.');setPage('caisse')
+  }catch(e){setError(String(e))}finally{setBusy(false)}
+ }
+ async function closeCourierShift(){
+  if(!boot||busy)return;
+  const shift=courierShifts.find(x=>x.id===selectedShift);
+  const actual=Number(courierAmount);
+  if(!shift||shift.status!=='PENDING_CASHIER'||!Number.isFinite(actual)||actual<0){setError('Sélectionnez une remise en attente et un montant reçu valide.');return}
+  const expected=Number(shift.expectedCod||0);
+  if(Math.abs(actual-expected)>=.001&&!courierNote.trim()){setError('Indiquez obligatoirement la raison de l’écart de caisse.');return}
+  if(!window.confirm('Clôturer la recette livreur : attendu '+money(expected)+' / remis '+money(actual)+' ?'))return;
+  setBusy(true);setError('');
+  try{
+   await invoke('supplier_delivery_close',{closure:{shiftId:shift.id,actualAmount:actual,note:courierNote.trim()}});
+   setMessage('Remise livreur clôturée et rattachée à votre session de caisse.');
+   setSelectedShift('');setCourierAmount('');setCourierNote('');await load('livreurs')
+  }catch(e){setError(String(e))}finally{setBusy(false)}
  }
  async function returnPay(op?:ReturnRequest){
   if(busy||!boot)return;
@@ -219,6 +283,15 @@ function App(){
   requestAnimationFrame(()=>requestAnimationFrame(()=>window.print()))
  }
  const canRefund=['OWNER','ADMIN','MANAGER'].includes(boot?.role||'');
+ const receiptAutoPrintRef=useRef('');
+ useEffect(()=>{
+  if(!ticket||receiptAutoPrintRef.current===ticket.reference)return;
+  receiptAutoPrintRef.current=ticket.reference;
+  document.body.dataset.printMode='ticket';
+  const clean=()=>{delete document.body.dataset.printMode;setReceiptWarning('Ticket imprimé ou dialogue fermé : vérifiez la sortie papier, réimprimez si nécessaire.')};
+  window.addEventListener('afterprint',clean,{once:true});
+  requestAnimationFrame(()=>requestAnimationFrame(()=>window.print()))
+ },[ticket?.reference]);
  if(!boot)return <div className="v4-login">
   <div className="v4-login-identity"><div className="v4-mark">F</div><h1>FIXI Caisse</h1><p>Point de vente professionnel · Windows V4</p><ul><li>Scanner rapide et panier sauvegardé</li><li>Gestion intégrée FIXI Supplier</li><li>Comptabilité, commandes et retours</li></ul></div>
   <div className="v4-login-panel">{profile?.configured&&!passwordMode?
