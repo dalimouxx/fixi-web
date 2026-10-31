@@ -1,0 +1,89 @@
+/*
+ * FIXI Clear Pro V2 — phase 1 shared visual foundation.
+ * Loaded after the legacy FIXI brand layer to improve readability without
+ * restructuring transactional flows. Further screen-specific redesigns follow.
+ */
+:root{
+ --fixi-brand:#2563eb;
+ --fixi-brand-dark:#1e40af;
+ --fixi-brand-soft:#eff6ff;
+ --fixi-background:#f6f8fc;
+ --fixi-surface:#fff;
+ --fixi-text:#0f172a;
+ --fixi-text-muted:#475569;
+ --fixi-stroke:#dbe4ef;
+ --fixi-success:#15803d;
+ --fixi-warning:#92400e;
+ --fixi-danger:#dc2626;
+ --fixi-info:#2563eb;
+ --fixi-shadow:0 5px 20px rgba(15,23,42,.055);
+ --fixi-shadow-hover:0 11px 30px rgba(15,23,42,.11);
+ --brand:#2563eb;
+ --brand2:#1e40af;
+ --bg:#f6f8fc;
+ --panel:#fff;
+ --text:#0f172a;
+ --muted:#475569;
+ --line:#dbe4ef;
+ --radius:14px;
+}
+body{color:var(--fixi-text);background:var(--fixi-background);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+:where(.app-shell,.supplier-os,.delivery-app,.saas-v4,.fixi-supplier-billing){
+ color:var(--fixi-text);
+ --fixi-role-accent:#2563eb;
+}
+:where(.delivery-app){--fixi-role-accent:#0f766e}
+:where(.app-shell){--fixi-role-accent:#4f46e5}
+:where(.saas-v4){--fixi-role-accent:#334155}
+:where(.app-shell,.supplier-os,.delivery-app,.saas-v4,.fixi-supplier-billing) :is(h1,h2,h3,.page-title){
+ color:var(--fixi-text);
+ line-height:1.3;
+ text-wrap:balance;
+}
+:where(.app-shell,.supplier-os,.delivery-app,.saas-v4,.fixi-supplier-billing)
+ :is(.card,.supplier-panel,.control-panel,.shop-admin-card,.fixi-billing-card){
+ border-color:var(--fixi-stroke);
+ border-radius:14px;
+ background-color:var(--fixi-surface);
+}
+:where(.app-shell,.supplier-os,.delivery-app,.saas-v4,.fixi-supplier-billing)
+ :is(button,input,select,textarea,a):focus-visible{
+ outline:3px solid rgba(37,99,235,.6)!important;
+ outline-offset:2px;
+}
+:where(.app-shell,.supplier-os,.delivery-app,.saas-v4,.fixi-supplier-billing)
+ :is(input,select,textarea){
+ color:#0f172a;
+ font-size:max(14px,1em);
+}
+:where(.app-shell,.supplier-os,.delivery-app,.saas-v4,.fixi-supplier-billing)
+ :is(.page-sub,.muted,.form-help){
+ color:var(--fixi-text-muted);
+ line-height:1.55;
+}
+:where(.app-shell,.supplier-os,.delivery-app,.saas-v4,.fixi-supplier-billing)
+ :is(.table-wrap,.control-table-wrap,.fixi-billing-scroll){
+ overflow-x:auto;
+}
+:where(.app-shell,.supplier-os,.delivery-app,.saas-v4,.fixi-supplier-billing)
+ :is(button,a,.btn){touch-action:manipulation}
+html[dir="rtl"] :where(.app-shell,.supplier-os,.delivery-app,.saas-v4,.fixi-supplier-billing){
+ direction:rtl;
+ font-family:"Noto Sans Arabic",Inter,system-ui,sans-serif;
+}
+@media(max-width:700px){
+ :where(.app-shell,.supplier-os,.delivery-app,.saas-v4)
+ :is(input,select,textarea){font-size:16px}
+ :where(.app-shell,.supplier-os,.delivery-app,.saas-v4)
+ :is(.btn,.topbar-new,.sidebar-primary-action){min-height:44px}
+}
+@media(prefers-reduced-motion:reduce){
+ :where(.app-shell,.supplier-os,.delivery-app,.saas-v4,.fixi-supplier-billing) *,
+ :where(.app-shell,.supplier-os,.delivery-app,.saas-v4,.fixi-supplier-billing) *::before,
+ :where(.app-shell,.supplier-os,.delivery-app,.saas-v4,.fixi-supplier-billing) *::after{
+  scroll-behavior:auto!important;
+  animation-duration:.01ms!important;
+  animation-iteration-count:1!important;
+  transition-duration:.01ms!important;
+ }
+}
