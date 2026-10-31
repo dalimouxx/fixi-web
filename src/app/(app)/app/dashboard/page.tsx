@@ -11,16 +11,29 @@ import {money,dateTime} from '@/lib/format';
 export default function Dashboard(){
   const{data,loading,error,reload}=useApi<any>('/api/dashboard');
   useRealtimeRefresh(useCallback(()=>reload(),[]));
-  if(loading)return <div className="page"><div className="card card-pad">Chargement du tableau de bord…</div></div>;
-  if(error||!data)return <div className="page"><div className="error">{error}</div></div>;
+  if(loading)return <div className="page dashboard-v2">
+    <div className="fixi-dashboard-loading" role="status" aria-live="polite" aria-label="Chargement du tableau de bord">
+      <div className="fixi-loading-line wide"/>
+      <div className="fixi-loading-line medium"/>
+      <div className="fixi-loading-cards">{[1,2,3,4].map(x=><div className="fixi-loading-card" key={x}/>)}</div>
+      <p>Chargement de vos réparations et indicateurs…</p>
+    </div>
+  </div>;
+  if(error||!data)return <div className="page dashboard-v2">
+    <div className="fixi-dashboard-error" role="alert">
+      <AlertTriangle size={28}/><div><h1>Tableau de bord indisponible</h1>
+      <p>{String(error||'Impossible de charger les informations de votre atelier.')}</p></div>
+      <button type="button" className="btn btn-primary" onClick={()=>reload()}>Réessayer</button>
+    </div>
+  </div>;
   const active=Object.entries(data.statusCounts||{}).filter(([k])=>!['DELIVERED','CANCELLED'].includes(k)).reduce((a,[,v])=>a+Number(v),0);
   const waiting=Number(data.statusCounts?.WAITING_PART||0);
   const diagnosis=Number(data.statusCounts?.DIAGNOSIS||0);
   const inRepair=Number(data.statusCounts?.IN_REPAIR||0);
   const attention=[
-    data.lowStock>0&&{label:`${data.lowStock} article(s) en stock faible`,href:'/app/stock',type:'danger',icon:Boxes},
+    data.permissions.stock&&data.lowStock>0&&{label:`${data.lowStock} article(s) en stock faible`,href:'/app/stock',type:'danger',icon:Boxes},
     waiting>0&&{label:`${waiting} réparation(s) attendent une pièce`,href:'/app/repairs',type:'warning',icon:Clock3},
-    data.openWarranty>0&&{label:`${data.openWarranty} dossier(s) SAV ouvert(s)`,href:'/app/warranties',type:'warning',icon:ShieldCheck},
+    data.permissions.warranty&&data.openWarranty>0&&{label:`${data.openWarranty} dossier(s) SAV ouvert(s)`,href:'/app/warranties',type:'warning',icon:ShieldCheck},
     !data.cashOpen&&data.permissions.cash&&{label:'Caisse fermée',href:'/app/cash-sessions',type:'neutral',icon:CreditCard}
   ].filter(Boolean) as any[];
   return <div className="page dashboard-v2">
@@ -29,14 +42,17 @@ export default function Dashboard(){
       <div className="toolbar"><Link href="/app/repairs/new" className="btn btn-primary"><PlusCircle size={16}/> Nouvelle réception</Link></div>
     </div>
 
-    <div className="quick-actions">
-      <Link href="/app/repairs/new"><PlusCircle/><span><b>Réception</b><small>Nouveau téléphone</small></span></Link>
-      <Link href="/app/cashier"><CreditCard/><span><b>Vente</b><small>Ouvrir la caisse</small></span></Link>
-      <Link href="/app/clients"><Users/><span><b>Client</b><small>Fiche & historique</small></span></Link>
-      <Link href="/app/stock"><Boxes/><span><b>Pièce</b><small>Stock atelier</small></span></Link>
-      <Link href="/app/documents"><ReceiptText/><span><b>Facture</b><small>Devis & facture</small></span></Link>
-      <Link href="/app/compatibility"><Link2/><span><b>Compatibilité</b><small>Tester une pièce</small></span></Link>
-    </div>
+    <section className="fixi-atelier-actions" aria-label="Accès rapide aux outils de l'atelier">
+      <div className="fixi-atelier-actions-title"><h2>Accès rapide</h2><p>Vos opérations fréquentes, sans chercher dans les menus.</p></div>
+      <div className="quick-actions">
+        <Link href="/app/repairs/new"><PlusCircle/><span><b>Réception</b><small>Nouveau téléphone</small></span></Link>
+        {data.permissions.cash&&<Link href="/app/cashier"><CreditCard/><span><b>Vente</b><small>Ouvrir la caisse</small></span></Link>}
+        <Link href="/app/clients"><Users/><span><b>Client</b><small>Fiche & historique</small></span></Link>
+        {data.permissions.stock&&<Link href="/app/stock"><Boxes/><span><b>Pièce</b><small>Stock atelier</small></span></Link>}
+        <Link href="/app/documents"><ReceiptText/><span><b>Facture</b><small>Devis & facture</small></span></Link>
+        <Link href="/app/compatibility"><Link2/><span><b>Compatibilité</b><small>Tester une pièce</small></span></Link>
+      </div>
+    </section>
 
     <FixiSmartWidgets area="atelier" subtitle="Réparations, encaissements et urgences de votre atelier, en temps réel."
       widgets={[
