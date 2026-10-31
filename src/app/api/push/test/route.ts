@@ -24,10 +24,20 @@ export async function POST(){
    experienceKey:'SHOP_ORDER_PROGRESS',soundKey:'SHOP_PROGRESS',priority:'LOW'
   }});
   publish(s.shopId,'notification.created',{kind:'INFO'});
-  void sendPushToUsers([s.id],{title:row.title,body:row.message,
-   href:'/app/notifications',experienceKey:'SHOP_ORDER_PROGRESS',
-   tag:'fixi-shop-test-'+row.id}).catch(err=>console.warn('Fixi test Push failed',String(err)));
-  return ok({created:true,queued:subscriptions,deliveryConfirmed:false,
-   note:'Test demandé. Vérifiez la notification système sur le téléphone.'});
+  let gateway;
+  try{
+    gateway=await sendPushToUsers([s.id],{title:row.title,body:row.message,
+      href:'/app/notifications',experienceKey:'SHOP_ORDER_PROGRESS',
+      tag:'fixi-shop-test-'+row.id});
+  }catch(e){
+    console.warn('Fixi shop push gateway unreachable',String(e));
+  }
+  const accepted=gateway?.accepted||0;
+  return ok({created:true,subscribedDevices:subscriptions,
+    gatewayChecked:!!gateway,pushAcceptedByGateway:accepted,
+    pushExpired:gateway?.expired||0,pushFailed:gateway?.failed||0,deliveryConfirmed:false,
+    note:accepted>0
+      ?'Le service Push a accepté '+accepted+' envoi(s). Vérifiez la notification système du téléphone.'
+      :'Aucun envoi accepté par le service Push. Vérifiez l’abonnement et les autorisations.'});
  }catch(e:any){return bad(e.message||'Test Atelier indisponible',e.status||500)}
 }
