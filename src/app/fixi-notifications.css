@@ -66,3 +66,120 @@
 @media(prefers-reduced-motion:reduce){
  .rt-toast.rt-toast-premium{animation:none}
 }
+
+
+/* FIXI Clear Pro V2: accessible visible/sonic notification diagnostics. */
+.rt-notifications .rt-diagnostics{
+  border:1px solid #cbdcf2;
+  background:#f6f9ff;
+  border-radius:12px;
+  margin:11px 10px 14px;
+  padding:14px;
+  display:grid;
+  gap:12px;
+  color:#0f172a;
+  font-size:14px;
+  box-shadow:0 3px 14px rgba(15,23,42,.04);
+}
+.rt-notifications .rt-diag-heading{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  color:#1e40af;
+  font-size:15px;
+}
+.rt-notifications .rt-diag-row{
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:space-between;
+  align-items:center;
+  gap:7px;
+  padding:5px 0;
+  border-bottom:1px solid #e2e8f0;
+  line-height:1.5;
+}
+.rt-notifications .rt-diag-row b{
+  color:#1e40af;
+  font-size:13px;
+}
+.rt-notifications .rt-diag-volume{
+  display:grid;
+  gap:7px;
+}
+.rt-notifications .rt-diag-volume label{
+  color:#334155;
+  font-weight:700;
+  font-size:14px;
+}
+.rt-notifications .rt-diag-volume input[type="range"]{
+  accent-color:#2563eb;
+  width:100%;
+  height:28px;
+}
+.rt-notifications .rt-diag-volume button,
+.rt-notifications .rt-diag-actions button{
+  min-height:44px;
+  display:inline-flex;
+  gap:7px;
+  align-items:center;
+  justify-content:center;
+  border-radius:10px;
+  font-weight:750;
+  border:1px solid #cbd5e1;
+  color:#1e40af;
+  background:white;
+  padding:10px 13px;
+  cursor:pointer;
+  font-size:14px;
+}
+.rt-notifications .rt-diag-actions{display:flex;flex-wrap:wrap;gap:8px}
+.rt-notifications .rt-diag-actions .push-toggle{width:auto;max-width:100%;white-space:normal}
+.rt-notifications .rt-diagnostics p{
+  margin:0;
+  color:#92400e;
+  background:#fffbeb;
+  padding:9px 11px;
+  border-radius:9px;
+  font-size:13px;
+  line-height:1.5;
+}
+.rt-notifications .rt-diagnostics>small{
+  font-size:12px;
+  color:#475569;
+  line-height:1.55;
+}
+.rt-toast.rt-toast-premium{
+  z-index:10000;
+  border-radius:14px;
+  --notify-accent:#2563eb;
+  --notify-soft:#f0f6ff;
+  --notify-line:#bfdbfe;
+  background:#fff;
+  box-shadow:0 14px 40px rgba(15,23,42,.2);
+}
+.rt-toast.rt-toast-premium .rt-toast-copy>b{font-size:17px;color:#0f172a;line-height:1.4}
+.rt-toast.rt-toast-premium .rt-toast-copy>span:not(.rt-toast-eyebrow){
+  color:#334155;
+  font-size:14px;
+  line-height:1.55;
+}
+.rt-toast.rt-toast-premium .rt-toast-action{font-size:13px;min-height:44px}
+.rt-toast.rt-toast-premium .rt-toast-dismiss{
+  min-width:34px;
+  min-height:34px;
+  background:#f1f5f9;
+  color:#334155;
+}
+.rt-toast.rt-toast-premium.rt-toast-supplier{--notify-accent:#b45309;--notify-soft:#fffbeb;--notify-line:#fbbf24}
+.rt-toast.rt-toast-premium.rt-toast-shop{--notify-accent:#4338ca;--notify-soft:#eef2ff;--notify-line:#c7d2fe}
+.rt-toast.rt-toast-premium.rt-toast-driver{--notify-accent:#0f766e;--notify-soft:#f0fdfa;--notify-line:#99f6e4}
+.rt-toast.rt-toast-premium:focus-within{outline:2px solid #2563eb;outline-offset:3px}
+@media(max-width:700px){
+ .rt-toast.rt-toast-premium{padding:14px;grid-template-columns:42px minmax(0,1fr) 34px}
+ .rt-toast.rt-toast-premium .rt-toast-copy>b{font-size:16px}
+ .rt-toast.rt-toast-premium .rt-toast-copy>span:not(.rt-toast-eyebrow){font-size:14px}
+ .rt-notifications .rt-diagnostics{margin:10px 7px;padding:12px}
+}
+@media(prefers-reduced-motion:reduce){
+ .rt-toast.rt-toast-premium{animation:none!important;transition:none!important}
+}
