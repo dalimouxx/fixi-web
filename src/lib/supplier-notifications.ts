@@ -40,8 +40,10 @@ export async function notifySupplier(companyId:string,title:string,message:strin
     id:row.id,title:row.title,message:row.message,href:row.href,kind:row.kind,priority:row.priority,soundKey:row.soundKey,experienceKey,createdAt:row.createdAt
   });
   const push:any={title,body:message,href:options.href||'/supplier',
-    experienceKey,tag:experienceTag(experienceKey,options.eventId),
-    data:{...(options.metadata||{}),experienceKey}};
+    experienceKey,tag:experienceTag(experienceKey,options.eventId||rows[0].id),
+    // Never put customer financial/identity metadata in phone notifications.
+    data:{experienceKey,
+      ...(typeof options.metadata?.orderId==='string'?{orderId:options.metadata.orderId}:{})}};
   if(experienceKey==='DRIVER_NEW_MISSION'&&options.metadata?.orderId){
     push.tag=experienceTag('DRIVER_NEW_MISSION',String(options.metadata.orderId));
     push.requireInteraction=true;
