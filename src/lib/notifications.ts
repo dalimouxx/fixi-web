@@ -1,4 +1,5 @@
 import { NotificationType, UserRole } from '@prisma/client';
+import {randomUUID} from 'node:crypto';
 import { prisma } from './prisma';
 import { publish } from './realtime';
 import { sendPushToUsers } from './push';
@@ -39,8 +40,8 @@ export async function notifyShop(
   try{
     const report=await sendPushToUsers(users.map(u=>u.id),{
       title,body:message,href:safeHref,experienceKey,
-      tag:experienceTag(experienceKey,options.eventId),
-      data:{...(options.metadata||{}),experienceKey},
+      tag:experienceTag(experienceKey,options.eventId||randomUUID()),
+      data:{experienceKey},
     });
     if(report.failed>0)console.warn('Shop push delivery failures',report.failed);
   }catch(err){console.warn('Shop push transport unavailable',String(err))}
