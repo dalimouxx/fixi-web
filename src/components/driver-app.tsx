@@ -128,6 +128,26 @@ export function DriverApp({session}:{session:any}){
   <main>
    <DeliveryInstall/>
    <Link href="/delivery/encaissements" className="fixi-driver-collections-link"><Banknote size={17}/> Encaissements & caisse livreur</Link>
+   <section className={'fixi-driver-next-step'+(!online?' offline':'')} aria-label="Étape suivante pour le livreur">
+     <div className="fixi-driver-next-step-content">
+       <span>VOTRE PROCHAINE ÉTAPE</span>
+       <h2>{!online?'Connexion indisponible':
+         shift.pendingCashier?'Recette en attente de validation':
+         !shift.current?'Ouvrir votre journée':
+         active.length?'Poursuivre vos livraisons':
+         available.length?'Accepter une nouvelle mission':'Prêt pour une nouvelle mission'}</h2>
+       <p>{!online?'Vérifiez la connexion avant toute confirmation. Les opérations non enregistrées ne sont pas considérées comme validées.':
+         shift.pendingCashier?'Le caissier doit confirmer votre remise avant une nouvelle tournée.':
+         !shift.current?'Démarrez une journée pour accepter et suivre vos livraisons.':
+         active.length?active.length+' livraison(s) active(s) à terminer.':
+         available.length?available.length+' mission(s) disponible(s) dans votre espace.':
+         'Aucune mission en attente pour le moment. Activez les notifications pour être averti.'}</p>
+     </div>
+     {!online?<button type="button" className="btn btn-soft" onClick={load}>Réessayer</button>:
+       shift.pendingCashier?<Link className="btn btn-soft" href="/delivery/encaissements">Voir ma recette</Link>:
+       !shift.current?<button type="button" className="btn btn-primary" onClick={()=>setShiftModal('open')}>Démarrer</button>:
+       <button type="button" className="btn btn-soft" onClick={()=>setView('orders')}>Voir les missions</button>}
+   </section>
    <nav className="driver-mobile-nav">
     <button className={view==='orders'?'active':''} onClick={()=>setView('orders')}><Truck/> <span>Commandes</span> <b>{available.length+active.length}</b></button>
     <button className={view==='dues'?'active':''} onClick={()=>setView('dues')}><WalletCards/> <span>Dus</span> <b>{active.filter(o=>Number(o.customerDue||0)>0).length}</b></button>
@@ -186,6 +206,11 @@ export function DriverApp({session}:{session:any}){
       </div>
      </article>})}
     {!active.length&&<div className="delivery-empty"><CheckCircle2/><h2>Aucune livraison acceptée</h2><p>{available.length?'Choisissez une mission disponible ci-dessus.':'Aucune nouvelle mission pour le moment.'}</p></div>}
+   </div>}
+   {view==='history'&&done.length===0&&<div className="fixi-driver-list-empty" role="status">
+     <History size={32}/><strong>Aucune livraison terminée</strong>
+     <p>Vos missions finalisées apparaîtront ici avec les détails de remise.</p>
+     <button className="btn btn-soft" type="button" onClick={()=>setView('orders')}>Retour aux missions</button>
    </div>}
    {view==='history'&&done.length>0&&<section id="driver-history" className="driver-history"><div className="supplier-section-head"><div><b>Historique récent</b><span>Preuves de remise et commandes terminées.</span></div></div>{done.map(o=><div key={o.id}><span><b>{o.reference}</b><small>{o.shop?.name} · {o.delivery?.recipientName?'Reçu par '+o.delivery.recipientName:'Livrée'}</small></span><strong>{money(o.total)}</strong><CheckCircle2/></div>)}</section>}
   </main>
