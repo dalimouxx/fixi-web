@@ -1,0 +1,556 @@
+/*
+ FIXI Clear Pro V2 — phase 2 readability pass.
+ Scoped to existing application shell DOM classes. Deliberately does not touch
+ finance, stock, auth, orders or click handlers; only visual density and layout.
+ Loaded last, after legacy style files, to fix 7–10px labels and muted text.
+*/
+:root{
+  --clear-ink:#0f172a;
+  --clear-muted:#475569;
+  --clear-primary:#2563eb;
+  --clear-primary-dark:#1d4ed8;
+  --clear-border:#dbe4ef;
+  --clear-surface:#fff;
+  --clear-canvas:#f6f8fc;
+}
+:is(.supplier-os,.app-shell,.delivery-app.driver-v2,.saas-v4){
+  color:var(--clear-ink);
+  background-color:var(--clear-canvas);
+}
+:is(.supplier-os,.app-shell,.delivery-app.driver-v2,.saas-v4)
+  :is(button,input,select,textarea,a):focus-visible{
+  outline:3px solid #2563ebaa!important;
+  outline-offset:2px;
+}
+:is(.supplier-os,.app-shell,.delivery-app.driver-v2,.saas-v4) :is(input,select,textarea){
+  color:#0f172a;
+  border-color:#cbd5e1;
+}
+:is(.supplier-os,.app-shell,.delivery-app.driver-v2,.saas-v4)
+  :is(.table-wrap,.control-table-wrap){
+  overflow-x:auto;
+  overscroll-behavior-x:contain;
+}
+:is(.supplier-os,.app-shell,.delivery-app.driver-v2,.saas-v4)
+  :is(.supplier-panel,.card,.driver-command,.control-panel){
+  background:#fff;
+  border-color:#dbe4ef;
+  box-shadow:0 4px 17px #0f172a0c;
+}
+/* Supplier navigation: clear selected state, readable company and menu titles. */
+.supplier-os.supplier-erp>aside{
+  background:#fff!important;
+  color:#0f172a!important;
+  border-color:#dbe4ef!important;
+}
+.supplier-os.supplier-erp .supplier-os-brand b{
+  color:#0f172a!important;
+  font-size:19px!important;
+  letter-spacing:-.025em;
+}
+.supplier-os.supplier-erp .supplier-os-brand span{
+  color:#475569!important;
+  font-size:13px!important;
+  line-height:1.45;
+}
+.supplier-os.supplier-erp .supplier-nav-label{
+  color:#64748b!important;
+  font-size:11px!important;
+  letter-spacing:.055em;
+  font-weight:800;
+  line-height:1.4;
+}
+.supplier-os.supplier-erp .fixi-supplier-menu-scroll{
+  scrollbar-color:#bfdbfe transparent;
+  overscroll-behavior:contain;
+}
+.supplier-os.supplier-erp .fixi-supplier-nav-item>button{
+  color:#334155!important;
+  font-size:14px!important;
+  line-height:1.4!important;
+  min-height:45px;
+  border-radius:10px;
+}
+.supplier-os.supplier-erp .fixi-supplier-nav-item>button:hover{
+  background:#eff6ff!important;
+  color:#1d4ed8!important;
+}
+.supplier-os.supplier-erp .fixi-supplier-nav-item>button.active{
+  color:#1d4ed8!important;
+  background:#eff6ff!important;
+  box-shadow:inset 3px 0 0 #2563eb!important;
+}
+.supplier-os.supplier-erp>main{
+  background:#f6f8fc!important;
+}
+.supplier-os.supplier-erp>main>header{
+  background:#fff!important;
+  border-color:#dbe4ef!important;
+}
+.supplier-os.supplier-erp .fixi-supplier-header-title h1{
+  color:#0f172a!important;
+  font-size:clamp(22px,2.4vw,30px)!important;
+  line-height:1.3!important;
+  letter-spacing:-.025em;
+}
+.supplier-os.supplier-erp .fixi-supplier-header-title>div>span{
+  color:#475569!important;
+  font-size:11px!important;
+}
+.supplier-os.supplier-erp .supplier-kpis{
+  gap:12px;
+  margin-bottom:16px;
+}
+.supplier-os.supplier-erp .supplier-kpis>div{
+  border:1px solid #dbe4ef!important;
+  border-radius:14px!important;
+  padding:16px;
+  min-height:105px;
+  box-shadow:0 4px 14px #0f172a0a;
+}
+.supplier-os.supplier-erp .supplier-kpis>div i{
+  background:#eff6ff!important;
+  color:#2563eb!important;
+  width:40px;height:40px;
+}
+.supplier-os.supplier-erp .supplier-kpis>div span{
+  font-size:13px!important;
+  color:#475569!important;
+  font-weight:650;
+  line-height:1.45;
+}
+.supplier-os.supplier-erp .supplier-kpis>div b{
+  font-size:clamp(18px,2.1vw,26px)!important;
+  color:#0f172a!important;
+  line-height:1.3;
+  font-variant-numeric:tabular-nums;
+  overflow-wrap:anywhere;
+}
+.supplier-os.supplier-erp .supplier-panel{
+  border:1px solid #dbe4ef!important;
+  border-radius:14px!important;
+  padding:clamp(14px,1.7vw,22px);
+}
+.supplier-os.supplier-erp .supplier-section-head b{
+  color:#0f172a!important;
+  font-size:18px!important;
+  line-height:1.4!important;
+}
+.supplier-os.supplier-erp .supplier-section-head span{
+  color:#475569!important;
+  font-size:14px!important;
+  line-height:1.5!important;
+}
+.supplier-os.supplier-erp .supplier-order-grid{
+  gap:14px;
+}
+.supplier-os.supplier-erp .supplier-order-grid>article{
+  border-color:#dbe4ef!important;
+  border-radius:13px;
+  padding:16px;
+}
+.supplier-os.supplier-erp .supplier-order-head code{
+  color:#1d4ed8!important;
+  font-size:13px!important;
+  font-weight:850;
+  overflow-wrap:anywhere;
+}
+.supplier-os.supplier-erp .supplier-order-head b{
+  font-size:16px!important;
+  color:#0f172a!important;
+  line-height:1.4!important;
+}
+.supplier-os.supplier-erp .supplier-order-head span{
+  font-size:13px!important;
+  color:#475569!important;
+  line-height:1.45;
+}
+.supplier-os.supplier-erp .supplier-order-total span{
+  font-size:13px!important;
+  color:#475569!important;
+}
+.supplier-os.supplier-erp .supplier-order-total b{
+  font-size:19px!important;
+  color:#0f172a!important;
+  font-variant-numeric:tabular-nums;
+}
+.supplier-os.supplier-erp .supplier-order-actions button{
+  min-height:44px;
+  font-size:13px!important;
+}
+.supplier-os.supplier-erp .supplier-action-list button{
+  min-height:60px;
+  padding:12px 14px;
+  border-color:#dbe4ef;
+  border-radius:12px;
+}
+.supplier-os.supplier-erp .supplier-action-list button :is(b,small){
+  color:#334155;
+  font-size:13px!important;
+  line-height:1.45;
+}
+.supplier-os.supplier-erp .table :is(th,td){
+  font-size:13px!important;
+  line-height:1.55;
+  padding-block:12px;
+}
+/* Atelier: avoid tiny navigation labels, card metadata and crowded touch actions. */
+.app-shell>.sidebar{
+  background:#fff!important;
+  color:#0f172a!important;
+  border-right:1px solid #dbe4ef;
+}
+.app-shell .sidebar .nav-section{
+  font-size:11px!important;
+  color:#64748b!important;
+  line-height:1.45;
+  letter-spacing:.045em;
+}
+.app-shell .sidebar .nav-link{
+  font-size:14px!important;
+  color:#334155!important;
+  min-height:46px;
+  line-height:1.4;
+  border-radius:10px;
+}
+.app-shell .sidebar .nav-link.active{
+  background:#eef4ff!important;
+  color:#1d4ed8!important;
+  box-shadow:inset 3px 0 0 #2563eb;
+}
+.app-shell .sidebar .nav-link:hover{
+  background:#eff6ff;
+  color:#1d4ed8!important;
+}
+.app-shell .sidebar-primary-action{
+  background:#2563eb!important;
+  color:#fff!important;
+  min-height:48px;
+  border-radius:10px;
+  font-size:14px!important;
+}
+.app-shell .app-main{
+  background:#f6f8fc!important;
+}
+.app-shell .app-main>.topbar{
+  background:#fff!important;
+  border-bottom:1px solid #dbe4ef!important;
+}
+.app-shell .system-context-bar{
+  background:#f8fafc!important;
+  color:#475569!important;
+  border-color:#dbe4ef!important;
+}
+.app-shell .global-search{min-height:44px}
+.app-shell .page-title{
+  font-size:clamp(24px,3vw,31px);
+  color:#0f172a!important;
+  line-height:1.35;
+}
+.app-shell .page-sub,
+.app-shell .card p,
+.app-shell .card small{
+  color:#475569;
+  line-height:1.55;
+}
+.app-shell .card{
+  border:1px solid #dbe4ef;
+  border-radius:14px;
+  background:white;
+  box-shadow:0 4px 15px #0f172a0b;
+}
+.app-shell .table :is(th,td){
+  font-size:13px;
+  line-height:1.5;
+}
+/* Driver: readable outdoors, simple cards and easily tappable mission actions. */
+.delivery-app.driver-v2{
+  --fixi-role-accent:#0f766e;
+}
+.delivery-app.driver-v2>main{
+  background:#f6f8fc!important;
+}
+.delivery-app.driver-v2 .driver-command{
+  border:1px solid #dbe4ef!important;
+  border-radius:14px!important;
+  padding:clamp(16px,2.5vw,24px);
+}
+.delivery-app.driver-v2 .driver-command-title h1{
+  color:#0f172a!important;
+  font-size:clamp(23px,3vw,30px)!important;
+  line-height:1.3;
+}
+.delivery-app.driver-v2 .driver-command-title p{
+  font-size:15px!important;
+  line-height:1.55!important;
+  color:#475569!important;
+}
+.delivery-app.driver-v2 .driver-kpis>div{
+  border:1px solid #dbe4ef!important;
+  background:white!important;
+  border-radius:13px;
+  padding:16px;
+}
+.delivery-app.driver-v2 .driver-kpis span{
+  font-size:13px!important;
+  color:#475569!important;
+  line-height:1.5;
+}
+.delivery-app.driver-v2 .driver-kpis b{
+  font-size:clamp(19px,2.3vw,27px)!important;
+  color:#0f172a!important;
+  font-variant-numeric:tabular-nums;
+}
+.delivery-app.driver-v2 .driver-available-grid article{
+  border:1px solid #dbe4ef!important;
+  border-radius:13px!important;
+  padding:17px;
+  gap:12px;
+}
+.delivery-app.driver-v2 .driver-available-grid code{
+  font-size:12px!important;
+  color:#0f766e!important;
+  font-weight:850;
+  overflow-wrap:anywhere;
+}
+.delivery-app.driver-v2 .driver-available-grid h3{
+  font-size:17px!important;
+  line-height:1.4!important;
+  color:#0f172a!important;
+}
+.delivery-app.driver-v2 .driver-available-grid span{
+  font-size:13px!important;
+  color:#475569!important;
+  line-height:1.5;
+}
+.delivery-app.driver-v2 .driver-available-grid span svg{width:16px;height:16px}
+.delivery-app.driver-v2 .driver-available-grid strong{
+  font-size:16px!important;
+  color:#0f172a!important;
+}
+.delivery-app.driver-v2
+ :is(.driver-available-grid article,.driver-route-list article)
+ :is(button,a){
+  min-height:48px;
+  font-size:14px!important;
+  border-radius:10px;
+  touch-action:manipulation;
+}
+.delivery-app.driver-v2 .driver-route-list article{
+  background:white;
+  border:1px solid #dbe4ef!important;
+  border-radius:13px;
+  padding:15px;
+}
+.delivery-app.driver-v2 .driver-route-list :is(code,small){
+  font-size:12px!important;
+  line-height:1.5;
+}
+.delivery-app.driver-v2 .driver-mobile-nav{
+  border-top:1px solid #dbe4ef!important;
+  background:#fff!important;
+}
+.delivery-app.driver-v2 .driver-mobile-nav :is(button,a){
+  min-height:50px;
+  color:#334155;
+  font-size:12px!important;
+}
+.delivery-app.driver-v2 .driver-mobile-nav .active{
+  color:#0f766e!important;
+  font-weight:850;
+}
+/* Admin: consistent hierarchy and light tables. */
+.saas-v4{
+  --fixi-role-accent:#334155;
+}
+.saas-v4 .control-side{
+  background:#fff!important;
+  color:#0f172a!important;
+  border-right:1px solid #dbe4ef!important;
+}
+.saas-v4 .control-side nav button{
+  min-height:45px;
+  font-size:14px!important;
+  line-height:1.45;
+  color:#334155!important;
+}
+.saas-v4 .control-side nav button.active{
+  background:#eff6ff!important;
+  color:#1d4ed8!important;
+  box-shadow:inset 3px 0 0 #2563eb!important;
+}
+.saas-v4 .control-top{
+  background:#fff!important;
+  border-color:#dbe4ef!important;
+}
+.saas-v4 .control-top h1{
+  font-size:clamp(22px,2.7vw,30px)!important;
+  color:#0f172a!important;
+  line-height:1.3;
+}
+.saas-v4 .control-content{
+  background:#f6f8fc;
+}
+.saas-v4 .control-panel{
+  background:#fff!important;
+  border:1px solid #dbe4ef!important;
+  border-radius:14px!important;
+  box-shadow:0 4px 16px #0f172a0b;
+}
+.saas-v4 .control-panel h3{
+  color:#0f172a!important;
+  font-size:17px!important;
+  line-height:1.4;
+}
+.saas-v4 .control-panel :is(p,small){
+  font-size:13px;
+  line-height:1.55;
+  color:#475569;
+}
+.saas-v4 .control-table :is(th,td){
+  font-size:13px!important;
+  line-height:1.55;
+}
+/* Simplified landing hero: legible light welcome, product demo remains distinct. */
+.landing-v7 .landing-nav-v4{
+  background:rgba(255,255,255,.97)!important;
+  border-bottom:1px solid #e2e8f0;
+  box-shadow:0 4px 18px #0f172a0b;
+}
+.landing-v7 .landing-nav-v4 .landing-logo-v4,
+.landing-v7 .landing-nav-v4 .landing-links-v4,
+.landing-v7 .landing-nav-v4 .landing-links-v4 a{
+  color:#334155!important;
+}
+.landing-v7 .landing-nav-v4 .landing-links-v4 a:hover{
+  color:#1d4ed8!important;
+}
+.landing-v7 .landing-nav-v4 .btn-ghost{
+  color:#334155!important;
+  border-color:#cbd5e1!important;
+  background:white!important;
+}
+.landing-v7 .hero-v7{
+  background:radial-gradient(circle at 15% 16%,#dbeafe 0%,transparent 34%),
+    linear-gradient(145deg,#f8fbff 0%,#f1f6ff 65%,#f8fafc 100%)!important;
+  color:#0f172a!important;
+  min-height:760px;
+}
+.landing-v7 .hero-copy-v7 h1{
+  color:#0f172a!important;
+  font-size:clamp(41px,5.5vw,83px)!important;
+  line-height:1.05!important;
+  letter-spacing:-.055em;
+}
+.landing-v7 .hero-copy-v7 h1 span{color:#2563eb!important}
+.landing-v7 .hero-copy-v7>p{
+  color:#475569!important;
+  font-size:clamp(16px,1.5vw,19px)!important;
+  line-height:1.7!important;
+}
+.landing-v7 .hero-pill{
+  color:#1d4ed8!important;
+  border:1px solid #bfdbfe!important;
+  background:#eff6ff!important;
+  font-size:12px!important;
+  letter-spacing:.035em;
+}
+.landing-v7 .hero-v7 .hero-store-btn{
+  background:white;
+  color:#1e40af;
+  border:1px solid #bfdbfe;
+  font-size:13px!important;
+}
+.landing-v7 .hero-v7 .hero-store-btn:hover{
+  background:#eff6ff;
+  color:#1d4ed8;
+}
+.landing-v7 .hero-v7 .hero-glow{opacity:.25}
+/* Subtle and meaningful motion; all movement disabled for accessibility. */
+@media(hover:hover) and (prefers-reduced-motion:no-preference){
+  .supplier-os.supplier-erp .supplier-order-grid>article,
+  .delivery-app.driver-v2 .driver-available-grid article,
+  .saas-v4 .control-panel{
+    transition:box-shadow 180ms ease-out,transform 180ms ease-out,border-color 180ms ease-out;
+  }
+  .supplier-os.supplier-erp .supplier-order-grid>article:hover,
+  .delivery-app.driver-v2 .driver-available-grid article:hover,
+  .saas-v4 .control-panel:hover{
+    transform:translateY(-2px);
+    box-shadow:0 9px 25px #0f172a16;
+  }
+}
+@media(max-width:1000px){
+  .supplier-os.supplier-erp .supplier-order-grid{
+    grid-template-columns:minmax(0,1fr);
+  }
+  .landing-v7 .hero-v7{
+    min-height:unset;
+    gap:30px;
+  }
+}
+@media(max-width:760px){
+  .supplier-os.supplier-erp .supplier-kpis{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:9px;
+  }
+  .supplier-os.supplier-erp .supplier-kpis>div{
+    padding:12px;
+    min-height:109px;
+    gap:7px;
+  }
+  .supplier-os.supplier-erp .supplier-kpis>div b{font-size:19px!important}
+  .supplier-os.supplier-erp .supplier-order-grid{
+    grid-template-columns:minmax(0,1fr)!important;
+  }
+  .supplier-os.supplier-erp .supplier-order-grid>article{padding:14px}
+  .supplier-os.supplier-erp .fixi-supplier-bottom-nav{
+    background:white!important;
+    border-color:#dbe4ef!important;
+  }
+  .supplier-os.supplier-erp .fixi-supplier-bottom-nav button{
+    min-height:50px;
+    font-size:12px!important;
+    color:#334155!important;
+  }
+  .supplier-os.supplier-erp .fixi-supplier-bottom-nav button.active{
+    color:#1d4ed8!important;
+  }
+  .app-shell .mobile-menu-sheet{background:white}
+  .app-shell .mobile-menu-groups a{
+    font-size:14px!important;
+    line-height:1.45;
+    min-height:46px;
+  }
+  .delivery-app.driver-v2 .driver-command{
+    flex-direction:column;
+    gap:14px;
+  }
+  .delivery-app.driver-v2 .driver-command-actions{
+    width:100%;
+    justify-content:stretch;
+  }
+  .delivery-app.driver-v2 .driver-command-actions button{
+    min-height:48px;
+    font-size:14px!important;
+  }
+  .delivery-app.driver-v2 .driver-available-grid{
+    grid-template-columns:minmax(0,1fr)!important;
+  }
+  .delivery-app.driver-v2 .driver-route-list article{padding:13px}
+  .saas-v4 .control-side nav button{font-size:14px!important}
+  .landing-v7 .hero-v7{
+    padding-top:108px!important;
+    padding-bottom:45px!important;
+  }
+  .landing-v7 .hero-copy-v7 h1{
+    font-size:clamp(37px,9vw,56px)!important;
+    line-height:1.12!important;
+  }
+  .landing-v7 .hero-copy-v7>p{font-size:16px!important}
+}
+@media(prefers-reduced-motion:reduce){
+  .supplier-os.supplier-erp .supplier-order-grid>article,
+  .delivery-app.driver-v2 .driver-available-grid article,
+  .saas-v4 .control-panel{transition:none!important;transform:none!important}
+}
