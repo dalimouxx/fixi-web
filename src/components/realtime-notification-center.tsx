@@ -48,6 +48,8 @@ export function RealtimeNotificationCenter({apiUrl,eventsUrl,storageKey,allHref,
   const[diagnosticsOpen,setDiagnosticsOpen]=useState(false);
   const[pushDiagnostic,setPushDiagnostic]=useState<'UNSUPPORTED'|'BLOCKED'|'SUBSCRIBED'|'NOT_SUBSCRIBED'|'CHECKING'>('CHECKING');
   const[workerDiagnostic,setWorkerDiagnostic]=useState(false);
+  const[pushTestStatus,setPushTestStatus]=useState('');
+  const[pushTesting,setPushTesting]=useState(false);
   const[toast,setToast]=useState<Incoming|null>(null);
   const lastId=useRef('');
   const initial=useRef(true);
@@ -165,6 +167,19 @@ export function RealtimeNotificationCenter({apiUrl,eventsUrl,storageKey,allHref,
     void checkPush();
     setAudioReady(notificationAudioStatus()==='READY');
   }
+  async function sendTestPush(){
+    if(pushTesting)return;
+    setPushTesting(true);setPushTestStatus('');
+    const path=apiUrl.includes('/supplier/')?'/api/supplier/push/test':
+      apiUrl.includes('/delivery/')?'/api/delivery/push/test':'/api/push/test';
+    try{
+      const response=await fetch(path,{method:'POST',credentials:'same-origin'});
+      const result=await response.json().catch(()=>({}));
+      if(!response.ok){setPushTestStatus(String(result.error||'Test refusé')+' (HTTP '+response.status+')');return}
+      setPushTestStatus('Test enregistré. Vérifiez la notification système de votre téléphone ; le son dépend des réglages Android/iOS.');
+    }catch{setPushTestStatus('Connexion au serveur impossible. Réessayez avec Internet actif.')}
+    finally{setPushTesting(false)}
+  }
   async function enableDesktop(){
     if(typeof Notification==='undefined')return;
     const p=await Notification.requestPermission();setDesktop(p==='granted');
@@ -228,7 +243,10 @@ export function RealtimeNotificationCenter({apiUrl,eventsUrl,storageKey,allHref,
           <PushToggle subscribeUrl={apiUrl.includes('/supplier/')?'/api/supplier/push/subscribe':
             apiUrl.includes('/delivery/')?'/api/delivery/push/subscribe':'/api/push/subscribe'} label/>
           <button type="button" onClick={()=>void checkPush()}>Revérifier Push</button>
+          <button type="button" disabled={pushTesting||pushDiagnostic==='UNSUPPORTED'||pushDiagnostic==='BLOCKED'}
+            onClick={()=>void sendTestPush()}>{pushTesting?'Envoi…':'Envoyer un Push test'}</button>
         </div>
+        {pushTestStatus&&<p role="status">{pushTestStatus}</p>}
         <small>Les sons personnalisés sont possibles quand l'application est ouverte. Téléphone verrouillé : le navigateur et les réglages Android/iOS décident du son et des vibrations.</small>
       </div>}
       <div className="rt-filter-tabs" role="group" aria-label="Afficher les notifications">
