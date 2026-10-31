@@ -1,0 +1,208 @@
+/*
+ FIXI Clear Pro V2 · workflow clarity phase.
+ Role-scoped visual components for existing frontend; no transaction or API logic.
+ */
+.fixi-supplier-quick-workflow{
+ display:grid;gap:14px;
+ padding:20px;margin:0 0 17px;
+ border:1px solid #c8dcf4;
+ border-radius:17px;
+ background:linear-gradient(128deg,#f3f8ff,#fff 68%);
+ box-shadow:0 6px 20px #1d4ed80c;
+}
+.fixi-workflow-heading span{
+ display:block;color:#2563eb;font-size:11px;letter-spacing:.075em;font-weight:850;
+}
+.fixi-workflow-heading h2{
+ font-size:clamp(20px,2.1vw,25px);line-height:1.3;font-weight:850;
+ color:#0f172a;margin:7px 0 3px;
+}
+.fixi-workflow-heading p{
+ font-size:14px;color:#475569;line-height:1.5;margin:0;
+}
+.fixi-workflow-actions{
+ display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;
+}
+.fixi-workflow-actions button{
+ display:flex;flex-direction:column;gap:8px;align-items:flex-start;text-align:left;
+ padding:15px;border-radius:13px;min-height:115px;min-width:0;
+ border:1px solid #dbe4ef;background:#fff;
+ color:#1d4ed8;box-shadow:0 2px 8px #0f172a08;
+ transition:border-color .17s ease,box-shadow .17s ease,transform .17s ease;
+}
+.fixi-workflow-actions button strong{font-size:15px;color:#0f172a;line-height:1.3}
+.fixi-workflow-actions button small{font-size:13px;color:#475569;line-height:1.35}
+.fixi-workflow-actions button:hover{border-color:#93c5fd;box-shadow:0 6px 16px #2563eb16}
+.fixi-workflow-actions button:focus-visible{outline:3px solid #93c5fd;outline-offset:3px}
+.fixi-orders-search-panel{
+ display:grid;gap:12px;
+ padding:18px 20px;margin-bottom:16px;
+ background:linear-gradient(125deg,#f8fbff,#fff);
+ border:1px solid #dbe4ef;border-radius:13px;
+}
+.fixi-orders-search-panel h2{
+ margin:0 0 4px;color:#0f172a;font-size:20px;
+ line-height:1.35;
+}
+.fixi-orders-search-panel p{
+ margin:0;color:#475569;font-size:14px;line-height:1.45;
+}
+.fixi-orders-search-panel>small{
+ font-size:13px;color:#475569;font-weight:700;
+}
+.fixi-orders-search-row{display:flex;align-items:stretch;gap:9px;min-width:0}
+.fixi-search-field{
+ flex:1;display:flex;align-items:center;gap:10px;
+ padding:0 14px;min-width:0;
+ border-radius:10px;background:white;border:1.5px solid #aac5ed;
+ color:#2563eb;
+}
+.fixi-search-field:focus-within{
+ border-color:#2563eb;box-shadow:0 0 0 3px #bfdbfe;
+}
+.fixi-search-field input{
+ flex:1;width:100%;min-width:0;height:49px;
+ border:0!important;box-shadow:none!important;outline:none!important;
+ background:transparent;color:#0f172a;font-size:15px!important;
+}
+.fixi-orders-search-row>.btn{font-size:13px;min-height:49px}
+.fixi-orders-empty,.fixi-driver-list-empty{
+ display:flex;align-items:center;gap:15px;flex-wrap:wrap;
+ padding:24px;min-height:140px;
+ background:#f8fafc;border:1px dashed #cbd5e1;border-radius:13px;
+ color:#64748b;margin:6px 0;
+}
+.fixi-orders-empty>svg,.fixi-driver-list-empty>svg{color:#2563eb;flex:0 0 auto}
+.fixi-orders-empty>div{flex:1 1 160px}
+.fixi-orders-empty strong,.fixi-driver-list-empty strong{
+ display:block;color:#0f172a;font-size:16px;line-height:1.35;
+}
+.fixi-orders-empty p,.fixi-driver-list-empty p{
+ color:#475569;font-size:14px;line-height:1.5;margin:4px 0 0;
+}
+.fixi-order-table-empty{
+ text-align:center;color:#475569!important;
+ font-size:14px!important;padding:28px 12px!important;
+}
+.fixi-driver-next-step{
+ display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;
+ gap:12px;
+ padding:16px 20px;margin:12px 0 18px;
+ border:1px solid #99f6e4;background:linear-gradient(120deg,#f0fdfa,#fff);
+ border-radius:14px;color:#134e4a;box-shadow:0 5px 15px #0f766e0b;
+}
+.fixi-driver-next-step.offline{
+ background:#fff7ed;border-color:#fed7aa;
+}
+.fixi-driver-next-step-content{flex:1 1 230px;min-width:0}
+.fixi-driver-next-step-content>span{
+ color:#0f766e;font-size:11px;font-weight:850;letter-spacing:.075em;
+}
+.fixi-driver-next-step.offline .fixi-driver-next-step-content>span{color:#9a3412}
+.fixi-driver-next-step-content h2{
+ margin:5px 0 3px;font-size:clamp(19px,2.5vw,24px);
+ line-height:1.25;color:#0f172a;
+}
+.fixi-driver-next-step-content p{
+ margin:0;color:#475569;font-size:14px;line-height:1.55;
+}
+.fixi-driver-next-step>.btn{min-height:48px;flex:0 1 auto;font-size:14px}
+.fixi-driver-list-empty{
+ flex-direction:column;text-align:center;
+ justify-content:center;gap:10px;min-height:210px;
+}
+.fixi-driver-list-empty p{max-width:460px}
+.fixi-driver-list-empty button{min-height:46px}
+.fixi-atelier-actions{
+ display:grid;gap:11px;margin:0 0 20px;
+}
+.fixi-atelier-actions-title{
+ display:flex;justify-content:space-between;align-items:flex-end;
+ gap:8px;flex-wrap:wrap;
+}
+.fixi-atelier-actions-title h2{
+ font-size:20px;color:#0f172a;margin:0;line-height:1.35;
+}
+.fixi-atelier-actions-title p{
+ font-size:14px;color:#475569;margin:0;line-height:1.5;
+}
+.fixi-atelier-actions .quick-actions{
+ margin:0;gap:10px;
+}
+.fixi-atelier-actions .quick-actions a{
+ border:1px solid #dbe4ef;
+ border-radius:13px;background:#fff;
+ padding:13px;min-height:88px;
+ box-shadow:0 2px 10px #0f172a0a;
+}
+.fixi-atelier-actions .quick-actions a svg{color:#2563eb}
+.fixi-atelier-actions .quick-actions b{
+ font-size:14px;color:#0f172a;line-height:1.4;
+}
+.fixi-atelier-actions .quick-actions small{
+ font-size:12px;color:#475569;line-height:1.4;
+}
+.fixi-dashboard-loading,.fixi-dashboard-error{
+ background:white;border:1px solid #dbe4ef;border-radius:16px;
+ padding:25px;box-shadow:0 5px 20px #0f172a0b;
+}
+.fixi-dashboard-loading .fixi-loading-line{
+ background:linear-gradient(100deg,#e2e8f0,#f1f5f9 50%,#e2e8f0);
+ background-size:200% 100%;
+ border-radius:9px;height:24px;width:100%;
+ animation:fixi-skeleton 1.6s ease infinite;
+}
+.fixi-dashboard-loading .fixi-loading-line.wide{max-width:430px;height:29px}
+.fixi-dashboard-loading .fixi-loading-line.medium{max-width:260px;height:16px;margin:12px 0 20px}
+.fixi-loading-cards{
+ display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px;
+}
+.fixi-loading-card{
+ min-height:112px;border-radius:13px;
+ background:linear-gradient(100deg,#e2e8f0,#f1f5f9 50%,#e2e8f0);
+ background-size:200% 100%;
+ animation:fixi-skeleton 1.6s ease infinite;
+}
+.fixi-dashboard-loading p{
+ color:#475569;font-size:14px;margin:18px 0 0;
+}
+.fixi-dashboard-error{
+ display:flex;align-items:center;flex-wrap:wrap;gap:17px;
+ background:#fff7f7;border-color:#fecaca;
+}
+.fixi-dashboard-error>svg{color:#dc2626;flex:0 0 auto}
+.fixi-dashboard-error>div{flex:1 1 210px}
+.fixi-dashboard-error h1{
+ color:#991b1b;font-size:20px;margin:0 0 5px;
+}
+.fixi-dashboard-error p{color:#7f1d1d;font-size:14px;line-height:1.5;margin:0}
+.fixi-dashboard-error>.btn{min-height:47px}
+@keyframes fixi-skeleton{
+ from{background-position:200% 0}to{background-position:-200% 0}
+}
+@media(min-width:800px) and (hover:hover){
+ .fixi-workflow-actions button:hover{transform:translateY(-2px)}
+ .fixi-atelier-actions .quick-actions a:hover{
+  border-color:#93c5fd;box-shadow:0 7px 20px #0f172a12;
+ }
+}
+@media(max-width:850px){
+ .fixi-loading-cards{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:620px){
+ .fixi-workflow-actions{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .fixi-supplier-quick-workflow{padding:14px;gap:12px}
+ .fixi-workflow-actions button{padding:12px;min-height:112px}
+ .fixi-orders-search-panel{padding:14px}
+ .fixi-orders-search-row{flex-direction:column}
+ .fixi-orders-search-row>.btn{align-self:flex-start}
+ .fixi-driver-next-step{padding:14px}
+ .fixi-driver-next-step>.btn{width:100%;justify-content:center}
+ .fixi-atelier-actions-title{align-items:flex-start}
+ .fixi-atelier-actions .quick-actions a{min-height:82px}
+}
+@media(prefers-reduced-motion:reduce){
+ .fixi-dashboard-loading .fixi-loading-line,
+ .fixi-loading-card{animation:none!important}
+ .fixi-workflow-actions button{transition:none!important}
+}
