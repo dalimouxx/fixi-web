@@ -68,8 +68,9 @@ export function RealtimeNotificationCenter({apiUrl,eventsUrl,storageKey,allHref,
     if(dismissTimer.current)clearTimeout(dismissTimer.current);
     const ex=getNotificationExperience(n.experienceKey);
     dismissTimer.current=setTimeout(()=>setToast(null),ex.duration);
-    if(soundRef.current){
-      const audible=playFixiNotificationSound(n.soundKey||ex.sound,volumeRef.current);
+    const tone=n.soundKey||ex.sound;
+    if(soundRef.current&&volumeRef.current>0&&tone!=='SILENT'){
+      const audible=playFixiNotificationSound(tone,volumeRef.current);
       if(!audible)setAudioReady(false);
     }
     // Avoid duplicate system + Push notifications for the same event.
@@ -270,7 +271,9 @@ export function RealtimeNotificationCenter({apiUrl,eventsUrl,storageKey,allHref,
     </div>}
     {toast&&<div role={toast.priority==='HIGH'||toast.priority==='URGENT'?'alert':'status'}
       aria-live={toast.priority==='HIGH'||toast.priority==='URGENT'?'assertive':'polite'}
-      className={'rt-toast rt-toast-premium rt-toast-'+channelFor(toast.experienceKey||'GENERAL')+' '+String(toast.kind||toast.type||'info').toLowerCase()}>
+      className={'rt-toast rt-toast-premium rt-toast-'+channelFor(toast.experienceKey||'GENERAL')+
+        ' rt-toast-priority-'+String(toast.priority||'NORMAL').toLowerCase()+
+        ' '+String(toast.kind||toast.type||'info').toLowerCase()}>
       <i className="rt-toast-identity"><ExperienceIcon keyName={toast.experienceKey||'GENERAL'}/></i>
       <div className="rt-toast-copy">
         <span className="rt-toast-eyebrow">{labelFor(toast.experienceKey||'GENERAL')}</span>
