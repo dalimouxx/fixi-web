@@ -242,7 +242,7 @@ export function RealtimeNotificationCenter({apiUrl,eventsUrl,storageKey,allHref,
             pushDiagnostic==='UNSUPPORTED'?'Non compatible':pushDiagnostic==='CHECKING'?'Vérification…':'Non abonné'}</b></div>
         <div className="rt-diag-actions">
           <PushToggle subscribeUrl={apiUrl.includes('/supplier/')?'/api/supplier/push/subscribe':
-            apiUrl.includes('/delivery/')?'/api/delivery/push/subscribe':'/api/push/subscribe'} label/>
+            apiUrl.includes('/delivery/')?'/api/delivery/push/subscribe':'/api/push/subscribe'} label onStateChange={()=>void checkPush()}/>
           <button type="button" onClick={()=>void checkPush()}>Revérifier Push</button>
           <button type="button" disabled={pushTesting||pushDiagnostic==='UNSUPPORTED'||pushDiagnostic==='BLOCKED'}
             onClick={()=>void sendTestPush()}>{pushTesting?'Envoi…':'Envoyer un Push test'}</button>
