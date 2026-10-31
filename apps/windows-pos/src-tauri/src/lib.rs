@@ -308,20 +308,29 @@ async fn v4_request(
 #[tauri::command]
 async fn supplier_find_tickets(state: State<'_,Arc<DesktopState>>, query:String, from:String, to:String) -> Result<serde_json::Value,String>{
  if query.len()>100||from.len()>10||to.len()>10{return Err("Critères de recherche trop longs".into())}
- let mut params=url::form_urlencoded::Serializer::new(String::new());
- if !query.is_empty(){params.append_pair("q",&query);}
- if !from.is_empty(){params.append_pair("from",&from);}
- if !to.is_empty(){params.append_pair("to",&to);}
- let query=params.finish();
- v4_request(&state,&format!("/api/supplier/desktop/v4/tickets?{}",query),None).await
+ // Keep the non-Send URL serializer entirely outside the awaited future.
+ let encoded_query={
+  let mut params=url::form_urlencoded::Serializer::new(String::new());
+  if !query.is_empty(){params.append_pair("q",&query);}
+  if !from.is_empty(){params.append_pair("from",&from);}
+  if !to.is_empty(){params.append_pair("to",&to);}
+  params.finish()
+ };
+ let path=format!("/api/supplier/desktop/v4/tickets?{}",encoded_query);
+ v4_request(&state,&path,None).await
 }
 
 #[tauri::command]
 async fn supplier_return_source(state: State<'_,Arc<DesktopState>>, reference:String) -> Result<serde_json::Value,String>{
  if reference.len()>100||reference.is_empty(){return Err("Référence invalide".into())}
- let mut params=url::form_urlencoded::Serializer::new(String::new());
- params.append_pair("reference",&reference);
- v4_request(&state,&format!("/api/supplier/desktop/v4/returns-source?{}",params.finish()),None).await
+ // The form serializer is !Send, so finish and drop it before .await.
+ let encoded_reference={
+  let mut params=url::form_urlencoded::Serializer::new(String::new());
+  params.append_pair("reference",&reference);
+  params.finish()
+ };
+ let path=format!("/api/supplier/desktop/v4/returns-source?{}",encoded_reference);
+ v4_request(&state,&path,None).await
 }
 
 #[tauri::command]
