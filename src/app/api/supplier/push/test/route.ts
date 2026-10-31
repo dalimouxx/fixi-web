@@ -19,10 +19,11 @@ export async function POST(){
    createdAt:{gte:new Date(Date.now()-60_000)}
   },select:{id:true}});
   if(recent)return bad('Attendez 60 secondes avant de renvoyer un test',429);
-  let report:PushDispatchReport|undefined;
+  const pushResult:{current?:PushDispatchReport}={};
   const rows=await notifySupplier(s.companyId,'Test notification FIXI Supplier',
    'Si ce message s’affiche sur votre téléphone, les notifications arrivent. Le son dépend des réglages du téléphone.',
-   {accountIds:[s.id],kind:'INFO',priority:'LOW',experienceKey:'SUPPLIER_UPDATE',href:'/supplier',onPushReport:r=>{report=r}});
+   {accountIds:[s.id],kind:'INFO',priority:'LOW',experienceKey:'SUPPLIER_UPDATE',href:'/supplier',onPushReport:r=>{pushResult.current=r}});
+  const report=pushResult.current;
   const accepted=report?.accepted||0;
   return ok({created:rows.length>0,subscribedDevices:subscriptions,
    pushAcceptedByGateway:accepted,pushExpired:report?.expired||0,pushFailed:report?.failed||0,
