@@ -35,6 +35,13 @@ test('per-order OS push tags are app and event specific',()=>{
   assert.notEqual(experienceTag('SHOP_ORDER_PROGRESS','o123'),experienceTag('SHOP_ORDER_DELIVERED','o123'));
   assert.equal(experienceTag('DRIVER_NEW_MISSION','o123'),experienceTag('DRIVER_NEW_MISSION','o123'));
 });
+test('different events of the same kind keep separate lock-screen notification tags',()=>{
+  assert.notEqual(experienceTag('SUPPLIER_NEW_ORDER','event-one'),
+    experienceTag('SUPPLIER_NEW_ORDER','event-two'));
+  assert.notEqual(experienceTag('SHOP_ORDER_PROGRESS','event-one'),
+    experienceTag('SHOP_ORDER_PROGRESS','event-two'));
+});
+
 test('unknown notification identities safely use standard generic style',()=>{
   assert.equal(getNotificationExperience('MISPRINT').sound,'CHIME');
   assert.equal(getNotificationExperience(null).channel,'general');
