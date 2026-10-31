@@ -554,3 +554,65 @@
   .delivery-app.driver-v2 .driver-available-grid article,
   .saas-v4 .control-panel{transition:none!important;transform:none!important}
 }
+
+/* Keep the landing call-to-action readable against the new light background. */
+.landing-v7 .hero-v7 .hero-main-btn,
+.landing-v7 .landing-nav-v4 .btn-primary{
+  background:#2563eb!important;
+  border-color:#2563eb!important;
+  color:white!important;
+  box-shadow:0 8px 22px #2563eb36;
+}
+.landing-v7 .hero-v7 .hero-video-btn{
+  color:#1e293b!important;
+  font-size:14px;
+}
+.landing-v7 .hero-v7 .hero-video-btn>i{
+  background:#eff6ff!important;
+  border:1px solid #bfdbfe!important;
+  color:#1d4ed8!important;
+}
+.landing-v7 .hero-v7 .hero-video-btn span{
+  color:#1e293b!important;
+  font-size:14px!important;
+}
+.landing-v7 .hero-v7 .hero-video-btn small{
+  color:#475569!important;
+  font-size:12px!important;
+}
+.landing-v7 .hero-v7 .hero-trust{
+  color:#475569!important;
+  font-size:12px!important;
+  line-height:1.5;
+}
+.landing-v7 .hero-v7 .hero-trust svg{color:#15803d}
+/* Prevent hidden supplier menu modules on shorter phones and add safe-area support. */
+@media(max-width:760px){
+  .supplier-os.supplier-erp .fixi-supplier-menu-scroll{
+    flex:1 1 auto!important;
+    min-height:0!important;
+    overflow-y:auto!important;
+    overscroll-behavior:contain;
+    -webkit-overflow-scrolling:touch;
+    padding-bottom:calc(18px + env(safe-area-inset-bottom,0px));
+  }
+  .supplier-os.supplier-erp .fixi-supplier-drawer{
+    display:flex;
+    flex-direction:column;
+    max-height:100dvh;
+  }
+  .supplier-os.supplier-erp .supplier-order-actions{
+    flex-wrap:wrap;
+  }
+  .supplier-os.supplier-erp .supplier-order-actions button{
+    flex:1 1 auto;
+    white-space:normal;
+  }
+  .app-shell .mobile-menu-sheet{
+    max-height:calc(100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));
+    overflow:auto;
+  }
+  .delivery-app.driver-v2 .driver-mobile-nav{
+    padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+}
