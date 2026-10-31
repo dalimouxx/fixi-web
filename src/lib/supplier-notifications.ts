@@ -1,6 +1,6 @@
 import {prisma} from './prisma';
 import {publishSupplierAccount} from './realtime';
-import {sendPushToSupplierAccounts} from './push';
+import {sendPushToSupplierAccounts,type PushDispatchReport} from './push';
 import {getNotificationExperience, experienceTag, type FixiExperienceKey, type FixiSoundKey} from './notification-experience';
 
 export type SupplierNotificationKind='INFO'|'SUCCESS'|'WARNING'|'ERROR'|'ORDER'|'DELIVERY'|'PAYMENT'|'STOCK'|'SYSTEM';
@@ -17,6 +17,7 @@ type NotifyOptions={
   accountIds?:string[];
   metadata?:Record<string,unknown>;
   availableDriversOnly?:boolean;
+  onPushReport?:(report:PushDispatchReport)=>void;
 };
 
 export async function notifySupplier(companyId:string,title:string,message:string,options:NotifyOptions={}){
@@ -39,16 +40,23 @@ export async function notifySupplier(companyId:string,title:string,message:strin
     id:row.id,title:row.title,message:row.message,href:row.href,kind:row.kind,priority:row.priority,soundKey:row.soundKey,experienceKey,createdAt:row.createdAt
   });
   const push:any={title,body:message,href:options.href||'/supplier',
-    experienceKey,tag:experienceTag(experienceKey,options.eventId),
-    data:{...(options.metadata||{}),experienceKey}};
+    experienceKey,tag:experienceTag(experienceKey,options.eventId||rows[0].id),
+    // Never put customer financial/identity metadata in phone notifications.
+    data:{experienceKey,
+      ...(typeof options.metadata?.orderId==='string'?{orderId:options.metadata.orderId}:{})}};
   if(experienceKey==='DRIVER_NEW_MISSION'&&options.metadata?.orderId){
     push.tag=experienceTag('DRIVER_NEW_MISSION',String(options.metadata.orderId));
     push.requireInteraction=true;
     push.actions=[{action:'accept-delivery',title:'Accepter la mission'},{action:'open',title:'Voir la tournée'}];
   }
-  void sendPushToSupplierAccounts(rows.map(x=>x.accountId),push).catch(err=>
-    console.warn('Supplier push failed',String(err))
-  );
+  // Wait for gateway responses while this request is alive. Failures are
+  // best-effort and must never roll back a completed supplier transaction.
+  try{
+    const report=await sendPushToSupplierAccounts(rows.map(x=>x.accountId),push);
+    options.onPushReport?.(report);
+    if(report.failed>0)console.warn('Supplier push delivery failures',report.failed);
+  }catch(err){console.warn('Supplier push transport unavailable',String(err))}
+
   return rows;
 }
 

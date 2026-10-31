@@ -50,6 +50,7 @@ export function RealtimeNotificationCenter({apiUrl,eventsUrl,storageKey,allHref,
   const[workerDiagnostic,setWorkerDiagnostic]=useState(false);
   const[pushTestStatus,setPushTestStatus]=useState('');
   const[pushTesting,setPushTesting]=useState(false);
+  const[pushAccountConnected,setPushAccountConnected]=useState<boolean|null>(null);
   const[toast,setToast]=useState<Incoming|null>(null);
   const lastId=useRef('');
   const initial=useRef(true);
@@ -177,7 +178,16 @@ export function RealtimeNotificationCenter({apiUrl,eventsUrl,storageKey,allHref,
       const response=await fetch(path,{method:'POST',credentials:'same-origin'});
       const result=await response.json().catch(()=>({}));
       if(!response.ok){setPushTestStatus(String(result.error||'Test refusé')+' (HTTP '+response.status+')');return}
-      setPushTestStatus('Test enregistré. Vérifiez la notification système de votre téléphone ; le son dépend des réglages Android/iOS.');
+      const accepted=Number(result.pushAcceptedByGateway||0);
+      const expired=Number(result.pushExpired||0);
+      const failed=Number(result.pushFailed||0);
+      if(!result.gatewayChecked){
+        setPushTestStatus('Test enregistré, mais FIXI n’a pas pu vérifier l’envoi auprès du service Push. Vérifiez la connexion au serveur.');
+      }else if(accepted>0){
+        setPushTestStatus('Passerelle Push : '+accepted+' envoi(s) accepté(s)'+(expired||failed?', '+expired+' abonnement(s) expiré(s), '+failed+' échec(s)':'')+'. Vérifiez la réception sur le téléphone : affichage et son ne sont pas garantis.');
+      }else{
+        setPushTestStatus('Aucun envoi accepté : '+expired+' abonnement(s) expiré(s), '+failed+' échec(s). Réactivez Push et vérifiez les permissions du téléphone.');
+      }
     }catch{setPushTestStatus('Connexion au serveur impossible. Réessayez avec Internet actif.')}
     finally{setPushTesting(false)}
   }
@@ -237,12 +247,15 @@ export function RealtimeNotificationCenter({apiUrl,eventsUrl,storageKey,allHref,
           <button type="button" onClick={()=>void testSound()}><Volume2 size={17}/>Tester le son</button>
         </div>
         <div className="rt-diag-row"><span>Service worker</span><b>{workerDiagnostic?'Actif':'Non vérifié / inactif'}</b></div>
-        <div className="rt-diag-row"><span>Notifications téléphone (Push)</span>
-          <b>{pushDiagnostic==='SUBSCRIBED'?'Abonné':pushDiagnostic==='BLOCKED'?'Bloqué par l’appareil':
-            pushDiagnostic==='UNSUPPORTED'?'Non compatible':pushDiagnostic==='CHECKING'?'Vérification…':'Non abonné'}</b></div>
+        <div className="rt-diag-row"><span>Abonnement Push du navigateur</span>
+          <b>{pushDiagnostic==='SUBSCRIBED'?'Présent':pushDiagnostic==='BLOCKED'?'Bloqué par l’appareil':
+            pushDiagnostic==='UNSUPPORTED'?'Non compatible':pushDiagnostic==='CHECKING'?'Vérification…':'Absent'}</b></div>
+        <div className="rt-diag-row"><span>Compte FIXI connecté à Push</span>
+          <b>{pushAccountConnected===true?'Rattaché':pushAccountConnected===false?'Non rattaché':'À vérifier'}</b></div>
         <div className="rt-diag-actions">
           <PushToggle subscribeUrl={apiUrl.includes('/supplier/')?'/api/supplier/push/subscribe':
-            apiUrl.includes('/delivery/')?'/api/delivery/push/subscribe':'/api/push/subscribe'} label onStateChange={()=>void checkPush()}/>
+            apiUrl.includes('/delivery/')?'/api/delivery/push/subscribe':'/api/push/subscribe'} label
+            onStateChange={connected=>{setPushAccountConnected(connected);void checkPush()}}/>
           <button type="button" onClick={()=>void checkPush()}>Revérifier Push</button>
           <button type="button" disabled={pushTesting||pushDiagnostic==='UNSUPPORTED'||pushDiagnostic==='BLOCKED'}
             onClick={()=>void sendTestPush()}>{pushTesting?'Envoi…':'Envoyer un Push test'}</button>
