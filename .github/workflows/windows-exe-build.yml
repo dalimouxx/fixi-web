@@ -5,6 +5,7 @@ on:
     branches:
       - feature/windows-pos-v3-sales
       - rebuild/fixi-windows-v4
+      - feature/windows-v4-counter-upgrades
     paths:
       - 'apps/windows-pos/**'
       - '.github/workflows/windows-exe-build.yml'
