@@ -2,6 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {notificationExperiences,getNotificationExperience,experienceTag} from '../src/lib/notification-experience';
 import {soundPattern} from '../src/lib/notification-sound-patterns';
+import {notificationAudioStatus,primeNotificationAudio,playFixiNotificationSound} from '../src/lib/notification-audio';
 
 test('new supplier order and courier mission have distinct recognizable sounds',()=>{
   const shop=soundPattern(notificationExperiences.SHOP_ORDER_PROGRESS.sound);
@@ -37,4 +38,10 @@ test('per-order OS push tags are app and event specific',()=>{
 test('unknown notification identities safely use standard generic style',()=>{
   assert.equal(getNotificationExperience('MISPRINT').sound,'CHIME');
   assert.equal(getNotificationExperience(null).channel,'general');
+});
+
+test('sound diagnostics fail safely without window or a browser audio device',async()=>{
+  assert.equal(notificationAudioStatus(),'UNSUPPORTED');
+  assert.equal(await primeNotificationAudio(),false);
+  assert.equal(playFixiNotificationSound('SUPPLIER_ORDER'),false);
 });
