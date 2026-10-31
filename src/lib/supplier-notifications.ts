@@ -1,6 +1,6 @@
 import {prisma} from './prisma';
 import {publishSupplierAccount} from './realtime';
-import {sendPushToSupplierAccounts} from './push';
+import {sendPushToSupplierAccounts,type PushDispatchReport} from './push';
 import {getNotificationExperience, experienceTag, type FixiExperienceKey, type FixiSoundKey} from './notification-experience';
 
 export type SupplierNotificationKind='INFO'|'SUCCESS'|'WARNING'|'ERROR'|'ORDER'|'DELIVERY'|'PAYMENT'|'STOCK'|'SYSTEM';
@@ -17,6 +17,7 @@ type NotifyOptions={
   accountIds?:string[];
   metadata?:Record<string,unknown>;
   availableDriversOnly?:boolean;
+  onPushReport?:(report:PushDispatchReport)=>void;
 };
 
 export async function notifySupplier(companyId:string,title:string,message:string,options:NotifyOptions={}){
@@ -50,6 +51,7 @@ export async function notifySupplier(companyId:string,title:string,message:strin
   // best-effort and must never roll back a completed supplier transaction.
   try{
     const report=await sendPushToSupplierAccounts(rows.map(x=>x.accountId),push);
+    options.onPushReport?.(report);
     if(report.failed>0)console.warn('Supplier push delivery failures',report.failed);
   }catch(err){console.warn('Supplier push transport unavailable',String(err))}
 
