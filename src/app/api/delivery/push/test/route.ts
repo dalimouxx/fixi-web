@@ -16,10 +16,11 @@ export async function POST(){
     createdAt:{gte:new Date(Date.now()-60_000)}
    },select:{id:true}});
   if(recent)return bad('Attendez 60 secondes entre deux tests',429);
-  let report:PushDispatchReport|undefined;
+  const pushResult:{current?:PushDispatchReport}={};
   const rows=await notifySupplier(s.companyId,'Test notification FIXI Livreur',
     'Message de contrôle de réception sur le téléphone. Le son dépend de vos réglages Android/iOS.',
-    {accountIds:[s.id],kind:'INFO',priority:'LOW',experienceKey:'DRIVER_ARRIVED',href:'/delivery',onPushReport:r=>{report=r}});
+    {accountIds:[s.id],kind:'INFO',priority:'LOW',experienceKey:'DRIVER_ARRIVED',href:'/delivery',onPushReport:r=>{pushResult.current=r}});
+  const report=pushResult.current;
   const accepted=report?.accepted||0;
   return ok({created:rows.length>0,subscribedDevices:subscriptions,
    pushAcceptedByGateway:accepted,pushExpired:report?.expired||0,pushFailed:report?.failed||0,
