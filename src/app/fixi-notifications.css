@@ -183,3 +183,23 @@
 @media(prefers-reduced-motion:reduce){
  .rt-toast.rt-toast-premium{animation:none!important;transition:none!important}
 }
+
+.rt-toast.rt-toast-premium.rt-toast-priority-urgent,
+.rt-toast.rt-toast-premium.rt-toast-priority-high{
+  border-left-width:6px;
+}
+.rt-toast.rt-toast-premium.rt-toast-priority-urgent{
+  border-color:#dc2626;
+  border-left-color:#dc2626;
+}
+.rt-notifications .push-error{
+  display:block;
+  flex-basis:100%;
+  color:#991b1b;
+  font-size:13px;
+  line-height:1.5;
+  background:#fef2f2;
+  border:1px solid #fecaca;
+  border-radius:8px;
+  padding:9px 11px;
+}
