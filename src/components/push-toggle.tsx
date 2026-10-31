@@ -10,7 +10,7 @@ function b64ToUint8(value:string){
 /** Works on the shop, supplier and delivery spaces; reports failures instead of
  * claiming Push is enabled when the server refused to save the subscription.
  */
-export function PushToggle({subscribeUrl='/api/push/subscribe',label=false}:{subscribeUrl?:string;label?:boolean}){
+export function PushToggle({subscribeUrl='/api/push/subscribe',label=false,onStateChange}:{subscribeUrl?:string;label?:boolean;onStateChange?:(active:boolean)=>void}){
  const[supported,setSupported]=useState(false);
  const[on,setOn]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState('');
  useEffect(()=>{
@@ -21,7 +21,7 @@ export function PushToggle({subscribeUrl='/api/push/subscribe',label=false}:{sub
    if(!live||!reg)return;
    const sub=await reg.pushManager.getSubscription();
    if(!live)return;
-   setOn(!!sub);
+   setOn(!!sub);onStateChange?.(!!sub);
    if(sub){
     const response=await fetch(subscribeUrl,{method:'POST',
      headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify(sub)});
@@ -46,7 +46,7 @@ export function PushToggle({subscribeUrl='/api/push/subscribe',label=false}:{sub
     const response=await fetch(subscribeUrl,{method:'DELETE',headers:{'Content-Type':'application/json'},
      credentials:'same-origin',body:JSON.stringify({endpoint:current.endpoint})});
     if(!response.ok)throw Error('Le serveur n’a pas confirmé la désactivation des notifications.');
-    await current.unsubscribe();setOn(false);return;
+    await current.unsubscribe();setOn(false);onStateChange?.(false);return;
    }
    const keyResponse=await fetch('/api/push/public-key',{cache:'no-store'});
    if(!keyResponse.ok)throw Error('Clé Push indisponible sur FIXI Cloud.');
@@ -63,7 +63,7 @@ export function PushToggle({subscribeUrl='/api/push/subscribe',label=false}:{sub
     await subscription.unsubscribe().catch(()=>{});
     throw Error('FIXI Cloud a refusé d’enregistrer ce téléphone (HTTP '+response.status+').');
    }
-   setOn(true);
+   setOn(true);onStateChange?.(true);
   }catch(e){
    setError(e instanceof Error?e.message:'Activation des notifications impossible.');
   }finally{setBusy(false)}
