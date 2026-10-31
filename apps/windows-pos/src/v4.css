@@ -77,3 +77,97 @@
  body[data-print-mode="ticket"] .v4-receipt article>p{display:flex;justify-content:space-between;gap:4mm}
  body[data-print-mode="labels"] .v4-receipt{display:none!important}
 }
+
+
+/* FIXI label preset: 40 mm wide x 20 mm high; 203 DPI ~= 320 x 160 dots.
+   A named print page isolates the label dimensions from 80mm thermal receipts. */
+@page fixiLabel4020 { size:40mm 20mm; margin:0; }
+@media print {
+  body[data-print-mode="labels"][data-label-format="40x20"] .labels-print-area {
+    display:block!important;
+    width:40mm!important;
+    margin:0!important;
+    padding:0!important;
+    background:white!important;
+    overflow:visible!important;
+  }
+  body[data-print-mode="labels"][data-label-format="40x20"] .fixi-label {
+    page:fixiLabel4020;
+    width:40mm!important;
+    height:20mm!important;
+    max-width:40mm!important;
+    min-height:20mm!important;
+    box-sizing:border-box!important;
+    padding:.8mm!important;
+    margin:0!important;
+    border:0!important;
+    border-radius:0!important;
+    display:flex!important;
+    flex-direction:column!important;
+    justify-content:space-between!important;
+    gap:0!important;
+    break-after:page!important;
+    page-break-after:always!important;
+    overflow:hidden!important;
+  }
+  body[data-print-mode="labels"][data-label-format="40x20"] .fixi-label header {
+    display:flex!important;
+    align-items:center!important;
+    min-height:3mm!important;
+    max-height:3mm!important;
+    gap:.5mm!important;
+    overflow:hidden!important;
+  }
+  body[data-print-mode="labels"][data-label-format="40x20"] .fixi-label header b {
+    font-size:6.2pt!important;
+    line-height:1.05!important;
+    white-space:nowrap!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+  }
+  body[data-print-mode="labels"][data-label-format="40x20"] .fixi-label header strong {
+    font-size:5.2pt!important;
+    line-height:1!important;
+    padding:.3mm .6mm!important;
+    flex-shrink:0!important;
+    border-radius:.4mm!important;
+  }
+  body[data-print-mode="labels"][data-label-format="40x20"] .fixi-label > small {
+    font-size:5.6pt!important;
+    line-height:1.05!important;
+    display:block!important;
+    white-space:nowrap!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+    height:2.6mm!important;
+  }
+  body[data-print-mode="labels"][data-label-format="40x20"] .fixi-label .label-svg {
+    display:block!important;
+    width:auto!important;
+    max-width:38mm!important;
+    height:8.3mm!important;
+    max-height:8.3mm!important;
+    margin:0 auto!important;
+    overflow:visible!important;
+  }
+  body[data-print-mode="labels"][data-label-format="40x20"] .fixi-label footer {
+    min-height:2.7mm!important;
+    max-height:2.7mm!important;
+    font-size:5.1pt!important;
+    line-height:1.05!important;
+    gap:.5mm!important;
+    display:flex!important;
+    justify-content:space-between!important;
+    overflow:hidden!important;
+  }
+  body[data-print-mode="labels"][data-label-format="40x20"] .fixi-label footer span {
+    max-width:25mm!important;
+    white-space:nowrap!important;
+    text-overflow:ellipsis!important;
+    overflow:hidden!important;
+  }
+  body[data-print-mode="labels"][data-label-format="40x20"] .fixi-label footer b {
+    white-space:nowrap!important;
+    flex-shrink:0!important;
+  }
+}
