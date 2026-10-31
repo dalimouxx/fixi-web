@@ -34,9 +34,15 @@ export async function notifyShop(
   }))});
   // Do not broadcast private notification details to unauthorized roles in the shop.
   publish(shopId,'notification.created',{kind:type});
-  void sendPushToUsers(users.map(u=>u.id),{
-    title,body:message,href:safeHref,experienceKey,
-    tag:experienceTag(experienceKey,options.eventId),
-    data:{...(options.metadata||{}),experienceKey},
-  }).catch(err=>console.warn('Shop push notification failed',String(err)));
+  // Serverless request lifetimes may end immediately after the response:
+  // do not detach the external Push request from this notification workflow.
+  try{
+    const report=await sendPushToUsers(users.map(u=>u.id),{
+      title,body:message,href:safeHref,experienceKey,
+      tag:experienceTag(experienceKey,options.eventId),
+      data:{...(options.metadata||{}),experienceKey},
+    });
+    if(report.failed>0)console.warn('Shop push delivery failures',report.failed);
+  }catch(err){console.warn('Shop push transport unavailable',String(err))}
+
 }
