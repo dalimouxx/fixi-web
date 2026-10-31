@@ -21,13 +21,17 @@ export function PushToggle({subscribeUrl='/api/push/subscribe',label=false,onSta
    if(!live||!reg)return;
    const sub=await reg.pushManager.getSubscription();
    if(!live)return;
-   setOn(!!sub);onStateChange?.(!!sub);
-   if(sub){
-    const response=await fetch(subscribeUrl,{method:'POST',
-     headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify(sub)});
-    if(!response.ok&&live)setError('Impossible de rattacher ce téléphone au compte FIXI connecté.');
+   if(!sub){setOn(false);onStateChange?.(false);return}
+   // A browser subscription is not enough: it must belong to this FIXI account.
+   const response=await fetch(subscribeUrl,{method:'POST',
+    headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify(sub)});
+   if(!live)return;
+   if(response.ok){setOn(true);onStateChange?.(true)}
+   else{
+    setOn(false);onStateChange?.(false);
+    setError('Le téléphone a un abonnement navigateur, mais FIXI Cloud refuse de le rattacher à ce compte (HTTP '+response.status+').');
    }
-  }).catch(()=>{if(live)setError('Impossible de vérifier l’abonnement Push du téléphone.')});
+  }).catch(()=>{if(live){setOn(false);onStateChange?.(false);setError('Impossible de vérifier l’abonnement Push du téléphone. Vérifiez Internet et la connexion FIXI.')}});
   return()=>{live=false};
  },[subscribeUrl]);
 
@@ -42,11 +46,19 @@ export function PushToggle({subscribeUrl='/api/push/subscribe',label=false,onSta
    let reg=await navigator.serviceWorker.getRegistration();
    if(!reg)reg=await navigator.serviceWorker.register('/sw.js');
    const current=await reg.pushManager.getSubscription();
-   if(current){
+   if(current&&on){
     const response=await fetch(subscribeUrl,{method:'DELETE',headers:{'Content-Type':'application/json'},
      credentials:'same-origin',body:JSON.stringify({endpoint:current.endpoint})});
     if(!response.ok)throw Error('Le serveur n’a pas confirmé la désactivation des notifications.');
     await current.unsubscribe();setOn(false);onStateChange?.(false);return;
+   }
+   // If the OS already has an endpoint but this FIXI account is not registered,
+   // attach it instead of silently unsubscribing the device.
+   if(current&&!on){
+    const response=await fetch(subscribeUrl,{method:'POST',headers:{'Content-Type':'application/json'},
+     credentials:'same-origin',body:JSON.stringify(current)});
+    if(!response.ok)throw Error('FIXI Cloud refuse de rattacher cet abonnement (HTTP '+response.status+').');
+    setOn(true);onStateChange?.(true);return;
    }
    const keyResponse=await fetch('/api/push/public-key',{cache:'no-store'});
    if(!keyResponse.ok)throw Error('Clé Push indisponible sur FIXI Cloud.');
