@@ -7,6 +7,8 @@ import {bad,ok} from '@/lib/http';
 
 export async function POST(){
  try{
+  if(!process.env.VAPID_PUBLIC_KEY||!process.env.VAPID_PRIVATE_KEY)
+   return bad('Push non configuré sur FIXI Cloud : clés VAPID manquantes',503);
   const s=await requireSession(undefined,'CONNECT');
   const subscriptions=await prisma.pushSubscription.count({where:{userId:s.id}});
   if(!subscriptions)return bad('Aucun appareil Atelier abonné aux notifications Push',409);
