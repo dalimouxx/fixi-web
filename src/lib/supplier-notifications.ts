@@ -46,9 +46,13 @@ export async function notifySupplier(companyId:string,title:string,message:strin
     push.requireInteraction=true;
     push.actions=[{action:'accept-delivery',title:'Accepter la mission'},{action:'open',title:'Voir la tournée'}];
   }
-  void sendPushToSupplierAccounts(rows.map(x=>x.accountId),push).catch(err=>
-    console.warn('Supplier push failed',String(err))
-  );
+  // Wait for gateway responses while this request is alive. Failures are
+  // best-effort and must never roll back a completed supplier transaction.
+  try{
+    const report=await sendPushToSupplierAccounts(rows.map(x=>x.accountId),push);
+    if(report.failed>0)console.warn('Supplier push delivery failures',report.failed);
+  }catch(err){console.warn('Supplier push transport unavailable',String(err))}
+
   return rows;
 }
 
