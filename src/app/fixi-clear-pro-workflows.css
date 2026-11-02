@@ -1,3 +1,5 @@
+/* Ancienne feuille conservée dans la couche "legacy" : le système de design Fixi (fixi-design-system.css, hors couche) est prioritaire. */
+@layer legacy{
 /*
  FIXI Clear Pro V2 · workflow clarity phase.
  Role-scoped visual components for existing frontend; no transaction or API logic.
@@ -205,4 +207,6 @@
  .fixi-dashboard-loading .fixi-loading-line,
  .fixi-loading-card{animation:none!important}
  .fixi-workflow-actions button{transition:none!important}
+}
+
 }

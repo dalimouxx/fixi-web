@@ -1,113 +1,126 @@
 'use client';
 import Link from 'next/link';
-import {useCallback} from 'react';
-import {DollarSign,Wrench,TrendingUp,PackageCheck,ArrowRight,ShieldCheck,BrainCircuit,Sparkles,PlusCircle,CreditCard,Users,Boxes,AlertTriangle,Clock3,Link2,BellRing,Zap,ReceiptText} from 'lucide-react';
-import {AreaChart,Area,XAxis,YAxis,Tooltip,ResponsiveContainer} from 'recharts';
-import {StatCard} from '@/components/stat-card';
-import {FixiSmartWidgets} from '@/components/fixi-smart-widgets';
-import {StatusBadge,useApi,useRealtimeRefresh} from '@/components/ui';
-import {money,dateTime} from '@/lib/format';
+import { useCallback } from 'react';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import {
+  PlusCircle, Banknote, PackageCheck, PackageOpen, Wrench, Boxes, Link2, AlertTriangle, Clock3, ShieldCheck,
+  CreditCard, Wallet, Hourglass, CheckCircle2, ChevronRight, Moon, SlidersHorizontal, Smartphone,
+} from 'lucide-react';
+import { FixiSmartWidgets } from '@/components/fixi-smart-widgets';
+import { StatusBadge, useApi, useRealtimeRefresh } from '@/components/ui';
+import { money, dateTime } from '@/lib/format';
+import { useUiMode } from '@/lib/ui-mode';
+import { useI18n } from '@/components/language-provider';
 
-export default function Dashboard(){
-  const{data,loading,error,reload}=useApi<any>('/api/dashboard');
-  useRealtimeRefresh(useCallback(()=>reload(),[]));
-  if(loading)return <div className="page dashboard-v2">
-    <div className="fixi-dashboard-loading" role="status" aria-live="polite" aria-label="Chargement du tableau de bord">
-      <div className="fixi-loading-line wide"/>
-      <div className="fixi-loading-line medium"/>
-      <div className="fixi-loading-cards">{[1,2,3,4].map(x=><div className="fixi-loading-card" key={x}/>)}</div>
-      <p>Chargement de vos réparations et indicateurs…</p>
-    </div>
+type Tile = { href: string; icon: any; title: string; sub: string; count?: number; variant?: 'primary' | 'ready' };
+
+export default function Dashboard() {
+  const { data, loading, error, reload } = useApi<any>('/api/dashboard');
+  useRealtimeRefresh(useCallback(() => reload(), []));
+  const { advanced, setMode } = useUiMode('atelier');
+  const { lang } = useI18n();
+  const today = new Intl.DateTimeFormat(lang === 'ar' ? 'ar-TN' : 'fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date());
+
+  if (loading && !data) return <div className="fx-page" role="status" aria-live="polite">
+    <div className="fx-hello"><div><h1>Que voulez-vous faire ?</h1><p>Chargement de votre atelier…</p></div></div>
+    <div className="fx-tiles">{[1, 2, 3, 4].map(x => <div className="fx-tile" key={x} aria-hidden="true" style={{ opacity: .5 }} />)}</div>
   </div>;
-  if(error||!data)return <div className="page dashboard-v2">
-    <div className="fixi-dashboard-error" role="alert">
-      <AlertTriangle size={28}/><div><h1>Tableau de bord indisponible</h1>
-      <p>{String(error||'Impossible de charger les informations de votre atelier.')}</p></div>
-      <button type="button" className="btn btn-primary" onClick={()=>reload()}>Réessayer</button>
-    </div>
-  </div>;
-  const active=Object.entries(data.statusCounts||{}).filter(([k])=>!['DELIVERED','CANCELLED'].includes(k)).reduce((a,[,v])=>a+Number(v),0);
-  const waiting=Number(data.statusCounts?.WAITING_PART||0);
-  const diagnosis=Number(data.statusCounts?.DIAGNOSIS||0);
-  const inRepair=Number(data.statusCounts?.IN_REPAIR||0);
-  const attention=[
-    data.permissions.stock&&data.lowStock>0&&{label:`${data.lowStock} article(s) en stock faible`,href:'/app/stock',type:'danger',icon:Boxes},
-    waiting>0&&{label:`${waiting} réparation(s) attendent une pièce`,href:'/app/repairs',type:'warning',icon:Clock3},
-    data.permissions.warranty&&data.openWarranty>0&&{label:`${data.openWarranty} dossier(s) SAV ouvert(s)`,href:'/app/warranties',type:'warning',icon:ShieldCheck},
-    !data.cashOpen&&data.permissions.cash&&{label:'Caisse fermée',href:'/app/cash-sessions',type:'neutral',icon:CreditCard}
+  if (error || !data) return <div className="fx-page"><div className="fx-panel" role="alert" style={{ display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap' }}>
+    <AlertTriangle size={26} color="var(--fx-danger)" /><div style={{ flex: 1 }}><b>Accueil indisponible</b><div className="page-sub">{String(error || 'Impossible de charger votre atelier.')}</div></div>
+    <button type="button" className="btn btn-primary" onClick={() => reload()}>Réessayer</button></div></div>;
+
+  const perm = data.permissions || {};
+  const counts = data.statusCounts || {};
+  const active = Object.entries(counts).filter(([k]) => !['DELIVERED', 'CANCELLED'].includes(k)).reduce((a, [, v]) => a + Number(v), 0);
+  const waiting = Number(counts.WAITING_PART || 0);
+  const ready = Number(data.ready || 0);
+  const canReceive = perm.cash || perm.finance || perm.warranty; // ADMIN, RECEPTION, CASHIER
+  const isTech = perm.stock && !perm.finance && !perm.profit;
+
+  const tiles: Tile[] = isTech ? [
+    { href: '/app/repairs', icon: Wrench, title: 'Mes réparations', sub: `${active} en cours`, variant: 'primary' },
+    { href: '/app/repairs', icon: PackageCheck, title: 'Appareils prêts', sub: 'À contrôler avant remise', count: ready, variant: 'ready' },
+    { href: '/app/stock', icon: Boxes, title: 'Mon stock', sub: 'Pièces disponibles' },
+    { href: '/app/compatibility', icon: Link2, title: 'Pièce compatible ?', sub: 'Vérifier un modèle' },
+  ] : [
+    ...(canReceive ? [{ href: '/app/repairs/new', icon: PlusCircle, title: 'Nouvelle réparation', sub: 'Un client dépose un appareil', variant: 'primary' as const }] : []),
+    ...(perm.cash ? [{ href: '/app/cashier', icon: Banknote, title: 'Encaisser', sub: 'Rendre un appareil et encaisser' }] : []),
+    { href: perm.cash ? '/app/cashier' : '/app/repairs', icon: PackageCheck, title: 'Appareils prêts', sub: 'À rendre aux clients', count: ready, variant: 'ready' },
+    ...(!perm.cash || perm.profit ? [{ href: '/app/suppliers', icon: PackageOpen, title: 'Commander une pièce', sub: 'Chez vos fournisseurs' }] : [{ href: '/app/repairs', icon: Wrench, title: 'Réparations', sub: `${active} en cours` }]),
+  ];
+  if (!isTech && tiles.length < 4) tiles.push({ href: '/app/repairs', icon: Wrench, title: 'Réparations', sub: `${active} en cours` });
+  tiles.splice(4);
+
+  const kpis = [
+    perm.finance ? { icon: Wallet, label: 'Caisse du jour', value: money(data.todayRevenue) } : { icon: Hourglass, label: 'Attente pièce', value: waiting },
+    { icon: Wrench, label: 'En cours', value: active },
+    { icon: PackageCheck, label: 'À rendre', value: ready },
+  ];
+
+  const todo = [
+    waiting > 0 && { href: '/app/repairs', icon: Clock3, tone: 'warning', count: waiting, title: 'réparation(s) attendent une pièce', sub: 'Commandez-la chez votre fournisseur' },
+    ready > 0 && { href: perm.cash ? '/app/cashier' : '/app/repairs', icon: PackageCheck, tone: 'ok', count: ready, title: 'appareil(s) prêt(s) à rendre', sub: 'Prévenez le client sur WhatsApp' },
+    perm.stock && data.lowStock > 0 && { href: '/app/stock', icon: Boxes, tone: 'danger', count: data.lowStock, title: 'pièce(s) presque épuisée(s)', sub: 'À racheter' },
+    perm.warranty && data.openWarranty > 0 && { href: '/app/warranties', icon: ShieldCheck, tone: 'warning', count: data.openWarranty, title: 'retour(s) sous garantie', sub: 'À examiner' },
+    perm.cash && !data.cashOpen && { href: '/app/cash-sessions', icon: CreditCard, tone: 'warning', title: 'La caisse est fermée', sub: 'Ouvrez-la avant d’encaisser' },
   ].filter(Boolean) as any[];
-  return <div className="page dashboard-v2">
-    <div className="page-head">
-      <div><div className="smart-kicker"><Zap size={13}/> COMMAND CENTER</div><h1 className="page-title">Aujourd’hui dans votre atelier</h1><div className="page-sub">L’essentiel d’abord : encaissements, réparations, stock et actions à traiter.</div></div>
-      <div className="toolbar"><Link href="/app/repairs/new" className="btn btn-primary"><PlusCircle size={16}/> Nouvelle réception</Link></div>
+
+  return <div className="fx-page">
+    <div className="fx-hello">
+      <div><h1>Que voulez-vous faire ?</h1><p style={{ textTransform: 'capitalize' }}>{today}</p></div>
+      {perm.finance && <Link href="/app/fin-de-journee" className="btn btn-ghost"><Moon size={18} /> Fin de journée</Link>}
     </div>
 
-    <section className="fixi-atelier-actions" aria-label="Accès rapide aux outils de l'atelier">
-      <div className="fixi-atelier-actions-title"><h2>Accès rapide</h2><p>Vos opérations fréquentes, sans chercher dans les menus.</p></div>
-      <div className="quick-actions">
-        <Link href="/app/repairs/new"><PlusCircle/><span><b>Réception</b><small>Nouveau téléphone</small></span></Link>
-        {data.permissions.cash&&<Link href="/app/cashier"><CreditCard/><span><b>Vente</b><small>Ouvrir la caisse</small></span></Link>}
-        <Link href="/app/clients"><Users/><span><b>Client</b><small>Fiche & historique</small></span></Link>
-        {data.permissions.stock&&<Link href="/app/stock"><Boxes/><span><b>Pièce</b><small>Stock atelier</small></span></Link>}
-        <Link href="/app/documents"><ReceiptText/><span><b>Facture</b><small>Devis & facture</small></span></Link>
-        <Link href="/app/compatibility"><Link2/><span><b>Compatibilité</b><small>Tester une pièce</small></span></Link>
-      </div>
+    <nav className="fx-tiles" aria-label="Actions principales">
+      {tiles.map(t => { const Icon = t.icon; return <Link key={t.title} href={t.href} className={`fx-tile ${t.variant ? 'fx-tile--' + t.variant : ''}`}>
+        <span className="fx-tile-icon"><Icon /></span>
+        {typeof t.count === 'number' && t.count > 0 && <span className="fx-tile-count" aria-label={`${t.count} en attente`}>{t.count}</span>}
+        <span><b>{t.title}</b><small>{t.sub}</small></span>
+      </Link>; })}
+    </nav>
+
+    <section className="fx-kpis" aria-label="Chiffres du jour">
+      {kpis.map(k => { const Icon = k.icon; return <div className="fx-kpi" key={k.label}><Icon /><div><span>{k.label}</span><strong>{k.value}</strong></div></div>; })}
     </section>
 
-    <FixiSmartWidgets area="atelier" subtitle="Réparations, encaissements et urgences de votre atelier, en temps réel."
-      widgets={[
-        ...(data.permissions.finance?[{id:'atelier-revenue',label:"Encaissements aujourd'hui",value:money(data.todayRevenue),description:'Paiements réellement enregistrés',icon:'finance' as const,accent:'success' as const,href:'/app/payments'}]:[]),
-        {id:'atelier-active',label:'Réparations actives',value:active,
-         description:diagnosis+' diagnostics · '+inRepair+' en réparation',icon:'repairs',href:'/app/repairs'},
-        {id:'atelier-ready',label:'Prêtes à remettre',value:Number(data.ready||0),
-         description:'Appareils à remettre aux clients',icon:'ready',accent:'success',href:'/app/repairs'},
-        ...(data.permissions.stock?[{id:'atelier-lowstock',label:'Stock faible',value:Number(data.lowStock||0),
-         description:'Produits à réapprovisionner',icon:'stock' as const,accent:'warning' as const,urgent:Number(data.lowStock||0)>0,href:'/app/stock'}]:[]),
-        ...(data.permissions.profit?[{id:'atelier-profit',label:'Résultat du mois',value:money(data.grossProfit),
-         description:'CA moins pièces et dépenses',icon:'finance' as const,accent:'info' as const,href:'/app/insights'}]:[]),
-        ...(data.permissions.warranty?[{id:'atelier-warranty',label:'SAV en attente',value:Number(data.openWarranty||0),
-         description:'Garanties et dossiers à examiner',icon:'alert' as const,accent:'warning' as const,urgent:Number(data.openWarranty||0)>0,href:'/app/warranties'}]:[]),
-      ]}/>
-    <div className="dashboard-action-grid">
-      <section className="card card-pad attention-card">
-        <div className="section-head-inline"><div><h2 className="section-title">À traiter maintenant</h2><div className="page-sub">Ce qui nécessite une action dans l’atelier.</div></div><BellRing size={18}/></div>
-        <div className="attention-list">
-          {attention.length?attention.map((a:any,i:number)=>{const Icon=a.icon;return <Link href={a.href} className={`attention-row ${a.type}`} key={i}><Icon/><span>{a.label}</span><ArrowRight size={15}/></Link>}):<div className="attention-empty"><ShieldCheck/><div><b>Tout est sous contrôle</b><span>Aucune alerte prioritaire pour le moment.</span></div></div>}
+    <div className="fx-grid-2">
+      <section className="fx-panel" aria-labelledby="todo-title">
+        <div className="fx-panel-head"><h2 id="todo-title">À faire maintenant</h2></div>
+        <div className="fx-list">
+          {todo.length ? todo.map((t, i) => { const Icon = t.icon; return <Link key={i} href={t.href} className={`fx-row fx-row--${t.tone}`}><Icon /><span className="fx-row-main"><b>{t.count != null && <>{t.count} </>}{t.title}</b><small>{t.sub}</small></span><ChevronRight size={18} /></Link>; })
+            : <div className="fx-row fx-row--ok"><CheckCircle2 /><span className="fx-row-main"><b>Rien d’urgent</b><small>Tout est à jour dans l’atelier.</small></span></div>}
         </div>
       </section>
-      <section className="card card-pad workshop-pulse">
-        <div><h2 className="section-title">Flux atelier</h2><div className="page-sub">Répartition actuelle des appareils.</div></div>
-        <div className="pulse-grid">
-          {[['RECEIVED','Reçus'],['DIAGNOSIS','Diagnostic'],['IN_REPAIR','En réparation'],['WAITING_PART','Attente pièce'],['READY','Prêts']].map(([k,l])=><Link href="/app/repairs" key={k}><b>{data.statusCounts?.[k]||0}</b><span>{l}</span></Link>)}
+      <section className="fx-panel" aria-labelledby="recent-title">
+        <div className="fx-panel-head"><h2 id="recent-title">Derniers appareils</h2><Link href="/app/repairs" className="btn btn-ghost btn-sm">Tout voir</Link></div>
+        <div className="fx-list">
+          {(data.recent || []).slice(0, 6).map((r: any) => <Link key={r.id} href={`/app/repairs/${r.code}`} className="fx-row">
+            <Smartphone /><span className="fx-row-main"><b>{[r.brand, r.model].filter(Boolean).join(' ')}</b><small>{r.client?.fullName} · {dateTime(r.updatedAt)}</small></span><StatusBadge status={r.status} />
+          </Link>)}
+          {!data.recent?.length && <div className="fx-row"><Smartphone /><span className="fx-row-main"><b>Aucun appareil pour l’instant</b><small>Commencez par « Nouvelle réparation ».</small></span></div>}
         </div>
       </section>
     </div>
 
-    {data.permissions.profit&&<div className="smart-dashboard-banner compact">
-      <div><span><Sparkles size={13}/> FIXI SMART</span><h2>Pilotez l’atelier par exception.</h2><p>Fixi Brain et Smart Insights vous montrent ce qui mérite réellement votre attention.</p></div>
-      <div className="toolbar"><Link href="/app/insights" className="btn btn-soft">Smart Insights</Link><Link href="/app/brain" className="btn btn-primary"><BrainCircuit size={16}/> Fixi Brain</Link></div>
-    </div>}
-
-    <div className="content-grid" style={{marginTop:18}}>
-      {data.permissions.finance&&<div className="card card-pad chart-card">
-        <div className="page-head" style={{marginBottom:12}}><div><h2 className="section-title">Chiffre d’affaires du mois</h2><div className="page-sub">Évolution journalière des encaissements</div></div><strong>{money(data.monthRevenue)}</strong></div>
-        <div style={{height:245}}><ResponsiveContainer width="100%" height="100%"><AreaChart data={data.series||[]}><defs><linearGradient id="fillOrange" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#ff6b00" stopOpacity={.2}/><stop offset="100%" stopColor="#ff6b00" stopOpacity={0}/></linearGradient></defs><XAxis dataKey="date" tick={{fontSize:10}} axisLine={false} tickLine={false}/><YAxis tick={{fontSize:10}} axisLine={false} tickLine={false}/><Tooltip/><Area type="monotone" dataKey="value" stroke="#ff6b00" strokeWidth={3} fill="url(#fillOrange)"/></AreaChart></ResponsiveContainer></div>
-      </div>}
-      <div className="card card-pad">
-        <h2 className="section-title">Résumé opérationnel</h2><div className="page-sub">Vue compacte de l’activité.</div>
-        <div className="metric-list" style={{marginTop:15}}>
-          <div className="metric-row"><span>Réparations actives</span><strong>{active}</strong></div>
-          <div className="metric-row"><span>Attente pièce</span><strong>{waiting}</strong></div>
-          <div className="metric-row"><span>Prêts à livrer</span><strong>{data.ready}</strong></div>
-          {data.permissions.stock&&<div className="metric-row"><span>Stock faible</span><strong>{data.lowStock}</strong></div>}
-          {data.permissions.profit&&<div className="metric-row"><span>Dépenses du mois</span><strong>{money(data.monthExpenses)}</strong></div>}
-        </div>
+    {advanced ? <>
+      <div style={{ marginTop: 24 }}>
+        <FixiSmartWidgets area="atelier" subtitle="Tous les indicateurs de l’atelier."
+          widgets={[
+            ...(perm.finance ? [{ id: 'atelier-revenue', label: "Encaissements aujourd'hui", value: money(data.todayRevenue), description: 'Paiements enregistrés', icon: 'finance' as const, accent: 'success' as const, href: '/app/payments' }] : []),
+            { id: 'atelier-active', label: 'Réparations en cours', value: active, description: `${counts.DIAGNOSIS || 0} diagnostics · ${counts.IN_REPAIR || 0} en réparation`, icon: 'repairs', href: '/app/repairs' },
+            ...(perm.profit ? [{ id: 'atelier-profit', label: 'Résultat du mois', value: money(data.grossProfit), description: 'Encaissé − pièces − dépenses', icon: 'finance' as const, accent: 'info' as const, href: '/app/insights' }] : []),
+            ...(perm.profit ? [{ id: 'atelier-expenses', label: 'Dépenses du mois', value: money(data.monthExpenses), description: 'Toutes catégories', icon: 'alert' as const, href: '/app/expenses' }] : []),
+          ]} />
       </div>
-    </div>
-
-    <div className="card" style={{marginTop:18}}>
-      <div className="card-pad table-toolbar"><div><h2 className="section-title">Activité récente</h2><div className="page-sub">Dernières réparations mises à jour</div></div><Link href="/app/repairs" className="btn btn-soft btn-sm">Tout voir</Link></div>
-      <div className="table-wrap"><table className="table"><thead><tr><th>Code</th><th>Client</th><th>Appareil</th><th>Technicien</th><th>Statut</th><th>Dernière mise à jour</th></tr></thead><tbody>{data.recent.map((r:any)=><tr key={r.id}><td><Link href={`/app/repairs/${r.code}`} className="mono table-primary-link">{r.code}</Link></td><td>{r.client.fullName}</td><td>{[r.brand,r.model].filter(Boolean).join(' ')}</td><td>{r.technician?.fullName||'Non assigné'}</td><td><StatusBadge status={r.status}/></td><td className="muted">{dateTime(r.updatedAt)}</td></tr>)}</tbody></table></div>
-    </div>
-  </div>
+      {perm.finance && <section className="fx-panel" style={{ marginTop: 12 }}>
+        <div className="fx-panel-head"><h2>Encaissements du mois</h2><strong>{money(data.monthRevenue)}</strong></div>
+        <div style={{ height: 240 }}><ResponsiveContainer width="100%" height="100%"><AreaChart data={data.series || []}>
+          <defs><linearGradient id="fxFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#c2500a" stopOpacity={.18} /><stop offset="100%" stopColor="#c2500a" stopOpacity={0} /></linearGradient></defs>
+          <XAxis dataKey="date" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} /><YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} width={48} /><Tooltip />
+          <Area type="monotone" dataKey="value" stroke="#c2500a" strokeWidth={2.5} fill="url(#fxFill)" isAnimationActive={false} />
+        </AreaChart></ResponsiveContainer></div>
+      </section>}
+    </> : perm.profit && <div className="fx-advanced-note"><SlidersHorizontal size={18} /><span>Graphiques, bénéfice du mois et analyses sont disponibles en Mode Avancé.</span>
+      <button type="button" className="btn btn-ghost btn-sm" onClick={() => setMode('advanced')}>Afficher</button></div>}
+  </div>;
 }

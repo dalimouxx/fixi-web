@@ -1,3 +1,5 @@
+/* Ancienne feuille conservée dans la couche "legacy" : le système de design Fixi (fixi-design-system.css, hors couche) est prioritaire. */
+@layer legacy{
 /* Fixi layout hotfix, 2026-10-19.
    Shared light palette, stable LTR application geometry, localized text, and fixed menus. */
 
@@ -380,4 +382,6 @@ body[data-lang="ar"] .saas-v4 .network-legend>span b{direction:ltr;text-align:en
  .supplier-os.supplier-erp>aside.fixi-supplier-drawer .supplier-os-brand{display:flex!important}
  .supplier-os.supplier-erp>aside.fixi-supplier-drawer .supplier-side-foot{display:flex!important}
  .supplier-os.supplier-erp>aside.fixi-supplier-drawer .supplier-nav-label{display:block!important}
+}
+
 }
