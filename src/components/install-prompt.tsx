@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation';
 import { X, Share, SquarePlus, Zap, BellRing, Maximize } from 'lucide-react';
 import { canPromptInstall, isIosSafari, isStandalone, onInstallChange, promptInstall, INSTALL_OPEN_EVENT } from '@/lib/install-prompt';
 import { icon, spaceForPath, spaces } from '@/lib/pwa';
+import { VideoHelpButton } from './video-help';
 
 const SNOOZE_DAYS = 5;
 
@@ -64,5 +65,6 @@ export function InstallPrompt() {
       <button type="button" className="btn btn-ghost" onClick={later}>Plus tard</button>
       <button type="button" className="btn btn-primary" onClick={install}>Installer</button>
     </div> : <p className="fx-install-hint">Ouvrez le menu du navigateur (⋮) puis « Installer l’application » ou « Ajouter à l’écran d’accueil ».</p>}
+    <VideoHelpButton id="installer" />
   </aside>;
 }

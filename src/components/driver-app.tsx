@@ -1,4 +1,5 @@
 'use client';
+import {TextSizeToggle} from './text-size-toggle';
 import {useEffect,useMemo,useRef,useState} from 'react';
 import {useRouter} from 'next/navigation';
 import Link from 'next/link';
@@ -116,6 +117,7 @@ export function DriverApp({session}:{session:any}){
     <div className="fixi-driver-header-actions">
       <RealtimeNotificationCenter apiUrl="/api/delivery/notifications" eventsUrl="/api/delivery/events-stream"
         storageKey="fixi-delivery-notifications" onEvent={load}/>
+      <TextSizeToggle/>
       <span className="fixi-driver-user"><b>{session.fullName}</b><small>Livreur</small></span>
       <button type="button" className="fixi-driver-logout" onClick={logout} title="Déconnexion" aria-label="Déconnexion"><LogOut size={18}/></button>
     </div>

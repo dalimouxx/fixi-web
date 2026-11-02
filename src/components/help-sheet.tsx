@@ -4,6 +4,7 @@ import { LifeBuoy, Sparkles, SlidersHorizontal } from 'lucide-react';
 import { FxSheet } from './fx-sheet';
 import { useI18n } from './language-provider';
 import { helpFor } from '@/lib/help-content';
+import { VideoHelpButton } from './video-help';
 
 // Centre d'aide contextuel : explique l'écran ouvert, en FR ou AR,
 // avec une vidéo courte si elle existe, puis les accès au support.
@@ -24,6 +25,8 @@ export function HelpSheet({ open, onClose, pathname, onAdvanced, advanced }: {
           : <iframe src={help.video} title={t(help.title)} allow="encrypted-media; picture-in-picture" allowFullScreen loading="lazy" />}
       </div>}
       <div className="fx-help-links">
+        <VideoHelpButton id="installer" />
+        <VideoHelpButton id="alertes" />
         <Link href="/app/support" onClick={onClose}><LifeBuoy size={20} />{lang === 'ar' ? 'راسل فريق الدعم' : 'Écrire au support Fixi'}</Link>
         <Link href="/app/updates" onClick={onClose}><Sparkles size={20} />{lang === 'ar' ? 'الجديد في Fixi' : 'Voir les nouveautés'}</Link>
         {onAdvanced && !advanced && <button type="button" onClick={() => { onAdvanced(); onClose(); }}><SlidersHorizontal size={20} />{lang === 'ar' ? 'إظهار كل الوحدات (الوضع المتقدم)' : 'Afficher tous les modules (Mode Avancé)'}</button>}

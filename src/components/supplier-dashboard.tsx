@@ -7,6 +7,7 @@ import {
   Banknote,MapPinned,ShoppingCart,FileText,History,X,MoreHorizontal,Moon,ScanBarcode
 } from 'lucide-react';
 import {useUiMode} from '@/lib/ui-mode';
+import {TextSizeToggle} from './text-size-toggle';
 import {api} from './ui';
 import {dateTime,money} from '@/lib/format';
 import {SupplierPos} from './supplier-pos';
@@ -142,7 +143,7 @@ export function SupplierDashboard({session}:{session:any}){
         <Link href="/supplier/subscription" onClick={()=>setMobileNavOpen(false)} className="supplier-delivery-link"><ReceiptText/><span>Mon abonnement</span></Link><Link href="/supplier/daily-report" onClick={()=>setMobileNavOpen(false)} className="supplier-delivery-link"><Moon/><span>Fin de journée</span></Link>
                 <Link href="/delivery/login" target="_blank" className="supplier-delivery-link"><MapPinned/><span>App livreur</span></Link>
       </div>
-      <div className="supplier-side-foot"><div><strong>{session.fullName}</strong><small>{session.role||'ADMIN'} · Compte fournisseur</small></div><button onClick={logout}><LogOut/></button></div>
+      <div className="fx-sup-tools"><TextSizeToggle/></div><div className="supplier-side-foot"><div><strong>{session.fullName}</strong><small>{session.role||'ADMIN'} · Compte fournisseur</small></div><button onClick={logout}><LogOut/></button></div>
     </aside>
 
     <main>

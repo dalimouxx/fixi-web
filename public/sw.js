@@ -81,6 +81,23 @@ self.addEventListener('notificationclick',event=>{
   const action=event.action||'open';
   const data=event.notification.data||{};
   const href=data.href||'/app/notifications';
+  // Fournisseur : confirmer une nouvelle commande sans ouvrir l'application.
+  if(action==='accept-order'&&data.orderId){
+    event.waitUntil((async()=>{
+      try{
+        const r=await fetch('/api/supplier/orders/'+encodeURIComponent(data.orderId),{method:'PATCH',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'CONFIRMED'})});
+        if(r.ok){
+          await self.registration.showNotification('Commande confirmée ✓',{body:'La boutique est prévenue. Préparez la commande.',icon:'/icons/supplier-192.png',badge:BADGE,tag:'order-confirmed-'+data.orderId,data:{href:'/supplier?tab=orders'},actions:[{action:'open',title:'Préparer'}]});
+        }else{
+          const j=await r.json().catch(()=>({}));
+          await self.registration.showNotification('Confirmation impossible',{body:r.status===401?'Reconnectez-vous à Fixi Fournisseur puis confirmez la commande.':r.status===403?'Votre rôle ne permet pas de confirmer une commande.':(j.error||'Cette commande a déjà été traitée.'),icon:'/icons/supplier-192.png',badge:BADGE,tag:'order-confirm-failed-'+data.orderId,data:{href:'/supplier?tab=orders'}});
+        }
+      }catch{
+        await self.registration.showNotification('Pas de connexion',{body:'Ouvrez Fixi Fournisseur pour confirmer la commande.',icon:'/icons/supplier-192.png',badge:BADGE,data:{href:'/supplier?tab=orders'}});
+      }
+    })());
+    return;
+  }
   if(action==='accept-delivery'&&data.orderId){
     event.waitUntil((async()=>{
       try{

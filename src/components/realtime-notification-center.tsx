@@ -8,6 +8,9 @@ import { playFixiSound, primeNotificationAudio, notificationAudioStatus, soundDu
 import { alertCategories, categoriesForSpace, categoryFor, fixiSounds, parseAlertSettings, vibrationFor, type AlertCategory, type AlertSettings, type FixiSoundId } from '@/lib/notification-sounds';
 import { PushToggle } from '@/components/push-toggle';
 import { FxSheet } from '@/components/fx-sheet';
+import { SupplierWhatsAppAlerts } from '@/components/supplier-whatsapp-alerts';
+import { TextSizeToggle } from '@/components/text-size-toggle';
+import { VideoHelpButton } from '@/components/video-help';
 
 type Props = {
   apiUrl: string; eventsUrl: string; storageKey: string; allHref?: string; compact?: boolean;
@@ -216,6 +219,7 @@ export function RealtimeNotificationCenter({ apiUrl, eventsUrl, storageKey, allH
           <LockKeyhole size={22} />
           <div><b>Recevez les alertes même téléphone verrouillé</b><small>Nouvelle commande, livraison, appareil prêt… sans ouvrir l’application.</small></div>
           <PushToggle subscribeUrl={subscribeUrl} label onStateChange={on => { setPushOn(on); setPermission(typeof Notification === 'undefined' ? 'unsupported' : Notification.permission); }} />
+          <VideoHelpButton id="alertes" />
         </div>}
         <div className="fx-notif-bar">
           <div className="fx-seg" role="group" aria-label="Filtrer">
@@ -250,6 +254,8 @@ export function RealtimeNotificationCenter({ apiUrl, eventsUrl, storageKey, allH
           {testStatus && <p className="fx-set-status" role="status">{testStatus}</p>}
         </section>
 
+        {space === 'supplier' && <SupplierWhatsAppAlerts />}
+
         <section>
           <h3><Volume2 size={16} /> Sons (application ouverte)</h3>
           {!audioReady && <p className="fx-set-status">Touchez un bouton ▶ pour autoriser le son sur ce téléphone.</p>}
@@ -269,6 +275,12 @@ export function RealtimeNotificationCenter({ apiUrl, eventsUrl, storageKey, allH
         </section>
 
         <section>
+          <h3>Affichage</h3>
+          <TextSizeToggle variant="row" />
+        </section>
+
+        <section>
+          <VideoHelpButton id="alertes" />
           <button type="button" className="fx-set-help-toggle" aria-expanded={help} onClick={() => setHelp(h => !h)}><Smartphone size={16} /> Je ne reçois rien ou pas de son <ChevronDown size={16} /></button>
           {help && <ul className="fx-set-help">
             <li><b>Android :</b> Réglages › Applications › Chrome (ou Fixi) › Notifications : tout autoriser. Désactivez l’économie de batterie pour Chrome.</li>

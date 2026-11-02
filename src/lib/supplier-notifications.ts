@@ -44,6 +44,11 @@ export async function notifySupplier(companyId:string,title:string,message:strin
     // Never put customer financial/identity metadata in phone notifications.
     data:{experienceKey,
       ...(typeof options.metadata?.orderId==='string'?{orderId:options.metadata.orderId}:{})}};
+  // Nouvelle commande : le fournisseur peut la confirmer directement depuis la notification.
+  if(experienceKey==='SUPPLIER_NEW_ORDER'&&options.metadata?.orderId){
+    push.requireInteraction=true;
+    push.actions=[{action:'accept-order',title:'Confirmer la commande'},{action:'open',title:'Voir'}];
+  }
   if(experienceKey==='DRIVER_NEW_MISSION'&&options.metadata?.orderId){
     push.tag=experienceTag('DRIVER_NEW_MISSION',String(options.metadata.orderId));
     push.requireInteraction=true;
