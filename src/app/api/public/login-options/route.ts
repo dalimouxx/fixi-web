@@ -6,7 +6,8 @@ export async function GET(req:Request){
   try{
     const u=new URL(req.url);const region=u.searchParams.get('region');const shopSlug=u.searchParams.get('shop');
     if(shopSlug){
-      const shop=await prisma.shop.findFirst({where:{slug:shopSlug,isActive:true},select:{id:true,name:true,slug:true,region:true,logoDataUrl:true,users:{where:{isActive:true},select:{id:true,fullName:true,loginCode:true,role:true},orderBy:{fullName:'asc'}}}});
+      // Le profil s'affiche par son nom ; l'identifiant de connexion n'est jamais rendu public.
+      const shop=await prisma.shop.findFirst({where:{slug:shopSlug,isActive:true},select:{id:true,name:true,slug:true,region:true,logoDataUrl:true,users:{where:{isActive:true},select:{id:true,fullName:true,role:true},orderBy:{fullName:'asc'}}}});
       if(!shop)return bad('Boutique introuvable',404);
       return ok({...shop,users:shop.users.map(x=>({...x,roleLabel:roleLabels[x.role]}))});
     }
