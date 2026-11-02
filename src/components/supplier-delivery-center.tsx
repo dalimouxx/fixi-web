@@ -243,7 +243,7 @@ export function SupplierDeliveryCenter({orders,drivers,onChanged}:Props){
             <button type="button" className="supplier-modal-x" onClick={()=>setShowDriver(false)}><X/></button>
             <span className="smart-kicker"><UserRound size={13}/> COMPTE LIVREUR</span>
             <h2>Nouveau livreur</h2>
-            <p>Ce compte donne accès uniquement à Fixi Delivery et aux courses affectées.</p>
+            <p>Ce compte donne accès uniquement à Fixi Livreur et aux courses affectées.</p>
             <label className="label">Nom complet</label>
             <input className="input" required value={driverForm.fullName} onChange={e=>setDriverForm({...driverForm,fullName:e.target.value})}/>
             <label className="label">Identifiant</label>

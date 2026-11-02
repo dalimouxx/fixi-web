@@ -1,0 +1,124 @@
+/* ==========================================================================
+   FIXI SURFACES — Fournisseur, Livreur, Fixi Control, connexions, pages publiques
+   Mobile d'abord : la plupart des utilisateurs sont sur téléphone.
+   Règles normales hors couche (elles battent l'ancien CSS) ; les rares cas où
+   l'ancien CSS force avec !important sont traités dans @layer fx-force.
+   ========================================================================== */
+
+/* --- Bruit visuel retiré partout : sur-titres marketing ------------------- */
+.smart-kicker,.fixi-widget-eyebrow,.section-kicker,.control-kicker{display:none}
+
+/* --- Widgets « Les chiffres du jour » : grille, jamais de défilement latéral */
+.fixi-widget-deck-header h2{font-size:19px;letter-spacing:-.01em}
+.fixi-widget-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));grid-auto-flow:row;grid-auto-columns:auto;scroll-snap-type:none;gap:10px;overflow:visible}
+.fixi-widget-grid > *{min-width:0;border-radius:var(--fx-radius-lg);border:1px solid var(--fx-line);background:var(--fx-surface);box-shadow:none}
+.fixi-widget-value{font-size:26px;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.fixi-widget-label{font-size:14px;color:var(--fx-ink-2)}
+.fixi-widget-description{font-size:13px;color:var(--fx-muted)}
+@media (max-width:760px){
+  .fixi-widget-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .fixi-widget-grid > *{padding:12px}
+  .fixi-widget-value{font-size:21px}
+  .fixi-widget-description,.fixi-widget-arrow,.fixi-widget-personalize,.fixi-widget-deck-header p{display:none}
+  .fixi-widget-icon{width:34px;height:34px}
+}
+
+/* --- Connexions (Atelier, Fournisseur, Livreur, Control) : une seule mise en page */
+.fx-auth,.supplier-auth,.delivery-login{min-height:100dvh;display:grid;place-items:center;padding:20px 16px;background:var(--fx-bg)}
+.fx-auth-card,.supplier-login-card,.delivery-login-card,.delivery-login form{width:min(420px,100%);padding:26px 22px;border-radius:var(--fx-radius-xl);background:var(--fx-surface);border:1px solid var(--fx-line);box-shadow:var(--fx-shadow);display:flex;flex-direction:column;gap:6px}
+.fx-auth-brand{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.fx-auth-brand img{width:48px;height:48px;border-radius:12px;flex:none}
+.fx-auth-brand i{display:none}
+.fx-auth-brand b{display:block;font-size:17px;font-weight:750;color:var(--fx-ink)}
+.fx-auth-brand span{display:block;font-size:13px;color:var(--fx-muted)}
+.fx-auth-card h1,.supplier-login-card h1,.delivery-login h1{margin:0;font-size:28px;letter-spacing:-.02em;color:var(--fx-ink)}
+.fx-auth-card p,.supplier-login-card > p,.delivery-login form > p{margin:0 0 10px;font-size:15px;color:var(--fx-muted)}
+.fx-auth-card .label{margin-top:10px}
+.fx-auth-card .btn,.supplier-login-card .btn,.delivery-login .btn{margin-top:16px;min-height:52px;font-size:16px}
+
+/* --- Livreur ----------------------------------------------------------------*/
+.delivery-app.driver-v2{background:var(--fx-bg);color:var(--fx-ink);font-size:var(--fx-text)}
+.delivery-app .fixi-driver-topbar{background:color-mix(in srgb,var(--fx-surface) 88%,transparent);-webkit-backdrop-filter:blur(16px) saturate(170%);backdrop-filter:blur(16px) saturate(170%);border-bottom:1px solid var(--fx-line);padding-top:max(10px,env(safe-area-inset-top))}
+.delivery-app .driver-header-brand b{font-size:17px;color:var(--fx-ink)}
+.delivery-app .driver-header-brand small{font-size:13px;color:var(--fx-muted)}
+.delivery-app .driver-header-brand svg{color:var(--fx-brand)}
+.delivery-app .fixi-driver-next-step{border-radius:var(--fx-radius-xl);background:var(--fx-surface);border:1px solid var(--fx-line);border-inline-start:6px solid var(--fx-brand);box-shadow:none}
+.delivery-app .fixi-driver-next-step span{color:var(--fx-muted);font-size:13px;letter-spacing:.02em}
+.delivery-app .fixi-driver-next-step h2{font-size:22px;letter-spacing:-.01em;color:var(--fx-ink)}
+.delivery-app .fixi-driver-next-step p{font-size:15px;color:var(--fx-ink-2)}
+.delivery-app .fixi-driver-next-step .btn{min-height:52px;font-size:16px}
+.delivery-app .driver-command{border-radius:var(--fx-radius-xl);background:var(--fx-surface);border:1px solid var(--fx-line);box-shadow:none}
+@media (max-width:760px){
+  .delivery-app .driver-command-title{display:none}
+}
+/* Disponibilité, GPS, actualiser, journée : 2 colonnes lisibles sur téléphone */
+@layer fx-force{
+  @media (max-width:760px){
+    .delivery-app .driver-command-actions{display:grid !important;grid-template-columns:1fr 1fr !important;gap:8px !important}
+    .delivery-app .driver-command-actions > *{min-height:52px !important;width:100% !important;font-size:15px !important;white-space:normal !important;line-height:1.2 !important;padding:6px 10px !important;justify-content:center !important;border-radius:var(--fx-radius) !important}
+    .delivery-app .driver-command-actions > .btn-primary,.delivery-app .driver-command-actions > .btn-danger{grid-column:1/-1 !important}
+  }
+}
+
+/* --- Barres d'onglets du bas (Fournisseur, Livreur, Control) alignées sur l'Atelier */
+@layer fx-force{
+  .driver-mobile-nav,.fixi-supplier-bottom-nav,.control-mobile-nav{background:color-mix(in srgb,var(--fx-surface) 90%,transparent) !important;-webkit-backdrop-filter:blur(18px) saturate(170%) !important;backdrop-filter:blur(18px) saturate(170%) !important;border-top:1px solid var(--fx-line) !important;box-shadow:none !important;padding-bottom:calc(6px + env(safe-area-inset-bottom)) !important}
+  .driver-mobile-nav > *,.fixi-supplier-bottom-nav > *,.control-mobile-nav > *{min-height:56px !important;font-size:12px !important;font-weight:650 !important;color:var(--fx-muted) !important;background:transparent !important;border-radius:var(--fx-radius) !important}
+  .driver-mobile-nav .active,.fixi-supplier-bottom-nav .active,.control-mobile-nav .active{color:var(--fx-brand) !important;background:var(--fx-brand-soft) !important}
+  .driver-mobile-nav svg,.fixi-supplier-bottom-nav svg,.control-mobile-nav svg{width:22px !important;height:22px !important}
+}
+
+/* --- Fournisseur : cartes, titres, tableaux ---------------------------------*/
+.supplier-os .supplier-panel{border-radius:var(--fx-radius-lg);background:var(--fx-surface);border:1px solid var(--fx-line);box-shadow:none}
+.supplier-os .supplier-section-head b{font-size:18px;letter-spacing:-.01em;color:var(--fx-ink)}
+.supplier-os .supplier-section-head span{font-size:14px;color:var(--fx-muted)}
+.supplier-os .supplier-action-list button{min-height:60px;border-radius:var(--fx-radius);border:1px solid var(--fx-line);background:var(--fx-surface-2)}
+.supplier-os .supplier-action-list b{font-size:15px}
+.supplier-os .supplier-metrics > div{border-radius:var(--fx-radius);background:var(--fx-surface-2);border:1px solid var(--fx-line)}
+.supplier-os .supplier-metrics span{font-size:13px;color:var(--fx-muted)}
+.supplier-os .supplier-metrics b{font-size:20px}
+.supplier-os .table td,.supplier-os .table th{font-size:14px}
+.supplier-os > main > header h1{font-size:24px;letter-spacing:-.02em;color:var(--fx-ink)}
+.supplier-os > main > header span{font-size:12px;color:var(--fx-muted);letter-spacing:.02em}
+.supplier-os .fixi-supplier-menu-button{width:44px;height:44px;border-radius:var(--fx-radius);border:1px solid var(--fx-line);background:var(--fx-surface);color:var(--fx-ink)}
+@media (max-width:760px){
+  .supplier-os .supplier-disclaimer{display:none}
+  .supplier-os .table-wrap{margin:0 -4px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+}
+
+/* --- Fixi Control -----------------------------------------------------------*/
+.control-top{background:color-mix(in srgb,var(--fx-surface) 88%,transparent);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border-bottom:1px solid var(--fx-line)}
+.control-panel{border-radius:var(--fx-radius-lg);background:var(--fx-surface);border:1px solid var(--fx-line);box-shadow:none}
+
+/* --- Suivi client (/track) : statut aux couleurs du système ----------------*/
+/* Mêmes couleurs que dans l'atelier : le client voit le même code couleur */
+.track-state{border-radius:999px;font-weight:700;padding:4px 12px;background:var(--fx-st-received-bg);color:var(--fx-st-received)}
+.track-state.diagnosis{background:var(--fx-st-diagnosis-bg);color:var(--fx-st-diagnosis)}
+.track-state.in_repair{background:var(--fx-st-repair-bg);color:var(--fx-st-repair)}
+.track-state.waiting_part{background:var(--fx-st-waiting-bg);color:var(--fx-st-waiting)}
+.track-state.ready{background:var(--fx-st-ready-bg);color:var(--fx-st-ready)}
+.track-state.delivered{background:var(--fx-st-delivered-bg);color:var(--fx-st-delivered)}
+.track-state.cancelled{background:var(--fx-st-cancelled-bg);color:var(--fx-st-cancelled)}
+
+/* --- Corrections forcées (l'ancien CSS impose ces propriétés avec !important) */
+@layer fx-force{
+  .push-toggle{font-size:15px !important;font-weight:650 !important}
+  .push-toggle.labeled span{font-size:15px !important}
+  .fixi-widget-grid{display:grid !important;overflow:visible !important;flex-wrap:initial !important}
+  .fixi-widget-grid > *{width:auto !important;min-width:0 !important;max-width:none !important;flex:initial !important;min-height:0 !important;height:auto !important}
+  @media (max-width:760px){
+    .fixi-widget-grid{grid-template-columns:repeat(2,minmax(0,1fr)) !important}
+    .fixi-widget-personalize,.fixi-widget-description,.fixi-widget-arrow,.fixi-widget-deck-header > button,.fixi-widget-deck-header > div > button{display:none !important}
+    .delivery-app .fixi-driver-topbar .driver-availability span{font-size:13px !important}
+    .fixi-widget-label{white-space:normal !important;word-break:normal !important;overflow-wrap:anywhere}
+    /* L'étape suivante porte déjà le bouton « Démarrer » : pas de doublon */
+    .delivery-app .driver-command-actions > .btn-primary{display:none !important}
+    .delivery-app .fixi-driver-topbar .driver-availability{font-size:13px !important;min-height:36px !important;padding:0 10px !important;white-space:nowrap !important}
+  }
+}
+/* Réglages des sons : sur téléphone, le nom au-dessus, le choix du son en dessous */
+@media (max-width:520px){
+  .fx-set-sound{grid-template-columns:1fr auto}
+  .fx-set-sound > span{grid-column:1/-1}
+  .fx-set-sound .select{width:100%}
+}

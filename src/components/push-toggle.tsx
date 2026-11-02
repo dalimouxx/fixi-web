@@ -29,9 +29,9 @@ export function PushToggle({subscribeUrl='/api/push/subscribe',label=false,onSta
    if(response.ok){setOn(true);onStateChange?.(true)}
    else{
     setOn(false);onStateChange?.(false);
-    setError('Le téléphone a un abonnement navigateur, mais FIXI Cloud refuse de le rattacher à ce compte (HTTP '+response.status+').');
+    setError('Ce téléphone n’a pas pu être relié à votre compte. Touchez « Activer » pour réessayer.');
    }
-  }).catch(()=>{if(live){setOn(false);onStateChange?.(false);setError('Impossible de vérifier l’abonnement Push du téléphone. Vérifiez Internet et la connexion FIXI.')}});
+  }).catch(()=>{if(live){setOn(false);onStateChange?.(false);setError('Vérification impossible : vérifiez la connexion internet.')}});
   return()=>{live=false};
  },[subscribeUrl]);
 
@@ -40,7 +40,7 @@ export function PushToggle({subscribeUrl='/api/push/subscribe',label=false,onSta
   setBusy(true);setError('');
   try{
    if(Notification.permission==='denied'){
-    setError('Les notifications sont bloquées dans le navigateur ou le téléphone. Autorisez FIXI dans les réglages du site.');
+    setError('Les notifications sont bloquées. Ouvrez les réglages du navigateur (cadenas à côté de l’adresse) › Notifications › Autoriser.');
     return;
    }
    let reg=await navigator.serviceWorker.getRegistration();
@@ -49,7 +49,7 @@ export function PushToggle({subscribeUrl='/api/push/subscribe',label=false,onSta
    if(current&&on){
     const response=await fetch(subscribeUrl,{method:'DELETE',headers:{'Content-Type':'application/json'},
      credentials:'same-origin',body:JSON.stringify({endpoint:current.endpoint})});
-    if(!response.ok)throw Error('Le serveur n’a pas confirmé la désactivation des notifications.');
+    if(!response.ok)throw Error('La désactivation n’a pas été confirmée. Réessayez.');
     await current.unsubscribe();setOn(false);onStateChange?.(false);return;
    }
    // If the OS already has an endpoint but this FIXI account is not registered,
@@ -57,15 +57,15 @@ export function PushToggle({subscribeUrl='/api/push/subscribe',label=false,onSta
    if(current&&!on){
     const response=await fetch(subscribeUrl,{method:'POST',headers:{'Content-Type':'application/json'},
      credentials:'same-origin',body:JSON.stringify(current)});
-    if(!response.ok)throw Error('FIXI Cloud refuse de rattacher cet abonnement (HTTP '+response.status+').');
+    if(!response.ok)throw Error('Ce téléphone n’a pas pu être relié à votre compte. Réessayez.');
     setOn(true);onStateChange?.(true);return;
    }
    const keyResponse=await fetch('/api/push/public-key',{cache:'no-store'});
-   if(!keyResponse.ok)throw Error('Clé Push indisponible sur FIXI Cloud.');
+   if(!keyResponse.ok)throw Error('Service d’alertes momentanément indisponible. Réessayez.');
    const key=await keyResponse.json();
-   if(!key.publicKey)throw Error('Notifications Push non configurées sur le serveur.');
+   if(!key.publicKey)throw Error('Les alertes téléphone ne sont pas encore activées par Fixi. Contactez le support.');
    const perm=await Notification.requestPermission();
-   if(perm!=='granted'){setError('Autorisation de notifications non accordée.');return}
+   if(perm!=='granted'){setError('Vous avez refusé les notifications. Pour changer d’avis : réglages du navigateur › Notifications › Autoriser.');return}
    const subscription=await reg.pushManager.subscribe({
     userVisibleOnly:true,applicationServerKey:b64ToUint8(key.publicKey)
    });
@@ -73,21 +73,21 @@ export function PushToggle({subscribeUrl='/api/push/subscribe',label=false,onSta
     credentials:'same-origin',body:JSON.stringify(subscription)});
    if(!response.ok){
     await subscription.unsubscribe().catch(()=>{});
-    throw Error('FIXI Cloud a refusé d’enregistrer ce téléphone (HTTP '+response.status+').');
+    throw Error('Ce téléphone n’a pas pu être enregistré. Réessayez.');
    }
    setOn(true);onStateChange?.(true);
   }catch(e){
-   setError(e instanceof Error?e.message:'Activation des notifications impossible.');
+   setError(e instanceof Error?e.message:'Activation impossible. Réessayez.');
   }finally{setBusy(false)}
  }
- if(!supported)return label?<small role="status">Push non disponible dans ce navigateur. Installez la PWA FIXI compatible ou utilisez Android/iOS pris en charge.</small>:null;
+ if(!supported)return label?<small role="status" className="push-error">Ce navigateur ne gère pas les alertes. Sur iPhone : installez d’abord Fixi sur l’écran d’accueil.</small>:null;
  return <>
   <button type="button" className={'push-toggle '+(on?'on':'')+(label?' labeled':'')}
    onClick={()=>void toggle()} disabled={busy}
-   title={on?'Désactiver les notifications Push':'Activer les notifications Push'}
+   title={on?'Désactiver les alertes sur ce téléphone':'Activer les alertes sur ce téléphone'}
    aria-pressed={on}>
    {on?<BellRing size={17}/>:<BellOff size={17}/>}
-   {label&&<span>{busy?'Vérification…':on?'Push activé':'Activer Push'}</span>}
+   {label&&<span>{busy?'Un instant…':on?'Activé':'Activer'}</span>}
   </button>
   {error&&<small role="alert" className="push-error">{error}</small>}
  </>;

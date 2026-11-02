@@ -5,11 +5,8 @@ import Link from 'next/link';
 import {MapPinned,Navigation,Phone,Truck,CheckCircle2,RefreshCw,Map,Clock3,Banknote,AlertTriangle,RotateCcw,CalendarClock,PackageCheck,LogOut,PlayCircle,PauseCircle,Route,WalletCards,Camera,ShieldCheck,X,UserRound,Gauge,Wifi,WifiOff,Radio,History} from 'lucide-react';
 import {api} from './ui';
 import {RealtimeNotificationCenter} from './realtime-notification-center';
-import {PushToggle} from './push-toggle';
 import {PwaRegister} from './pwa-register';
-import {InstallAppButton} from './install-app-button';
-import {DeliveryInstall} from './delivery-install';
-import {FixiSmartWidgets} from './fixi-smart-widgets';
+import {FixiSmartWidgets,type FixiWidgetData} from './fixi-smart-widgets';
 import {BarcodeCamera} from './barcode-camera';
 import {dateTime,money} from '@/lib/format';
 
@@ -105,7 +102,7 @@ export function DriverApp({session}:{session:any}){
  return <div className="delivery-app driver-app driver-v2"><PwaRegister/>
   <header className="fixi-driver-topbar">
     <div className="driver-header-brand">
-      <Truck aria-hidden="true"/><span><b>Fixi Delivery</b><small>{session.companyName}</small></span>
+      <Truck aria-hidden="true"/><span><b>Fixi Livreur</b><small>{session.companyName}</small></span>
     </div>
     <div className="fixi-driver-header-state">
       <div className="driver-live-state" aria-label={online?'Connexion active':'Connexion perdue'}>
@@ -119,15 +116,11 @@ export function DriverApp({session}:{session:any}){
     <div className="fixi-driver-header-actions">
       <RealtimeNotificationCenter apiUrl="/api/delivery/notifications" eventsUrl="/api/delivery/events-stream"
         storageKey="fixi-delivery-notifications" onEvent={load}/>
-      <PushToggle subscribeUrl="/api/delivery/push/subscribe"/>
-      <span className="fixi-driver-header-install"><InstallAppButton label="Installer"/></span>
       <span className="fixi-driver-user"><b>{session.fullName}</b><small>Livreur</small></span>
       <button type="button" className="fixi-driver-logout" onClick={logout} title="Déconnexion" aria-label="Déconnexion"><LogOut size={18}/></button>
     </div>
   </header>
   <main>
-   <DeliveryInstall/>
-   <Link href="/delivery/encaissements" className="fixi-driver-collections-link"><Banknote size={17}/> Encaissements & caisse livreur</Link>
    <section className={'fixi-driver-next-step'+(!online?' offline':'')} aria-label="Étape suivante pour le livreur">
      <div className="fixi-driver-next-step-content">
        <span>VOTRE PROCHAINE ÉTAPE</span>
@@ -160,7 +153,7 @@ export function DriverApp({session}:{session:any}){
    </section>
    <FixiSmartWidgets area="delivery" onAction={action=>setView(action as 'orders'|'dues'|'history')}
      subtitle="Vos missions, les sommes réellement enregistrées et les validations de votre tournée."
-     widgets={[
+     widgets={([
        {id:'delivery-active',label:'Missions à traiter',value:active.length,
         description:'Livraisons réservées pour vous',icon:'orders',action:'orders',urgent:active.length>0},
        {id:'delivery-new',label:'Missions disponibles',value:available.length,
@@ -175,7 +168,7 @@ export function DriverApp({session}:{session:any}){
         description:'Collectes de dettes déclarées',icon:'due',action:'dues'},
        {id:'delivery-incidents',label:'Incidents aujourd’hui',value:exceptionsToday,
         description:'Événements à vérifier',icon:'alert',accent:'warning',urgent:exceptionsToday>0,action:'history'},
-     ]}/>
+     ]).filter(w=>['delivery-active','delivery-new','delivery-collected'].includes(w.id)) as FixiWidgetData[]}/>
    {err&&<div className="driver-banner error"><AlertTriangle/>{err}</div>}{msg&&<div className="driver-banner success"><CheckCircle2/>{msg}</div>}
    {shift.pendingCashier&&<div className="driver-shift-lock pending"><ShieldCheck/><div><h2>Remise caisse en attente</h2><p>Attendu {money(shift.pendingCashier.expectedCod||shift.pendingCashier.collectedCod||0)} · déclaré {money(shift.pendingCashier.declaredRemit||0)}. Le caissier doit recompter et confirmer avant votre prochaine journée.</p></div></div>}{!shift.current&&!shift.pendingCashier&&<div className="driver-shift-lock"><ShieldCheck/><div><h2>Journée non ouverte</h2><p>Les commandes restent visibles, mais une livraison ne peut pas être démarrée tant que le livreur n’a pas ouvert sa journée.</p></div><button className="btn btn-primary" onClick={()=>setShiftModal('open')}>Ouvrir ma journée</button></div>}
    {view==='orders'&&available.length>0&&<section id="driver-orders" className="driver-available"><div className="supplier-section-head"><div><b>Nouvelles missions disponibles</b><span>Le premier livreur qui accepte réserve la commande.</span></div><em>{available.length}</em></div><div className="driver-available-grid">{available.map(o=>{const address=o.deliveryAddress||o.shop?.address||o.shop?.region||'';return <article key={o.id}><div><code>{o.reference}</code><h3>{o.shop?.name}</h3><span><MapPinned/> {address||'Adresse non renseignée'}</span><strong>{money(o.total)}</strong></div><button className="btn btn-primary" disabled={busy===o.id} onClick={()=>accept(o)}><CheckCircle2/> Accepter</button></article>})}</div></section>}
