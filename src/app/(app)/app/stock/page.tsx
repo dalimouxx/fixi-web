@@ -1,3 +1,90 @@
 'use client';
-import { useEffect,useState } from 'react';import { Plus,Search,TriangleAlert } from 'lucide-react';import { api,Modal,useApi } from '@/components/ui';import { money } from '@/lib/format';
-export default function Stock(){const[q,setQ]=useState('');useEffect(()=>{const v=new URLSearchParams(window.location.search).get('q');if(v)setQ(v)},[]);const[refresh,setRefresh]=useState(0);const[open,setOpen]=useState(false);const{data}=useApi<any[]>(`/api/stock?q=${encodeURIComponent(q)}`,refresh);const[suppliers]=[useApi<any[]>('/api/suppliers').data||[]];const[f,setF]=useState<any>({sku:'',name:'',category:'',quantity:0,minQuantity:2,purchasePrice:0,salePrice:0,supplierId:''});async function save(e:any){e.preventDefault();try{await api('/api/stock',{method:'POST',body:JSON.stringify(f)});setOpen(false);setRefresh(x=>x+1);setF({sku:'',name:'',category:'',quantity:0,minQuantity:2,purchasePrice:0,salePrice:0,supplierId:''})}catch(e:any){alert(e.message)}}return <div className="page"><div className="page-head"><div><h1 className="page-title">Stock</h1><div className="page-sub">Pièces, coût réel et seuils d’alerte.</div></div><button className="btn btn-primary" onClick={()=>setOpen(true)}><Plus size={17}/> Nouvel article</button></div><div className="card"><div className="card-pad"><div className="searchbox"><Search/><input className="input" value={q} onChange={e=>setQ(e.target.value)} placeholder="Référence ou nom…"/></div></div><div className="table-wrap"><table className="table"><thead><tr><th>Référence</th><th>Pièce</th><th>Catégorie</th><th>Stock</th><th>Achat</th><th>Vente</th><th>Fournisseur</th></tr></thead><tbody>{(data||[]).map(x=><tr key={x.id}><td className="mono">{x.sku}</td><td style={{fontWeight:850}}>{x.name}</td><td>{x.category||'—'}</td><td>{x.quantity<=x.minQuantity?<span className="badge badge-red"><TriangleAlert size={12}/>{x.quantity}</span>:<span className="badge badge-green">{x.quantity}</span>}</td><td>{money(x.purchasePrice)}</td><td>{money(x.salePrice)}</td><td>{x.supplier?.name||'—'}</td></tr>)}</tbody></table></div></div><Modal open={open} onClose={()=>setOpen(false)} title="Nouvel article de stock"><form onSubmit={save} className="form-grid"><div className="field"><label className="label">Référence SKU *</label><input className="input" value={f.sku} onChange={e=>setF({...f,sku:e.target.value})} required/></div><div className="field"><label className="label">Nom *</label><input className="input" value={f.name} onChange={e=>setF({...f,name:e.target.value})} required/></div><div className="field"><label className="label">Catégorie</label><input className="input" value={f.category} onChange={e=>setF({...f,category:e.target.value})}/></div><div className="field"><label className="label">Stock initial</label><input className="input" type="number" value={f.quantity} onChange={e=>setF({...f,quantity:Number(e.target.value)})}/></div><div className="field"><label className="label">Seuil d’alerte</label><input className="input" type="number" value={f.minQuantity} onChange={e=>setF({...f,minQuantity:Number(e.target.value)})}/></div><div className="field"><label className="label">Prix achat</label><input className="input" type="number" step="0.001" value={f.purchasePrice} onChange={e=>setF({...f,purchasePrice:Number(e.target.value)})}/></div><div className="field"><label className="label">Prix vente</label><input className="input" type="number" step="0.001" value={f.salePrice} onChange={e=>setF({...f,salePrice:Number(e.target.value)})}/></div><div className="field"><label className="label">Fournisseur</label><select className="select" value={f.supplierId} onChange={e=>setF({...f,supplierId:e.target.value})}><option value="">Aucun</option>{suppliers.map((s:any)=><option value={s.id} key={s.id}>{s.name}</option>)}</select></div><div className="span-2"><button className="btn btn-primary btn-block">Créer l’article</button></div></form></Modal></div>}
+import Link from 'next/link';
+import { useEffect, useMemo, useState } from 'react';
+import { Plus, Search, Minus, Boxes, TriangleAlert, Wallet, PackageOpen } from 'lucide-react';
+import { api, useApi } from '@/components/ui';
+import { FxSheet } from '@/components/fx-sheet';
+import { money } from '@/lib/format';
+
+const empty = { sku: '', name: '', category: '', quantity: 0, minQuantity: 2, purchasePrice: 0, salePrice: 0, supplierId: '' };
+
+// Stock : ce qui reste, ce qu'il faut racheter, et un ajustement en un toucher.
+export default function Stock() {
+  const [q, setQ] = useState('');
+  const [filter, setFilter] = useState<'all' | 'low' | string>('all');
+  useEffect(() => { const v = new URLSearchParams(window.location.search).get('q'); if (v) setQ(v); }, []);
+  const [refresh, setRefresh] = useState(0);
+  const [open, setOpen] = useState(false);
+  const [edit, setEdit] = useState<any>(null);
+  const { data, loading, error } = useApi<any[]>(`/api/stock?q=${encodeURIComponent(q)}`, refresh);
+  const suppliers = useApi<any[]>('/api/suppliers').data || [];
+  const [f, setF] = useState<any>(empty);
+  const rows = data || [];
+  const low = rows.filter(x => x.quantity <= x.minQuantity);
+  const value = rows.reduce((a, x) => a + Number(x.quantity) * Number(x.purchasePrice || 0), 0);
+  const cats = useMemo(() => [...new Set(rows.map(x => x.category).filter(Boolean))].slice(0, 8) as string[], [rows]);
+  const shown = rows.filter(x => filter === 'all' ? true : filter === 'low' ? x.quantity <= x.minQuantity : x.category === filter);
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    try {
+      if (edit) await api(`/api/stock/${edit.id}`, { method: 'PATCH', body: JSON.stringify(f) });
+      else await api('/api/stock', { method: 'POST', body: JSON.stringify(f) });
+      setOpen(false); setEdit(null); setF(empty); setRefresh(x => x + 1);
+    } catch (err: any) { alert(err.message); }
+  }
+  async function adjust(x: any, d: number) {
+    try { await api(`/api/stock/${x.id}`, { method: 'PATCH', body: JSON.stringify({ quantity: Math.max(0, x.quantity + d) }) }); setRefresh(v => v + 1); } catch (err: any) { alert(err.message); }
+  }
+  function openEdit(x: any) { setEdit(x); setF({ sku: x.sku, name: x.name, category: x.category || '', quantity: x.quantity, minQuantity: x.minQuantity, purchasePrice: Number(x.purchasePrice || 0), salePrice: Number(x.salePrice || 0), supplierId: x.supplierId || '' }); setOpen(true); }
+
+  return <div className="fx-page">
+    <div className="fx-hello"><div><h1>Stock</h1><p>Vos pièces, ce qu’il faut racheter, la valeur au coût.</p></div>
+      <button className="btn btn-primary" onClick={() => { setEdit(null); setF(empty); setOpen(true); }}><Plus size={18} /> Nouvelle pièce</button></div>
+
+    <section className="fx-kpis" aria-label="Résumé du stock">
+      <div className="fx-kpi"><Boxes /><div><span>Pièces</span><strong>{rows.length}</strong></div></div>
+      <button type="button" className={`fx-kpi ${low.length ? 'fx-kpi--due' : ''}`} onClick={() => setFilter('low')}><TriangleAlert /><div><span>À racheter</span><strong>{low.length}</strong></div></button>
+      <div className="fx-kpi"><Wallet /><div><span>Valeur au coût</span><strong>{money(value)}</strong></div></div>
+    </section>
+
+    <div className="fx-toolbar">
+      <div className="fx-searchbar"><Search size={18} /><input value={q} onChange={e => setQ(e.target.value)} placeholder="Nom ou référence de la pièce…" aria-label="Rechercher une pièce" /></div>
+      <div className="fx-filter-chips" role="group" aria-label="Filtrer">
+        <button type="button" aria-pressed={filter === 'all'} onClick={() => setFilter('all')}>Tout</button>
+        <button type="button" aria-pressed={filter === 'low'} onClick={() => setFilter('low')} data-tone="danger">À racheter {low.length > 0 && <b>{low.length}</b>}</button>
+        {cats.map(c => <button type="button" key={c} aria-pressed={filter === c} onClick={() => setFilter(c)}>{c}</button>)}
+      </div>
+    </div>
+
+    {error && <div className="error">{error}</div>}
+    {loading && !data ? <div className="card card-pad fx-skeleton" role="status" aria-label="Chargement"><i /><i /><i /></div> :
+      <div className="fx-list fx-stock-list">
+        {shown.map(x => { const isLow = x.quantity <= x.minQuantity; return <div key={x.id} className={`fx-row fx-stock-row ${isLow ? 'fx-row--danger' : ''}`}>
+          <button type="button" className="fx-row-main" onClick={() => openEdit(x)}><b>{x.name}</b><small><span className="mono">{x.sku}</span>{x.category ? ` · ${x.category}` : ''} · vente {money(x.salePrice)}{x.supplier?.name ? ` · ${x.supplier.name}` : ''}</small></button>
+          <div className="fx-stepper-qty" role="group" aria-label={`Quantité de ${x.name}`}>
+            <button type="button" onClick={() => adjust(x, -1)} disabled={x.quantity <= 0} aria-label="Retirer une pièce"><Minus size={16} /></button>
+            <b className={isLow ? 'is-low' : ''}>{x.quantity}</b>
+            <button type="button" onClick={() => adjust(x, 1)} aria-label="Ajouter une pièce"><Plus size={16} /></button>
+          </div>
+          {isLow && <Link href={`/app/suppliers?q=${encodeURIComponent(x.name)}`} className="btn btn-soft btn-sm fx-stock-order"><PackageOpen size={15} /> Commander</Link>}
+        </div>; })}
+        {!shown.length && <div className="fx-empty"><b>{filter === 'low' ? 'Rien à racheter' : 'Aucune pièce'}</b><span>{filter === 'low' ? 'Toutes vos pièces sont au-dessus du seuil d’alerte.' : 'Ajoutez vos pièces pour suivre le stock et la marge.'}</span>{filter !== 'low' && <button className="btn btn-primary" onClick={() => setOpen(true)}><Plus size={18} /> Nouvelle pièce</button>}</div>}
+      </div>}
+
+    <FxSheet open={open} onClose={() => { setOpen(false); setEdit(null); }} side="bottom" title={edit ? 'Modifier la pièce' : 'Nouvelle pièce'} label="Fiche pièce">
+      <form onSubmit={save} className="fx-form-grid">
+        <label className="field span-2"><span className="label">Nom *</span><input className="input" required value={f.name} onChange={e => setF({ ...f, name: e.target.value })} placeholder="Écran Galaxy A54 OLED" /></label>
+        <label className="field"><span className="label">Référence *</span><input className="input" required value={f.sku} onChange={e => setF({ ...f, sku: e.target.value })} /></label>
+        <label className="field"><span className="label">Catégorie</span><input className="input" list="fx-stock-cats" value={f.category} onChange={e => setF({ ...f, category: e.target.value })} /><datalist id="fx-stock-cats">{cats.map(c => <option key={c} value={c} />)}</datalist></label>
+        <label className="field"><span className="label">Quantité</span><input className="input" type="number" min="0" value={f.quantity} onChange={e => setF({ ...f, quantity: Number(e.target.value) })} /></label>
+        <label className="field"><span className="label">Alerte à partir de</span><input className="input" type="number" min="0" value={f.minQuantity} onChange={e => setF({ ...f, minQuantity: Number(e.target.value) })} /></label>
+        <label className="field"><span className="label">Prix d’achat</span><input className="input" type="number" step="0.001" min="0" value={f.purchasePrice} onChange={e => setF({ ...f, purchasePrice: Number(e.target.value) })} /></label>
+        <label className="field"><span className="label">Prix de vente</span><input className="input" type="number" step="0.001" min="0" value={f.salePrice} onChange={e => setF({ ...f, salePrice: Number(e.target.value) })} /></label>
+        <label className="field span-2"><span className="label">Fournisseur</span><select className="select" value={f.supplierId} onChange={e => setF({ ...f, supplierId: e.target.value })}><option value="">Aucun</option>{suppliers.map((s: any) => <option value={s.id} key={s.id}>{s.name}</option>)}</select></label>
+        {f.salePrice > 0 && f.purchasePrice > 0 && <p className="span-2 fx-form-hint">Marge : {money(f.salePrice - f.purchasePrice)} par pièce ({Math.round((1 - f.purchasePrice / f.salePrice) * 100)} %)</p>}
+        <button className="btn btn-primary btn-block span-2">{edit ? 'Enregistrer' : 'Ajouter la pièce'}</button>
+      </form>
+    </FxSheet>
+  </div>;
+}

@@ -25,6 +25,12 @@ services:
         generateValue: true
       - key: CRON_SECRET
         generateValue: true
+      - key: KONNECT_PLATFORM_WALLET_ID
+        sync: false
+      - key: KONNECT_PLATFORM_API_KEY
+        sync: false
+      - key: KONNECT_PLATFORM_SANDBOX
+        value: "true"
       - key: SUPPLIER_AUTH_SECRET
         generateValue: true
       - key: FIXI_AI_ENABLED
