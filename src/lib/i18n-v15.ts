@@ -95,6 +95,20 @@ export const arV15: Record<string, string> = {
   'client depuis': 'حريف منذ', 'vente': 'البيع', 'utilisé': 'مستعمل', 'Compte fournisseur': 'حساب المورّد', 'URGENT': 'عاجل', 'Flux boutiques Fixi': 'نشاط محلات Fixi', 'Navigation Supplier': 'تنقل المورّد', 'Widgets supplier': 'أدوات المورّد', 'Accès rapides Supplier': 'وصول سريع للمورّد', 'Widgets delivery': 'أدوات التوصيل',
   '* Estimation temporaire jusqu’à activation du coût d’achat réel par produit.': '* تقدير مؤقت إلى حين تفعيل كلفة الشراء الحقيقية لكل منتج.',
   'client(s) à relancer': 'حريف(ة) للتذكير', 'Appareils prêts non récupérés': 'أجهزة جاهزة لم تُستلم',
+  // 15.2
+  'Tous vos clients, leurs réparations et leur fidélité.': 'كل حرفائك وإصلاحاتهم ووفاؤهم.', 'Fidèles': 'أوفياء', 'Valeur totale': 'القيمة الجملية', 'Récents': 'الأحدث', 'Meilleurs clients': 'أفضل الحرفاء', 'Plus de réparations': 'الأكثر إصلاحات', 'réparation': 'إصلاح', 'réparations': 'إصلاحات',
+  'Résumé des clients': 'ملخص الحرفاء', 'Rechercher un client': 'ابحث عن حريف', 'Trier': 'ترتيب', 'Aucun client trouvé': 'لم يتم العثور على حريف', 'Aucun client': 'لا حرفاء', 'Chaque nouvelle réparation crée la fiche du client.': 'كل إصلاح جديد ينشئ بطاقة الحريف.', 'Essayez un autre nom ou numéro.': 'جرّب اسماً أو رقماً آخر.',
+  'Les demandes reçues depuis votre page et la borne de l’atelier.': 'الطلبات الواردة من صفحتك ومن جهاز الورشة.', 'Borne de prise de rendez-vous': 'جهاز حجز المواعيد', 'Aujourd’hui': 'اليوم', 'Demain': 'غداً', 'Hier': 'أمس', 'En retard': 'متأخر', 'À venir': 'القادمة', 'Terminés': 'منتهية', 'Annulés': 'ملغاة', '· en retard': '· متأخر',
+  'Confirmé': 'مؤكد', 'Terminé': 'منتهي', 'Client venu': 'الحريف حضر', 'Rappel': 'تذكير', 'Appareil non précisé': 'الجهاز غير محدد', 'Client, service, appareil…': 'الحريف، الخدمة، الجهاز…', 'Rechercher un rendez-vous': 'ابحث عن موعد', 'Annuler le rendez-vous': 'ألغِ الموعد', 'Aucun rendez-vous': 'لا مواعيد',
+  'Partagez votre borne ou votre page pour recevoir des demandes.': 'شارك صفحتك أو جهاز الحجز لتلقي الطلبات.', 'Ouvrir la borne': 'افتح جهاز الحجز',
+  'Ouvrez avec le fond de caisse, comptez à la fermeture : Fixi calcule l’écart.': 'افتح بمبلغ الصندوق الأولي وعدّ عند الغلق: يحسب Fixi الفارق.', 'Fermer la caisse': 'أغلق الصندوق', 'Ouvrir la caisse': 'افتح الصندوق', 'Caisse ouverte': 'الصندوق مفتوح', 'par': 'من طرف', 'Il doit y avoir dans la caisse': 'يجب أن يكون في الصندوق',
+  'Fond du matin': 'مبلغ الصباح', 'Espèces encaissées': 'النقد المقبوض', 'Dépenses payées': 'المصاريف المدفوعة', 'Fermetures précédentes': 'الإغلاقات السابقة', '· compté': '· المعدود', 'Juste': 'مضبوط', 'Fond de caisse (monnaie du matin)': 'مبلغ الصندوق (صرف الصباح)', 'Ouvrir': 'افتح',
+  'Combien avez-vous compté ?': 'كم عددت؟', 'Fermer et enregistrer': 'أغلق واحفظ', 'La caisse est fermée': 'الصندوق مغلق', 'Ouvrez-la avec le fond de caisse du matin avant d’encaisser en espèces.': 'افتحه بمبلغ الصباح قبل القبض نقداً.', 'Aucune fermeture pour l’instant.': 'لا إغلاقات حتى الآن.', 'La caisse est juste.': 'الصندوق مضبوط.',
+  'Pièces achetées hors Fixi : à la réception, le stock est mis à jour.': 'قطع مشتراة خارج Fixi: عند الاستلام يُحدّث المخزون.', 'Recevoir un achat': 'استلام شراء', 'Achats ce mois': 'مشتريات هذا الشهر', 'Réceptions': 'الاستلامات', 'Commander sur Fixi': 'اطلب على Fixi', 'Fournisseurs →': 'المورّدون ←', 'article': 'قطعة', 'articles': 'قطع',
+  'Référence (facture, bon)': 'المرجع (فاتورة، وصل)', 'Pièces reçues': 'القطع المستلمة', 'Choisir la pièce…': 'اختر القطعة…', 'Total :': 'المجموع:', 'Recevoir et mettre le stock à jour': 'استلم وحدّث المخزون', 'Automatique si vide': 'تلقائي إذا كان فارغاً', 'Aucun achat enregistré': 'لا مشتريات مسجلة', 'Fournisseur non renseigné': 'المورّد غير محدد',
+  'Chaque personne a son code et ne voit que ce qui concerne son travail.': 'لكل شخص رمزه ولا يرى إلا ما يخص عمله.', 'Ajouter une personne': 'أضف شخصاً', '· identifiant': '· المعرّف', 'Changer le code': 'غيّر الرمز', 'Désactiver': 'تعطيل', 'Réactiver': 'إعادة التفعيل', 'Actif': 'نشط', 'Désactivé': 'معطّل',
+  'Tout voir, tout régler, l’argent et les paramètres.': 'يرى كل شيء ويضبط كل شيء، المال والإعدادات.', 'Reçoit les appareils et prévient les clients.': 'يستلم الأجهزة ويعلم الحرفاء.', 'Voit ses réparations, le stock et les pièces compatibles.': 'يرى إصلاحاته والمخزون والقطع المتوافقة.', 'Rend les appareils et encaisse.': 'يسلّم الأجهزة ويقبض.',
+  'Code à 6 chiffres *': 'رمز من 6 أرقام *', 'Nouveau code à 6 chiffres': 'رمز جديد من 6 أرقام', 'Enregistrer le code': 'احفظ الرمز', 'Nom complet *': 'الاسم الكامل *', 'Identifiant *': 'المعرّف *', 'Créer le compte': 'أنشئ الحساب', 'Tout l’atelier': 'كل الورشة', 'Widget écran d’accueil': 'أداة الشاشة الرئيسية', 'Connexion…': 'جارٍ الربط…',
   // Étiquette
   'Imprimer l’étiquette': 'اطبع الملصق', 'Nombre d’étiquettes': 'عدد الملصقات',
 };
@@ -111,6 +125,10 @@ export function translateArPattern(clean: string): string | undefined {
   m = clean.match(/^(\d+) étiquettes?$/); if (m) return `${m[1]} ملصق`;
   m = clean.match(/^(\d+) en attente$/); if (m) return `${m[1]} في الانتظار`;
   m = clean.match(/^(\d+) dépenses?$/); if (m) return `${m[1]} مصروف`;
+  m = clean.match(/^Il doit y avoir (.+)$/); if (m) return `يجب أن يكون ${m[1]}`;
+  m = clean.match(/^Il y a (.+) en trop\.$/); if (m) return `يوجد ${m[1]} زيادة.`;
+  m = clean.match(/^Il manque (.+)\.$/); if (m) return `ينقص ${m[1]}.`;
+  m = clean.match(/^· ★ (\d+) pts$/); if (m) return `· ★ ${m[1]} نقطة`;
   m = clean.match(/^(\d+) \/ (\d+)$/); if (m) return `${m[1]} / ${m[2]}`;
   return undefined;
 }
