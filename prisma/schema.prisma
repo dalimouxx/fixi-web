@@ -1573,6 +1573,9 @@ model SupplierCompany {
   invoiceTerms String?
   deliveryInstructions String?
   receiptMessage String?
+  // Alerte WhatsApp à chaque nouvelle commande (envoyée par le compte WhatsApp de la plateforme Fixi).
+  whatsappAlertsEnabled Boolean @default(false)
+  whatsappAlertPhone    String?
   currency    String   @default("DT")
   defaultTaxRate Decimal @default(0) @db.Decimal(5,2)
   invoicePrefix String @default("FAC")

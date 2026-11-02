@@ -44,6 +44,16 @@ services:
         sync: false
       - key: VAPID_PRIVATE_KEY
         sync: false
+      # Alertes WhatsApp « nouvelle commande » pour les fournisseurs (compte WhatsApp Business de la plateforme).
+      # Le modèle de message doit être approuvé par Meta, avec 3 variables : boutique, référence, montant.
+      - key: WHATSAPP_PLATFORM_PHONE_NUMBER_ID
+        sync: false
+      - key: WHATSAPP_PLATFORM_TOKEN
+        sync: false
+      - key: WHATSAPP_NEW_ORDER_TEMPLATE
+        value: fixi_nouvelle_commande
+      - key: WHATSAPP_TEMPLATE_LANG
+        value: fr
       - key: VAPID_SUBJECT  # ex. mailto:votre-adresse@domaine.tn
         sync: false
       - key: DEFAULT_SHOP_SLUG

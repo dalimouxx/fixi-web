@@ -91,6 +91,16 @@ export const ar:Record<string,string>={
 
 /* Mobile-first and administrative vocabulary; shared by Driver, Supplier, Atelier and Control. */
 Object.assign(ar,{
+  "Gros caractères":"خط كبير",
+  "Agrandit tout l’écran : pratique pour mieux lire ou sur un écran abîmé.":"يكبّر الشاشة كاملة: مفيد للقراءة أو إذا الشاشة مكسورة.",
+  "Affichage":"العرض",
+  "WhatsApp":"واتساب",
+  "Nouvelle commande sur WhatsApp":"طلب جديد على واتساب",
+  "Numéro WhatsApp":"رقم الواتساب",
+  "Le téléphone du responsable des commandes.":"تليفون المسؤول على الطلبات.",
+  "Envoyer un message d’essai":"ابعث ميساج تجربة",
+  "Seul le gérant peut modifier ce réglage.":"المدير فقط يجم يبدّل هالإعداد.",
+  "Taille normale":"الحجم العادي",
   "Notifications":"الإشعارات",
   "Tout est lu":"كل شيء مقروء",
   "Recevez les alertes même téléphone verrouillé":"استقبل التنبيهات حتى والهاتف مقفل",

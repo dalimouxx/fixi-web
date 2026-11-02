@@ -1,4 +1,5 @@
 import {prisma} from '@/lib/prisma';
+import { whatsappNewOrderAlert } from '@/lib/platform-whatsapp';
 import {requireSession} from '@/lib/auth';
 import {bad,ok} from '@/lib/http';
 import {Prisma,UserRole} from '@prisma/client';
@@ -103,6 +104,8 @@ export async function POST(req:Request){
       roles:['OWNER','ADMIN','MANAGER','SALES','STOCK'],
       metadata:{orderId:result.id,reference:result.reference,shopId:s.shopId}
     }).catch(err=>console.error('Notification nouvelle commande Supplier',err));
+    await whatsappNewOrderAlert(result.companyId,{shopName:result.shop.name,reference:result.reference,total:Number(result.total)})
+      .catch(err=>console.warn('Alerte WhatsApp nouvelle commande',String(err?.message||err)));
     await Promise.allSettled(result.items.map(i=>notifySupplierLowStock(result.companyId,i.productId)));
     return ok(plain(result),{status:201});
   }catch(e:any){

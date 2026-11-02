@@ -9,6 +9,7 @@ import { BrandLogo } from './brand-logo';
 import { OfflineSyncBadge } from './offline-sync-badge';
 import { InstallAppButton } from './install-app-button';
 import { ThemeToggle } from './theme-toggle';
+import { TextSizeToggle } from './text-size-toggle';
 import { FxSheet } from './fx-sheet';
 import { HelpSheet } from './help-sheet';
 import { UniversalSearch } from './universal-search';
@@ -100,6 +101,7 @@ export function AppShell({ children, user }: { children?: React.ReactNode; user:
         {modeSwitch}
         <div className="fx-side-tools">
           {!connect && <Link href={`/queue?shop=${encodeURIComponent(user.shopSlug)}`} target="_blank" className="fx-icon-btn" title="Écran d'attente clients" aria-label="Ouvrir l'écran d'attente clients"><MonitorPlay size={18} /></Link>}
+          <TextSizeToggle />
           <ThemeToggle />
           <button type="button" className="btn btn-ghost btn-sm" onClick={logout}><LogOut size={16} /> Quitter</button>
         </div>
@@ -140,7 +142,7 @@ export function AppShell({ children, user }: { children?: React.ReactNode; user:
       {connect && <Link href="/app/upgrade" className="btn btn-soft btn-block" style={{ marginBottom: 12 }}><Sparkles size={16} /> Passer à Fixi Pro</Link>}
       {modeSwitch}
       <div className="fx-side-tools" style={{ marginTop: 12 }}>
-        <InstallAppButton label="Installer l’application" /><ThemeToggle />
+        <InstallAppButton label="Installer l’application" /><TextSizeToggle /><ThemeToggle />
         <button type="button" className="btn btn-ghost btn-sm" onClick={logout}><LogOut size={16} /> Quitter</button>
       </div>
     </FxSheet>
