@@ -47,6 +47,7 @@ const manifest = new TwaManifest({
   splashScreenFadeOutDuration: 300,
   signingKey: { path: path.join(here, 'fixi.keystore'), alias: 'fixi' },
   appVersionName: pkg.version,
+  appVersion: pkg.version,
   appVersionCode: maj * 10000 + min * 100 + pat,
   shortcuts: [
     { name: 'Nouvelle réparation', shortName: 'Réception', url: '/app/repairs/new', chosenIconUrl: `${local}/icons/atelier-192.png` },

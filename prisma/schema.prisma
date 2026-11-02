@@ -477,6 +477,7 @@ model Shop {
   stockMovements        StockMovement[]
   attachments           RepairAttachment[]
   supplierInvites       SupplierInvite[]
+  widgetTokens          WidgetToken[]
   notifications         Notification[]
   salesDocuments        SalesDocument[]
   platformMessages      PlatformMessage[]
@@ -2615,4 +2616,18 @@ model SupplierInvite {
 
   @@index([inviterShopId, createdAt])
   @@index([status, createdAt])
+}
+
+/// Jeton en lecture seule du widget Android (écran d'accueil) : ne donne accès qu'au résumé de l'atelier.
+model WidgetToken {
+  id         String    @id @default(cuid())
+  tokenHash  String    @unique
+  userId     String
+  shopId     String
+  shop       Shop      @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  createdAt  DateTime  @default(now())
+  lastUsedAt DateTime?
+  revokedAt  DateTime?
+
+  @@index([userId, createdAt])
 }
