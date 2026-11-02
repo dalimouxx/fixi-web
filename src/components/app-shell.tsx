@@ -13,6 +13,7 @@ import { TextSizeToggle } from './text-size-toggle';
 import { FxSheet } from './fx-sheet';
 import { HelpSheet } from './help-sheet';
 import { UniversalSearch } from './universal-search';
+import { GuidedTour } from './guided-tour';
 import { isConnectAppPath } from '@/lib/freemium';
 import { visibleNav, matchNav, itemLabel, type NavSection } from '@/lib/nav-atelier';
 import { useUiMode } from '@/lib/ui-mode';
@@ -84,6 +85,11 @@ export function AppShell({ children, user }: { children?: React.ReactNode; user:
     </div>;
   }
 
+  function renderTab({ section, item }: { section: NavSection; item: any }) {
+    const Icon = section.icon; const on = current?.section.id === section.id;
+    return <Link key={section.id} href={item.href} className={on ? 'active' : ''} aria-current={on ? 'page' : undefined}><Icon /><span>{section.id === 'parts' && connect ? 'Commander' : section.label}</span></Link>;
+  }
+
   const modeSwitch = !connect && <div className="fx-mode" role="group" aria-label="Affichage du menu">
     <button type="button" aria-pressed={!advanced} onClick={() => setMode('simple')}>Simple</button>
     <button type="button" aria-pressed={advanced} onClick={() => setMode('advanced')}>Avancé</button>
@@ -130,7 +136,9 @@ export function AppShell({ children, user }: { children?: React.ReactNode; user:
     </div>
 
     <nav className="fx-tabbar" aria-label="Navigation rapide">
-      {tabs.map(({ section, item }) => { const Icon = section.icon; const on = current?.section.id === section.id; return <Link key={section.id} href={item.href} className={on ? 'active' : ''} aria-current={on ? 'page' : undefined}><Icon /><span>{section.id === 'parts' && connect ? 'Commander' : section.label}</span></Link>; })}
+      {(primary && !connect ? tabs.slice(0, 2) : tabs).map(renderTab)}
+      {primary && !connect && <Link href={primary.href} className="fx-tab-fab" aria-label={primary.label} title={primary.label}><span><primary.icon /></span></Link>}
+      {primary && !connect && tabs.slice(2, 3).map(renderTab)}
       <button type="button" className={more ? 'active' : ''} onClick={() => setMore(true)} aria-haspopup="dialog"><MoreIcon /><span>Plus</span></button>
     </nav>
 
@@ -148,6 +156,7 @@ export function AppShell({ children, user }: { children?: React.ReactNode; user:
     </FxSheet>
 
     <HelpSheet open={help} onClose={closeHelp} pathname={p} advanced={advanced || connect} onAdvanced={connect ? undefined : () => setMode('advanced')} />
+    {!connect && <GuidedTour space="atelier" />}
     {!connect && <UniversalSearch open={search} onClose={closeSearch} sections={allSections} role={user.role} />}
   </div>;
 }

@@ -422,6 +422,7 @@ model Shop {
   currency              String   @default("DT")
   locale                String   @default("fr-TN")
   logoDataUrl           String?
+  brandColor            String?
   footerText            String   @default("Merci pour votre confiance")
   whatsappReceived      String   @default("Bonjour {client}, votre appareil {device} a bien été reçu. Code : {code}.")
   whatsappReady         String   @default("Bonjour {client}, votre appareil {device} est prêt. Montant restant : {balance} {currency}.")

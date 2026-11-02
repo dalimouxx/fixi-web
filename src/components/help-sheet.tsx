@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
-import { LifeBuoy, Sparkles, SlidersHorizontal } from 'lucide-react';
+import { LifeBuoy, Sparkles, SlidersHorizontal, Compass } from 'lucide-react';
+import { replayTour } from './guided-tour';
 import { FxSheet } from './fx-sheet';
 import { useI18n } from './language-provider';
 import { helpFor } from '@/lib/help-content';
@@ -27,6 +28,7 @@ export function HelpSheet({ open, onClose, pathname, onAdvanced, advanced }: {
       <div className="fx-help-links">
         <VideoHelpButton id="installer" />
         <VideoHelpButton id="alertes" />
+        <button type="button" onClick={() => { onClose(); setTimeout(replayTour, 250); }}><Compass size={20} />{lang === 'ar' ? 'إعادة الجولة التعريفية' : 'Revoir la visite guidée'}</button>
         <Link href="/app/support" onClick={onClose}><LifeBuoy size={20} />{lang === 'ar' ? 'راسل فريق الدعم' : 'Écrire au support Fixi'}</Link>
         <Link href="/app/updates" onClick={onClose}><Sparkles size={20} />{lang === 'ar' ? 'الجديد في Fixi' : 'Voir les nouveautés'}</Link>
         {onAdvanced && !advanced && <button type="button" onClick={() => { onAdvanced(); onClose(); }}><SlidersHorizontal size={20} />{lang === 'ar' ? 'إظهار كل الوحدات (الوضع المتقدم)' : 'Afficher tous les modules (Mode Avancé)'}</button>}
