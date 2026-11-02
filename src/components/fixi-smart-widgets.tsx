@@ -75,8 +75,8 @@ export function FixiSmartWidgets({area,widgets,onAction,subtitle}:Props){
     aria-label={'Widgets '+area}>
     <div className="fixi-widget-deck-header">
       <div className="fixi-widget-title-group">
-        <span className="fixi-widget-eyebrow"><LayoutGrid size={15}/> FIXI SMART WIDGETS</span>
-        <h2>Votre activité en un coup d’œil</h2>
+        <span className="fixi-widget-eyebrow"><LayoutGrid size={15}/> EN UN COUP D’ŒIL</span>
+        <h2>Les chiffres du jour</h2>
         <p>{subtitle||'Vos indicateurs réels et vos actions prioritaires, toujours accessibles.'}</p>
       </div>
       <button type="button" className={'fixi-widget-edit-button'+(customizing?' active':'')}

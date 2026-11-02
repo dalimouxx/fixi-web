@@ -1,5 +1,6 @@
 'use client';
-import { ReactNode, useEffect, useRef } from 'react';
+import { ReactNode, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
 // Feuille toujours montée : l'ouverture et la fermeture sont des transitions CSS
@@ -8,6 +9,9 @@ export function FxSheet({ open, onClose, side = 'side', title, subtitle, childre
   open: boolean; onClose: () => void; side?: 'side' | 'bottom'; title: ReactNode; subtitle?: ReactNode; children: ReactNode; label: string;
 }) {
   const closeRef = useRef<HTMLButtonElement>(null);
+  // Rendu dans <body> : un en-tête avec filtre/flou ne peut plus « capturer » la feuille.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   useEffect(() => {
     if (!open) return;
     const previous = document.activeElement as HTMLElement | null;
@@ -16,7 +20,8 @@ export function FxSheet({ open, onClose, side = 'side', title, subtitle, childre
     addEventListener('keydown', onKey);
     return () => { removeEventListener('keydown', onKey); previous?.focus?.({ preventScroll: true }); };
   }, [open, onClose]);
-  return <>
+  if (!mounted) return null;
+  return createPortal(<>
     <div className="fx-scrim" data-open={open} onClick={onClose} aria-hidden="true" />
     <section className={`fx-sheet fx-sheet--${side}`} data-open={open} role="dialog" aria-modal="true" aria-label={label} inert={!open}>
       {side === 'bottom' && <div className="fx-sheet-grip" aria-hidden="true" />}
@@ -26,5 +31,5 @@ export function FxSheet({ open, onClose, side = 'side', title, subtitle, childre
       </header>
       <div className="fx-sheet-body">{children}</div>
     </section>
-  </>;
+  </>, document.body);
 }

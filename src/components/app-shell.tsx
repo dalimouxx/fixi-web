@@ -6,7 +6,6 @@ import { Search, LogOut, HelpCircle, ChevronRight, WifiOff, PlusCircle, PackageO
 import { NotificationBell } from './notification-bell';
 import { PwaRegister } from './pwa-register';
 import { BrandLogo } from './brand-logo';
-import { PushToggle } from './push-toggle';
 import { OfflineSyncBadge } from './offline-sync-badge';
 import { InstallAppButton } from './install-app-button';
 import { ThemeToggle } from './theme-toggle';
@@ -117,8 +116,6 @@ export function AppShell({ children, user }: { children?: React.ReactNode; user:
           <OfflineSyncBadge />
           <button type="button" className="fx-icon-btn" onClick={() => setHelp(true)} aria-label="Aide pour cet écran" title="Aide"><HelpCircle size={20} /></button>
           <NotificationBell />
-          <span className="fx-top-hide-mobile"><PushToggle /></span>
-          <span className="fx-top-hide-mobile"><InstallAppButton label="Installer" /></span>
         </div>
       </header>
       <main className="fx-content">
@@ -143,7 +140,7 @@ export function AppShell({ children, user }: { children?: React.ReactNode; user:
       {connect && <Link href="/app/upgrade" className="btn btn-soft btn-block" style={{ marginBottom: 12 }}><Sparkles size={16} /> Passer à Fixi Pro</Link>}
       {modeSwitch}
       <div className="fx-side-tools" style={{ marginTop: 12 }}>
-        <PushToggle /><InstallAppButton label="Installer" /><ThemeToggle />
+        <InstallAppButton label="Installer l’application" /><ThemeToggle />
         <button type="button" className="btn btn-ghost btn-sm" onClick={logout}><LogOut size={16} /> Quitter</button>
       </div>
     </FxSheet>

@@ -103,7 +103,7 @@ export default function DriverCollectionsPage() {
   return <main className={st.paymentPage}>
     <Link href="/delivery" className={st.action}><ArrowLeft size={16}/> Retour aux livraisons</Link>
     <div className={st.paymentHeader}>
-      <span className={st.eyebrow}>FIXI DELIVERY · CAISSE</span>
+      <span className={st.eyebrow}>FIXI LIVREUR · CAISSE</span>
       <h1>Encaisser une commande</h1>
       <p>Choisissez une commande. Son montant, les sommes déjà réglées et le reste s’affichent automatiquement.</p>
     </div>

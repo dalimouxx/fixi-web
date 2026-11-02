@@ -39,6 +39,13 @@ services:
         value: https://api.anthropic.com/v1
       - key: NEXT_PUBLIC_APP_URL
         sync: false
+      # Alertes téléphone (Push). Générer une paire avec : npx web-push generate-vapid-keys
+      - key: VAPID_PUBLIC_KEY
+        sync: false
+      - key: VAPID_PRIVATE_KEY
+        sync: false
+      - key: VAPID_SUBJECT  # ex. mailto:votre-adresse@domaine.tn
+        sync: false
       - key: DEFAULT_SHOP_SLUG
         value: atelier-principal
       - key: INITIAL_SHOP_SLUG
