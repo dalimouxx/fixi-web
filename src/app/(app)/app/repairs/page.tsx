@@ -13,6 +13,7 @@ export default function Repairs(){
   useEffect(()=>{const v=new URLSearchParams(window.location.search).get('q');if(v)setQ(v);const saved=localStorage.getItem('fixi-repairs-view');if(saved==='table')setView('table')},[]);
   useEffect(()=>{localStorage.setItem('fixi-repairs-view',view)},[view]);
   const[refresh,setRefresh]=useState(0);
+  const[mstatus,setMstatus]=useState<string>('ACTIVE');
   const{data,loading,error,reload}=useApi<any[]>(`/api/repairs?q=${encodeURIComponent(q)}`,refresh);
   useRealtimeRefresh(useCallback(()=>reload(),[]));
   const grouped=useMemo(()=>Object.fromEntries(cols.map(([k])=>[k,(data||[]).filter(r=>r.status===k)])),[data]);
@@ -20,7 +21,7 @@ export default function Repairs(){
   return <div className="page" style={{maxWidth:'none'}}>
     <div className="page-head">
       <div><h1 className="page-title">Réparations</h1><div className="page-sub">Suivez chaque appareil de la réception jusqu’à la livraison.</div></div>
-      <Link href="/app/repairs/new" className="btn btn-primary"><Plus size={17}/> Nouvelle réception</Link>
+      <Link href="/app/repairs/new" className="btn btn-primary"><Plus size={17}/> Nouvelle réparation</Link>
     </div>
 
     <div className="card card-pad repairs-toolbar-v2" style={{marginBottom:16,padding:14}}>
@@ -32,7 +33,26 @@ export default function Repairs(){
     </div>
 
     {error&&<div className="error" style={{marginBottom:15}}>{error}</div>}
-    {loading?<div className="card card-pad">Chargement…</div>:view==='kanban'?<div className="kanban">{cols.map(([key,label],ci)=><div className="kanban-col" data-status={key} key={key}>
+    {/* Téléphone : onglets de statut colorés + cartes (le Kanban à 6 colonnes ne tient pas sur un écran) */}
+    <div className="fx-mobile-only">
+      <nav className="fx-status-tabs" aria-label="Filtrer par statut">
+        {[['ACTIVE','En cours'],...cols].map(([k,l])=>{const n=k==='ACTIVE'?(data||[]).filter((r:any)=>!['DELIVERED','CANCELLED'].includes(r.status)).length:(grouped[k]?.length||0);return <button type="button" key={k} data-status={k} aria-pressed={mstatus===k} onClick={()=>setMstatus(k)}><span>{l}</span><b>{n}</b></button>})}
+      </nav>
+      {loading&&!data?<div className="card card-pad fx-skeleton" role="status" aria-label="Chargement"><i/><i/><i/></div>:
+      <div className="fx-repair-cards">
+        {(data||[]).filter((r:any)=>mstatus==='ACTIVE'?!['DELIVERED','CANCELLED'].includes(r.status):r.status===mstatus).map((r:any)=>{const ci=cols.findIndex(c=>c[0]===r.status);const next=ci>=0&&ci<cols.length-1?cols[ci+1]:null;return <article key={r.id} className="fx-repair-card" data-status={r.status}>
+          <Link href={`/app/repairs/${r.code}`} className="fx-repair-card-main">
+            <div className="fx-repair-card-top"><b>{[r.brand,r.model].filter(Boolean).join(' ')}</b><StatusBadge status={r.status}/></div>
+            <span className="fx-repair-card-issue">{r.reportedIssue}</span>
+            <span className="fx-repair-card-meta">{r.client.fullName} · <span className="mono">{r.code}</span>{r.priority==='URGENT'&&<em> · URGENT</em>}</span>
+          </Link>
+          <div className="fx-repair-card-foot"><span>{r.finalPrice!==null?money(r.finalPrice):'Prix à fixer'}</span>{next&&r.status!=='DELIVERED'&&<button type="button" className="btn btn-ghost btn-sm" onClick={()=>move(r.code,next[0])}>{next[1]} →</button>}</div>
+        </article>})}
+        {!(data||[]).some((r:any)=>mstatus==='ACTIVE'?!['DELIVERED','CANCELLED'].includes(r.status):r.status===mstatus)&&<div className="fx-empty"><b>Aucun appareil ici</b><span>Les appareils de ce statut apparaîtront ici.</span><Link href="/app/repairs/new" className="btn btn-primary">Nouvelle réparation</Link></div>}
+      </div>}
+    </div>
+    <div className="fx-desktop-only">
+    {loading?<div className="card card-pad fx-skeleton" role="status" aria-label="Chargement"><i/><i/><i/></div>:view==='kanban'?<div className="kanban">{cols.map(([key,label],ci)=><div className="kanban-col" data-status={key} key={key}>
       <div className="kanban-head"><span>{label}</span><span className="kanban-count">{grouped[key]?.length||0}</span></div>
       {(grouped[key]||[]).map((r:any)=><div className={`repair-card ${r.priority==='URGENT'?'priority-urgent':''}`} key={r.id}>
         <div style={{display:'flex',justifyContent:'space-between',gap:8}}><Link href={`/app/repairs/${r.code}`} className="repair-code">{r.code}</Link><PriorityBadge priority={r.priority}/></div>
@@ -51,5 +71,6 @@ export default function Repairs(){
         <td><Link href={`/app/repairs/${r.code}`} className="btn btn-soft btn-sm"><ChevronRight size={14}/></Link></td>
       </tr>)}</tbody>
     </table></div></div>}
+    </div>
   </div>
 }
