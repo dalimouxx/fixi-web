@@ -476,6 +476,7 @@ model Shop {
   cashSessions          CashSession[]
   stockMovements        StockMovement[]
   attachments           RepairAttachment[]
+  supplierInvites       SupplierInvite[]
   notifications         Notification[]
   salesDocuments        SalesDocument[]
   platformMessages      PlatformMessage[]
@@ -613,6 +614,8 @@ model Repair {
   discountApprovedBy String?
   warrantyDays      Int            @default(30)
   promisedAt        DateTime?
+  pickupReminderCount Int       @default(0)
+  pickupRemindedAt  DateTime?
   estimatedMinutes  Int?
   deliveredAt       DateTime?
   createdAt         DateTime       @default(now())
@@ -2591,4 +2594,25 @@ model SupplierSaasPayment {
   createdAt      DateTime                 @default(now())
 
   @@index([companyId, paidAt])
+}
+
+/// Invitation d'un fournisseur par un atelier : lien WhatsApp → demande d'espace → création par Fixi Control.
+model SupplierInvite {
+  id             String    @id @default(cuid())
+  code           String    @unique
+  inviterShopId  String
+  inviterShop    Shop      @relation(fields: [inviterShopId], references: [id], onDelete: Cascade)
+  supplierName   String
+  supplierPhone  String?
+  status         String    @default("SENT") // SENT, REQUESTED, CONVERTED, DECLINED
+  requestName    String?
+  requestCompany String?
+  requestPhone   String?
+  requestCity    String?
+  requestedAt    DateTime?
+  convertedAt    DateTime?
+  createdAt      DateTime  @default(now())
+
+  @@index([inviterShopId, createdAt])
+  @@index([status, createdAt])
 }

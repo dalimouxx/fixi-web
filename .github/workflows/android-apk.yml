@@ -1,0 +1,60 @@
+name: Fixi Android (APK)
+# Construit l'application Android de Fixi (Trusted Web Activity) sur GitHub, sans rien installer chez vous.
+# Lancement : onglet Actions → « Fixi Android (APK) » → Run workflow, avec l'adresse du site.
+# Signature : secrets FIXI_KEYSTORE_BASE64, FIXI_KEYSTORE_PASSWORD (sinon une clé temporaire est créée).
+on:
+  workflow_dispatch:
+    inputs:
+      host:
+        description: "Adresse du site Fixi (ex. fixi.onrender.com)"
+        required: true
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - name: Générer le projet Android
+        run: |
+          npm install --no-save --no-audit --no-fund @bubblewrap/core@1.24.1
+          node android/build-twa.mjs
+        env:
+          TWA_HOST: ${{ inputs.host }}
+      - name: Clé de signature
+        run: |
+          if [ -n "${{ secrets.FIXI_KEYSTORE_BASE64 }}" ]; then
+            echo "${{ secrets.FIXI_KEYSTORE_BASE64 }}" | base64 -d > android/fixi.keystore
+            echo "KS_PASS=${{ secrets.FIXI_KEYSTORE_PASSWORD }}" >> "$GITHUB_ENV"
+          else
+            echo "::warning::Aucune clé enregistrée : clé temporaire (APK de test uniquement, pas pour le Play Store)."
+            keytool -genkeypair -v -keystore android/fixi.keystore -alias fixi -keyalg RSA -keysize 2048 -validity 10000 -storepass fixitemp -keypass fixitemp -dname "CN=Fixi, C=TN"
+            echo "KS_PASS=fixitemp" >> "$GITHUB_ENV"
+          fi
+      - name: Compiler
+        working-directory: android/build
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon assembleRelease bundleRelease
+      - name: Signer
+        run: |
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          APK=$(ls android/build/app/build/outputs/apk/release/*-unsigned.apk | head -1)
+          "$BT/zipalign" -f -p 4 "$APK" android/fixi-aligned.apk
+          "$BT/apksigner" sign --ks android/fixi.keystore --ks-key-alias fixi --ks-pass env:KS_PASS --key-pass env:KS_PASS --out android/Fixi.apk android/fixi-aligned.apk
+          jarsigner -keystore android/fixi.keystore -storepass "$KS_PASS" -keypass "$KS_PASS" android/build/app/build/outputs/bundle/release/app-release.aab fixi
+          cp android/build/app/build/outputs/bundle/release/app-release.aab android/Fixi.aab
+          echo "### Empreinte à mettre dans TWA_SHA256 (Render)" >> "$GITHUB_STEP_SUMMARY"
+          keytool -list -v -keystore android/fixi.keystore -alias fixi -storepass "$KS_PASS" | grep "SHA256:" | sed 's/.*SHA256: //' >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fixi-android
+          path: |
+            android/Fixi.apk
+            android/Fixi.aab

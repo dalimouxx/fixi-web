@@ -3,7 +3,7 @@
 import {useEffect,useRef,useState} from 'react';
 import {Camera,ScanLine,X,AlertTriangle} from 'lucide-react';
 
-export function BarcodeCamera({onDetected,onClose}:{onDetected:(code:string)=>void;onClose:()=>void}){
+export function BarcodeCamera({onDetected,onClose,kicker='SCANNER PRODUIT',title='Scanner un code-barres',text='Présentez le code devant la caméra. Fixi ajoute automatiquement le produit trouvé au panier.',placeholder='EAN, UPC, Code 128, SKU…',submitLabel='Ajouter',validate}:{onDetected:(code:string)=>void;onClose:()=>void;kicker?:string;title?:string;text?:string;placeholder?:string;submitLabel?:string;validate?:(code:string)=>boolean}){
  const video=useRef<HTMLVideoElement|null>(null);
  const stream=useRef<MediaStream|null>(null);
  const stopped=useRef(false);
@@ -26,7 +26,7 @@ export function BarcodeCamera({onDetected,onClose}:{onDetected:(code:string)=>vo
      try{
       if(video.current&&video.current.readyState>=2){
        const results=await detector.detect(video.current);
-       const code=String(results?.[0]?.rawValue||'').trim();
+       const code=(results||[]).map((x:any)=>String(x?.rawValue||'').trim()).find((x:string)=>x&&(!validate||validate(x)))||'';
        if(code){stop();onDetected(code);return}
       }
      }catch{}
@@ -45,10 +45,10 @@ export function BarcodeCamera({onDetected,onClose}:{onDetected:(code:string)=>vo
 
  return <div className="supplier-modal-backdrop"><div className="supplier-modal barcode-camera-modal">
   <button className="supplier-modal-x" onClick={close}><X/></button>
-  <span className="smart-kicker"><ScanLine size={13}/> SCANNER PRODUIT</span><h2>Scanner un code-barres</h2>
-  <p>Présentez le code devant la caméra. Fixi ajoute automatiquement le produit trouvé au panier.</p>
+  <span className="smart-kicker"><ScanLine size={13}/> {kicker}</span><h2>{title}</h2>
+  <p>{text}</p>
   <div className="barcode-camera-view"><video ref={video} playsInline muted/><div className="barcode-scan-frame"/><Camera/></div>
   {err&&<div className="supplier-pos-alert error"><AlertTriangle/>{err}</div>}
-  <form className="barcode-manual" onSubmit={submit}><label className="label">Ou saisir / scanner avec un lecteur</label><div><input autoFocus={!!err} className="input" value={manual} onChange={e=>setManual(e.target.value)} placeholder="EAN, UPC, Code 128, SKU…"/><button className="btn btn-primary">Ajouter</button></div></form>
+  <form className="barcode-manual" onSubmit={submit}><label className="label">Ou saisir / scanner avec un lecteur</label><div><input autoFocus={!!err} className="input" value={manual} onChange={e=>setManual(e.target.value)} placeholder={placeholder}/><button className="btn btn-primary">{submitLabel}</button></div></form>
  </div></div>
 }

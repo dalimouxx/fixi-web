@@ -1,3 +1,56 @@
-'use client';import { useState } from 'react';import { Plus,ReceiptText } from 'lucide-react';import { api,Modal,useApi } from '@/components/ui';import { dateOnly,money } from '@/lib/format';
-const cats=['Loyer','Électricité','Internet','Salaires','Transport','Marketing','Achat divers','Autre'];
-export default function Expenses(){const[refresh,setRefresh]=useState(0);const[open,setOpen]=useState(false);const{data}=useApi<any[]>('/api/expenses',refresh);const[f,setF]=useState<any>({category:'Autre',label:'',amount:'',expenseDate:new Date().toISOString().slice(0,10),note:'',fromCash:false});async function save(e:any){e.preventDefault();try{await api('/api/expenses',{method:'POST',body:JSON.stringify(f)});setOpen(false);setRefresh(x=>x+1)}catch(e:any){alert(e.message)}}const total=(data||[]).reduce((a,x)=>a+Number(x.amount),0);return <div className="page"><div className="page-head"><div><h1 className="page-title">Dépenses</h1><div className="page-sub">Suivez les sorties qui impactent réellement votre rentabilité.</div></div><button className="btn btn-primary" onClick={()=>setOpen(true)}><Plus size={17}/> Ajouter</button></div><div className="stat-grid" style={{marginBottom:18}}><div className="card stat-card"><div className="stat-icon"><ReceiptText size={18}/></div><div className="stat-label">Dépenses affichées</div><div className="stat-value">{money(total)}</div></div></div><div className="card"><div className="table-wrap"><table className="table"><thead><tr><th>Date</th><th>Catégorie</th><th>Libellé</th><th>Note</th><th>Source</th><th>Montant</th></tr></thead><tbody>{(data||[]).map(x=><tr key={x.id}><td>{dateOnly(x.expenseDate)}</td><td><span className="badge badge-gray">{x.category}</span></td><td style={{fontWeight:800}}>{x.label}</td><td className="muted">{x.note||'—'}</td><td>{x.cashSession?<span className="badge badge-blue">Caisse</span>:<span className="badge badge-gray">Hors caisse</span>}</td><td><strong>{money(x.amount)}</strong></td></tr>)}</tbody></table></div></div><Modal open={open} onClose={()=>setOpen(false)} title="Nouvelle dépense"><form onSubmit={save} className="form-grid"><div className="field"><label className="label">Catégorie</label><select className="select" value={f.category} onChange={e=>setF({...f,category:e.target.value})}>{cats.map(c=><option key={c}>{c}</option>)}</select></div><div className="field"><label className="label">Date</label><input type="date" className="input" value={f.expenseDate} onChange={e=>setF({...f,expenseDate:e.target.value})}/></div><div className="field span-2"><label className="label">Libellé *</label><input className="input" required value={f.label} onChange={e=>setF({...f,label:e.target.value})}/></div><div className="field"><label className="label">Montant *</label><input className="input" required type="number" step="0.001" min="0.001" value={f.amount} onChange={e=>setF({...f,amount:e.target.value})}/></div><div className="field span-2"><label className="label">Note</label><textarea className="textarea" value={f.note} onChange={e=>setF({...f,note:e.target.value})}/></div><label className="span-2" style={{display:'flex',gap:10,alignItems:'center'}}><input type="checkbox" checked={!!f.fromCash} onChange={e=>setF({...f,fromCash:e.target.checked})}/><div><strong>Sortir cette dépense de la caisse ouverte</strong><div className="page-sub">Elle sera déduite du montant attendu à la clôture.</div></div></label><div className="span-2"><button className="btn btn-primary btn-block">Enregistrer</button></div></form></Modal></div>}
+'use client';
+import { useMemo, useState } from 'react';
+import { Plus, ReceiptText, Home, Zap, Wifi, Users, Truck, Megaphone, ShoppingBag, MoreHorizontal, CalendarDays } from 'lucide-react';
+import { api, useApi } from '@/components/ui';
+import { FxSheet } from '@/components/fx-sheet';
+import { dateOnly, money } from '@/lib/format';
+
+const cats: [string, any][] = [['Loyer', Home], ['Électricité', Zap], ['Internet', Wifi], ['Salaires', Users], ['Transport', Truck], ['Marketing', Megaphone], ['Achat divers', ShoppingBag], ['Autre', MoreHorizontal]];
+const iconOf = (c: string) => (cats.find(x => x[0] === c) || cats[7])[1];
+const blank = () => ({ category: 'Autre', label: '', amount: '', expenseDate: new Date().toISOString().slice(0, 10), note: '', fromCash: false });
+
+// Dépenses : ajout en trois touchers (catégorie, montant, enregistrer), total du mois en tête.
+export default function Expenses() {
+  const [refresh, setRefresh] = useState(0);
+  const [open, setOpen] = useState(false);
+  const { data, loading } = useApi<any[]>('/api/expenses', refresh);
+  const [f, setF] = useState<any>(blank());
+  const rows = data || [];
+  const now = new Date();
+  const monthRows = rows.filter(x => { const d = new Date(x.expenseDate); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); });
+  const month = monthRows.reduce((a, x) => a + Number(x.amount), 0);
+  const byCat = useMemo(() => { const m: Record<string, number> = {}; for (const x of monthRows) m[x.category] = (m[x.category] || 0) + Number(x.amount); return Object.entries(m).sort((a, b) => b[1] - a[1]).slice(0, 4); }, [monthRows]);
+  const groups = useMemo(() => { const g: Record<string, any[]> = {}; for (const x of rows) { const k = new Date(x.expenseDate).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }); (g[k] ||= []).push(x); } return Object.entries(g); }, [rows]);
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    try { await api('/api/expenses', { method: 'POST', body: JSON.stringify({ ...f, label: f.label || f.category }) }); setOpen(false); setF(blank()); setRefresh(x => x + 1); } catch (err: any) { alert(err.message); }
+  }
+
+  return <div className="fx-page">
+    <div className="fx-hello"><div><h1>Dépenses</h1><p>Ce qui sort de l’atelier, pour connaître votre vrai bénéfice.</p></div>
+      <button className="btn btn-primary" onClick={() => setOpen(true)}><Plus size={18} /> Ajouter une dépense</button></div>
+
+    <section className="fx-panel fx-expense-month">
+      <div><span>Ce mois-ci</span><strong>{money(month)}</strong><small>{monthRows.length} dépense{monthRows.length > 1 ? 's' : ''}</small></div>
+      {byCat.length > 0 && <ul>{byCat.map(([c, v]) => { const I = iconOf(c); return <li key={c}><I size={16} /><span>{c}</span><b>{money(v)}</b><i style={{ width: `${Math.max(6, Math.round(v / month * 100))}%` }} /></li>; })}</ul>}
+    </section>
+
+    {loading && !data ? <div className="card card-pad fx-skeleton" role="status" aria-label="Chargement"><i /><i /><i /></div> :
+      groups.length ? groups.map(([k, list]) => <section key={k} className="fx-panel" style={{ marginTop: 12 }}>
+        <div className="fx-panel-head"><h2 className="fx-cap">{k}</h2><strong>{money(list.reduce((a: number, x: any) => a + Number(x.amount), 0))}</strong></div>
+        <div className="fx-list">{list.map((x: any) => { const I = iconOf(x.category); return <div key={x.id} className="fx-row"><I /><span className="fx-row-main"><b>{x.label}</b><small>{x.category} · {dateOnly(x.expenseDate)}{x.cashSession ? ' · sorti de la caisse' : ''}{x.note ? ` · ${x.note}` : ''}</small></span><strong className="fx-amount">−{money(x.amount)}</strong></div>; })}</div>
+      </section>) : <div className="fx-empty" style={{ marginTop: 12 }}><b>Aucune dépense</b><span>Loyer, électricité, transport… ajoutez-les pour voir votre bénéfice réel.</span><button className="btn btn-primary" onClick={() => setOpen(true)}><Plus size={18} /> Ajouter une dépense</button></div>}
+
+    <FxSheet open={open} onClose={() => setOpen(false)} side="bottom" title="Nouvelle dépense" label="Nouvelle dépense">
+      <form onSubmit={save} className="fx-form-stack">
+        <div className="fx-cat-grid" role="radiogroup" aria-label="Catégorie">{cats.map(([c, I]) => <button type="button" role="radio" key={c} aria-checked={f.category === c} onClick={() => setF({ ...f, category: c })}><I size={20} /><span>{c}</span></button>)}</div>
+        <label className="field"><span className="label">Montant *</span><input className="input fx-input-big" required type="number" inputMode="decimal" step="0.001" min="0.001" value={f.amount} onChange={e => setF({ ...f, amount: e.target.value })} placeholder="0" /></label>
+        <label className="field"><span className="label">Libellé</span><input className="input" value={f.label} onChange={e => setF({ ...f, label: e.target.value })} placeholder={f.category} /></label>
+        <label className="field"><span className="label"><CalendarDays size={14} /> Date</span><input type="date" className="input" value={f.expenseDate} onChange={e => setF({ ...f, expenseDate: e.target.value })} /></label>
+        <label className="fx-check"><input type="checkbox" checked={!!f.fromCash} onChange={e => setF({ ...f, fromCash: e.target.checked })} /><span><b>Payée avec l’argent de la caisse</b><small>Déduite du montant attendu à la fermeture.</small></span></label>
+        <button className="btn btn-primary btn-block"><ReceiptText size={18} /> Enregistrer</button>
+      </form>
+    </FxSheet>
+  </div>;
+}

@@ -4,7 +4,7 @@ import { useCallback } from 'react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import {
   PlusCircle, Banknote, PackageCheck, PackageOpen, Wrench, Boxes, Link2, AlertTriangle, Clock3, ShieldCheck,
-  CreditCard, Wallet, Hourglass, CheckCircle2, ChevronRight, Moon, SlidersHorizontal, Smartphone,
+  CreditCard, Wallet, Hourglass, CheckCircle2, ChevronRight, Moon, SlidersHorizontal, Smartphone, MessageCircle, BellRing,
 } from 'lucide-react';
 import { FixiSmartWidgets } from '@/components/fixi-smart-widgets';
 import { StatusBadge, useApi, useRealtimeRefresh } from '@/components/ui';
@@ -12,6 +12,9 @@ import { money, dateTime } from '@/lib/format';
 import { useUiMode } from '@/lib/ui-mode';
 import { GettingStarted } from '@/components/getting-started';
 import { useI18n } from '@/components/language-provider';
+import { api } from '@/components/ui';
+import { waLink } from '@/lib/whatsapp-link';
+import { daySummary } from '@/lib/day-summary';
 
 type Tile = { href: string; icon: any; title: string; sub: string; count?: number; variant?: 'primary' | 'ready' };
 
@@ -60,6 +63,7 @@ export default function Dashboard() {
 
   const todo = [
     waiting > 0 && { href: '/app/repairs', icon: Clock3, tone: 'warning', count: waiting, title: 'réparation(s) attendent une pièce', sub: 'Commandez-la chez votre fournisseur' },
+    (data.pickups || []).some((x: any) => x.stage > 0) && { href: '#pickup-title', icon: BellRing, tone: 'warning', count: (data.pickups || []).filter((x: any) => x.stage > 0).length, title: 'client(s) à relancer', sub: 'Appareils prêts non récupérés' },
     ready > 0 && { href: perm.cash ? '/app/cashier' : '/app/repairs', icon: PackageCheck, tone: 'ok', count: ready, title: 'appareil(s) prêt(s) à rendre', sub: 'Prévenez le client sur WhatsApp' },
     perm.stock && data.lowStock > 0 && { href: '/app/stock', icon: Boxes, tone: 'danger', count: data.lowStock, title: 'pièce(s) presque épuisée(s)', sub: 'À racheter' },
     perm.warranty && data.openWarranty > 0 && { href: '/app/warranties', icon: ShieldCheck, tone: 'warning', count: data.openWarranty, title: 'retour(s) sous garantie', sub: 'À examiner' },
@@ -68,9 +72,11 @@ export default function Dashboard() {
 
   return <div className="fx-page">
     <div className="fx-hello">
-      <div><h1>Que voulez-vous faire ?</h1><p style={{ textTransform: 'capitalize' }}>{today}</p></div>
+      <div><h1>Que voulez-vous faire ?</h1><p className="fx-hello-date">{today}</p></div>
       {perm.finance && <Link href="/app/fin-de-journee" className="btn btn-ghost"><Moon size={18} /> Fin de journée</Link>}
     </div>
+
+    <p className="fx-day-summary" aria-live="polite">{daySummary({ lang, ready, waiting, active, revenue: perm.finance ? money(data.todayRevenue) : null, pickups: (data.pickups || []).filter((x: any) => x.stage > 0).length })}</p>
 
     {perm.profit && <GettingStarted repairCount={Object.values(counts).reduce((a: number, v: any) => a + Number(v), 0)} />}
 
@@ -104,6 +110,19 @@ export default function Dashboard() {
         </div>
       </section>
     </div>
+
+    {(data.pickups || []).length > 0 && <section className="fx-panel fx-pickups" aria-labelledby="pickup-title" style={{ marginTop: 12 }}>
+      <div className="fx-panel-head"><h2 id="pickup-title"><BellRing size={18} /> Appareils prêts à relancer</h2>{data.autoPickup && <span className="fx-chip">Relance WhatsApp automatique</span>}</div>
+      <p className="fx-panel-sub">Prêts depuis 3 jours ou plus. 1re relance à 3 jours, 2e à 7 jours.</p>
+      <div className="fx-list">
+        {data.pickups.map((x: any) => <div key={x.code} className={`fx-row ${x.days >= 7 ? 'fx-row--danger' : 'fx-row--warning'}`}>
+          <PackageCheck />
+          <Link href={`/app/repairs/${x.code}`} className="fx-row-main"><b>{x.client} · {x.device}</b><small>Prêt depuis {x.days} j · {x.sent ? `${x.sent} relance(s) faite(s)` : 'jamais relancé'}{x.balance > 0 ? ` · reste ${money(x.balance)}` : ''}</small></Link>
+          {x.stage > 0 ? <a className="btn btn-success btn-sm" href={waLink(x.phone, x.message)} target="_blank" rel="noreferrer" onClick={() => { api(`/api/repairs/${encodeURIComponent(x.code)}/pickup-reminder`, { method: 'POST' }).then(() => reload()).catch(() => {}); }}><MessageCircle size={16} /> Relancer</a>
+            : <span className="fx-chip fx-chip--ok"><CheckCircle2 size={14} /> Relancé</span>}
+        </div>)}
+      </div>
+    </section>}
 
     {advanced ? <>
       <div style={{ marginTop: 24 }}>

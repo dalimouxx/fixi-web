@@ -12,3 +12,7 @@ data/
 *.sql
 *.sql.gz
 *.tar.gz
+android/build/
+android/*.keystore
+android/*.apk
+android/*.aab
