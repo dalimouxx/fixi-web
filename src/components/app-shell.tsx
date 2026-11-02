@@ -1,147 +1,158 @@
 'use client';
 import Link from 'next/link';
-import {useEffect,useMemo,useState} from 'react';
-import {usePathname,useRouter} from 'next/navigation';
-import {
-  LayoutDashboard,Wrench,PlusCircle,Users,CreditCard,Boxes,ReceiptText,UserCog,BarChart3,Settings,Search,LogOut,
-  MonitorPlay,ShieldCheck,HeartHandshake,FileText,History,X,Headphones,PackageOpen,Link2,Sparkles,Gift,BrainCircuit,
-  Workflow,Activity,CalendarDays,Megaphone,Eye,Building2,Smartphone,MessageCircle,ShoppingBag,PhoneCall,GraduationCap,
-  HeartHandshake as CareIcon,CloudOff,PanelLeftClose,PanelLeftOpen,Zap,Command,ChevronRight,Wifi,WifiOff,ChevronDown,Menu
-} from 'lucide-react';
-import {NotificationBell} from './notification-bell';
-import {PwaRegister} from './pwa-register';
-import {BrandLogo} from './brand-logo';
-import {PushToggle} from './push-toggle';
-import {OfflineSyncBadge} from './offline-sync-badge';
-import {InstallAppButton} from './install-app-button';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import { Search, LogOut, HelpCircle, ChevronRight, WifiOff, PlusCircle, PackageOpen, Sparkles, MonitorPlay } from 'lucide-react';
+import { NotificationBell } from './notification-bell';
+import { PwaRegister } from './pwa-register';
+import { BrandLogo } from './brand-logo';
+import { PushToggle } from './push-toggle';
+import { OfflineSyncBadge } from './offline-sync-badge';
+import { InstallAppButton } from './install-app-button';
+import { ThemeToggle } from './theme-toggle';
+import { FxSheet } from './fx-sheet';
+import { HelpSheet } from './help-sheet';
+import { UniversalSearch } from './universal-search';
 import { isConnectAppPath } from '@/lib/freemium';
+import { visibleNav, matchNav, itemLabel, type NavSection } from '@/lib/nav-atelier';
+import { useUiMode } from '@/lib/ui-mode';
 
-const links=[
-['Dashboard','/app/dashboard',LayoutDashboard,['ADMIN','RECEPTION','TECHNICIAN','CASHIER'],'PRINCIPAL'],
-['Réception Express','/app/repairs/new',PlusCircle,['ADMIN','RECEPTION','CASHIER'],'PRINCIPAL'],
-['Réparations','/app/repairs',Wrench,['ADMIN','RECEPTION','TECHNICIAN','CASHIER'],'PRINCIPAL'],
-['Clients','/app/clients',Users,['ADMIN','RECEPTION','CASHIER'],'PRINCIPAL'],
-['Caisse','/app/cashier',CreditCard,['ADMIN','CASHIER'],'PRINCIPAL'],
-['Stock','/app/stock',Boxes,['ADMIN','TECHNICIAN'],'PRINCIPAL'],
+export function AppShell({ children, user }: { children?: React.ReactNode; user: any }) {
+  const p = usePathname();
+  const router = useRouter();
+  const connect = user.accessTier === 'CONNECT';
+  const { advanced, setMode, mode } = useUiMode('atelier');
+  const [search, setSearch] = useState(false);
+  const [help, setHelp] = useState(false);
+  const [more, setMore] = useState(false);
+  const [online, setOnline] = useState(true);
+  const allow = connect ? isConnectAppPath : undefined;
 
-['Compatibilité pièces','/app/compatibility',Link2,['ADMIN','RECEPTION','TECHNICIAN'],'ATELIER'],
-['Catalogue appareils','/app/device-catalog',Smartphone,['ADMIN','RECEPTION'],'ATELIER'],
-['Fixi Supplier','/app/suppliers',PackageOpen,['ADMIN','RECEPTION'],'ATELIER'],
-['Mes dettes fournisseurs','/app/mes-dettes',CreditCard,['ADMIN','RECEPTION','CASHIER'],'ATELIER'],
-['Achats atelier','/app/purchases',ShoppingBag,['ADMIN','RECEPTION'],'ATELIER'],
-['Marché pièces','/app/parts-market',ShoppingBag,['ADMIN','RECEPTION','TECHNICIAN','CASHIER'],'ATELIER'],
-['Rendez-vous','/app/appointments',CalendarDays,['ADMIN','RECEPTION'],'ATELIER'],
-['Garanties / SAV','/app/warranties',HeartHandshake,['ADMIN','RECEPTION','TECHNICIAN'],'ATELIER'],
-['Devis & factures','/app/documents',FileText,['ADMIN','RECEPTION','CASHIER'],'ATELIER'],
-['Paiements','/app/payments',CreditCard,['ADMIN','CASHIER'],'ATELIER'],
-['Sessions caisse','/app/cash-sessions',History,['ADMIN','CASHIER'],'ATELIER'],
-['Mouvements stock','/app/stock-movements',History,['ADMIN','TECHNICIAN'],'ATELIER'],
-['Dépenses','/app/expenses',ReceiptText,['ADMIN'],'ATELIER'],
+  // Menu affiché (selon le mode) et ensemble complet (pour la recherche).
+  const sections = useMemo(() => visibleNav(user.role, { includeAdvanced: advanced || connect, allow }), [user.role, advanced, connect]);
+  const allSections = useMemo(() => visibleNav(user.role, { includeAdvanced: true, allow }), [user.role, connect]);
+  const current = useMemo(() => matchNav(p, allSections), [p, allSections]);
+  const [expanded, setExpanded] = useState<string | null>(null);
+  useEffect(() => { setExpanded(current?.section.id ?? null); }, [current?.section.id]);
 
-['Fixi Brain','/app/brain',BrainCircuit,['ADMIN'],'INTELLIGENCE'],
-['Smart Insights','/app/insights',Activity,['ADMIN'],'INTELLIGENCE'],
-['Automations','/app/automations',Workflow,['ADMIN'],'INTELLIGENCE'],
-['Smart Marketing','/app/marketing',Megaphone,['ADMIN'],'INTELLIGENCE'],
-['Mode propriétaire','/app/owner',Eye,['ADMIN'],'INTELLIGENCE'],
-['Réseau / Franchise','/app/network',Building2,['ADMIN'],'INTELLIGENCE'],
+  useEffect(() => { const sync = () => setOnline(navigator.onLine); sync(); addEventListener('online', sync); addEventListener('offline', sync); return () => { removeEventListener('online', sync); removeEventListener('offline', sync); }; }, []);
+  useEffect(() => {
+    const f = (e: KeyboardEvent) => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); if (!connect) setSearch(v => !v); } };
+    addEventListener('keydown', f); return () => removeEventListener('keydown', f);
+  }, [connect]);
+  useEffect(() => { const beat = () => fetch('/api/heartbeat', { method: 'POST' }).catch(() => {}); beat(); const t = setInterval(beat, 30000); const vis = () => document.visibilityState === 'visible' && beat(); document.addEventListener('visibilitychange', vis); return () => { clearInterval(t); document.removeEventListener('visibilitychange', vis); }; }, []);
+  useEffect(() => { const es = new EventSource('/api/events'); es.onmessage = () => window.dispatchEvent(new CustomEvent('fixi:realtime')); const vis = () => { if (document.visibilityState === 'visible') window.dispatchEvent(new CustomEvent('fixi:realtime')); }; document.addEventListener('visibilitychange', vis); return () => { document.removeEventListener('visibilitychange', vis); es.close(); }; }, []);
+  // Mesure d'usage : un événement par écran ouvert.
+  useEffect(() => { fetch('/api/usage', { method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path: p, mode }) }).catch(() => {}); }, [p]);
+  useEffect(() => { setMore(false); setHelp(false); }, [p]);
 
-['Communauté','/app/community',MessageCircle,['ADMIN','RECEPTION','TECHNICIAN','CASHIER'],'SERVICES'],
-['Expert Call','/app/expert-call',PhoneCall,['ADMIN','RECEPTION','TECHNICIAN','CASHIER'],'SERVICES'],
-['Academy','/app/academy',GraduationCap,['ADMIN','RECEPTION','TECHNICIAN','CASHIER'],'SERVICES'],
-['Fixi Care','/app/care',CareIcon,['ADMIN','RECEPTION','CASHIER'],'SERVICES'],
-['Offline Sync','/app/offline',CloudOff,['ADMIN','RECEPTION','CASHIER'],'SERVICES'],
+  async function logout() { await fetch('/api/auth/logout', { method: 'POST' }); router.push('/login'); router.refresh(); }
+  const closeSearch = useCallback(() => setSearch(false), []);
+  const closeHelp = useCallback(() => setHelp(false), []);
+  const closeMore = useCallback(() => setMore(false), []);
+  const initials = String(user.fullName || '').split(' ').map((x: string) => x[0]).slice(0, 2).join('').toUpperCase();
+  const isActive = (href: string) => current?.item.href === href;
+  const primary = connect
+    ? { href: '/app/suppliers', label: 'Commander une pièce', icon: PackageOpen }
+    : ['ADMIN', 'RECEPTION', 'CASHIER'].includes(user.role) ? { href: '/app/repairs/new', label: 'Nouvelle réparation', icon: PlusCircle } : null;
 
-['Équipe','/app/team',UserCog,['ADMIN'],'GESTION'],
-['Rapports','/app/reports',BarChart3,['ADMIN'],'GESTION'],
-['Support Fixi','/app/support',Headphones,['ADMIN','RECEPTION','TECHNICIAN','CASHIER'],'GESTION'],
-['Nouveautés','/app/updates',Sparkles,['ADMIN','RECEPTION','TECHNICIAN','CASHIER'],'GESTION'],
-['Parrainage','/app/referrals',Gift,['ADMIN'],'GESTION'],
-['Abonnement Fixi','/app/subscription',ReceiptText,['ADMIN'],'GESTION'],
-['Journal','/app/audit',ShieldCheck,['ADMIN'],'GESTION'],
-['Paramètres','/app/settings',Settings,['ADMIN'],'GESTION']
-] as const;
+  // Barre d'onglets mobile : 4 sections + « Plus ».
+  const tabs = useMemo(() => {
+    const wanted = connect ? ['parts', 'more'] : ['home', 'repairs', 'cash', 'parts'];
+    return sections.filter(s => wanted.includes(s.id)).slice(0, 4).map(s => ({ section: s, item: s.items[0] }));
+  }, [sections, connect]);
 
-const groupLabels:any={PRINCIPAL:'Essentiel',ATELIER:'Atelier & ventes',INTELLIGENCE:'Pilotage intelligent',SERVICES:'Réseau Fixi',GESTION:'Administration'};
+  // Fonction de rendu (et non composant) : pas de remontage, le focus clavier est conservé.
+  function renderSection(section: NavSection) {
+    const Icon = section.icon;
+    const isCurrent = current?.section.id === section.id;
+    if (section.items.length === 1) {
+      const item = section.items[0];
+      return <Link key={section.id} href={item.href} className={`fx-nav-section ${isCurrent ? 'is-current' : ''}`} aria-current={isCurrent ? 'page' : undefined}><Icon />{itemLabel(item, user.role)}</Link>;
+    }
+    const open = expanded === section.id;
+    return <div key={section.id}>
+      <button type="button" className={`fx-nav-section ${isCurrent ? 'is-current' : ''}`} aria-expanded={open}
+        onClick={() => { if (!isCurrent && !open) router.push(section.items[0].href); setExpanded(open ? null : section.id); }}>
+        <Icon /><span>{section.label}</span><ChevronRight className="fx-nav-chevron" />
+      </button>
+      {open && <div className="fx-nav-items">
+        {section.items.map(item => { const I = item.icon; return <Link key={item.href} href={item.href} className={`fx-nav-link ${isActive(item.href) ? 'active' : ''}`} aria-current={isActive(item.href) ? 'page' : undefined}>
+          <I /><span>{itemLabel(item, user.role)}</span>{item.advanced && <em>Avancé</em>}
+        </Link>; })}
+      </div>}
+    </div>;
+  }
 
-export function AppShell({children,user}:{children?:React.ReactNode;user:any}){
-  const p=usePathname();const router=useRouter();
-  const connect=user.accessTier==='CONNECT';
-  const[cmd,setCmd]=useState(false);const[mobileMenu,setMobileMenu]=useState(false);const[q,setQ]=useState('');const[collapsed,setCollapsed]=useState(false);const[online,setOnline]=useState(true);
-  const visible=useMemo(()=>links.filter(x=>(x[3] as readonly string[]).includes(user.role)
-    &&(!connect||isConnectAppPath(x[1]))),[user.role,connect]);
-  const groups=useMemo(()=>['PRINCIPAL','ATELIER','INTELLIGENCE','SERVICES','GESTION'].map(g=>[g,visible.filter(x=>x[4]===g)] as const).filter(([,items])=>items.length),[visible]);
-  const current=useMemo(()=>visible.filter(x=>p===x[1]||p.startsWith(x[1]+'/')).sort((a,b)=>b[1].length-a[1].length)[0],[visible,p]);
-  const currentGroup=connect?'Fixi Connect':current?groupLabels[current[4]]:'Fixi';
-  const mobileLinks=connect
-    ? visible.filter(x=>['/app/suppliers','/app/mes-dettes','/app/subscription','/app/support'].includes(x[1])).slice(0,4)
-    : visible.filter(x=>['/app/dashboard','/app/repairs/new','/app/repairs','/app/cashier'].includes(x[1])).slice(0,4);
-  useEffect(()=>{const saved=localStorage.getItem('fixi-sidebar-collapsed');setCollapsed(saved==='1')},[]);
-  useEffect(()=>{const sync=()=>setOnline(navigator.onLine);sync();addEventListener('online',sync);addEventListener('offline',sync);return()=>{removeEventListener('online',sync);removeEventListener('offline',sync)}},[]);
-  useEffect(()=>{localStorage.setItem('fixi-sidebar-collapsed',collapsed?'1':'0')},[collapsed]);
-  useEffect(()=>{const f=(e:KeyboardEvent)=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();setCmd(v=>!v)}if(e.key==='Escape')setCmd(false)};addEventListener('keydown',f);return()=>removeEventListener('keydown',f)},[]);
-  useEffect(()=>{const beat=()=>fetch('/api/heartbeat',{method:'POST'}).catch(()=>{});beat();const t=setInterval(beat,30000);const vis=()=>document.visibilityState==='visible'&&beat();document.addEventListener('visibilitychange',vis);return()=>{clearInterval(t);document.removeEventListener('visibilitychange',vis)}},[]);
-  useEffect(()=>{const es=new EventSource('/api/events');es.onmessage=()=>window.dispatchEvent(new CustomEvent('fixi:realtime'));const vis=()=>{if(document.visibilityState==='visible')window.dispatchEvent(new CustomEvent('fixi:realtime'))};document.addEventListener('visibilitychange',vis);return()=>{document.removeEventListener('visibilitychange',vis);es.close()}},[]);
-  async function logout(){await fetch('/api/auth/logout',{method:'POST'});router.push('/login');router.refresh()}
-  function search(v:string){const x=v.trim();if(!x)return;setCmd(false);router.push('/app/repairs?q='+encodeURIComponent(x))}
-  return <div className={`app-shell ${collapsed?'sidebar-collapsed':''}`}>
-    <PwaRegister/>
-    <aside className="sidebar">
-      <div className="brand">
-        <BrandLogo/>
-        <div className="brand-caption-wrap"><div className="brand-caption">{connect?'COMMANDES & LIVRAISONS':'SMART REPAIR OS · V10'}</div><span><Sparkles size={10}/> {connect?'CONNECT · GRATUIT':'PREMIUM'}</span></div>
-        <button className="sidebar-collapse" onClick={()=>setCollapsed(v=>!v)} title={collapsed?'Agrandir le menu':'Réduire le menu'}>{collapsed?<PanelLeftOpen size={17}/>:<PanelLeftClose size={17}/>}</button>
-      </div>
-      <Link href={connect?'/app/suppliers':'/app/repairs/new'} className="sidebar-primary-action">
-        {connect?<PackageOpen size={17}/>:<PlusCircle size={17}/>}<span>{connect?'Commander des pièces':'Nouvelle réception'}</span>
-      </Link>
-      <nav className="nav">
-        {groups.map(([group,items])=><div className="nav-group" key={group}>
-          <div className="nav-section">{connect?'Fixi Connect':groupLabels[group]}</div>
-          {items.map(([label,href,Icon])=><Link key={href} href={href} title={label} className={`nav-link ${p===href||p.startsWith(href+'/')?'active':''}`}><Icon/><span>{label}</span>{label==='Fixi Supplier'&&<em>MARKET</em>}</Link>)}
-        </div>)}
-      </nav>
-      {connect&&<div style={{padding:'10px 14px'}}>
-        <Link href="/app/upgrade" className="btn btn-primary btn-block">
-          <Sparkles size={15}/> Passer à Fixi Pro
-        </Link></div>}
-      <div className="sidebar-bottom">
-        <div className="shop-chip"><strong>{user.shopName}</strong><small>{user.roleLabel}</small><div className="shop-live"><i/> Connecté à Fixi</div>{!connect&&<Link href={`/queue?shop=${encodeURIComponent(user.shopSlug)}`} target="_blank" className="nav-link queue-link"><MonitorPlay size={15}/><span>Écran file</span></Link>}</div>
+  const modeSwitch = !connect && <div className="fx-mode" role="group" aria-label="Affichage du menu">
+    <button type="button" aria-pressed={!advanced} onClick={() => setMode('simple')}>Simple</button>
+    <button type="button" aria-pressed={advanced} onClick={() => setMode('advanced')}>Avancé</button>
+  </div>;
+
+  return <div className="fx-shell">
+    <PwaRegister />
+    <aside className="fx-side" aria-label="Menu principal">
+      <div className="fx-side-brand"><BrandLogo /></div>
+      {primary && <Link href={primary.href} className="btn btn-primary fx-side-cta"><primary.icon size={19} />{primary.label}</Link>}
+      <nav className="fx-side-nav">{sections.map(renderSection)}</nav>
+      {connect && <Link href="/app/upgrade" className="btn btn-soft"><Sparkles size={16} /> Passer à Fixi Pro</Link>}
+      <div className="fx-side-foot">
+        <div className="fx-side-shop"><span className="fx-avatar" aria-hidden="true">{initials}</span><div style={{ minWidth: 0 }}><b>{user.shopName}</b><small>{user.fullName} · {user.roleLabel}</small></div></div>
+        {modeSwitch}
+        <div className="fx-side-tools">
+          {!connect && <Link href={`/queue?shop=${encodeURIComponent(user.shopSlug)}`} target="_blank" className="fx-icon-btn" title="Écran d'attente clients" aria-label="Ouvrir l'écran d'attente clients"><MonitorPlay size={18} /></Link>}
+          <ThemeToggle />
+          <button type="button" className="btn btn-ghost btn-sm" onClick={logout}><LogOut size={16} /> Quitter</button>
+        </div>
       </div>
     </aside>
-    <main className="app-main">
-      <header className="topbar">
-        {connect?<div className="global-search" style={{cursor:'default'}}><PackageOpen size={17}/><span>Vos commandes, factures et livraisons fournisseurs</span></div>:
-          <button className="global-search" onClick={()=>setCmd(true)}><Search size={17}/><span>Client, IMEI, réparation, pièce, facture…</span><kbd>Ctrl K</kbd></button>}
-        <div className="topbar-quick"><Link href={connect?'/app/suppliers':'/app/repairs/new'} className="topbar-new">
-          {connect?<ShoppingBag size={15}/>:<Zap size={15}/>}<span>{connect?'Commander':'Réception'}</span>
-        </Link></div>
-        <div className="userbox"><OfflineSyncBadge/><NotificationBell/><PushToggle/><InstallAppButton label="Installer"/><div className="avatar">{user.fullName.split(' ').map((x:string)=>x[0]).slice(0,2).join('').toUpperCase()}</div><div className="user-meta"><strong>{user.fullName}</strong><span>{user.roleLabel}</span></div><button className="btn btn-ghost btn-sm" onClick={logout} title="Déconnexion"><LogOut size={16}/></button></div>
-      </header>
-      <div className="system-context-bar">
-        <div className="system-context-path"><span>{currentGroup}</span><ChevronRight size={13}/><b>{current?.[0]||'Espace Fixi'}</b></div>
-        <div className="system-context-meta"><span className={online?'system-online':'system-offline'}>{online?<Wifi size={13}/>:<WifiOff size={13}/>} {online?'Synchronisé':'Hors ligne'}</span><span>{user.shopName}</span><span>{user.roleLabel}</span></div>
-      </div>
-      {connect&&!isConnectAppPath(p)?<div className="page" style={{maxWidth:760,margin:'32px auto'}}>
-        <div className="card card-pad"><h1>Fonctionnalité réservée à Fixi Pro</h1>
-        <p>Vos commandes, livraisons, factures et dettes restent gratuites et accessibles sans limite.</p>
-        <div className="toolbar"><Link href="/app/suppliers" className="btn btn-soft">Mes commandes</Link>
-          <Link href="/app/upgrade" className="btn btn-primary">Découvrir Fixi Pro</Link></div></div>
-      </div>:children}
-    </main>
-    <nav className="mobile-ops-nav">{mobileLinks.map(([label,href,Icon])=><Link key={href} href={href} className={p===href||p.startsWith(href+'/')?'active':''}><Icon/><span>{label.replace('Réception Express','Réception')}</span></Link>)}<button className={mobileMenu?'active':''} onClick={()=>setMobileMenu(true)}><Menu/><span>Plus</span></button></nav>
-    {mobileMenu&&<div className="mobile-menu-backdrop" onMouseDown={e=>e.target===e.currentTarget&&setMobileMenu(false)}><div className="mobile-menu-sheet"><div className="mobile-menu-head"><div><b>Menu Fixi Atelier</b><span>Toutes les fonctions</span></div><button onClick={()=>setMobileMenu(false)}><X/></button></div><div className="mobile-menu-groups">{groups.map(([group,items])=><section key={group}><h3>{groupLabels[group]}</h3><div>{items.map(([label,href,Icon])=><Link href={href} key={href} onClick={()=>setMobileMenu(false)} className={p===href||p.startsWith(href+'/')?'active':''}><Icon/><span>{label}</span>{label==='Fixi Supplier'&&<em>MARKET</em>}</Link>)}</div></section>)}</div></div></div>}
-    {!connect&&cmd&&<div className="command-backdrop" onMouseDown={e=>e.target===e.currentTarget&&setCmd(false)}>
-      <div className="command command-v2">
-        <div className="command-input"><Search/><input autoFocus value={q} onChange={e=>setQ(e.target.value)} onKeyDown={e=>e.key==='Enter'&&search(q)} placeholder="Rechercher dans Fixi…"/><button onClick={()=>setCmd(false)}><X size={16}/></button></div>
-        {q?<button className="command-global-result" onClick={()=>search(q)}><div><Search size={17}/><span><b>Rechercher “{q}”</b><small>Réparations, client, téléphone, code ou appareil</small></span></div><ChevronRight size={17}/></button>:<div className="command-hint"><Command size={13}/> Tapez un terme ou choisissez une action rapide</div>}
-        <div className="command-shortcuts">
-          <Link href="/app/repairs/new" onClick={()=>setCmd(false)}><PlusCircle/><span><b>Nouvelle réception</b><small>Créer un dossier réparation</small></span></Link>
-          <Link href="/app/cashier" onClick={()=>setCmd(false)}><CreditCard/><span><b>Nouvelle vente</b><small>Ouvrir la caisse</small></span></Link>
-          <Link href="/app/compatibility" onClick={()=>setCmd(false)}><Link2/><span><b>Tester une pièce</b><small>Compatibility Hub</small></span></Link>
-          <Link href="/app/stock" onClick={()=>setCmd(false)}><Boxes/><span><b>Stock</b><small>Voir les pièces disponibles</small></span></Link>
+
+    <div className="fx-main">
+      <header className="fx-top">
+        {connect
+          ? <div className="fx-search" style={{ cursor: 'default' }}><PackageOpen size={18} /><span>Vos commandes, factures et livraisons</span></div>
+          : <button type="button" className="fx-search" onClick={() => setSearch(true)}><Search size={18} /><span>Rechercher : téléphone, code, IMEI, client…</span><kbd>Ctrl K</kbd></button>}
+        <div className="fx-top-actions">
+          {!online && <span className="fx-offline"><WifiOff size={14} /> Hors ligne</span>}
+          <OfflineSyncBadge />
+          <button type="button" className="fx-icon-btn" onClick={() => setHelp(true)} aria-label="Aide pour cet écran" title="Aide"><HelpCircle size={20} /></button>
+          <NotificationBell />
+          <span className="fx-top-hide-mobile"><PushToggle /></span>
+          <span className="fx-top-hide-mobile"><InstallAppButton label="Installer" /></span>
         </div>
-        <div className="command-grid">{visible.filter(x=>x[0].toLowerCase().includes(q.toLowerCase())||!q).slice(0,14).map(([label,href,Icon])=><Link href={href} key={href} onClick={()=>setCmd(false)}><Icon size={16}/><span>{label}</span></Link>)}</div>
+      </header>
+      <main className="fx-content">
+        {connect && !isConnectAppPath(p) ? <div className="fx-page" style={{ maxWidth: 760 }}>
+          <div className="card card-pad"><h1 className="page-title">Fonction réservée à Fixi Pro</h1>
+            <p className="page-sub">Vos commandes, livraisons, factures et dettes restent gratuites et sans limite.</p>
+            <div className="toolbar" style={{ marginTop: 14 }}><Link href="/app/suppliers" className="btn btn-ghost">Mes commandes</Link><Link href="/app/upgrade" className="btn btn-primary">Découvrir Fixi Pro</Link></div></div>
+        </div> : children}
+      </main>
+    </div>
+
+    <nav className="fx-tabbar" aria-label="Navigation rapide">
+      {tabs.map(({ section, item }) => { const Icon = section.icon; const on = current?.section.id === section.id; return <Link key={section.id} href={item.href} className={on ? 'active' : ''} aria-current={on ? 'page' : undefined}><Icon /><span>{section.id === 'parts' && connect ? 'Commander' : section.label}</span></Link>; })}
+      <button type="button" className={more ? 'active' : ''} onClick={() => setMore(true)} aria-haspopup="dialog"><MoreIcon /><span>Plus</span></button>
+    </nav>
+
+    <FxSheet open={more} onClose={closeMore} side="bottom" title="Menu" subtitle={`${user.shopName} · ${user.roleLabel}`} label="Menu complet">
+      {primary && <Link href={primary.href} className="btn btn-primary btn-block" style={{ marginBottom: 16 }}><primary.icon size={19} />{primary.label}</Link>}
+      {sections.map(s => <div className="fx-more-group" key={s.id}><h3><s.icon size={15} />{s.label}</h3>
+        <div className="fx-more-grid">{s.items.map(item => { const I = item.icon; return <Link key={item.href} href={item.href} className={isActive(item.href) ? 'active' : ''}><I /><span>{itemLabel(item, user.role)}</span></Link>; })}</div>
+      </div>)}
+      {connect && <Link href="/app/upgrade" className="btn btn-soft btn-block" style={{ marginBottom: 12 }}><Sparkles size={16} /> Passer à Fixi Pro</Link>}
+      {modeSwitch}
+      <div className="fx-side-tools" style={{ marginTop: 12 }}>
+        <PushToggle /><InstallAppButton label="Installer" /><ThemeToggle />
+        <button type="button" className="btn btn-ghost btn-sm" onClick={logout}><LogOut size={16} /> Quitter</button>
       </div>
-    </div>}
-  </div>
+    </FxSheet>
+
+    <HelpSheet open={help} onClose={closeHelp} pathname={p} advanced={advanced || connect} onAdvanced={connect ? undefined : () => setMode('advanced')} />
+    {!connect && <UniversalSearch open={search} onClose={closeSearch} sections={allSections} role={user.role} />}
+  </div>;
+}
+
+function MoreIcon() {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" /></svg>;
 }

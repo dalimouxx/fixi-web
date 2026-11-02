@@ -32,7 +32,7 @@ export default function Repairs(){
     </div>
 
     {error&&<div className="error" style={{marginBottom:15}}>{error}</div>}
-    {loading?<div className="card card-pad">Chargement…</div>:view==='kanban'?<div className="kanban">{cols.map(([key,label],ci)=><div className="kanban-col" key={key}>
+    {loading?<div className="card card-pad">Chargement…</div>:view==='kanban'?<div className="kanban">{cols.map(([key,label],ci)=><div className="kanban-col" data-status={key} key={key}>
       <div className="kanban-head"><span>{label}</span><span className="kanban-count">{grouped[key]?.length||0}</span></div>
       {(grouped[key]||[]).map((r:any)=><div className={`repair-card ${r.priority==='URGENT'?'priority-urgent':''}`} key={r.id}>
         <div style={{display:'flex',justifyContent:'space-between',gap:8}}><Link href={`/app/repairs/${r.code}`} className="repair-code">{r.code}</Link><PriorityBadge priority={r.priority}/></div>

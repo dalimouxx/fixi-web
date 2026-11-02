@@ -1,3 +1,5 @@
+/* Ancienne feuille conservée dans la couche "legacy" : le système de design Fixi (fixi-design-system.css, hors couche) est prioritaire. */
+@layer legacy{
 /* Three recognizable Fixi notification signatures: supplier (amber), buyer (indigo), courier (teal).
    Deliberately no screen-blocking overlays, flashing animation or compulsory sound. */
 .rt-toast.rt-toast-premium{
@@ -202,4 +204,6 @@
   border:1px solid #fecaca;
   border-radius:8px;
   padding:9px 11px;
+}
+
 }

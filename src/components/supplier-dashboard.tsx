@@ -4,8 +4,9 @@ import Link from 'next/link';
 import {
   Boxes,ClipboardList,LogOut,PackagePlus,Truck,CheckCircle2,Plus,RefreshCw,LayoutDashboard,Users,
   ReceiptText,WalletCards,BadgeDollarSign,Warehouse,Search,ArrowDownToLine,AlertTriangle,TrendingUp,
-  Banknote,MapPinned,ShoppingCart,FileText,History,X
+  Banknote,MapPinned,ShoppingCart,FileText,History,X,MoreHorizontal,Moon,ScanBarcode
 } from 'lucide-react';
+import {useUiMode} from '@/lib/ui-mode';
 import {api} from './ui';
 import {dateTime,money} from '@/lib/format';
 import {SupplierPos} from './supplier-pos';
@@ -83,11 +84,24 @@ export function SupplierDashboard({session}:{session:any}){
     DELIVERY_MANAGER:['dashboard','orders','delivery']
   };
   const navAll=[
-    ['dashboard','Tableau de bord',LayoutDashboard],['cashier','POS / Caisse',WalletCards],['orders','Commandes',ClipboardList],['products','Produits & stock',Warehouse],['masters','Référentiels',Boxes],['purchases','Achats',ArrowDownToLine],['vendors','Fournisseurs',Users],
-    ['clients','Clients',Users],['invoices','Facturation',ReceiptText],['returns','Retours',RefreshCw],['warehouses','Dépôts',Warehouse],['inventory','Inventaire',Boxes],['pricing','Prix grossistes',BadgeDollarSign],['dues','Créances & dettes',Banknote],
-    ['finance','Finance & bénéfice',TrendingUp],['reports','Rapports',FileText],['delivery','Livraison',Truck],['team','Équipe & accès',Users]
+    ['dashboard','Accueil',LayoutDashboard],['cashier','Caisse',WalletCards],['orders','Commandes',ClipboardList],['products','Produits',Warehouse],['masters','Catégories & marques',Boxes],['purchases','Achats',ArrowDownToLine],['vendors','Mes fournisseurs',Users],
+    ['clients','Clients',Users],['invoices','Factures',ReceiptText],['returns','Retours',RefreshCw],['warehouses','Dépôts',Warehouse],['inventory','Comptage du stock',Boxes],['pricing','Prix par quantité',BadgeDollarSign],['dues','Qui me doit / Je dois',Banknote],
+    ['finance','Bénéfice',TrendingUp],['reports','Rapports',FileText],['delivery','Livraison',Truck],['team','Équipe',Users]
   ] as const;
   const nav=navAll.filter(([key])=>(access[role]||access.ADMIN).includes(key));
+  // 17 modules regroupés en 6 entrées ; les modules experts n'apparaissent qu'en Mode Avancé.
+  const {advanced:advancedMode,setMode}=useUiMode('supplier');
+  const advancedTabs=['masters','warehouses','pricing','inventory','vendors','finance'];
+  const groupDefs=[
+    {id:'home',label:'Accueil',icon:LayoutDashboard,tabs:['dashboard']},
+    {id:'sell',label:'Vendre',icon:WalletCards,tabs:['cashier','orders']},
+    {id:'products',label:'Produits',icon:Warehouse,tabs:['products','inventory','pricing','warehouses','masters']},
+    {id:'money',label:'Clients & argent',icon:Banknote,tabs:['clients','invoices','dues','returns']},
+    {id:'delivery',label:'Livraison',icon:Truck,tabs:['delivery']},
+    {id:'more',label:'Plus',icon:MoreHorizontal,tabs:['purchases','vendors','finance','reports','team']},
+  ] as const;
+  const groups=groupDefs.map(g=>({...g,items:g.tabs.map(t=>nav.find(([key])=>key===t)).filter((x):x is (typeof nav)[number]=>!!x&&(advancedMode||!advancedTabs.includes(x[0])||tab===x[0]))})).filter(g=>g.items.length>0);
+  const currentGroup=groups.find(g=>g.items.some(([key])=>key===tab));
   useEffect(()=>{
     const fromUrl=new URLSearchParams(window.location.search).get('tab');
     const match=nav.find(([key])=>key===fromUrl);
@@ -113,51 +127,51 @@ export function SupplierDashboard({session}:{session:any}){
     {mobileNavOpen&&<button aria-label="Fermer le menu fournisseur" className="fixi-supplier-drawer-backdrop" onClick={()=>setMobileNavOpen(false)}/>}
     <aside className={mobileNavOpen?'fixi-supplier-drawer open':'fixi-supplier-drawer'} aria-label="Navigation Supplier">
       <button className="fixi-supplier-drawer-close" aria-label="Fermer le menu" onClick={()=>setMobileNavOpen(false)}><X size={20}/></button>
-      <div className="supplier-os-brand"><FixiMark/><div><b>Fixi Supplier</b><span>{session.companyName}</span></div></div>
+      <div className="supplier-os-brand"><FixiMark/><div><b>Fixi Fournisseur</b><span>{session.companyName}</span></div></div>
       <div className="fixi-supplier-menu-scroll" role="navigation" aria-label="Modules du fournisseur" tabIndex={0}>
-        {nav.map(([key,label,Icon])=><div key={key} className="fixi-supplier-nav-item">
-          {key==='dashboard'&&<div className="supplier-nav-label">VUE GÉNÉRALE</div>}
-          {key==='products'&&<div className="supplier-nav-label">CATALOGUE & STOCK</div>}
-          {key==='clients'&&<div className="supplier-nav-label">VENTES & FACTURATION</div>}
-          {key==='warehouses'&&<div className="supplier-nav-label">GESTION DES DÉPÔTS</div>}
-          {key==='dues'&&<div className="supplier-nav-label">COMPTES & LOGISTIQUE</div>}
-          <button type="button" className={tab===key?'active':''} onClick={()=>{setTab(key as Tab);setMobileNavOpen(false)}} aria-current={tab===key?'page':undefined}>
-            <Icon/><span>{label}</span>{key==='orders'&&activeOrders.length>0&&<em>{activeOrders.length}</em>}
-          </button>
-        </div>)}
-        <div className="supplier-nav-label">ABONNEMENT & RÈGLEMENTS</div>
-        <Link href="/supplier/settlements" onClick={()=>setMobileNavOpen(false)} className="supplier-delivery-link"><WalletCards/><span>Comptes & règlements</span></Link>
-        <Link href="/supplier/subscription" onClick={()=>setMobileNavOpen(false)} className="supplier-delivery-link"><ReceiptText/><span>Mon abonnement Supplier</span></Link>
-        <div className="supplier-nav-label">LIVRAISONS</div>
-        <Link href="/delivery/login" target="_blank" className="supplier-delivery-link"><MapPinned/><span>App livreur</span></Link>
+        <nav className="fx-sup-nav" aria-label="Menu fournisseur">
+          {groups.map(g=>{const Icon=g.icon;const on=currentGroup?.id===g.id;return <button type="button" key={g.id} className={on?'active':''} aria-current={on?'page':undefined}
+            onClick={()=>{setTab(g.items[0][0] as Tab);setMobileNavOpen(false)}}><Icon/><span>{g.label}</span>{g.id==='sell'&&activeOrders.length>0&&<em>{activeOrders.length}</em>}</button>})}
+        </nav>
+        <div className="fx-mode" role="group" aria-label="Affichage du menu" style={{margin:'14px 4px'}}>
+          <button type="button" aria-pressed={!advancedMode} onClick={()=>setMode('simple')}>Simple</button>
+          <button type="button" aria-pressed={advancedMode} onClick={()=>setMode('advanced')}>Avancé</button>
+        </div>
+        <div className="supplier-nav-label">COMPTE</div>
+        <Link href="/supplier/settlements" onClick={()=>setMobileNavOpen(false)} className="supplier-delivery-link"><WalletCards/><span>Règlements des livreurs</span></Link>
+        <Link href="/supplier/subscription" onClick={()=>setMobileNavOpen(false)} className="supplier-delivery-link"><ReceiptText/><span>Mon abonnement</span></Link><Link href="/supplier/daily-report" onClick={()=>setMobileNavOpen(false)} className="supplier-delivery-link"><Moon/><span>Fin de journée</span></Link>
+                <Link href="/delivery/login" target="_blank" className="supplier-delivery-link"><MapPinned/><span>App livreur</span></Link>
       </div>
       <div className="supplier-side-foot"><div><strong>{session.fullName}</strong><small>{session.role||'ADMIN'} · Compte fournisseur</small></div><button onClick={logout}><LogOut/></button></div>
     </aside>
 
     <main>
-      <header><div className="fixi-supplier-header-title"><button type="button" className="fixi-supplier-menu-button" aria-label="Ouvrir les modules fournisseur" aria-expanded={mobileNavOpen} onClick={()=>setMobileNavOpen(true)}><span>☰</span></button><div><span>FIXI SUPPLIER ERP</span><h1>{nav.find(x=>x[0]===tab)?.[1]}</h1></div></div><div className="toolbar"><RealtimeNotificationCenter apiUrl="/api/supplier/notifications" eventsUrl="/api/supplier/events" storageKey="fixi-supplier-notifications" onEvent={()=>setRefresh(x=>x+1)} onNavigate={navigateNotification}/><PushToggle subscribeUrl="/api/supplier/push/subscribe"/><InstallAppButton label="Installer"/><button className="btn btn-ghost" onClick={()=>setRefresh(x=>x+1)}><RefreshCw/> Actualiser</button></div></header>
+      <header><div className="fixi-supplier-header-title"><button type="button" className="fixi-supplier-menu-button" aria-label="Ouvrir les modules fournisseur" aria-expanded={mobileNavOpen} onClick={()=>setMobileNavOpen(true)}><span>☰</span></button><div><span>{currentGroup&&currentGroup.label!==nav.find(x=>x[0]===tab)?.[1]?currentGroup.label:'Fixi Fournisseur'}</span><h1>{nav.find(x=>x[0]===tab)?.[1]}</h1></div></div><div className="toolbar"><RealtimeNotificationCenter apiUrl="/api/supplier/notifications" eventsUrl="/api/supplier/events" storageKey="fixi-supplier-notifications" onEvent={()=>setRefresh(x=>x+1)} onNavigate={navigateNotification}/><PushToggle subscribeUrl="/api/supplier/push/subscribe"/><InstallAppButton label="Installer"/><button className="btn btn-ghost" onClick={()=>setRefresh(x=>x+1)}><RefreshCw/> Actualiser</button></div></header>
       <section className="supplier-mobile-install">
         <div className="supplier-mobile-install-copy"><i>F</i><span><b>Fixi Supplier sur votre téléphone</b><small>Installez l’ERP comme application et activez les notifications pour les commandes, paiements, retours et livraisons.</small></span></div>
         <div className="supplier-mobile-install-actions"><InstallAppButton label="Installer Fixi Supplier"/><PushToggle subscribeUrl="/api/supplier/push/subscribe" label/></div>
       </section>
 
+      {currentGroup&&currentGroup.items.length>1&&<nav className="fx-subtabs" aria-label={currentGroup.label}>
+        {currentGroup.items.map(([key,label])=><button type="button" key={key} aria-current={tab===key?'page':undefined} onClick={()=>setTab(key as Tab)}>{label}</button>)}
+      </nav>}
       {tab==='dashboard'&&<>
         <section className="fixi-supplier-quick-workflow" aria-label="Actions rapides du fournisseur">
-          <div className="fixi-workflow-heading"><div><span>FIXI CLEAR PRO</span><h2>Que souhaitez-vous faire ?</h2><p>Accédez directement à vos opérations les plus fréquentes.</p></div></div>
+          <div className="fixi-workflow-heading"><div><h2>Que voulez-vous faire ?</h2><p>Vos 4 actions du quotidien.</p></div><Link href="/supplier/daily-report" className="btn btn-ghost btn-sm"><Moon size={16}/> Fin de journée</Link></div>
           <div className="fixi-workflow-actions">
             {nav.some(([key])=>key==='orders')&&<button type="button" onClick={()=>setTab('orders')}>
               <ClipboardList size={21}/><strong>Commandes</strong><small>{activeOrders.length} à suivre</small></button>}
             {nav.some(([key])=>key==='cashier')&&<button type="button" onClick={()=>setTab('cashier')}>
-              <WalletCards size={21}/><strong>Nouvelle vente</strong><small>Ouvrir la caisse</small></button>}
+              <WalletCards size={21}/><strong>Vendre</strong><small>Caisse avec scan code-barres</small></button>}
             {nav.some(([key])=>key==='products')&&<button type="button" onClick={()=>setTab('products')}>
               <Warehouse size={21}/><strong>Stock</strong><small>{lowStock} alertes stock</small></button>}
             {nav.some(([key])=>key==='dues')&&<button type="button" onClick={()=>setTab('dues')}>
-              <Banknote size={21}/><strong>Créances</strong><small>Soldes et règlements</small></button>}
+              <Banknote size={21}/><strong>Qui me doit</strong><small>Encaisser une dette</small></button>}
           </div>
         </section>
         <FixiSmartWidgets area="supplier" onAction={target=>setTab(target as Tab)}
           subtitle="Commandes, ventes, stock et clients de votre société, actualisés automatiquement."
-          widgets={[
+          widgets={(advancedMode?(x:any[])=>x:(x:any[])=>x.filter(w=>['supplier-orders','supplier-revenue','supplier-warning'].includes(w.id)))([
             {id:'supplier-orders',label:'Commandes actives',value:activeOrders.length,
              description:'À préparer ou à livrer',icon:'orders',action:'orders',urgent:activeOrders.some(o=>o.status==='PENDING')},
             {id:'supplier-revenue',label:'CA livré',value:money(revenue),
@@ -170,7 +184,7 @@ export function SupplierDashboard({session}:{session:any}){
              description:'Produits à réapprovisionner',icon:'alert',accent:'warning',urgent:lowStock>0,action:'products'},
             {id:'supplier-clients',label:'Clients professionnels',value:clients.length+(erp.customers?.length||0),
              description:'Boutiques connectées et clients ERP',icon:'clients',action:'clients'},
-          ]}/>
+          ])}/>
         <div className="supplier-dashboard-grid">
           <section className="supplier-panel"><div className="supplier-section-head"><div><b>À traiter maintenant</b><span>Actions prioritaires pour aujourd’hui</span></div></div>
             <div className="supplier-action-list">
@@ -244,7 +258,7 @@ export function SupplierDashboard({session}:{session:any}){
     <nav className="fixi-supplier-bottom-nav" aria-label="Accès rapides Supplier">
       {mobilePrimary.map(([key,label,Icon])=><button type="button" key={key} className={tab===key?'active':''}
         aria-current={tab===key?'page':undefined} onClick={()=>{setTab(key as Tab);setMobileNavOpen(false)}}>
-        <Icon size={20}/><span>{label==='Tableau de bord'?'Accueil':label==='Produits & stock'?'Stock':label==='POS / Caisse'?'Caisse':label}</span>
+        <Icon size={20}/><span>{label}</span>
       </button>)}
       <button type="button" aria-label="Tous les modules" onClick={()=>setMobileNavOpen(true)}>
         <span style={{fontSize:23,lineHeight:1}}>≡</span><span>Plus</span>

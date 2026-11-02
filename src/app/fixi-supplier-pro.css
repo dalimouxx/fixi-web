@@ -1,3 +1,5 @@
+/* Ancienne feuille conservée dans la couche "legacy" : le système de design Fixi (fixi-design-system.css, hors couche) est prioritaire. */
+@layer legacy{
 /* Fixi Supplier Pro: cashier reconciliation, fiscal document branding and payment center.
    Loaded after all legacy styles to prevent collapsed mobile dialogs. */
 .driver-shift-form-error,.fixi-pos-cash-error{display:flex;align-items:center;gap:9px;
@@ -226,3 +228,5 @@
   color:#33261c;width:100%;resize:vertical}
 .supplier-pos-alert.success{flex-wrap:wrap}
 .supplier-pos-alert.success button{min-height:39px;white-space:nowrap}
+
+}

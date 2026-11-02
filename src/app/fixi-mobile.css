@@ -1,3 +1,5 @@
+/* Ancienne feuille conservée dans la couche "legacy" : le système de design Fixi (fixi-design-system.css, hors couche) est prioritaire. */
+@layer legacy{
 /* FIXI MOBILE PRO v1 – responsive & touch-friendly layer.
    Scoped to app shells; desktop layout remains unchanged. */
 :root{--fixi-touch:46px}
@@ -173,4 +175,6 @@
 }
 @media (prefers-reduced-motion: reduce){
  .supplier-os .fixi-supplier-drawer{transition:none}
+}
+
 }

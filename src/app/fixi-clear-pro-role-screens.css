@@ -1,3 +1,5 @@
+/* Ancienne feuille conservée dans la couche "legacy" : le système de design Fixi (fixi-design-system.css, hors couche) est prioritaire. */
+@layer legacy{
 /*
  FIXI Clear Pro V2 — phase 2 readability pass.
  Scoped to existing application shell DOM classes. Deliberately does not touch
@@ -615,4 +617,6 @@
   .delivery-app.driver-v2 .driver-mobile-nav{
     padding-bottom:env(safe-area-inset-bottom,0px);
   }
+}
+
 }

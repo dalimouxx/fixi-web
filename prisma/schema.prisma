@@ -470,6 +470,7 @@ model Shop {
   expenses              Expense[]
   repairTypes           RepairType[]
   auditLogs             AuditLog[]
+  usageEvents           UsageEvent[]
   warrantyClaims        WarrantyClaim[]
   cashSessions          CashSession[]
   stockMovements        StockMovement[]
@@ -1072,6 +1073,23 @@ model DocumentPayment {
   createdAt   DateTime      @default(now())
 
   @@index([documentId, createdAt])
+}
+
+// Mesure d'usage : quels écrans sont réellement ouverts, pour simplifier
+// ou masquer ce qui ne sert à personne. Aucune donnée client, seulement le chemin.
+model UsageEvent {
+  id        String   @id @default(cuid())
+  shopId    String
+  shop      Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  userId    String?
+  role      String?
+  path      String
+  uiMode    String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([shopId, createdAt])
+  @@index([path, createdAt])
 }
 
 model LoginGuard {

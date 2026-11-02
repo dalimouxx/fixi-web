@@ -1,3 +1,5 @@
+/* Ancienne feuille conservée dans la couche "legacy" : le système de design Fixi (fixi-design-system.css, hors couche) est prioritaire. */
+@layer legacy{
 /* Fixi Design System 2026 · Shared administration/navigation coherence.
    Desktop: visible, readable menus. Mobile & tablet: accessible drawers and bottom actions. */
 :root{
@@ -352,4 +354,6 @@
 .fixi-supplier-billing-admin .fixi-billing-switch .fixi-supplier-back{font-size:12px;background:#fff}
 @media(max-width:650px){.fixi-supplier-billing-admin .fixi-billing-switch{gap:6px}
  .fixi-supplier-billing-admin .fixi-billing-switch .fixi-supplier-back{padding:9px 10px;font-size:11px}
+}
+
 }

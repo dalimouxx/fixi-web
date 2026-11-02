@@ -60,14 +60,18 @@ function translateNode(node:Node,lang:FixiLang){
 export function I18nProvider({children}:{children:React.ReactNode}){
   const[lang,setState]=useState<FixiLang>('fr');
   const[ready,setReady]=useState(false);
+  const[askLang,setAskLang]=useState(false);
   useEffect(()=>{
-    const saved=localStorage.getItem('fixi_lang');
+    let saved:string|null=null;try{saved=localStorage.getItem('fixi_lang')}catch{}
     const initial:FixiLang=saved==='ar'||saved==='fr'?saved:navigator.language?.startsWith('ar')?'ar':'fr';
     setState(initial);setReady(true);
+    // Premier lancement d'un espace de travail : on demande la langue une seule fois.
+    if(!saved&&/^\/(login|app|supplier|delivery|onboarding)(\/|$)/.test(location.pathname))setAskLang(true);
   },[]);
+  function choose(next:FixiLang){setState(next);setAskLang(false);try{localStorage.setItem('fixi_lang',next)}catch{}}
   useEffect(()=>{
     if(!ready)return;
-    localStorage.setItem('fixi_lang',lang);
+    if(!askLang){try{localStorage.setItem('fixi_lang',lang)}catch{}}
     document.documentElement.lang=lang;
     document.documentElement.dir=lang==='ar'?'rtl':'ltr';
     document.body.dataset.lang=lang;
@@ -100,11 +104,17 @@ export function I18nProvider({children}:{children:React.ReactNode}){
     });
     apply([document.body]);
     return()=>{observer.disconnect();pending.clear()};
-  },[lang,ready]);
+  },[lang,ready,askLang]);
   const value=useMemo<LanguageContext>(()=>({
     lang,setLang:setState,t:(s:string)=>lang==='ar'?translateAr(s):s,
   }),[lang]);
   return <C.Provider value={value}>{children}
+    {askLang&&<div className="fx-lang-choice" role="dialog" aria-modal="true" aria-label="Langue / اللغة" data-no-i18n>
+      <div className="fx-lang-card"><h2>Bienvenue · مرحباً</h2><p>Choisissez votre langue · اختر لغتك</p>
+        <button type="button" className="btn btn-primary" onClick={()=>choose('fr')}>Français</button>
+        <button type="button" className="btn btn-ghost" onClick={()=>choose('ar')} lang="ar" dir="rtl">العربية</button>
+        <p style={{margin:'14px 0 0',fontSize:13}}>Modifiable à tout moment · يمكن تغييرها في أي وقت</p></div>
+    </div>}
     <button type="button" className="global-lang-toggle no-print"
       onClick={()=>setState(current=>current==='fr'?'ar':'fr')}
       title={lang==='fr'?'العربية':'Français'}

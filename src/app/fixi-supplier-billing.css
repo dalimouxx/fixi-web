@@ -1,3 +1,5 @@
+/* Ancienne feuille conservée dans la couche "legacy" : le système de design Fixi (fixi-design-system.css, hors couche) est prioritaire. */
+@layer legacy{
 /* FIXI Supplier SaaS billing: professional mobile-first company accounting */
 .fixi-supplier-billing{width:min(1180px,100%);margin:auto;padding:28px 22px 70px;background:transparent;color:#231a14;font-family:inherit}
 .fixi-supplier-billing *{box-sizing:border-box;min-width:0}
@@ -81,4 +83,6 @@
  .fixi-billing-form-grid{grid-template-columns:1fr}
  .fixi-supplier-billing-title{align-items:flex-start}
  .fixi-billing-price{font-size:27px}
+}
+
 }
