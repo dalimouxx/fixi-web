@@ -11,6 +11,7 @@ import { InstallAppButton } from './install-app-button';
 import { ThemeToggle } from './theme-toggle';
 import { TextSizeToggle } from './text-size-toggle';
 import { LangToggle } from './lang-toggle';
+import { AndroidWidgetButton } from './android-widget-button';
 import { FxSheet } from './fx-sheet';
 import { HelpSheet } from './help-sheet';
 import { UniversalSearch } from './universal-search';
@@ -152,7 +153,7 @@ export function AppShell({ children, user }: { children?: React.ReactNode; user:
       {connect && <Link href="/app/upgrade" className="btn btn-soft btn-block" style={{ marginBottom: 12 }}><Sparkles size={16} /> Passer à Fixi Pro</Link>}
       {modeSwitch}
       <div className="fx-side-tools" style={{ marginTop: 12 }}>
-        <InstallAppButton label="Installer l’application" /><LangToggle withLabel /><TextSizeToggle /><ThemeToggle />
+        <InstallAppButton label="Installer l’application" /><AndroidWidgetButton /><LangToggle withLabel /><TextSizeToggle /><ThemeToggle />
         <button type="button" className="btn btn-ghost btn-sm" onClick={logout}><LogOut size={16} /> Quitter</button>
       </div>
     </FxSheet>

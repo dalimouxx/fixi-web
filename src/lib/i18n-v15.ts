@@ -114,3 +114,20 @@ export function translateArPattern(clean: string): string | undefined {
   m = clean.match(/^(\d+) \/ (\d+)$/); if (m) return `${m[1]} / ${m[2]}`;
   return undefined;
 }
+
+// Dates françaises (« 2 nov. 2026 », « lundi 2 novembre ») → mois et jours en arabe tunisien.
+const MONTHS: [RegExp, string][] = [
+  [/\bjanv(?:\.|ier)/g, 'جانفي'], [/\bfévr(?:\.|ier)/g, 'فيفري'], [/\bmars\b/g, 'مارس'], [/\bavr(?:\.|il)/g, 'أفريل'], [/\bmai\b/g, 'ماي'], [/\bjuin\b/g, 'جوان'],
+  [/\bjuil(?:\.|let)/g, 'جويلية'], [/\baoût\b/g, 'أوت'], [/\bsept(?:\.|embre)/g, 'سبتمبر'], [/\boct(?:\.|obre)/g, 'أكتوبر'], [/\bnov(?:\.|embre)/g, 'نوفمبر'], [/\bdéc(?:\.|embre)/g, 'ديسمبر'],
+];
+const DAYS: [RegExp, string][] = [[/\blundi\b/gi, 'الإثنين'], [/\bmardi\b/gi, 'الثلاثاء'], [/\bmercredi\b/gi, 'الأربعاء'], [/\bjeudi\b/gi, 'الخميس'], [/\bvendredi\b/gi, 'الجمعة'], [/\bsamedi\b/gi, 'السبت'], [/\bdimanche\b/gi, 'الأحد']];
+const DATE_LIKE = /^(?:[·\s]*(?:le |du |au |jusqu’au |rendu le |livré |expire )?)?(?:(?:lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche)\s+)?\d{1,2}\s+(?:janv\.|janvier|févr\.|février|mars|avr\.|avril|mai|juin|juil\.|juillet|août|sept\.|septembre|oct\.|octobre|nov\.|novembre|déc\.|décembre)(?:\s+\d{4})?(?:\s+(?:à\s+)?\d{1,2}:\d{2})?$/i;
+const MONTH_YEAR = /^(?:janvier|février|mars|avril|mai|juin|juillet|août|septembre|octobre|novembre|décembre)\s+\d{4}$/i;
+
+export function translateArDate(clean: string): string | undefined {
+  if (!DATE_LIKE.test(clean) && !MONTH_YEAR.test(clean)) return undefined;
+  let out = clean.toLowerCase();
+  for (const [r, a] of MONTHS) out = out.replace(r, a);
+  for (const [r, a] of DAYS) out = out.replace(r, a);
+  return out.replace(/^le /, '').replace(/^du /, 'من ').replace(/^au /, 'إلى ').replace(/^jusqu’au /, 'إلى غاية ').replace(/^rendu le /, 'سُلّم في ').replace(/\sà\s/, ' على ');
+}
