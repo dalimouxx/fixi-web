@@ -1,9 +1,11 @@
 import { z } from 'zod';
 export const loginSchema=z.object({
-  loginCode:z.string().min(2).max(50),
+  // Le profil est choisi par son identifiant (userId) ; loginCode reste accepté (anciens écrans, saisie manuelle).
+  userId:z.string().min(5).max(40).optional(),
+  loginCode:z.string().min(2).max(50).optional(),
   shopSlug:z.string().min(2).max(80),
   pin:z.string().regex(/^\d{6}$/,'Le code personnel doit contenir exactement 6 chiffres')
-});
+}).refine(v=>!!(v.userId||v.loginCode),{message:'Profil manquant'});
 export const repairCreateSchema=z.object({
   clientName:z.string().min(2),clientPhone:z.string().min(6),clientEmail:z.string().email().optional().or(z.literal('')),
   category:z.enum(['PHONE','TABLET','COMPUTER','OTHER']),brand:z.string().optional(),model:z.string().min(1),serialNumber:z.string().optional(),color:z.string().optional(),lockCode:z.string().optional(),
