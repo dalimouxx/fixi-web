@@ -1,0 +1,216 @@
+/* ==========================================================================
+   FIXI SCREENS — écrans du quotidien sur téléphone (v14)
+   ========================================================================== */
+.fx-mobile-only{display:none}
+@media (max-width:760px){.fx-mobile-only{display:block}.fx-desktop-only{display:none}}
+
+/* --- Tableaux → cartes sur téléphone (tous les écrans, via UiEnhancer) ----*/
+@media (max-width:760px){
+  .table-wrap{overflow:visible}
+  table.fx-cards,table.fx-cards tbody{display:block;width:100%;border:0;background:transparent}
+  table.fx-cards thead{display:none}
+  table.fx-cards tbody tr{display:flex;flex-direction:column;gap:2px;margin:0 0 10px;padding:14px 16px;border:1px solid var(--fx-line);border-radius:var(--fx-radius-lg);background:var(--fx-surface)}
+  table.fx-cards tbody td{display:flex;align-items:center;justify-content:space-between;gap:14px;min-height:30px;padding:2px 0;border:0;font-size:15px;text-align:end;background:transparent}
+  table.fx-cards tbody td::before{content:attr(data-label);flex:none;max-width:45%;color:var(--fx-muted);font-size:13px;font-weight:600;text-align:start}
+  table.fx-cards tbody td[data-label=""]::before{display:none}
+  table.fx-cards tbody td:first-child{justify-content:flex-start;text-align:start;font-size:17px;font-weight:750;padding-bottom:6px;margin-bottom:4px;border-bottom:1px solid var(--fx-line)}
+  table.fx-cards tbody td:first-child::before{display:none}
+  table.fx-cards tbody td:empty{display:none}
+  table.fx-cards tbody td .btn{min-height:40px}
+  table.fx-cards tbody tr.fx-empty-row{align-items:center;padding:28px 16px;border-style:dashed;background:var(--fx-surface-2)}
+  table.fx-cards tbody tr.fx-empty-row td{justify-content:center;text-align:center;border:0;font-size:15px;font-weight:600;color:var(--fx-muted);margin:0}
+}
+@layer fx-force{
+  @media (max-width:760px){
+    table.fx-cards,table.fx-cards tbody,table.fx-cards tbody tr{min-width:0 !important;width:100% !important;max-width:100% !important}
+    table.fx-cards tbody td{min-width:0 !important;max-width:none !important}
+    .view-toggle{display:none !important}
+    table.fx-cards thead{display:none !important}
+    table.fx-cards tbody tr{display:flex !important}
+    table.fx-cards tbody td{display:flex !important;white-space:normal !important;width:auto !important}
+  }
+}
+
+/* --- Formulaires (Modal) : feuille du bas sur téléphone -------------------*/
+@media (max-width:760px){
+  .modal-backdrop{display:flex;align-items:flex-end;justify-content:center;padding:0;backdrop-filter:none}
+  .modal{width:100%;max-width:100%;max-height:92dvh;overflow-y:auto;overscroll-behavior:contain;border-radius:var(--fx-radius-xl) var(--fx-radius-xl) 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom));animation:fx-sheet-up 280ms var(--fx-ease-drawer)}
+  .modal .form-grid,.modal .form-grid-3{grid-template-columns:1fr}
+  .modal .span-2{grid-column:auto}
+  .modal-head{position:sticky;top:-18px;z-index:1;background:var(--fx-surface);padding:6px 0 10px;margin-top:-6px}
+}
+@keyframes fx-sheet-up{from{transform:translateY(100%)}}
+@media (prefers-reduced-motion:reduce){.modal{animation:none}}
+
+/* --- Chargement : squelettes ----------------------------------------------*/
+.fx-skeleton{display:grid;gap:12px}
+.fx-skeleton i{display:block;height:16px;border-radius:8px;background:linear-gradient(90deg,var(--fx-surface-3),var(--fx-surface-2),var(--fx-surface-3));background-size:200% 100%;animation:fx-shimmer 1.4s linear infinite}
+.fx-skeleton i:nth-child(1){width:55%;height:22px}.fx-skeleton i:nth-child(2){width:90%}.fx-skeleton i:nth-child(3){width:70%}
+@keyframes fx-shimmer{to{background-position:-200% 0}}
+@media (prefers-reduced-motion:reduce){.fx-skeleton i{animation:none}}
+
+/* --- États vides -------------------------------------------------------*/
+.fx-empty{display:flex;flex-direction:column;align-items:center;gap:8px;padding:32px 16px;text-align:center;border:1px dashed var(--fx-line-strong);border-radius:var(--fx-radius-lg);background:var(--fx-surface-2)}
+.fx-empty b{font-size:16px}.fx-empty span{font-size:14px;color:var(--fx-muted)}
+.fx-empty .btn{margin-top:6px}
+.fx-empty--small{padding:16px}
+.empty,.empty-mini,.empty-wide,.delivery-empty,.fixi-orders-empty{border:1px dashed var(--fx-line-strong);border-radius:var(--fx-radius-lg);background:var(--fx-surface-2);color:var(--fx-muted)}
+
+/* --- Réparations : onglets de statut + cartes ------------------------------*/
+.fx-status-tabs,.fx-stage-tabs{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin:0 -16px 12px;padding:2px 16px}
+.fx-status-tabs::-webkit-scrollbar,.fx-stage-tabs::-webkit-scrollbar{display:none}
+.fx-status-tabs button,.fx-stage-tabs button{flex:none;display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 14px;border:1px solid var(--fx-line);border-radius:999px;background:var(--fx-surface);color:var(--fx-ink-2);font-size:15px;font-weight:650;cursor:pointer}
+.fx-status-tabs button b,.fx-stage-tabs button b{min-width:24px;height:24px;padding:0 7px;border-radius:999px;display:grid;place-items:center;background:var(--fx-surface-3);font-size:13px}
+.fx-status-tabs button[aria-pressed="true"],.fx-stage-tabs button[aria-pressed="true"]{background:var(--fx-ink);border-color:var(--fx-ink);color:var(--fx-surface)}
+.fx-status-tabs button[aria-pressed="true"] b,.fx-stage-tabs button[aria-pressed="true"] b{background:rgba(255,255,255,.2)}
+.fx-status-tabs button[data-status="READY"] b{background:var(--fx-st-ready-bg);color:var(--fx-st-ready)}
+.fx-status-tabs button[data-status="WAITING_PART"] b{background:var(--fx-st-waiting-bg);color:var(--fx-st-waiting)}
+.fx-stage-tabs button[data-stage="CONFIRM"] b{background:var(--fx-brand);color:#fff}
+.fx-repair-cards{display:flex;flex-direction:column;gap:10px}
+.fx-repair-card{border:1px solid var(--fx-line);border-inline-start:5px solid var(--fx-st-received);border-radius:var(--fx-radius-lg);background:var(--fx-surface);overflow:hidden}
+.fx-repair-card[data-status="DIAGNOSIS"]{border-inline-start-color:var(--fx-st-diagnosis)}
+.fx-repair-card[data-status="IN_REPAIR"]{border-inline-start-color:var(--fx-st-repair)}
+.fx-repair-card[data-status="WAITING_PART"]{border-inline-start-color:var(--fx-st-waiting)}
+.fx-repair-card[data-status="READY"]{border-inline-start-color:var(--fx-st-ready)}
+.fx-repair-card[data-status="DELIVERED"]{border-inline-start-color:var(--fx-st-delivered)}
+.fx-repair-card-main{display:flex;flex-direction:column;gap:4px;padding:14px 14px 10px;color:var(--fx-ink)}
+.fx-repair-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.fx-repair-card-top b{font-size:17px;line-height:1.3}
+.fx-repair-card-issue{font-size:15px;color:var(--fx-ink-2)}
+.fx-repair-card-meta{font-size:13px;color:var(--fx-muted)}
+.fx-repair-card-meta em{font-style:normal;font-weight:800;color:var(--fx-danger)}
+.fx-repair-card-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 14px 12px;font-weight:700;font-variant-numeric:tabular-nums}
+
+/* --- Caisse Atelier : plein écran sur téléphone ----------------------------*/
+.cash-simple-confirm{min-height:64px;font-size:18px}
+.cash-change{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:14px 16px;border-radius:var(--fx-radius-lg);background:var(--fx-success-soft);color:var(--fx-success)}
+.cash-change span{font-weight:700}.cash-change b{font-size:30px;font-variant-numeric:tabular-nums}
+.cash-notes{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.cash-notes button{min-height:52px;border:1px solid var(--fx-line-strong);border-radius:var(--fx-radius);background:var(--fx-surface);font-size:17px;font-weight:750;color:var(--fx-ink);cursor:pointer}
+.cash-notes button:active{transform:scale(.97)}
+.cash-back{margin-bottom:10px}
+@media (max-width:760px){
+  .cash-simple-grid{display:block}
+  .cash-simple-grid.has-selection .cash-simple-list{display:none}
+  .cash-simple-grid:not(.has-selection) .cash-simple-main{display:none}
+  .cash-simple-amount input{font-size:28px !important}
+}
+
+/* --- Fiche client ----------------------------------------------------------*/
+.fx-client-head{display:flex;flex-wrap:wrap;align-items:center;gap:14px;margin-bottom:14px}
+.fx-client-avatar{width:60px;height:60px;border-radius:50%;display:grid;place-items:center;background:var(--fx-brand-soft);color:var(--fx-brand-ink);font-size:22px;font-weight:800;flex:none}
+.fx-client-id{flex:1;min-width:200px}
+.fx-client-id h1{margin:0;font-size:clamp(24px,3vw,30px);letter-spacing:-.02em}
+.fx-client-id p{margin:2px 0 0;color:var(--fx-muted);font-size:14px}
+.fx-client-actions{display:flex;flex-wrap:wrap;gap:8px}
+@media (max-width:760px){.fx-client-actions{display:grid;grid-template-columns:1fr 1fr;width:100%}.fx-client-actions .btn-primary{grid-column:1/-1}}
+.fx-kpi--due strong{color:var(--fx-danger)}
+.fx-chips{display:flex;flex-wrap:wrap;gap:8px}
+.fx-chip{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 12px;border-radius:999px;background:var(--fx-surface-2);border:1px solid var(--fx-line);font-size:14px;font-weight:600}
+
+/* --- Paramètres : navigation par sections ------------------------------------*/
+.fx-settings-nav{position:sticky;top:68px;z-index:5;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:0 0 14px;padding:8px 0;background:color-mix(in srgb,var(--fx-bg) 92%,transparent);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+.fx-settings-nav::-webkit-scrollbar{display:none}
+.fx-settings-nav a{flex:none;min-height:40px;display:inline-flex;align-items:center;padding:0 14px;border-radius:999px;border:1px solid var(--fx-line);background:var(--fx-surface);font-size:14px;font-weight:650;color:var(--fx-ink-2)}
+@media (max-width:900px){.fx-settings-nav{top:60px}}
+[id="boutique"],[id="documents"],[id="messages"],[id="regles"],[id="ecran"],[id="pannes"],[id="exemples"]{scroll-margin-top:130px}
+
+/* --- Bien démarrer -----------------------------------------------------------*/
+.fx-start{margin-bottom:12px;border-color:color-mix(in srgb,var(--fx-brand) 30%,var(--fx-line))}
+.fx-start h2{display:flex;align-items:center;gap:8px}
+.fx-start-progress{height:8px;border-radius:999px;background:var(--fx-surface-3);overflow:hidden}
+.fx-start-progress span{display:block;height:100%;background:var(--fx-success);transform-origin:left;transition:transform 400ms var(--fx-ease-out)}
+[dir="rtl"] .fx-start-progress span{transform-origin:right}
+.fx-start-count{margin:8px 0 10px;font-size:14px;color:var(--fx-muted)}
+.fx-start .fx-row{width:100%;border:0;text-align:start;cursor:pointer}
+.fx-start .fx-row.is-done{opacity:.6;cursor:default}
+.fx-start .fx-row.is-done b{text-decoration:line-through}
+
+/* --- Fournisseur : préparation des commandes, caisse ------------------------*/
+.supplier-order-grid > article{border-inline-start:5px solid var(--fx-line-strong)}
+.supplier-order-grid > article[data-status="PENDING"]{border-inline-start-color:var(--fx-brand)}
+.supplier-order-grid > article[data-status="CONFIRMED"],.supplier-order-grid > article[data-status="PREPARING"]{border-inline-start-color:var(--fx-st-diagnosis)}
+.supplier-order-grid > article[data-status="READY_FOR_DELIVERY"]{border-inline-start-color:var(--fx-st-ready)}
+.supplier-order-grid > article[data-status="OUT_FOR_DELIVERY"]{border-inline-start-color:var(--fx-st-repair)}
+.supplier-order-actions .btn-primary{min-height:48px;font-size:15px}
+@media (max-width:760px){
+  .supplier-order-actions{display:grid !important;grid-template-columns:1fr;gap:8px}
+  .supplier-order-actions .btn{width:100%}
+}
+.fx-pos-cartbar{display:none}
+@media (max-width:760px){
+  .supplier-pos-products{grid-template-columns:repeat(2,minmax(0,1fr)) !important}
+  .supplier-pos-product{min-height:120px}
+  .fx-pos-cartbar{position:sticky;bottom:calc(76px + env(safe-area-inset-bottom));z-index:20;display:flex;align-items:center;justify-content:space-between;gap:12px;margin:12px 0;padding:12px 16px;border-radius:var(--fx-radius-lg);background:var(--fx-ink);color:var(--fx-surface);box-shadow:var(--fx-shadow-lg)}
+  .fx-pos-cartbar b{display:block;font-size:16px}.fx-pos-cartbar small{display:block;font-size:13px;opacity:.75}
+  .fx-pos-cartbar strong{font-size:22px;font-variant-numeric:tabular-nums}
+}
+
+/* --- Livreur : Ma tournée ----------------------------------------------------*/
+.fx-route-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:4px 0 10px}
+.fx-route-head b{font-size:20px;letter-spacing:-.01em}
+.fx-route-head span{font-size:13px;color:var(--fx-muted)}
+.driver-route-list > article{border-radius:var(--fx-radius-xl) !important;border:1px solid var(--fx-line) !important;background:var(--fx-surface) !important;box-shadow:none !important}
+.driver-route-list > article.active-delivery{border-color:var(--fx-st-repair) !important;box-shadow:0 0 0 3px color-mix(in srgb,var(--fx-st-repair) 18%,transparent) !important}
+@media (max-width:760px){
+  .driver-actions{display:grid !important;grid-template-columns:1fr 1fr;gap:8px !important}
+  .driver-actions .btn{width:100%;min-height:52px !important;font-size:15px !important}
+  .driver-actions .btn-primary{grid-column:1/-1}
+}
+
+/* --- Écran d'attente TV -------------------------------------------------------*/
+.fx-tv{min-height:100dvh;display:flex;flex-direction:column;background:#141210;color:#f5f2ef;font-family:var(--fx-font)}
+.fx-tv-top{display:flex;align-items:center;gap:24px;padding:24px 40px;border-bottom:1px solid #2c2723}
+.fx-tv-brand{display:flex;align-items:center;gap:16px;flex:1}
+.fx-tv-brand img{width:64px;height:64px;border-radius:16px;object-fit:contain;background:#fff}
+.fx-tv-brand b{font-size:clamp(24px,2.4vw,40px);letter-spacing:-.02em}
+.fx-tv-time{font-size:clamp(28px,3vw,52px);font-weight:800;font-variant-numeric:tabular-nums}
+.fx-tv-live{display:flex;align-items:center;gap:8px;padding:8px 16px;border-radius:999px;background:#14301f;color:#4ade80;font-weight:700}
+.fx-tv-live.off{background:#3a1717;color:#fca5a5}
+.fx-tv-main{flex:1;display:grid;grid-template-columns:1.1fr 1fr 320px;gap:24px;padding:28px 40px}
+.fx-tv-col h2{display:flex;align-items:center;gap:12px;margin:0 0 16px;font-size:clamp(22px,2.2vw,36px);color:inherit}
+.fx-tv-col h2 span{margin-inline-start:auto;min-width:56px;height:48px;padding:0 14px;border-radius:999px;display:grid;place-items:center;background:#2c2723;font-size:26px}
+.fx-tv-ready h2{color:#4ade80}
+.fx-tv-ready h2 span{background:#15803d;color:#fff}
+.fx-tv-list{display:grid;gap:12px;align-content:start}
+.fx-tv-list article{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:4px 20px;padding:18px 22px;border-radius:20px;background:#1e1b18;border:1px solid #2c2723}
+.fx-tv-list article b{grid-row:span 2;font-size:clamp(30px,3.2vw,58px);font-weight:800;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+.fx-tv-list article span{font-size:clamp(16px,1.4vw,24px);color:#d9d3cd}
+.fx-tv-list article small{font-size:16px;color:#a89f97}
+.fx-tv-list article em{justify-self:start;font-size:16px}
+.fx-tv-ready .fx-tv-list article{background:#14301f;border-color:#15803d}
+.fx-tv-ready .fx-tv-list article b{color:#4ade80}
+.fx-tv-empty{color:#a89f97;font-size:22px}
+.fx-tv-side{display:flex;flex-direction:column;gap:16px}
+.fx-tv-tip{padding:20px;border-radius:20px;background:#1e1b18;border:1px solid #2c2723}
+.fx-tv-tip b{display:block;font-size:20px;margin-bottom:6px}.fx-tv-tip span{color:#a89f97;font-size:16px}
+@media (max-width:1100px){.fx-tv-main{grid-template-columns:1fr 1fr}.fx-tv-side{display:none}}
+@media (max-width:700px){.fx-tv-main{grid-template-columns:1fr;padding:16px}.fx-tv-top{padding:16px}}
+
+/* --- Reçu --------------------------------------------------------------------*/
+.receipt-due strong{font-size:16px}
+
+/* --- Pastilles de statut de commande / abonnement : couleurs du système ----*/
+.status-pill{display:inline-flex;align-items:center;min-height:28px;padding:0 11px;border-radius:999px;font-size:13px;font-weight:700;white-space:nowrap;background:var(--fx-st-received-bg);color:var(--fx-st-received);width:auto;height:auto}
+.status-pill.pending{background:var(--fx-brand-soft);color:var(--fx-brand-ink)}
+.status-pill.confirmed,.status-pill.preparing{background:var(--fx-st-diagnosis-bg);color:var(--fx-st-diagnosis)}
+.status-pill.ready_for_delivery,.status-pill.active,.status-pill.success,.status-pill.delivered{background:var(--fx-st-ready-bg);color:var(--fx-st-ready)}
+.status-pill.out_for_delivery,.status-pill.trial,.status-pill.info{background:var(--fx-st-repair-bg);color:var(--fx-st-repair)}
+.status-pill.returning,.status-pill.returned,.status-pill.past_due,.status-pill.warning{background:var(--fx-st-waiting-bg);color:var(--fx-st-waiting)}
+.status-pill.cancelled,.status-pill.suspended,.status-pill.error{background:var(--fx-st-cancelled-bg);color:var(--fx-st-cancelled)}
+/* Caisse : modes de paiement en grandes touches */
+.cash-simple-methods{display:grid !important;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.cash-simple-methods button{min-height:68px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:14px;font-weight:700;border-radius:var(--fx-radius)}
+.cash-simple-methods button svg{width:22px;height:22px}
+/* Commandes fournisseur : l'ancien filtre « À traiter / Historique » devient discret */
+.supplier-orders-tabs{display:flex;gap:6px;margin:4px 0 12px}
+.supplier-orders-tabs button{min-height:36px;padding:0 12px;font-size:14px;border-radius:999px}
+
+@layer fx-force{
+  .cash-simple-methods button span{font-size:14px !important;font-weight:700 !important}
+  .cash-simple-totals span,.cash-simple-amount label,.cash-simple-cash label,.cash-simple-device span{font-size:13px !important;letter-spacing:.01em !important}
+  .cash-simple-device .badge{height:auto !important;min-height:28px !important;writing-mode:horizontal-tb !important}
+}
+.fx-tv-list article b{font-variant-numeric:normal;letter-spacing:0}
+.fx-tv-list article em{font-style:normal}
+body:has(.fx-tv) .global-lang-toggle{display:none}

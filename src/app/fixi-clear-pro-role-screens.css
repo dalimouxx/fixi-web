@@ -197,52 +197,6 @@
   padding-block:12px;
 }
 /* Atelier: avoid tiny navigation labels, card metadata and crowded touch actions. */
-.app-shell>.sidebar{
-  background:#fff!important;
-  color:#0f172a!important;
-  border-right:1px solid #dbe4ef;
-}
-.app-shell .sidebar .nav-section{
-  font-size:11px!important;
-  color:#64748b!important;
-  line-height:1.45;
-  letter-spacing:.045em;
-}
-.app-shell .sidebar .nav-link{
-  font-size:14px!important;
-  color:#334155!important;
-  min-height:46px;
-  line-height:1.4;
-  border-radius:10px;
-}
-.app-shell .sidebar .nav-link.active{
-  background:#eef4ff!important;
-  color:#1d4ed8!important;
-  box-shadow:inset 3px 0 0 #2563eb;
-}
-.app-shell .sidebar .nav-link:hover{
-  background:#eff6ff;
-  color:#1d4ed8!important;
-}
-.app-shell .sidebar-primary-action{
-  background:#2563eb!important;
-  color:#fff!important;
-  min-height:48px;
-  border-radius:10px;
-  font-size:14px!important;
-}
-.app-shell .app-main{
-  background:#f6f8fc!important;
-}
-.app-shell .app-main>.topbar{
-  background:#fff!important;
-  border-bottom:1px solid #dbe4ef!important;
-}
-.app-shell .system-context-bar{
-  background:#f8fafc!important;
-  color:#475569!important;
-  border-color:#dbe4ef!important;
-}
 .app-shell .global-search{min-height:44px}
 .app-shell .page-title{
   font-size:clamp(24px,3vw,31px);
@@ -286,22 +240,6 @@
   font-size:15px!important;
   line-height:1.55!important;
   color:#475569!important;
-}
-.delivery-app.driver-v2 .driver-kpis>div{
-  border:1px solid #dbe4ef!important;
-  background:white!important;
-  border-radius:13px;
-  padding:16px;
-}
-.delivery-app.driver-v2 .driver-kpis span{
-  font-size:13px!important;
-  color:#475569!important;
-  line-height:1.5;
-}
-.delivery-app.driver-v2 .driver-kpis b{
-  font-size:clamp(19px,2.3vw,27px)!important;
-  color:#0f172a!important;
-  font-variant-numeric:tabular-nums;
 }
 .delivery-app.driver-v2 .driver-available-grid article{
   border:1px solid #dbe4ef!important;
@@ -518,12 +456,6 @@
   .supplier-os.supplier-erp .fixi-supplier-bottom-nav button.active{
     color:#1d4ed8!important;
   }
-  .app-shell .mobile-menu-sheet{background:white}
-  .app-shell .mobile-menu-groups a{
-    font-size:14px!important;
-    line-height:1.45;
-    min-height:46px;
-  }
   .delivery-app.driver-v2 .driver-command{
     flex-direction:column;
     gap:14px;
@@ -609,10 +541,6 @@
   .supplier-os.supplier-erp .supplier-order-actions button{
     flex:1 1 auto;
     white-space:normal;
-  }
-  .app-shell .mobile-menu-sheet{
-    max-height:calc(100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));
-    overflow:auto;
   }
   .delivery-app.driver-v2 .driver-mobile-nav{
     padding-bottom:env(safe-area-inset-bottom,0px);

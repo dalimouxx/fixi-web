@@ -20,50 +20,21 @@
 .fixi-driver-nav-payments svg{width:19px;height:19px;color:#ff6b00}
 /* Tablets 8–12in: retain module access but free up horizontal space. */
 @media(min-width:761px) and (max-width:1199px){
-  .app-shell:not(.sidebar-collapsed){grid-template-columns:82px minmax(0,1fr)}
-  .app-shell:not(.sidebar-collapsed)>.sidebar{padding:14px 8px;align-items:center}
-  .app-shell:not(.sidebar-collapsed) .sidebar .brand-caption-wrap,
-  .app-shell:not(.sidebar-collapsed) .sidebar .nav-section,
-  .app-shell:not(.sidebar-collapsed) .sidebar .nav-link span,
-  .app-shell:not(.sidebar-collapsed) .sidebar .nav-link em,
-  .app-shell:not(.sidebar-collapsed) .sidebar .shop-chip,
-  .app-shell:not(.sidebar-collapsed) .sidebar .sidebar-primary-action span{display:none}
-  .app-shell:not(.sidebar-collapsed) .sidebar .nav-link{justify-content:center;min-height:46px;min-width:48px}
-  .app-shell:not(.sidebar-collapsed) .sidebar .nav-link svg{width:21px;height:21px}
-  .app-shell:not(.sidebar-collapsed) .sidebar .sidebar-primary-action{min-height:48px;justify-content:center}
-  .app-shell .app-main>.topbar{padding:0 16px;gap:12px}
-  .app-shell .app-main .page{padding:20px 18px}
   .supplier-os{grid-template-columns:218px minmax(0,1fr)}
   .supplier-os>main{padding:19px}
   .supplier-os .supplier-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}
   .supplier-os .supplier-dashboard-grid{grid-template-columns:1fr}
   .supplier-os .supplier-os-brand span{font-size:11px}
   .delivery-app.driver-v2>main{max-width:100%;padding:20px 18px}
-  .driver-app .driver-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}
 }
 @media(max-width:760px){
   html{scroll-padding-top:68px}
   body{overflow-x:hidden}
   .app-shell{grid-template-columns:minmax(0,1fr)}
-  .app-shell>.sidebar{display:none}
-  .app-shell>.app-main{min-width:0;width:100%;padding-bottom:calc(82px + env(safe-area-inset-bottom,0px))}
-  .app-shell>.app-main>.topbar{height:62px;min-height:62px;padding:0 12px;gap:8px;z-index:20}
-  .app-shell .topbar .global-search{flex:1;min-width:0;max-width:unset;width:auto}
-  .app-shell .topbar .global-search span{display:none}
-  .app-shell .topbar .topbar-quick a{min-height:42px}
-  .app-shell .topbar .userbox{gap:5px}
-  .app-shell .topbar .userbox>.user-meta{display:none}
-  .app-shell .topbar .userbox .avatar{height:34px;width:34px}
-  .app-shell .app-main>.system-context-bar{padding:0 12px;min-height:34px}
-  .app-shell .app-main>.page,.app-shell .app-main .page{padding:16px 12px 28px}
   .app-shell .page-head{gap:12px;flex-wrap:wrap;align-items:flex-start}
   .app-shell .page-head h1{font-size:clamp(23px,6vw,30px)}
-  .app-shell .stat-grid,.app-shell .cash-kpis,.app-shell .dashboard-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .app-shell .content-grid,.app-shell .dashboard-action-grid{grid-template-columns:1fr}
-  .app-shell .quick-actions{grid-template-columns:repeat(3,minmax(0,1fr))}
-  .app-shell .mobile-ops-nav{padding-bottom:env(safe-area-inset-bottom,0px);min-height:66px}
-  .app-shell .mobile-ops-nav a,.app-shell .mobile-ops-nav button{min-height:60px;touch-action:manipulation}
-  .app-shell .mobile-menu-sheet{max-height:calc(90dvh - env(safe-area-inset-bottom,0px));overflow-y:auto}
+  .app-shell .stat-grid,.app-shell .cash-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .app-shell .content-grid{grid-template-columns:1fr}
   .app-shell .buyer-due-items>div,.app-shell .buyer-due-payments>div{font-size:12px;line-height:1.5}
   .app-shell .buyer-due-supplier header small{font-size:11px}
   .app-shell .buyer-due-sales summary code{font-size:12px}
@@ -95,7 +66,7 @@
   .supplier-os .fixi-supplier-bottom-nav>button>span:last-child{font-size:10px;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;max-width:100%}
   .supplier-os .fixi-supplier-bottom-nav>button.active{background:#fff2e8;color:#ce5b10}
   .supplier-os .fixi-supplier-bottom-nav>button svg{height:21px;width:21px}
-  .supplier-os .supplier-kpis,.supplier-os .supplier-kpis-6{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .supplier-os .supplier-kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
   .supplier-os .supplier-kpis>div{padding:13px 12px}
   .supplier-os .supplier-kpis span{font-size:11px}
   .supplier-os .supplier-kpis b{font-size:19px}
@@ -104,8 +75,6 @@
   .supplier-os .supplier-section-head b{font-size:15px}
   .supplier-os .supplier-section-head span{font-size:12px}
   .supplier-os .supplier-panel{border-radius:17px}
-  .supplier-os .supplier-mobile-install{margin-top:8px;border-radius:16px}
-  .supplier-os .supplier-mobile-install-actions{flex-wrap:wrap}
   .supplier-os .supplier-os-brand b{font-size:17px}
   .supplier-os .supplier-os-brand span{font-size:12px}
   .supplier-os .supplier-nav-label{font-size:11px}
@@ -135,10 +104,6 @@
   .delivery-app.driver-v2 .driver-command h1{font-size:23px}
   .delivery-app.driver-v2 .driver-command-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
   .delivery-app.driver-v2 .driver-command-actions>button{min-width:0;min-height:44px;justify-content:center;font-size:12px}
-  .delivery-app.driver-v2 .driver-kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-  .delivery-app.driver-v2 .driver-kpis>div{padding:13px;border-radius:16px}
-  .delivery-app.driver-v2 .driver-kpis span{font-size:11px}
-  .delivery-app.driver-v2 .driver-kpis b{font-size:19px}
   .delivery-app.driver-v2 .driver-route-list,.delivery-app.driver-v2 .driver-available-grid{grid-template-columns:1fr}
   .delivery-app.driver-v2 .supplier-modal-backdrop{z-index:1300;padding:8px}
   .delivery-app.driver-v2 .delivery-modal{width:min(100%,560px);max-height:calc(100dvh - 16px);overflow-y:auto;border-radius:17px}
@@ -146,13 +111,11 @@
   .delivery-app.driver-v2 .btn,.supplier-os .btn,.app-shell .btn{min-height:42px}
 }
 @media(max-width:430px){
-  .supplier-os .supplier-kpis,.supplier-os .supplier-kpis-6{gap:7px}
+  .supplier-os .supplier-kpis{gap:7px}
   .supplier-os .supplier-kpis>div{padding:10px}
   .supplier-os .supplier-product-grid{grid-template-columns:1fr}
   .delivery-app.driver-v2>header .driver-live-state{display:none}
   .delivery-app.driver-v2 .driver-command-actions{grid-template-columns:1fr}
-  .delivery-app.driver-v2 .driver-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .app-shell .quick-actions{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media print{
   .fixi-supplier-bottom-nav,.fixi-supplier-drawer-backdrop,.fixi-supplier-menu-button,.fixi-supplier-drawer-close,.driver-mobile-nav{display:none!important}

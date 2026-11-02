@@ -10,6 +10,7 @@ import { FixiSmartWidgets } from '@/components/fixi-smart-widgets';
 import { StatusBadge, useApi, useRealtimeRefresh } from '@/components/ui';
 import { money, dateTime } from '@/lib/format';
 import { useUiMode } from '@/lib/ui-mode';
+import { GettingStarted } from '@/components/getting-started';
 import { useI18n } from '@/components/language-provider';
 
 type Tile = { href: string; icon: any; title: string; sub: string; count?: number; variant?: 'primary' | 'ready' };
@@ -70,6 +71,8 @@ export default function Dashboard() {
       <div><h1>Que voulez-vous faire ?</h1><p style={{ textTransform: 'capitalize' }}>{today}</p></div>
       {perm.finance && <Link href="/app/fin-de-journee" className="btn btn-ghost"><Moon size={18} /> Fin de journée</Link>}
     </div>
+
+    {perm.profit && <GettingStarted repairCount={Object.values(counts).reduce((a: number, v: any) => a + Number(v), 0)} />}
 
     <nav className="fx-tiles" aria-label="Actions principales">
       {tiles.map(t => { const Icon = t.icon; return <Link key={t.title} href={t.href} className={`fx-tile ${t.variant ? 'fx-tile--' + t.variant : ''}`}>

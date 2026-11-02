@@ -496,7 +496,7 @@ h1,h2,h3{color:var(--fx-ink);line-height:1.2}
 @media (max-width:760px){
   /* En-tête fournisseur mobile : la bannière juste en dessous propose déjà Installer et Push */
   .supplier-os.supplier-erp>main>header .toolbar{flex-wrap:nowrap}
-  .supplier-os.supplier-erp>main>header .toolbar>:not(.rt-notifications){display:none}
+  .supplier-os.supplier-erp>main>header .toolbar>:not(.rt-notifications):not(.fx-icon-btn){display:none}
 }
 
 /* ==========================================================================

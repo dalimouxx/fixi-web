@@ -59,11 +59,6 @@ body{color:var(--fixi-text);background:var(--fixi-background);font-family:Inter,
  font-size:max(14px,1em);
 }
 :where(.app-shell,.supplier-os,.delivery-app,.saas-v4,.fixi-supplier-billing)
- :is(.page-sub,.muted,.form-help){
- color:var(--fixi-text-muted);
- line-height:1.55;
-}
-:where(.app-shell,.supplier-os,.delivery-app,.saas-v4,.fixi-supplier-billing)
  :is(.table-wrap,.control-table-wrap,.fixi-billing-scroll){
  overflow-x:auto;
 }
@@ -76,8 +71,6 @@ html[dir="rtl"] :where(.app-shell,.supplier-os,.delivery-app,.saas-v4,.fixi-supp
 @media(max-width:700px){
  :where(.app-shell,.supplier-os,.delivery-app,.saas-v4)
  :is(input,select,textarea){font-size:16px}
- :where(.app-shell,.supplier-os,.delivery-app,.saas-v4)
- :is(.btn,.topbar-new,.sidebar-primary-action){min-height:44px}
 }
 @media(prefers-reduced-motion:reduce){
  :where(.app-shell,.supplier-os,.delivery-app,.saas-v4,.fixi-supplier-billing) *,
