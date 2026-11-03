@@ -9,26 +9,26 @@ type Props={
 };
 export function TicketSearchV4({query,from,to,busy,results,onQuery,onFrom,onTo,onSearch,onPrint,onReturn}:Props){
  const enter=(e:KeyboardEvent<HTMLInputElement>)=>{if(e.key==='Enter'){e.preventDefault();onSearch()}};
- return <div className="v4-ticket-finder">
-  <div className="v4-ticket-filters">
-   <label>Scanner le code du ticket, ou rechercher nom / téléphone / référence
-    <input placeholder="Code-barres du ticket · saisir puis Entrée" value={query} onChange={e=>onQuery(e.target.value)}
+ return <div className="v5-ticket-finder">
+  <div className="v5-form-row">
+   <label className="v5-field v5-field--wide"><span>Code du ticket, nom, téléphone ou référence</span>
+    <input placeholder="Scannez le ticket ou tapez, puis Entrée" value={query} onChange={e=>onQuery(e.target.value)}
       onKeyDown={enter} aria-label="Rechercher ou scanner le ticket"/>
    </label>
-   <label>Du<input type="date" value={from} onChange={e=>onFrom(e.target.value)}/></label>
-   <label>Au<input type="date" value={to} onChange={e=>onTo(e.target.value)}/></label>
-   <button type="button" disabled={busy} onClick={onSearch}>Rechercher les tickets</button>
+   <label className="v5-field"><span>Du</span><input type="date" value={from} onChange={e=>onFrom(e.target.value)}/></label>
+   <label className="v5-field"><span>Au</span><input type="date" value={to} onChange={e=>onTo(e.target.value)}/></label>
+   <button type="button" className="v5-btn v5-btn--primary" disabled={busy} onClick={onSearch}>Rechercher</button>
   </div>
-  {results.length>0&&<div className="v4-found-tickets">
-   <h3>{results.length} ticket(s) trouvé(s)</h3>
-   <table><thead><tr><th>Référence / Date</th><th>Client</th><th>Total</th><th>Actions</th></tr></thead><tbody>
-    {results.map(r=><tr key={r.id}><td><strong>{r.reference}</strong><small>{new Date(r.createdAt).toLocaleString('fr-TN')}</small></td>
-     <td>{r.customer}{r.phone&&<small>{r.phone}</small>}</td><td>{dt(r.total)}</td>
-     <td><div className="v4-ticket-actions">
-      <button type="button" disabled={busy} onClick={()=>onPrint(r)}>Réimprimer</button>
-      {onReturn&&<button type="button" disabled={busy} onClick={()=>onReturn(r)}>Sélectionner pour retour</button>}
+  {results.length>0&&<div className="v5-found">
+   <p className="v5-hint">{results.length} ticket{results.length>1?'s':''} trouvé{results.length>1?'s':''}</p>
+   <div className="v5-table-wrap"><table className="v5-table"><thead><tr><th>Ticket</th><th>Client</th><th className="num">Total</th><th className="act"></th></tr></thead><tbody>
+    {results.map(r=><tr key={r.id}><td><b className="v5-mono">{r.reference}</b><small>{new Date(r.createdAt).toLocaleString('fr-FR',{dateStyle:'short',timeStyle:'short'})} · {r.items.length} article{r.items.length>1?'s':''}</small></td>
+     <td>{r.customer}{r.phone&&<small>{r.phone}</small>}</td><td className="num"><b>{dt(r.total)}</b></td>
+     <td className="act"><div className="v5-row-actions">
+      <button type="button" className="v5-btn v5-btn--ghost v5-btn--sm" disabled={busy} onClick={()=>onPrint(r)}>Réimprimer</button>
+      {onReturn&&<button type="button" className="v5-btn v5-btn--soft v5-btn--sm" disabled={busy} onClick={()=>onReturn(r)}>Faire un retour</button>}
      </div></td></tr>)}
-   </tbody></table>
+   </tbody></table></div>
   </div>}
  </div>
 }
