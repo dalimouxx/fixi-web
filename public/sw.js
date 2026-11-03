@@ -1,4 +1,4 @@
-const CACHE='fixi-v12-public-shell';
+const CACHE='fixi-v15-public-shell';
 const SHELL=['/','/login','/offline-reception.html','/manifest.webmanifest','/icon.svg','/icons/atelier-192.png','/icons/supplier-192.png','/icons/delivery-192.png','/icons/control-192.png','/icons/badge-96.png'];
 
 // Identité visuelle des notifications : l'icône de l'espace concerné (PNG, lisible sur Android),
@@ -7,6 +7,9 @@ const BADGE='/icons/badge-96.png';
 function spaceOf(href){href=String(href||'');return href.startsWith('/supplier')?'supplier':href.startsWith('/delivery')?'delivery':href.startsWith('/saas')?'control':'atelier';}
 const iconOf=href=>'/icons/'+spaceOf(href)+'-192.png';
 // Catégories : ce qui exige une action reste affiché jusqu'au toucher et vibre plus fort.
+// Catégorie de son : l'application Android Fixi la lit dans l'étiquette (« fx-orders|… ») pour choisir le son.
+const CATEGORY={SUPPLIER_NEW_ORDER:'orders',DRIVER_NEW_MISSION:'missions',SHOP_ORDER_PROGRESS:'progress',SUPPLIER_UPDATE:'progress',DRIVER_ARRIVED:'progress',SHOP_ORDER_DELIVERED:'done',DRIVER_DELIVERED:'done'};
+const catTag=(identity,tag,priority)=>'fx-'+(CATEGORY[identity]||(priority==='URGENT'||priority==='HIGH'?'progress':'general'))+'|'+tag;
 const PROFILE={
   DRIVER_NEW_MISSION:{vibrate:[220,100,220,100,320],sticky:true,actions:[{action:'accept-delivery',title:'Accepter'},{action:'open',title:'Voir'}]},
   SUPPLIER_NEW_ORDER:{vibrate:[200,90,200,90,280],sticky:true,actions:[{action:'open',title:'Voir la commande'}]},
@@ -48,7 +51,7 @@ self.addEventListener('push',event=>{
     badge:BADGE,
     image:data.image||undefined,
     data:{href,...(data.data||{}),experienceKey:identity},
-    tag:data.tag||('fixi-'+Date.now()),
+    tag:catTag(identity,data.tag||('fixi-'+Date.now()),data.priority||data.data?.priority),
     renotify:true,
     vibrate:profile.vibrate,
     timestamp:Date.now(),
@@ -87,7 +90,7 @@ self.addEventListener('notificationclick',event=>{
       try{
         const r=await fetch('/api/supplier/orders/'+encodeURIComponent(data.orderId),{method:'PATCH',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'CONFIRMED'})});
         if(r.ok){
-          await self.registration.showNotification('Commande confirmée ✓',{body:'La boutique est prévenue. Préparez la commande.',icon:'/icons/supplier-192.png',badge:BADGE,tag:'order-confirmed-'+data.orderId,data:{href:'/supplier?tab=orders'},actions:[{action:'open',title:'Préparer'}]});
+          await self.registration.showNotification('Commande confirmée ✓',{body:'La boutique est prévenue. Préparez la commande.',icon:'/icons/supplier-192.png',badge:BADGE,tag:'fx-done|order-confirmed-'+data.orderId,data:{href:'/supplier?tab=orders'},actions:[{action:'open',title:'Préparer'}]});
         }else{
           const j=await r.json().catch(()=>({}));
           await self.registration.showNotification('Confirmation impossible',{body:r.status===401?'Reconnectez-vous à Fixi Fournisseur puis confirmez la commande.':r.status===403?'Votre rôle ne permet pas de confirmer une commande.':(j.error||'Cette commande a déjà été traitée.'),icon:'/icons/supplier-192.png',badge:BADGE,tag:'order-confirm-failed-'+data.orderId,data:{href:'/supplier?tab=orders'}});
@@ -103,7 +106,7 @@ self.addEventListener('notificationclick',event=>{
       try{
         const r=await fetch('/api/delivery/orders/'+encodeURIComponent(data.orderId)+'/accept',{method:'POST',credentials:'include'});
         if(r.ok){
-          await self.registration.showNotification('Livraison acceptée',{body:'La mission vous est réservée.',icon:'/icons/delivery-192.png',badge:BADGE,tag:'delivery-accepted-'+data.orderId,data:{href:'/delivery'},requireInteraction:true,actions:[{action:'open',title:'Ouvrir la tournée'}]});
+          await self.registration.showNotification('Livraison acceptée',{body:'La mission vous est réservée.',icon:'/icons/delivery-192.png',badge:BADGE,tag:'fx-done|delivery-accepted-'+data.orderId,data:{href:'/delivery'},requireInteraction:true,actions:[{action:'open',title:'Ouvrir la tournée'}]});
         }else{
           const j=await r.json().catch(()=>({}));
           await self.registration.showNotification('Mission indisponible',{body:j.error||'Cette livraison a déjà été prise.',icon:'/icons/delivery-192.png',badge:BADGE,tag:'delivery-unavailable-'+data.orderId,data:{href:'/delivery'}});

@@ -118,6 +118,7 @@ export const arV15: Record<string, string> = {
   'Sur un ordinateur ? Scannez ce code avec le téléphone.': 'على حاسوب؟ امسح هذا الرمز بالهاتف.', 'Ou télécharger l’application Android (avec widget)': 'أو حمّل تطبيق أندرويد (مع الأداة)',
   'Application Android pour l’équipe': 'تطبيق أندرويد للفريق', 'Envoyez le lien : chacun télécharge et installe Fixi en 3 touchers.': 'أرسل الرابط: كل واحد يحمّل Fixi ويثبّته في 3 لمسات.', 'Voir la page': 'عرض الصفحة',
   'Le téléchargement reste bloqué ? Ouvrez cette page dans Chrome (menu ⋮ → « Ouvrir dans Chrome »), ou regardez dans « Fichiers » → « Téléchargements ».': 'التحميل متوقف؟ افتح هذه الصفحة في Chrome (القائمة ⋮ ← «فتح في Chrome»)، أو ابحث في «الملفات» ← «التنزيلات».',
+  'Chaque type d’alerte a son son Fixi, même téléphone verrouillé. Pour le changer : Paramètres Android → Notifications → Fixi.': 'لكل نوع تنبيه صوت Fixi خاص به، حتى والهاتف مقفل. لتغييره: إعدادات أندرويد ← الإشعارات ← Fixi.',
   // Étiquette
   'Imprimer l’étiquette': 'اطبع الملصق', 'Nombre d’étiquettes': 'عدد الملصقات',
 };

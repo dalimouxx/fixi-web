@@ -1,6 +1,6 @@
 {
   "name": "fixi-web",
-  "version": "15.3.1",
+  "version": "15.4.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
