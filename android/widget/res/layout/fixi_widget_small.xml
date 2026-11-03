@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Widget Fixi, petite taille (une ligne d'icônes) : uniquement les 3 cases. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/fixi_widget_root" android:layout_width="match_parent" android:layout_height="match_parent"
+    android:orientation="horizontal" android:padding="6dp" android:background="@drawable/fixi_widget_bg">
+        <LinearLayout android:id="@+id/fixi_widget_c1" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent"
+            android:orientation="vertical" android:gravity="center" android:background="@drawable/fixi_widget_cell_ready" android:layout_marginRight="4dp">
+            <TextView android:id="@+id/fixi_widget_v1" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="–"
+                android:textColor="#067647" android:textSize="22sp" android:textStyle="bold" android:includeFontPadding="false" />
+            <TextView android:id="@+id/fixi_widget_l1" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Prêts"
+                android:textColor="#067647" android:textSize="11sp" android:maxLines="1" android:ellipsize="end" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/fixi_widget_c2" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent"
+            android:orientation="vertical" android:gravity="center" android:background="@drawable/fixi_widget_cell" android:layout_marginRight="4dp">
+            <TextView android:id="@+id/fixi_widget_v2" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="–"
+                android:textColor="#101828" android:textSize="22sp" android:textStyle="bold" android:includeFontPadding="false" />
+            <TextView android:id="@+id/fixi_widget_l2" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="En cours"
+                android:textColor="#475467" android:textSize="11sp" android:maxLines="1" android:ellipsize="end" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/fixi_widget_c3" android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent"
+            android:orientation="vertical" android:gravity="center" android:background="@drawable/fixi_widget_cell_wait" >
+            <TextView android:id="@+id/fixi_widget_v3" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="–"
+                android:textColor="#b54708" android:textSize="22sp" android:textStyle="bold" android:includeFontPadding="false" />
+            <TextView android:id="@+id/fixi_widget_l3" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Attente pièce"
+                android:textColor="#b54708" android:textSize="11sp" android:maxLines="1" android:ellipsize="end" />
+        </LinearLayout>
+</LinearLayout>

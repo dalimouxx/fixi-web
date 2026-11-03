@@ -1,6 +1,7 @@
 'use client';
 import {TextSizeToggle} from './text-size-toggle';
 import {LangToggle} from './lang-toggle';
+import {AndroidWidgetButton} from './android-widget-button';
 import {useEffect,useMemo,useRef,useState} from 'react';
 import {useRouter} from 'next/navigation';
 import Link from 'next/link';
@@ -119,6 +120,7 @@ export function DriverApp({session}:{session:any}){
       <RealtimeNotificationCenter apiUrl="/api/delivery/notifications" eventsUrl="/api/delivery/events-stream"
         storageKey="fixi-delivery-notifications" onEvent={load}/>
       <LangToggle/>
+      <AndroidWidgetButton space="delivery"/>
       <TextSizeToggle/>
       <span className="fixi-driver-user"><b>{session.fullName}</b><small>Livreur</small></span>
       <button type="button" className="fixi-driver-logout" onClick={logout} title="Déconnexion" aria-label="Déconnexion"><LogOut size={18}/></button>

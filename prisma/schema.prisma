@@ -2618,13 +2618,15 @@ model SupplierInvite {
   @@index([status, createdAt])
 }
 
-/// Jeton en lecture seule du widget Android (écran d'accueil) : ne donne accès qu'au résumé de l'atelier.
+/// Jeton en lecture seule du widget Android (écran d'accueil) : ne donne accès qu'aux compteurs de l'espace.
 model WidgetToken {
   id         String    @id @default(cuid())
   tokenHash  String    @unique
-  userId     String
-  shopId     String
-  shop       Shop      @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  kind       String    @default("ATELIER") // ATELIER, SUPPLIER, DRIVER
+  userId     String    // utilisateur atelier ou compte fournisseur/livreur
+  shopId     String?
+  shop       Shop?     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  companyId  String?
   createdAt  DateTime  @default(now())
   lastUsedAt DateTime?
   revokedAt  DateTime?

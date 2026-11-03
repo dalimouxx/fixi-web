@@ -1,6 +1,8 @@
 'use client';
-import { useState } from 'react';
-import { UserPlus, KeyRound, Phone, ShieldCheck, Wrench, Banknote, ClipboardList } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { UserPlus, KeyRound, Phone, ShieldCheck, Wrench, Banknote, ClipboardList, Download, MessageCircle } from 'lucide-react';
+import { apkShareMessage } from '@/lib/apk';
+import { waLink } from '@/lib/whatsapp-link';
 import { api, useApi } from '@/components/ui';
 import { FxSheet } from '@/components/fx-sheet';
 
@@ -21,6 +23,8 @@ export default function Team() {
   const [pin, setPin] = useState('');
   const { data, error, loading } = useApi<any[]>('/api/users', refresh);
   const [f, setF] = useState<any>(blank);
+  const [origin, setOrigin] = useState('');
+  useEffect(() => setOrigin(location.origin), []);
   async function save(e: React.FormEvent) { e.preventDefault(); try { await api('/api/users', { method: 'POST', body: JSON.stringify(f) }); setOpen(false); setF(blank); setRefresh(x => x + 1); } catch (err: any) { alert(err.message); } }
   async function savePin(e: React.FormEvent) { e.preventDefault(); try { await api('/api/users/' + pinFor.id, { method: 'PATCH', body: JSON.stringify({ pin }) }); setPinFor(null); setPin(''); } catch (err: any) { alert(err.message); } }
   async function toggle(u: any) { if (u.isActive && !confirm(`Désactiver ${u.fullName} ? Il ne pourra plus se connecter.`)) return; try { await api('/api/users/' + u.id, { method: 'PATCH', body: JSON.stringify({ isActive: !u.isActive }) }); setRefresh(x => x + 1); } catch (err: any) { alert(err.message); } }
@@ -28,6 +32,9 @@ export default function Team() {
   return <div className="fx-page">
     <div className="fx-hello"><div><h1>Équipe</h1><p>Chaque personne a son code et ne voit que ce qui concerne son travail.</p></div>
       <button className="btn btn-primary" onClick={() => setOpen(true)}><UserPlus size={18} /> Ajouter une personne</button></div>
+    <section className="fx-panel fx-team-app"><Download /><span><b>Application Android pour l’équipe</b><small>Envoyez le lien : chacun télécharge et installe Fixi en 3 touchers.</small></span>
+      <a className="btn btn-success btn-sm" target="_blank" rel="noreferrer" href={waLink('', apkShareMessage(origin))}><MessageCircle size={16} /> Envoyer par WhatsApp</a>
+      <a className="btn btn-ghost btn-sm" href="/android" target="_blank" rel="noreferrer">Voir la page</a></section>
     {error && <div className="error" style={{ marginBottom: 12 }}>{error}</div>}
     {loading && !data ? <div className="card card-pad fx-skeleton" role="status" aria-label="Chargement"><i /><i /></div> :
       <div className="fx-list">

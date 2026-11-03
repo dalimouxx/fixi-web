@@ -510,3 +510,38 @@ a.fx-kpi{text-decoration:none}
 .subscription-center .fixi-payment-option h3{font-size:16px}
 .subscription-center .fixi-payment-option b,.subscription-center .fixi-payment-option span,.subscription-center .fixi-payment-option a{font-size:14px}
 .subscription-center .subscription-contact b{font-size:16px}.subscription-center .subscription-contact span{font-size:14px}
+
+/* ---------- 15.3 : page Android, widget ---------- */
+.fx-android-dl{min-height:60px;font-size:18px}
+.fx-android-steps{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.fx-android-steps li{display:grid;grid-template-columns:36px 1fr;column-gap:12px;padding:12px 14px;background:var(--fx-surface);border:1px solid var(--fx-line);border-radius:var(--fx-radius-lg)}
+.fx-android-steps span{grid-row:span 2;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:var(--fx-brand);color:var(--fx-on-brand);font-weight:800}
+.fx-android-steps small{color:var(--fx-muted);font-size:13px;margin-top:2px}
+.fx-android-qr{display:grid;justify-items:center;gap:6px;text-align:center;color:var(--fx-muted);font-size:13px}
+.fx-android-qr canvas{border-radius:12px;background:#fff;padding:6px}
+@media (pointer:coarse){.fx-android-qr{display:none}}
+.fx-android-ios{display:flex;gap:8px;align-items:center;justify-content:center;color:var(--fx-muted);font-size:13px;text-align:center;margin:0}
+.fx-widget-error{font-size:12px;color:var(--fx-danger)}
+.fx-install-apk{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:8px;font-weight:700;color:var(--fx-brand-ink)}
+.fx-team-app{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.fx-team-app > svg{color:var(--fx-brand);flex:none}
+.fx-team-app > span{flex:1 1 220px}.fx-team-app b,.fx-team-app small{display:block}.fx-team-app small{color:var(--fx-muted);font-size:13px}
+
+/* ---------- 15.3 : onglets secondaires du fournisseur lisibles ---------- */
+@layer fx-force{
+  @media (max-width:600px){.supplier-os>main>header{top:0!important}}
+  .supplier-os>main>header h1,.supplier-os>main>header h2{white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;min-width:0!important}
+  .supplier-os>main>header>div:first-child{min-width:0!important;flex:1 1 auto!important}
+  .supplier-os>main>header{flex-wrap:nowrap!important}
+  .supplier-os main .global-search{width:100%!important;max-width:none!important}
+  .supplier-os main .global-search input{flex:1 1 auto!important;min-width:0!important;width:100%!important;font-size:15px!important}
+  /* Tailles minimales dans le contenu (les anciennes feuilles descendaient à 7–9 px). */
+  .supplier-os main :is(small,span,code,em,label,p,td,th,li,a,button,b,strong){font-size:max(12px,1em)!important}
+  .supplier-os main :is(.smart-kicker){font-size:12px!important}
+  .supplier-os main button,.supplier-os main .btn{min-height:40px}
+  .supplier-os main table td,.supplier-os main table th{font-size:14px!important}
+  .supplier-os main h2{font-size:clamp(18px,4.6vw,22px)!important}
+  .supplier-os main h3{font-size:16px!important}
+  .supplier-os main :is(.rt-empty,.delivery-empty) :is(b,strong){font-size:15px!important}
+  .supplier-os main :is(.rt-empty,.delivery-empty) :is(span,p,small){font-size:13px!important}
+}

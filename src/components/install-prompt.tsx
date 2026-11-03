@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
-import { X, Share, SquarePlus, Zap, BellRing, Maximize } from 'lucide-react';
+import { X, Share, SquarePlus, Zap, BellRing, Maximize, Download } from 'lucide-react';
 import { canPromptInstall, isIosSafari, isStandalone, onInstallChange, promptInstall, INSTALL_OPEN_EVENT } from '@/lib/install-prompt';
 import { icon, spaceForPath, spaces } from '@/lib/pwa';
 import { VideoHelpButton } from './video-help';
@@ -18,18 +18,21 @@ export function InstallPrompt() {
   const [open, setOpen] = useState(false);
   const [ios, setIos] = useState(false);
   const [native, setNative] = useState(false);
+  const [android, setAndroid] = useState(false);
   // Uniquement dans les espaces de travail : jamais sur les pages vues par les clients finaux.
   const enabled = /^\/(app|login|onboarding|change-pin|supplier|delivery|saas)(\/|$)/.test(pathname);
 
   useEffect(() => {
     if (!enabled || isStandalone()) return;
     const iosDevice = isIosSafari();
+    const androidDevice = /Android/i.test(navigator.userAgent);
+    setAndroid(androidDevice);
     setIos(iosDevice);
     setNative(canPromptInstall());
     let snoozedUntil = 0;
     try { snoozedUntil = Number(localStorage.getItem(key) || 0); } catch {}
     const mobile = matchMedia('(pointer: coarse)').matches || innerWidth < 900;
-    const show = () => { if (!isStandalone() && Date.now() > snoozedUntil && mobile && (iosDevice || canPromptInstall())) setOpen(true); };
+    const show = () => { if (!isStandalone() && Date.now() > snoozedUntil && mobile && (iosDevice || androidDevice || canPromptInstall())) setOpen(true); };
     const t = setTimeout(show, 2500);
     const off = onInstallChange(() => { setNative(canPromptInstall()); if (isStandalone()) setOpen(false); else show(); });
     const force = () => { if (!isStandalone()) setOpen(true); };
@@ -65,6 +68,7 @@ export function InstallPrompt() {
       <button type="button" className="btn btn-ghost" onClick={later}>Plus tard</button>
       <button type="button" className="btn btn-primary" onClick={install}>Installer</button>
     </div> : <p className="fx-install-hint">Ouvrez le menu du navigateur (⋮) puis « Installer l’application » ou « Ajouter à l’écran d’accueil ».</p>}
+    {android && <a className="fx-install-apk" href="/android"><Download size={16} /> Ou télécharger l’application Android (avec widget)</a>}
     <VideoHelpButton id="installer" />
   </aside>;
 }
