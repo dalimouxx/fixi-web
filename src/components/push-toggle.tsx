@@ -1,6 +1,7 @@
 'use client';
 import {useEffect,useState} from 'react';
 import {BellRing,BellOff} from 'lucide-react';
+import {useInAndroidApp} from './android-widget-button';
 
 function b64ToUint8(value:string){
  const pad='='.repeat((4-value.length%4)%4),b=(value+pad).replace(/-/g,'+').replace(/_/g,'/');
@@ -10,7 +11,7 @@ function b64ToUint8(value:string){
 /** Works on the shop, supplier and delivery spaces; reports failures instead of
  * claiming Push is enabled when the server refused to save the subscription.
  */
-export function PushToggle({subscribeUrl='/api/push/subscribe',label=false,onStateChange}:{subscribeUrl?:string;label?:boolean;onStateChange?:(active:boolean)=>void}){
+export function PushToggle({subscribeUrl='/api/push/subscribe',label=false,onStateChange}:{subscribeUrl?:string;label?:boolean;onStateChange?:(active:boolean)=>void}){const inApp=useInAndroidApp();
  const[supported,setSupported]=useState(false);
  const[on,setOn]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState('');
  useEffect(()=>{
@@ -90,5 +91,6 @@ export function PushToggle({subscribeUrl='/api/push/subscribe',label=false,onSta
    {label&&<span>{busy?'Un instant…':on?'Activé':'Activer'}</span>}
   </button>
   {error&&<small role="alert" className="push-error">{error}</small>}
+  {label&&on&&inApp&&<small className="push-android-note">Chaque type d’alerte a son son Fixi, même téléphone verrouillé. Pour le changer : Paramètres Android → Notifications → Fixi.</small>}
  </>;
 }

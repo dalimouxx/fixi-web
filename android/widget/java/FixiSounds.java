@@ -64,7 +64,8 @@ final class FixiSounds {
             nm.createNotificationChannel(c);
         }
         if (nm.getNotificationChannel(SILENT) == null) {
-            NotificationChannel q = new NotificationChannel(SILENT, "Résumé et suivi", "Résumé du jour et livraison en cours, sans son", NotificationManager.IMPORTANCE_LOW);
+            NotificationChannel q = new NotificationChannel(SILENT, "Résumé et suivi", NotificationManager.IMPORTANCE_LOW);
+            q.setDescription("Résumé du jour et livraison en cours, sans son");
             q.setSound(null, null);
             q.enableVibration(false);
             q.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
