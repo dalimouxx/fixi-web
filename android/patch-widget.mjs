@@ -7,11 +7,11 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const build = path.join(here, 'build', 'app', 'src', 'main');
 const pkg = process.env.TWA_PACKAGE_ID || 'tn.fixi.app';
 const javaDir = path.join(build, 'java', ...pkg.split('.'));
-const copy = (from, to, edit = s => s) => { fs.mkdirSync(path.dirname(to), { recursive: true }); fs.writeFileSync(to, edit(fs.readFileSync(from, 'utf8'))); };
+const copy = (from, to, edit = s => s) => { fs.mkdirSync(path.dirname(to), { recursive: true }); if (/\.(wav|ogg|mp3|png)$/.test(from)) return fs.copyFileSync(from, to); fs.writeFileSync(to, edit(fs.readFileSync(from, 'utf8'))); };
 
 for (const f of fs.readdirSync(path.join(here, 'widget', 'java')))
   copy(path.join(here, 'widget', 'java', f), path.join(javaDir, f), s => s.replace(/^package tn\.fixi\.app;/m, `package ${pkg};`).replaceAll('"tn.fixi.app.WIDGET_REFRESH"', `"${pkg}.WIDGET_REFRESH"`));
-for (const dir of ['layout', 'xml', 'drawable', 'values'])
+for (const dir of ['layout', 'xml', 'drawable', 'values', 'raw'])
   for (const f of fs.readdirSync(path.join(here, 'widget', 'res', dir))) copy(path.join(here, 'widget', 'res', dir, f), path.join(build, 'res', dir, f));
 
 const manifestPath = path.join(build, 'AndroidManifest.xml');
