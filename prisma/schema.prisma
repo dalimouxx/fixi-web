@@ -84,6 +84,7 @@ enum AttachmentType {
   DOCUMENT
   SIGNATURE_RECEPTION
   SIGNATURE_DELIVERY
+  VOICE_NOTE
 }
 
 enum DocumentType {
@@ -423,6 +424,9 @@ model Shop {
   locale                String   @default("fr-TN")
   logoDataUrl           String?
   brandColor            String?
+  counterRepairCode     String?
+  counterUpdatedAt      DateTime?
+  lastMonthlyReport     String?
   footerText            String   @default("Merci pour votre confiance")
   whatsappReceived      String   @default("Bonjour {client}, votre appareil {device} a bien été reçu. Code : {code}.")
   whatsappReady         String   @default("Bonjour {client}, votre appareil {device} est prêt. Montant restant : {balance} {currency}.")
@@ -478,6 +482,8 @@ model Shop {
   attachments           RepairAttachment[]
   supplierInvites       SupplierInvite[]
   widgetTokens          WidgetToken[]
+  installments          RepairInstallment[]
+  imeiReports           ImeiReport[]
   notifications         Notification[]
   salesDocuments        SalesDocument[]
   platformMessages      PlatformMessage[]
@@ -617,6 +623,7 @@ model Repair {
   promisedAt        DateTime?
   pickupReminderCount Int       @default(0)
   pickupRemindedAt  DateTime?
+  installments      RepairInstallment[]
   estimatedMinutes  Int?
   deliveredAt       DateTime?
   createdAt         DateTime       @default(now())
@@ -1562,6 +1569,7 @@ model SupplierCompany {
   slug        String   @unique
   logoUrl     String?
   phone       String?
+  publicCatalog Boolean @default(false)
   email       String?
   address     String?
   region      String?
@@ -2632,4 +2640,35 @@ model WidgetToken {
   revokedAt  DateTime?
 
   @@index([userId, createdAt])
+}
+
+/// Échéancier d'une réparation payée en plusieurs fois. Une échéance est payée quand les paiements cumulés la couvrent.
+model RepairInstallment {
+  id         String    @id @default(cuid())
+  shopId     String
+  shop       Shop      @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  repairId   String
+  repair     Repair    @relation(fields: [repairId], references: [id], onDelete: Cascade)
+  dueDate    DateTime
+  amount     Decimal   @db.Decimal(12,3)
+  remindedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([shopId, dueDate])
+  @@index([repairId])
+}
+
+/// IMEI signalé perdu ou volé par un atelier. Les autres ateliers sont prévenus sans savoir qui l'a signalé.
+model ImeiReport {
+  id         String    @id @default(cuid())
+  imei       String
+  shopId     String
+  shop       Shop      @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  reason     String    @default("STOLEN") // STOLEN, LOST
+  note       String?
+  createdAt  DateTime  @default(now())
+  resolvedAt DateTime?
+
+  @@index([imei])
+  @@unique([imei, shopId])
 }

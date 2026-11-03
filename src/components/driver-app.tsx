@@ -1,6 +1,7 @@
 'use client';
 import {TextSizeToggle} from './text-size-toggle';
 import {LangToggle} from './lang-toggle';
+import {orderStops,mapsRouteUrl} from '@/lib/route-order';
 import {AndroidWidgetButton} from './android-widget-button';
 import {useEffect,useMemo,useRef,useState} from 'react';
 import {useRouter} from 'next/navigation';
@@ -26,7 +27,10 @@ export function DriverApp({session}:{session:any}){
  useEffect(()=>{load();const vis=()=>{if(document.visibilityState==='visible')load()};const focus=()=>load();document.addEventListener('visibilitychange',vis);window.addEventListener('focus',focus);const t=setInterval(()=>{if(document.visibilityState==='visible')load()},15000);return()=>{clearInterval(t);document.removeEventListener('visibilitychange',vis);window.removeEventListener('focus',focus)}},[]);
  useEffect(()=>{const sync=()=>setOnline(navigator.onLine);sync();addEventListener('online',sync);addEventListener('offline',sync);return()=>{removeEventListener('online',sync);removeEventListener('offline',sync)}},[]);
  const available=useMemo(()=>orders.filter(o=>o.status==='READY_FOR_DELIVERY'&&!o.delivery?.driverAccountId),[orders]);
+ const[route,setRoute]=useState<{ordered:any[];km:number;url:string}|null>(null);
+ function optimizeRoute(){const run=(start:{lat:number;lng:number}|null)=>{const stops=active.map((o:any)=>({...o,lat:o.shop?.latitude!=null?Number(o.shop.latitude):null,lng:o.shop?.longitude!=null?Number(o.shop.longitude):null}));const r=orderStops(stops,start);if(!stops.some(x=>x.lat!=null)){setMsg('Les clients de cette tournée n’ont pas encore de position GPS : ordre inchangé.');return}setRoute({ordered:r.ordered,km:r.km,url:mapsRouteUrl(r.ordered,start)})};if(!navigator.geolocation)return run(null);navigator.geolocation.getCurrentPosition(p=>run({lat:p.coords.latitude,lng:p.coords.longitude}),()=>run(null),{enableHighAccuracy:true,timeout:8000,maximumAge:60000})}
  const active=useMemo(()=>orders.filter(o=>o.delivery?.driverAccountId===session.id&&['READY_FOR_DELIVERY','OUT_FOR_DELIVERY','RETURNING'].includes(o.status)).sort((a,b)=>a.status==='OUT_FOR_DELIVERY'?-1:b.status==='OUT_FOR_DELIVERY'?1:new Date(a.createdAt).getTime()-new Date(b.createdAt).getTime()),[orders,session.id]);
+ useEffect(()=>{setRoute(null)},[active.map((o:any)=>o.id+o.status).join(',')]);
  const done=useMemo(()=>orders.filter(o=>o.status==='DELIVERED').slice(0,30),[orders]);
  const deliveredToday=useMemo(()=>done.filter(o=>new Date(o.delivery?.deliveredAt||o.updatedAt).toDateString()===new Date().toDateString()),[done]);
  const deliveredValueToday=useMemo(()=>deliveredToday.reduce((a,o)=>a+Number(o.total||0),0),[deliveredToday]);
@@ -181,8 +185,9 @@ export function DriverApp({session}:{session:any}){
 
    {view==='dues'&&<section id="driver-dues" className="driver-due-overview"><div className="supplier-section-head"><div><b>Dus clients à suivre</b><span>Chaque créance est détaillée par facture. Encaissement autorisé uniquement pendant une journée ouverte.</span></div></div><div className="driver-due-client-list">{active.filter(o=>Number(o.customerDue||0)>0).map(o=><article key={'due-'+o.id}><div className="driver-due-client-head"><div><b>{o.shop?.name}</b><span>{o.shop?.phone||'Sans téléphone'} · {o.shop?.address||o.shop?.region||'Adresse non renseignée'}</span></div><strong>{money(o.customerDue)}</strong></div><div className="driver-due-invoices">{(o.dueDetails||[]).map((d:any)=><div key={d.id}><span><b>{d.reference}</b><small>{dateTime(d.createdAt)}{d.dueAt?' · échéance '+dateTime(d.dueAt):''}</small></span><span><small>Total {money(d.total)}</small><small>Payé {money(d.paid)}</small><b>Reste {money(d.due)}</b></span></div>)}</div><button className="btn btn-soft btn-block" disabled={!shift.current||busy===o.id} onClick={()=>openDue(o)}><WalletCards/> Encaisser un dû</button></article>)}</div>{!active.some(o=>Number(o.customerDue||0)>0)&&<div className="delivery-empty compact"><WalletCards/><h3>Aucun dû disponible</h3><p>Pour sécurité, les dus sont visibles uniquement pour les clients de vos livraisons actives.</p></div>}</section>}
    {view==='orders'&&<div id="driver-orders" className="driver-route-list">
-    {active.length>0&&<div className="fx-route-head"><b>Ma tournée</b><span>{active.length} arrêt{active.length>1?'s':''} · la livraison en cours d’abord</span></div>}
-    {[...active].sort((a,b)=>(a.status==='OUT_FOR_DELIVERY'?0:1)-(b.status==='OUT_FOR_DELIVERY'?0:1)).map((o,index)=>{const address=o.deliveryAddress||o.shop?.address||o.shop?.region||'';const collected=Number(o.delivery?.cashCollected||0);return <article key={o.id} className={o.status==='OUT_FOR_DELIVERY'?'active-delivery':''}>
+    {active.length>0&&<div className="fx-route-head"><b>Ma tournée</b><span>{active.length} arrêt{active.length>1?'s':''} · {route?`ordre optimisé · ≈ ${route.km} km`:'la livraison en cours d’abord'}</span>
+      {active.length>1&&<div className="fx-route-tools"><button type="button" className="btn btn-soft btn-sm" onClick={optimizeRoute}><Navigation size={15}/> {route?'Recalculer':'Optimiser l’ordre'}</button>{route?.url&&<a className="btn btn-ghost btn-sm" href={route.url} target="_blank" rel="noreferrer"><MapPinned size={15}/> Itinéraire complet</a>}</div>}</div>}
+    {(route?route.ordered:[...active].sort((a,b)=>(a.status==='OUT_FOR_DELIVERY'?0:1)-(b.status==='OUT_FOR_DELIVERY'?0:1))).map((o:any,index:number)=>{const address=o.deliveryAddress||o.shop?.address||o.shop?.region||'';const collected=Number(o.delivery?.cashCollected||0);return <article key={o.id} className={o.status==='OUT_FOR_DELIVERY'?'active-delivery':''}>
       <div className="driver-stop-number">{index+1}</div>
       <div className="driver-stop-main">
        <div className="delivery-card-top"><div><code>{o.reference}</code><h2>{o.shop?.name}</h2><span><Clock3/> {dateTime(o.createdAt)}</span></div><span className={'status-pill '+o.status.toLowerCase()}>{labels[o.status]||o.status}</span></div>

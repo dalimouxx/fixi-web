@@ -4,7 +4,7 @@ import { useCallback } from 'react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import {
   PlusCircle, Banknote, PackageCheck, PackageOpen, Wrench, Boxes, Link2, AlertTriangle, Clock3, ShieldCheck,
-  CreditCard, Wallet, Hourglass, CheckCircle2, ChevronRight, Moon, SlidersHorizontal, Smartphone, MessageCircle, BellRing,
+  CreditCard, Wallet, Hourglass, CheckCircle2, ChevronRight, Moon, SlidersHorizontal, Smartphone, MessageCircle, BellRing, Sparkles,
 } from 'lucide-react';
 import { FixiSmartWidgets } from '@/components/fixi-smart-widgets';
 import { StatusBadge, useApi, useRealtimeRefresh } from '@/components/ui';
@@ -64,6 +64,7 @@ export default function Dashboard() {
   const todo = [
     waiting > 0 && { href: '/app/repairs', icon: Clock3, tone: 'warning', count: waiting, title: 'réparation(s) attendent une pièce', sub: 'Commandez-la chez votre fournisseur' },
     (data.pickups || []).some((x: any) => x.stage > 0) && { href: '#pickup-title', icon: BellRing, tone: 'warning', count: (data.pickups || []).filter((x: any) => x.stage > 0).length, title: 'client(s) à relancer', sub: 'Appareils prêts non récupérés' },
+    data.installmentsDue > 0 && { href: '/app/cashier', icon: CreditCard, tone: 'warning', count: data.installmentsDue, title: 'échéance(s) à encaisser', sub: 'Paiements en plusieurs fois' },
     ready > 0 && { href: perm.cash ? '/app/cashier' : '/app/repairs', icon: PackageCheck, tone: 'ok', count: ready, title: 'appareil(s) prêt(s) à rendre', sub: 'Prévenez le client sur WhatsApp' },
     perm.stock && data.lowStock > 0 && { href: '/app/stock', icon: Boxes, tone: 'danger', count: data.lowStock, title: 'pièce(s) presque épuisée(s)', sub: 'À racheter' },
     perm.warranty && data.openWarranty > 0 && { href: '/app/warranties', icon: ShieldCheck, tone: 'warning', count: data.openWarranty, title: 'retour(s) sous garantie', sub: 'À examiner' },
@@ -77,6 +78,8 @@ export default function Dashboard() {
     </div>
 
     <p className="fx-day-summary" aria-live="polite">{daySummary({ lang, ready, waiting, active, revenue: perm.finance ? money(data.todayRevenue) : null, pickups: (data.pickups || []).filter((x: any) => x.stage > 0).length })}</p>
+
+    {perm.profit && new Date().getDate() <= 7 && <Link href="/app/rapport-mensuel" className="fx-row fx-row--ok fx-month-banner"><Sparkles /><span className="fx-row-main"><b>Le rapport du mois dernier est prêt</b><small>Encaissé, bénéfice, pannes et techniciens · PDF et fichier pour le comptable</small></span><ChevronRight size={18} /></Link>}
 
     {perm.profit && <GettingStarted repairCount={Object.values(counts).reduce((a: number, v: any) => a + Number(v), 0)} />}
 

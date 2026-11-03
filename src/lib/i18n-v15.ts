@@ -119,6 +119,14 @@ export const arV15: Record<string, string> = {
   'Application Android pour l’équipe': 'تطبيق أندرويد للفريق', 'Envoyez le lien : chacun télécharge et installe Fixi en 3 touchers.': 'أرسل الرابط: كل واحد يحمّل Fixi ويثبّته في 3 لمسات.', 'Voir la page': 'عرض الصفحة',
   'Le téléchargement reste bloqué ? Ouvrez cette page dans Chrome (menu ⋮ → « Ouvrir dans Chrome »), ou regardez dans « Fichiers » → « Téléchargements ».': 'التحميل متوقف؟ افتح هذه الصفحة في Chrome (القائمة ⋮ ← «فتح في Chrome»)، أو ابحث في «الملفات» ← «التنزيلات».',
   'Chaque type d’alerte a son son Fixi, même téléphone verrouillé. Pour le changer : Paramètres Android → Notifications → Fixi.': 'لكل نوع تنبيه صوت Fixi خاص به، حتى والهاتف مقفل. لتغييره: إعدادات أندرويد ← الإشعارات ← Fixi.',
+  // 16.0
+  'Note vocale': 'ملاحظة صوتية', 'Expliquez en parlant au lieu d’écrire': 'اشرح بالكلام بدل الكتابة', 'Enregistrer une note': 'سجّل ملاحظة', 'Arrêter': 'إيقاف', 'Refaire': 'إعادة', 'Paiement en plusieurs fois': 'الدفع على أقساط', 'Créer l’échéancier': 'أنشئ جدول الأقساط', 'Première échéance': 'القسط الأول',
+  'Encaisser une échéance': 'اقبض قسطاً', 'Payée': 'مدفوع', 'Signaler perdu / volé': 'أبلغ: ضائع / مسروق', 'Retirer mon signalement': 'اسحب بلاغي', 'Montrer au client': 'اعرض على الحريف', 'Affiché au client ✓': 'معروض على الحريف ✓',
+  'Bienvenue': 'مرحباً', 'Votre réparation s’affichera ici.': 'سيظهر إصلاحك هنا.', 'Prix estimé': 'السعر التقديري', 'Prix de la réparation': 'سعر الإصلاح', 'À définir après diagnostic': 'يُحدد بعد التشخيص', 'Je suis d’accord, je signe': 'موافق، أوقّع', 'Signez avec le doigt dans le cadre :': 'وقّع بإصبعك داخل الإطار:', 'Effacer': 'مسح',
+  'Prise en charge signée.': 'تم توقيع الاستلام.', 'Merci, votre signature est enregistrée.': 'شكراً، تم حفظ توقيعك.', 'Rapport du mois': 'تقرير الشهر', 'À imprimer en PDF ou à envoyer à votre comptable.': 'للطباعة PDF أو لإرساله إلى محاسبك.', 'Fichier comptable (Excel)': 'ملف المحاسب (Excel)', 'Bénéfice estimé': 'الربح التقديري',
+  'Appareils reçus': 'الأجهزة المستلمة', 'Rendus': 'المسلّمة', 'Pannes les plus fréquentes': 'الأعطاب الأكثر تكراراً', 'Techniciens': 'الفنيون', 'appareils rendus': 'أجهزة مسلّمة', 'Encaissements par mode': 'المقبوضات حسب الطريقة', 'Le rapport du mois dernier est prêt': 'تقرير الشهر الماضي جاهز',
+  'échéance(s) à encaisser': 'قسط(أقساط) للقبض', 'Paiements en plusieurs fois': 'الدفع على أقساط', 'Partager mon catalogue': 'شارك الكتالوج', 'Privé': 'خاص', 'Public avec le lien': 'عام بالرابط', 'À racheter bientôt': 'للشراء قريباً', 'Racheter': 'أعد الشراء', 'Optimiser l’ordre': 'رتّب الجولة', 'Recalculer': 'أعد الحساب', 'Itinéraire complet': 'المسار الكامل',
+'Écran client au comptoir': 'شاشة الحريف في الكونتوار',
   // Étiquette
   'Imprimer l’étiquette': 'اطبع الملصق', 'Nombre d’étiquettes': 'عدد الملصقات',
 };

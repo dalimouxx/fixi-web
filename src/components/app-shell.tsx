@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { Search, LogOut, HelpCircle, ChevronRight, WifiOff, PlusCircle, PackageOpen, Sparkles, MonitorPlay } from 'lucide-react';
+import { Search, LogOut, HelpCircle, ChevronRight, WifiOff, PlusCircle, PackageOpen, Sparkles, MonitorPlay, MonitorSmartphone } from 'lucide-react';
 import { NotificationBell } from './notification-bell';
 import { PwaRegister } from './pwa-register';
 import { BrandLogo } from './brand-logo';
@@ -109,6 +109,7 @@ export function AppShell({ children, user }: { children?: React.ReactNode; user:
         {modeSwitch}
         <div className="fx-side-tools">
           {!connect && <Link href={`/queue?shop=${encodeURIComponent(user.shopSlug)}`} target="_blank" className="fx-icon-btn" title="Écran d'attente clients" aria-label="Ouvrir l'écran d'attente clients"><MonitorPlay size={18} /></Link>}
+          {!connect && <Link href="/comptoir" target="_blank" className="fx-icon-btn" title="Écran client au comptoir" aria-label="Ouvrir l’écran client au comptoir"><MonitorSmartphone size={18} /></Link>}
           <LangToggle />
           <TextSizeToggle />
           <ThemeToggle />
