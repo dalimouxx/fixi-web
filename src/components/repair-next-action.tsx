@@ -1,4 +1,5 @@
 'use client';
+import { partQuery } from '@/lib/price-hint';
 import Link from 'next/link';
 import { useState } from 'react';
 import { ArrowRight, MessageCircle, PackageOpen, Banknote, CheckCircle2, Clock3 } from 'lucide-react';
@@ -60,7 +61,7 @@ export function RepairNextAction({ r, balance, role, settings, onChanged }: {
       {step.href && <Link href={step.href} className="btn btn-primary"><Icon size={19} />{step.label}</Link>}
       {!step.href && step.to && <button type="button" className="btn btn-primary" disabled={busy} onClick={() => go(step.to!)}>{busy ? 'Un instant…' : step.label}<Icon size={19} /></button>}
       {['DIAGNOSIS', 'IN_REPAIR'].includes(r.status) && <button type="button" className="btn btn-ghost" disabled={busy} onClick={() => go('WAITING_PART')}><Clock3 size={18} /> Attente pièce</button>}
-      {r.status === 'WAITING_PART' && canOrder && <Link className="btn btn-soft" href={`/app/suppliers?q=${encodeURIComponent(r.model || '')}`}><PackageOpen size={18} /> Commander chez mon fournisseur</Link>}
+      {['DIAGNOSIS', 'IN_REPAIR', 'WAITING_PART'].includes(r.status) && canOrder && <Link className={r.status === 'WAITING_PART' ? 'btn btn-primary' : 'btn btn-soft'} href={`/app/suppliers?q=${encodeURIComponent(partQuery(r))}`}><PackageOpen size={18} /> Commander la pièce ({partQuery(r) || 'catalogue'})</Link>}
     </div>
     {r.client?.phone && <div className="fx-wa" style={{ width: '100%' }}>
       {templates.filter(t => t.show).map(t => <a key={t.id} href={waLink(r.client.phone, waTemplate(t.id, vars, lang))} target="_blank" rel="noreferrer"><MessageCircle size={17} /> WhatsApp : {t.label}</a>)}

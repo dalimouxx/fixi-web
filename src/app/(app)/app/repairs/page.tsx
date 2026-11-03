@@ -1,9 +1,10 @@
 'use client';
 import Link from 'next/link';
 import {useCallback,useEffect,useMemo,useState} from 'react';
-import {Plus,Search,Columns3,List,ChevronRight,Phone,CheckCircle2,Clock3} from 'lucide-react';
+import {Plus,Search,Columns3,List,ChevronRight,Phone,CheckCircle2,Clock3,PackageOpen} from 'lucide-react';
 import {SwipeCard} from '@/components/swipe-card';
 import {repairAge} from '@/lib/repair-age';
+import {partQuery} from '@/lib/price-hint';
 import {useI18n} from '@/components/language-provider';
 import {api,PriorityBadge,StatusBadge,useApi,useRealtimeRefresh} from '@/components/ui';
 import {dateTime,money} from '@/lib/format';
@@ -54,7 +55,7 @@ export default function Repairs(){
             <span className="fx-repair-card-meta">{r.client.fullName} · <span className="mono">{r.code}</span>{r.priority==='URGENT'&&<em> · URGENT</em>}</span>
             {age.label&&<span className="fx-age" data-age={age.level}><Clock3 size={14}/><bdi>{ageText(age)}</bdi></span>}
           </Link>
-          <div className="fx-repair-card-foot"><span>{r.finalPrice!==null?money(r.finalPrice):'Prix à fixer'}</span>{next&&r.status!=='DELIVERED'&&<button type="button" className="btn btn-ghost btn-sm" onClick={()=>move(r.code,next[0])}>{next[1]} →</button>}</div>
+          <div className="fx-repair-card-foot"><span>{r.finalPrice!==null?money(r.finalPrice):'Prix à fixer'}</span>{r.status==='WAITING_PART'&&<Link className="btn btn-soft btn-sm" href={`/app/suppliers?q=${encodeURIComponent(partQuery(r))}`}><PackageOpen size={15}/> Commander</Link>}{next&&r.status!=='DELIVERED'&&<button type="button" className="btn btn-ghost btn-sm" onClick={()=>move(r.code,next[0])}>{next[1]} →</button>}</div>
         </SwipeCard>})}
         {!(data||[]).some((r:any)=>mstatus==='ACTIVE'?!['DELIVERED','CANCELLED'].includes(r.status):r.status===mstatus)&&<div className="fx-empty"><b>Aucun appareil ici</b><span>Les appareils de ce statut apparaîtront ici.</span><Link href="/app/repairs/new" className="btn btn-primary">Nouvelle réparation</Link></div>}
       </div>}

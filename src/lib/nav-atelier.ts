@@ -28,6 +28,7 @@ export const atelierNav: NavSection[] = [
   { id: 'home', label: 'Accueil', icon: Home, items: [
     { label: 'Accueil', href: '/app/dashboard', icon: Home, roles: ALL },
     { label: 'Fin de journée', href: '/app/fin-de-journee', icon: Moon, roles: ['ADMIN', 'CASHIER'] },
+    { label: 'Rapport du mois', href: '/app/rapport-mensuel', icon: BarChart3, roles: ['ADMIN'] },
     { label: 'Vue propriétaire', href: '/app/owner', icon: Eye, roles: ['ADMIN'], advanced: true },
   ] },
   { id: 'repairs', label: 'Réparations', icon: Wrench, items: [
