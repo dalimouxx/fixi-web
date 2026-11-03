@@ -109,6 +109,14 @@ export const arV15: Record<string, string> = {
   'Chaque personne a son code et ne voit que ce qui concerne son travail.': 'لكل شخص رمزه ولا يرى إلا ما يخص عمله.', 'Ajouter une personne': 'أضف شخصاً', '· identifiant': '· المعرّف', 'Changer le code': 'غيّر الرمز', 'Désactiver': 'تعطيل', 'Réactiver': 'إعادة التفعيل', 'Actif': 'نشط', 'Désactivé': 'معطّل',
   'Tout voir, tout régler, l’argent et les paramètres.': 'يرى كل شيء ويضبط كل شيء، المال والإعدادات.', 'Reçoit les appareils et prévient les clients.': 'يستلم الأجهزة ويعلم الحرفاء.', 'Voit ses réparations, le stock et les pièces compatibles.': 'يرى إصلاحاته والمخزون والقطع المتوافقة.', 'Rend les appareils et encaisse.': 'يسلّم الأجهزة ويقبض.',
   'Code à 6 chiffres *': 'رمز من 6 أرقام *', 'Nouveau code à 6 chiffres': 'رمز جديد من 6 أرقام', 'Enregistrer le code': 'احفظ الرمز', 'Nom complet *': 'الاسم الكامل *', 'Identifiant *': 'المعرّف *', 'Créer le compte': 'أنشئ الحساب', 'Tout l’atelier': 'كل الورشة', 'Widget écran d’accueil': 'أداة الشاشة الرئيسية', 'Connexion…': 'جارٍ الربط…',
+  // 15.3
+  'Ajouter le widget Fixi': 'أضف أداة Fixi', 'Terminer : ouvrir le widget': 'إنهاء: افتح الأداة', 'Préparation…': 'جارٍ التحضير…', 'Fixi pour Android': 'Fixi لأندرويد', 'Télécharger l’application': 'حمّل التطبيق',
+  'Atelier, fournisseur et livreur dans une seule application, avec les alertes et le widget sur l’écran d’accueil.': 'الورشة والمورّد والموزّع في تطبيق واحد، مع التنبيهات والأداة على الشاشة الرئيسية.',
+  'Touchez « Télécharger »': 'المس «تحميل»', 'Le fichier « Fixi.apk » arrive dans vos téléchargements.': 'يصل ملف «Fixi.apk» إلى التنزيلات.', 'Ouvrez-le et touchez « Installer »': 'افتحه والمس «تثبيت»',
+  'Si Android affiche « Installation bloquée », touchez « Paramètres » puis autorisez ce navigateur, et revenez.': 'إذا ظهر «التثبيت محظور»، المس «الإعدادات» واسمح لهذا المتصفح ثم ارجع.', 'Ouvrez Fixi et connectez-vous': 'افتح Fixi وسجّل الدخول', 'Avec votre profil et votre code à 6 chiffres.': 'بملفك ورمزك من 6 أرقام.',
+  'Alertes': 'التنبيهات', 'Widget': 'الأداة', 'Application officielle Fixi': 'تطبيق Fixi الرسمي', 'Mise à jour : retéléchargez simplement depuis cette page.': 'التحديث: أعد التحميل من هذه الصفحة.',
+  'Sur un ordinateur ? Scannez ce code avec le téléphone.': 'على حاسوب؟ امسح هذا الرمز بالهاتف.', 'Ou télécharger l’application Android (avec widget)': 'أو حمّل تطبيق أندرويد (مع الأداة)',
+  'Application Android pour l’équipe': 'تطبيق أندرويد للفريق', 'Envoyez le lien : chacun télécharge et installe Fixi en 3 touchers.': 'أرسل الرابط: كل واحد يحمّل Fixi ويثبّته في 3 لمسات.', 'Voir la page': 'عرض الصفحة',
   // Étiquette
   'Imprimer l’étiquette': 'اطبع الملصق', 'Nombre d’étiquettes': 'عدد الملصقات',
 };
