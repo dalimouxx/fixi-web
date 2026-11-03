@@ -71,7 +71,27 @@ export async function POST(req:Request){
 
   if(action==='SALE'){
    if(!allow(s.role,['OWNER','ADMIN','MANAGER','SALES','CASHIER']))return bad('FORBIDDEN',403);
-   const items=Array.isArray(b.items)?b.items:[];if(!items.length)return bad('Aucun article');
+   const saleReference=String(b.reference||'').trim();
+   if(saleReference){
+    // Même référence renvoyée (caisse Windows hors ligne, double clic) : on rend la vente déjà enregistrée.
+    const prior=await prisma.supplierErpSale.findFirst({where:{companyId:s.companyId,reference:saleReference}});
+    if(prior)return ok(plain(prior));
+   }
+   const allItems=Array.isArray(b.items)?b.items:[];if(!allItems.length)return bad('Aucun article');
+   if(allItems.length>150)return bad('Trop de lignes de vente',400);
+   // Article libre (service, accessoire sans fiche) : pas de stock, nom et prix saisis à la caisse.
+   const customItems=allItems.filter((x:any)=>x&&x.custom===true&&!x.productId);
+   const items=allItems.filter((x:any)=>!(x&&x.custom===true&&!x.productId));
+   if(items.some((x:any)=>!Number.isInteger(Number(x.quantity))||Number(x.quantity)<1||Number(x.quantity)>10000))return bad('Quantité invalide',400);
+   if(new Set(items.map((x:any)=>String(x.productId||''))).size!==items.length)return bad('Regroupez les lignes du même produit',400);
+   const customLines:{name:string;q:number;price:number}[]=[];
+   for(const c of customItems){
+    const name=String(c.name||'').trim().replace(/\s+/g,' ').slice(0,120),q=Number(c.quantity),price=money(c.unitPrice);
+    if(name.length<2)return bad('Nom de l’article libre trop court',400);
+    if(!Number.isInteger(q)||q<1||q>1000)return bad('Quantité invalide pour '+name,400);
+    if(!Number.isFinite(price)||price<=0||price>1000000)return bad('Prix invalide pour '+name,400);
+    customLines.push({name,q,price});
+   }
    const ids:string[]=[...new Set<string>(items.map((i:any)=>String(i.productId||'')).filter((x:string)=>Boolean(x)))];
    const warehouseId=String(b.warehouseId||'')||null;
    if(warehouseId){const w=await prisma.supplierWarehouse.findFirst({where:{id:warehouseId,companyId:s.companyId,active:true}});if(!w)return bad('Dépôt invalide',404)}
@@ -95,7 +115,9 @@ export async function POST(req:Request){
     if(minimum!==null&&price<minimum&&!allow(s.role,['OWNER','ADMIN','MANAGER']))return bad('Prix inférieur au minimum autorisé pour '+p.name,409);
     subtotal+=price*q;normalized.push({p,q,price,warehouseRow,productWarehouseRows,warehouseConsumption});
    }
+   for(const c of customLines)subtotal+=c.price*c.q;
    const discount=Math.max(0,money(b.discount||0)),tax=Math.max(0,money(b.tax||0)),total=Math.max(0,money(subtotal-discount+tax));
+   if(discount>money(subtotal))return bad('Remise supérieure au montant de la vente',409);
    const rawPayments=Array.isArray(b.payments)&&b.payments.length?b.payments:(Number(b.paid||0)>0?[{method:String(b.method||'CASH'),amount:Number(b.paid)}]:[]);
    const payments=rawPayments.map((x:any)=>({method:String(x.method||'CASH').toUpperCase(),amount:Math.max(0,money(x.amount||0)),reference:x.reference||null})).filter((x:any)=>x.amount>0);
    const paid=money(payments.reduce((a:number,x:any)=>a+x.amount,0));
@@ -110,15 +132,25 @@ export async function POST(req:Request){
     for(const x of normalized){
      await tx.supplierErpSaleItem.create({data:{saleId:sale.id,productId:x.p.id,sku:x.p.sku,name:x.p.name,quantity:x.q,unitCost:Number(x.p.averageCost||x.p.purchasePrice||0),unitPrice:x.price}});
      const before=x.p.stock,after=before-x.q;
-     await tx.supplierProduct.update({where:{id:x.p.id},data:{stock:after}});
-     if(warehouseId&&x.warehouseRow)await tx.supplierWarehouseStock.update({where:{id:x.warehouseRow.id},data:{quantity:{decrement:x.q}}});
+     const updated=await tx.supplierProduct.updateMany({where:{id:x.p.id,companyId:s.companyId,stock:{gte:x.q+Number(x.p.reservedStock||0)}},data:{stock:{decrement:x.q}}});
+     if(updated.count!==1)throw Object.assign(new Error('Stock modifié entre-temps pour '+x.p.name+'. Actualisez avant de valider.'),{status:409});
+     if(warehouseId&&x.warehouseRow){
+      const w=await tx.supplierWarehouseStock.updateMany({where:{id:x.warehouseRow.id,quantity:{gte:x.q+Number(x.warehouseRow.reserved||0)}},data:{quantity:{decrement:x.q}}});
+      if(w.count!==1)throw Object.assign(new Error('Stock du dépôt insuffisant pour '+x.p.name),{status:409});
+     }
      if(!warehouseId&&x.warehouseConsumption>0){let remaining=x.warehouseConsumption;for(const row of x.productWarehouseRows){if(remaining<=0)break;const take=Math.min(remaining,Math.max(0,Number(row.quantity||0)-Number(row.reserved||0)));if(take>0){await tx.supplierWarehouseStock.update({where:{id:row.id},data:{quantity:{decrement:take}}});remaining-=take}}}
      await tx.supplierErpStockMovement.create({data:{companyId:s.companyId,productId:x.p.id,type:'SALE',quantity:-x.q,beforeQty:before,afterQty:after,unitCost:x.p.averageCost||x.p.purchasePrice,reference:ref,accountId:s.id}});
     }
+    for(const c of customLines)await tx.supplierErpSaleItem.create({data:{saleId:sale.id,productId:null,sku:null,name:c.name,quantity:c.q,unitCost:0,unitPrice:c.price}});
     for(const p of payments)await tx.supplierErpPayment.create({data:{companyId:s.companyId,customerId:b.customerId||null,saleId:sale.id,cashSessionId:(await cashLike(s.companyId,p.method))?cashSession?.id:null,kind:'IN',method:p.method,amount:p.amount,reference:p.reference||ref,accountId:s.id}});
     return sale;
+   }).catch(async(e:any)=>{
+    // Deux envois simultanés de la même référence : la contrainte unique protège, on rend la vente gagnante.
+    if(e?.code==='P2002'&&saleReference){const prior=await prisma.supplierErpSale.findFirst({where:{companyId:s.companyId,reference:saleReference}});if(prior)return Object.assign(prior,{__replayed:true})}
+    throw e;
    });
-   await audit(s.companyId,s.id,'CREATE','SALE',sale.id,{reference:ref,total,paid,itemCount:normalized.length});
+   if((sale as any).__replayed){delete (sale as any).__replayed;return ok(plain(sale))}
+   await audit(s.companyId,s.id,'CREATE','SALE',sale.id,{reference:ref,total,paid,itemCount:normalized.length+customLines.length});
    await Promise.allSettled(normalized.map((x:any)=>notifySupplierLowStock(s.companyId,x.p.id)));
    if(paid<total)await notifySupplier(s.companyId,'Vente avec reste à payer',`${ref} · reste ${money(total-paid).toFixed(3)} DT`,{href:'/supplier?tab=dues',kind:'PAYMENT',priority:'NORMAL',roles:['OWNER','ADMIN','MANAGER','ACCOUNTANT'],metadata:{saleId:sale.id,reference:ref,total,paid,due:money(total-paid)}});
    return ok(plain(sale),{status:201});
