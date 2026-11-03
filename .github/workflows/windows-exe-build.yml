@@ -5,6 +5,8 @@ on:
     branches:
       - feature/windows-pos-v3-sales
       - rebuild/fixi-windows-v4
+      - feature/windows-v4-counter-upgrades
+      - feature/windows-v6
     paths:
       - 'apps/windows-pos/**'
       - '.github/workflows/windows-exe-build.yml'
@@ -12,7 +14,7 @@ jobs:
   windows-installer:
     runs-on: windows-latest
     permissions:
-      contents: read
+      contents: write
     defaults:
       run:
         working-directory: apps/windows-pos
@@ -40,3 +42,20 @@ jobs:
           path: apps/windows-pos/src-tauri/target/release/bundle/nsis/*.exe
           if-no-files-found: error
           retention-days: 14
+      - name: Publish update for FIXI Caisse (auto-update)
+        if: github.ref == 'refs/heads/feature/windows-v4-counter-upgrades'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $exe = Get-ChildItem src-tauri/target/release/bundle/nsis/*.exe | Select-Object -First 1
+          Copy-Item $exe.FullName FIXI-Caisse-Setup.exe
+          $version = (Get-Content src-tauri/tauri.conf.json -Raw | ConvertFrom-Json).version
+          $sha = (Get-FileHash FIXI-Caisse-Setup.exe -Algorithm SHA256).Hash.ToLower()
+          $url = "https://github.com/${{ github.repository }}/releases/download/windows-latest/FIXI-Caisse-Setup.exe"
+          @{ version = $version; url = $url; sha256 = $sha; notes = "Nouvelle version de FIXI Caisse." } | ConvertTo-Json | Set-Content -Encoding utf8NoBOM latest.json
+          gh release view windows-latest --repo ${{ github.repository }} *> $null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create windows-latest --repo ${{ github.repository }} --title "FIXI Caisse Windows (dernière version)" --notes "Installateur Windows et fichier de mise à jour automatique." --latest=false
+          }
+          gh release upload windows-latest FIXI-Caisse-Setup.exe latest.json --repo ${{ github.repository }} --clobber

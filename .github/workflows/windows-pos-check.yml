@@ -10,6 +10,7 @@ on:
     branches:
       - feature/windows-pos-v3-sales
       - rebuild/fixi-windows-v4
+      - feature/windows-v4-counter-upgrades
 jobs:
   frontend:
     runs-on: ubuntu-latest
