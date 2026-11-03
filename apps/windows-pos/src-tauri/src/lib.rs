@@ -6,7 +6,9 @@ use tauri::State;
 use tokio::sync::Mutex;
 use std::time::{SystemTime, UNIX_EPOCH};
 mod device_auth;
-use device_auth::{SavedDevice, read_saved, write_saved, clear_saved};
+use device_auth::{SavedDevice, list_profiles, find_profile, read_profile, write_profile, save_attempts, remove_profile};
+mod hardware;
+mod updater;
 
 struct Connection {
     origin: String,
@@ -26,14 +28,15 @@ async fn unlocked(state: &State<'_, Arc<DesktopState>>) -> Result<(),String> {
  Ok(())
 }
 #[tauri::command]
-async fn pin_setup(state: State<'_, Arc<DesktopState>>, pin: String) -> Result<(),String> {
+async fn pin_setup(state: State<'_, Arc<DesktopState>>, pin: String, name: Option<String>) -> Result<(),String> {
  unlocked(&state).await?;
  let credentials={let guard=state.connection.lock().await;let connection=guard.as_ref().ok_or("Connectez-vous d’abord avec votre compte fournisseur")?;if !connection.authenticated_with_password{return Err("Reconnectez-vous avec votre mot de passe pour modifier le PIN".into());}(connection.origin.clone(),connection.login.clone(),connection.password.clone())};
  if pin.len()!=4 || !pin.bytes().all(|b|b.is_ascii_digit()){return Err("Le PIN doit contenir exactement 4 chiffres".into());}
  let salt=SaltString::generate(&mut OsRng);
  let hash=Argon2::default().hash_password(pin.as_bytes(), &salt).map_err(|_|"PIN indisponible")?.to_string();
+ let display=name.unwrap_or_default().chars().take(60).collect::<String>();
  let mut g=state.pin.lock().await;
- write_saved(&SavedDevice{origin:credentials.0,login:credentials.1,password:credentials.2,pin_hash:hash.clone(),failed:0,blocked_until:0})?;
+ write_profile(&SavedDevice{origin:credentials.0,login:credentials.1,password:credentials.2,pin_hash:hash.clone(),failed:0,blocked_until:0,name:display})?;
  *g=Some(PinLock{hash,locked:false,failed:0,blocked_until:None});Ok(())
 }
 #[tauri::command]
@@ -59,25 +62,28 @@ fn now_epoch() -> u64 {
 
 #[tauri::command]
 async fn supplier_saved_profile() -> Result<serde_json::Value,String> {
- match read_saved()? {
-  Some(saved)=>Ok(serde_json::json!({"configured":true,"server":saved.origin,"login":saved.login})),
-  None=>Ok(serde_json::json!({"configured":false})),
+ let list=list_profiles()?;
+ let profiles:Vec<serde_json::Value>=list.iter().map(|p|serde_json::json!({"login":p.login,"name":if p.name.is_empty(){p.login.clone()}else{p.name.clone()},"server":p.origin})).collect();
+ match list.first() {
+  Some(first)=>Ok(serde_json::json!({"configured":true,"server":first.origin,"login":first.login,"profiles":profiles})),
+  None=>Ok(serde_json::json!({"configured":false,"profiles":[]})),
  }
 }
 
+/// Ouvre la caisse avec le code PIN d'un caissier enregistré (le dernier utilisé si aucun n'est choisi).
 #[tauri::command]
-async fn supplier_pin_login(state: State<'_, Arc<DesktopState>>, pin: String) -> Result<serde_json::Value,String> {
+async fn supplier_pin_login(state: State<'_, Arc<DesktopState>>, pin: String, login: Option<String>) -> Result<serde_json::Value,String> {
  if pin.len()!=4 || !pin.bytes().all(|c|c.is_ascii_digit()){return Err("Saisissez les 4 chiffres du PIN".into());}
- let mut device=read_saved()?.ok_or("Aucun profil PIN enregistré sur ce PC")?;
+ let mut device=find_profile(login.as_deref())?.ok_or("Aucun caissier enregistré sur ce PC")?;
  if device.blocked_until>now_epoch(){return Err("PIN temporairement bloqué. Réessayez après une minute.".into());}
  let hash=PasswordHash::new(&device.pin_hash).map_err(|_|"PIN du profil illisible")?;
  if Argon2::default().verify_password(pin.as_bytes(),&hash).is_err(){
    device.failed+=1;
    if device.failed>=5{device.failed=0;device.blocked_until=now_epoch()+60;}
-   write_saved(&device)?;
+   save_attempts(&device)?;
    return Err("Code PIN incorrect".into())
  }
- device.failed=0;device.blocked_until=0;write_saved(&device)?;
+ device.failed=0;device.blocked_until=0;write_profile(&device)?;
  let shared=state.inner().clone();
  let pin_hash=device.pin_hash.clone();
  let data=supplier_login(state,device.origin,device.login,device.password).await?;
@@ -148,7 +154,7 @@ async fn supplier_login(
         });
     }
     let mut data: serde_json::Value = response.json().await.map_err(|_| "Réponse serveur invalide".to_string())?;
-    let saved=read_saved().ok().flatten().filter(|p|p.origin==origin&&p.login==login.trim().to_lowercase());
+    let saved=read_profile(&origin,&login.trim().to_lowercase()).ok().flatten();
     let pin_configured=saved.is_some();
     *state.connection.lock().await = Some(Connection{origin,client,login:login.trim().to_lowercase(),password,authenticated_with_password:true});
     *state.pin.lock().await=saved.map(|p|PinLock{hash:p.pin_hash,locked:false,failed:0,blocked_until:None});
@@ -417,9 +423,21 @@ async fn supplier_cash_action(
     Ok(result)
 }
 
+/// Retire le caissier connecté de ce PC (les autres caissiers restent enregistrés).
 #[tauri::command]
 async fn supplier_logout(state: State<'_, Arc<DesktopState>>) -> Result<(), String> {
-    clear_saved()?; // Explicit logout removes the trusted device; closing Windows does not.
+    let connection = state.connection.lock().await.take();
+    if let Some(s) = &connection { remove_profile(&s.origin,&s.login)?; }
+    *state.pin.lock().await=None;
+    if let Some(s) = connection {
+        let _ = s.client.post(format!("{}/api/supplier/auth/logout",s.origin)).send().await;
+    }
+    Ok(())
+}
+
+/// Change de caissier sans effacer son profil (retour à l'écran des caissiers).
+#[tauri::command]
+async fn supplier_switch_user(state: State<'_, Arc<DesktopState>>) -> Result<(), String> {
     *state.pin.lock().await=None;
     let connection = state.connection.lock().await.take();
     if let Some(s) = connection {
@@ -428,11 +446,31 @@ async fn supplier_logout(state: State<'_, Arc<DesktopState>>) -> Result<(), Stri
     Ok(())
 }
 
+#[tauri::command]
+async fn supplier_cash_summary(state: State<'_,Arc<DesktopState>>, session: Option<String>) -> Result<serde_json::Value,String>{
+ let id=session.unwrap_or_default();
+ if id.len()>40 || !id.chars().all(|c|c.is_ascii_alphanumeric()){return Err("Session invalide".into())}
+ let path=if id.is_empty(){"/api/supplier/desktop/v4/cash-summary".to_string()}else{format!("/api/supplier/desktop/v4/cash-summary?session={}",id)};
+ v4_request(&state,&path,None).await
+}
+
+#[tauri::command]
+fn app_version(app: tauri::AppHandle) -> String { app.package_info().version.to_string() }
+
+/// Ouvre WhatsApp (ou la page de téléchargement) dans le navigateur par défaut — uniquement des adresses sûres.
+#[tauri::command]
+fn open_external(url: String) -> Result<(),String> {
+ let allowed=["https://wa.me/","https://api.whatsapp.com/","https://github.com/dalimouxx/fixi-web/releases/"];
+ if url.len()>4000 || !allowed.iter().any(|p|url.starts_with(p)) || url.chars().any(|c|c=='"'||c.is_control()) {return Err("Lien non autorisé".into())}
+ hardware::open_url(&url)
+}
+
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .manage(Arc::new(DesktopState{connection:Mutex::new(None),pin:Mutex::new(None)}))
-        .invoke_handler(tauri::generate_handler![supplier_login,supplier_refresh,supplier_logout,supplier_checkout,supplier_history,supplier_cash_action,supplier_orders,supplier_order_transition,supplier_debts,supplier_debt_payment,supplier_returns,supplier_return_create,pin_setup,pin_lock,pin_unlock,supplier_saved_profile,supplier_pin_login,supplier_operation_status,supplier_find_tickets,supplier_return_source,supplier_customer_debts,supplier_customer_payment,supplier_create_customer,supplier_delivery_shifts,supplier_delivery_close])
+        .invoke_handler(tauri::generate_handler![supplier_login,supplier_refresh,supplier_logout,supplier_checkout,supplier_history,supplier_cash_action,supplier_orders,supplier_order_transition,supplier_debts,supplier_debt_payment,supplier_returns,supplier_return_create,pin_setup,pin_lock,pin_unlock,supplier_saved_profile,supplier_pin_login,supplier_operation_status,supplier_find_tickets,supplier_return_source,supplier_customer_debts,supplier_customer_payment,supplier_create_customer,supplier_delivery_shifts,supplier_delivery_close,supplier_switch_user,supplier_cash_summary,app_version,open_external,hardware::list_printers,hardware::cash_drawer_open,hardware::open_customer_display,hardware::close_customer_display,updater::check_update,updater::install_update])
         .run(tauri::generate_context!())
         .expect("error while running FIXI Caisse Windows");
 }

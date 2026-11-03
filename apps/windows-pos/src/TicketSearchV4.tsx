@@ -6,8 +6,9 @@ type Props={
  onQuery:(v:string)=>void;onFrom:(v:string)=>void;onTo:(v:string)=>void;
  onSearch:()=>void;onPrint:(r:FoundReceipt)=>void;
  onReturn?:(r:FoundReceipt)=>void;
+ onShare?:(r:FoundReceipt)=>void;
 };
-export function TicketSearchV4({query,from,to,busy,results,onQuery,onFrom,onTo,onSearch,onPrint,onReturn}:Props){
+export function TicketSearchV4({query,from,to,busy,results,onQuery,onFrom,onTo,onSearch,onPrint,onReturn,onShare}:Props){
  const enter=(e:KeyboardEvent<HTMLInputElement>)=>{if(e.key==='Enter'){e.preventDefault();onSearch()}};
  return <div className="v5-ticket-finder">
   <div className="v5-form-row">
@@ -26,6 +27,7 @@ export function TicketSearchV4({query,from,to,busy,results,onQuery,onFrom,onTo,o
      <td>{r.customer}{r.phone&&<small>{r.phone}</small>}</td><td className="num"><b>{dt(r.total)}</b></td>
      <td className="act"><div className="v5-row-actions">
       <button type="button" className="v5-btn v5-btn--ghost v5-btn--sm" disabled={busy} onClick={()=>onPrint(r)}>Réimprimer</button>
+      {onShare&&<button type="button" className="v5-btn v5-btn--ghost v5-btn--sm" disabled={busy} onClick={()=>onShare(r)}>WhatsApp</button>}
       {onReturn&&<button type="button" className="v5-btn v5-btn--soft v5-btn--sm" disabled={busy} onClick={()=>onReturn(r)}>Faire un retour</button>}
      </div></td></tr>)}
    </tbody></table></div>
