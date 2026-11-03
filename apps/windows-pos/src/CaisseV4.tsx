@@ -5,14 +5,25 @@ import {getCurrentWindow} from '@tauri-apps/api/window';
 import {WindowsLabelStudio} from './labels';
 import {TicketPrint,type ReceiptData} from './TicketV4';
 import {TicketSearchV4} from './TicketSearchV4';
-import {Banknote,BookOpen,Boxes,Check,ChevronRight,CircleAlert,CircleCheck,CreditCard,Delete,HandCoins,Inbox,KeyRound,Landmark,Lock,LockOpen,LogIn,Minus,PackageOpen,PackageSearch,PanelLeftClose,PanelLeftOpen,Plus,Power,Printer,ReceiptText,RefreshCw,ScanBarcode,Search,ShieldCheck,ShoppingCart,Tags,Trash2,TriangleAlert,Truck,Undo2,UserPlus,UserRound,UserRoundCog,Users,Wallet,X,type LucideIcon} from 'lucide-react';
+import {CustomerDisplay,publishDisplay,CashCounter,ZReport,ZButton,methodLabel,type CashSummary} from './counter';
+import {FreeItemDialog,DiscountDialog,SettingsDialog,type DiscountLine} from './dialogs';
+import {matchScore} from './search';
+import {readJson,writeJson,defaultSettings,SETTINGS_KEY,type Settings} from './storage';
+import {waPhone,ticketMessage,waUrl} from './whatsapp';
+import {useArabic} from './i18n';
+import {Banknote,BookOpen,Boxes,Check,ChevronRight,CircleAlert,CircleCheck,CreditCard,Delete,HandCoins,Inbox,KeyRound,Landmark,Lock,LockOpen,LogIn,Minus,PackageOpen,PackageSearch,PanelLeftClose,PanelLeftOpen,Plus,Power,Printer,ReceiptText,RefreshCw,ScanBarcode,Search,ShieldCheck,ShoppingCart,Tags,Trash2,TriangleAlert,Truck,Undo2,UserPlus,UserRound,UserRoundCog,Users,Wallet,X,PencilLine,Percent,PauseCircle,PlayCircle,Settings2,WifiOff,CloudUpload,MessageCircle,Download,Flame,type LucideIcon} from 'lucide-react';
 import './style.css';
 import './v4.css';
 import './v5.css';
 
-type Product={id:string;name:string;sku:string;barcode?:string|null;category:string|null;price:number;wholesalePrice?:number|null;minStock?:number;stock:number};
-type Customer={id:string;name:string};
-type Boot={companyName:string;role:string;products:Product[];customers:Customer[];pinConfigured?:boolean;receiptProfile?:import('./TicketV4').ReceiptBusinessProfile|null};
+type Product={id:string;name:string;sku:string;barcode?:string|null;category:string|null;price:number;wholesalePrice?:number|null;minStock?:number;stock:number;sold30?:number};
+type Customer={id:string;name:string;phone?:string|null};
+type Boot={companyName:string;role:string;products:Product[];customers:Customer[];pinConfigured?:boolean;receiptProfile?:import('./TicketV4').ReceiptBusinessProfile|null;account?:{id:string;fullName:string}};
+type CustomLine={id:string;name:string;price:number;quantity:number};
+type SaleItem={productId:string;quantity:number;unitPrice:number}|{custom:true;name:string;quantity:number;unitPrice:number};
+type QueuedSale={reference:string;createdAt:string;payload:{reference:string;items:SaleItem[];customerId:string|null;paid:number;method:string;discount:number};ticket:ReceiptData;stock:Record<string,number>;error?:string};
+type Parked={id:string;at:string;label:string;cart:Record<string,number>;custom:CustomLine[];linePrice:Record<string,number>;discount:number;customerId:string;priceMode:'RETAIL'|'WHOLESALE'};
+type SavedProfile={configured:boolean;server?:string;login?:string;profiles?:{login:string;name:string;server:string}[]};
 type Order={id:string;customer:string;createdAt:string;status:string;items:{name:string;sku:string;quantity:number}[]};
 type Debt={id:string;reference:string;customer:string;total:number;paid:number;due:number};
 type CustomerDebt={customerId:string;customer:string;phone:string;due:number;invoices:number};
@@ -22,12 +33,13 @@ type ReturnLine={id:string;name:string;quantity:number;remaining:number;unitPric
 type SaleSource={id:string;reference:string;total:number;items:ReturnLine[]};
 type Credit={id:string;reference:string;sourceRef:string;total:number;refund:number;status:string;createdAt:string};
 type Hist={sales:{id:string;reference:string;total:number;paid:number;status:string;createdAt:string}[];sessions:{id:string;status:string;openedAt:string;closedAt?:string}[]};
-type Draft={cart:Record<string,number>;customerId:string;amount:string;method:string;reference:string;priceMode?:'RETAIL'|'WHOLESALE'};
+type Draft={cart:Record<string,number>;customerId:string;amount:string;method:string;reference:string;priceMode?:'RETAIL'|'WHOLESALE';custom?:CustomLine[];linePrice?:Record<string,number>;discount?:number};
 type DebtRequest={saleId?:string;customerId?:string;amount:number;method:string;reference:string};
 type ReturnRequest={sourceSaleId:string;items:{saleItemId:string;quantity:number;restock:boolean;condition:string;reason:string}[];refund:number;refundMethod:string;note:string;reference:string};
 type Result={exists:boolean;reference:string;record?:{reference?:string;remaining?:number}|null};
 type Page='caisse'|'produits'|'stock'|'clients'|'commandes'|'dettes'|'retours'|'historique'|'session'|'livreurs';
-const money=(n:number)=>new Intl.NumberFormat('fr-TN',{minimumFractionDigits:3,maximumFractionDigits:3}).format(n)+' DT';
+// Isolé (\u2066…\u2069) pour que « 185,000 DT » reste lisible en arabe.
+const money=(n:number)=>'\u2066'+new Intl.NumberFormat('fr-TN',{minimumFractionDigits:3,maximumFractionDigits:3}).format(n)+' DT\u2069';
 const initialServer='https://fixi-web.onrender.com';
 type NavItem={id:Page;icon:LucideIcon;label:string;hint?:string};
 const nav:NavItem[]=[
@@ -53,7 +65,7 @@ const demo:Boot={companyName:'Mode démonstration',role:'DEMO',products:[
  {id:'d2',name:'Écran Samsung A06',sku:'A06-LCD',price:105,stock:4,category:'Afficheurs'},
  {id:'d3',name:'Batterie iPhone',sku:'IP-BAT',price:42,stock:0,category:'Batteries'}],customers:[]};
 function App(){
- const [profile,setProfile]=useState<{configured:boolean;server?:string;login?:string}|null>(null);
+ const [profile,setProfile]=useState<SavedProfile|null>(null);
  const [server,setServer]=useState(initialServer),[login,setLogin]=useState(''),[password,setPassword]=useState(''),[pin,setPin]=useState(''),[passwordMode,setPasswordMode]=useState(false);
  const [boot,setBoot]=useState<Boot|null>(null),[page,setPage]=useState<Page>('caisse'),[busy,setBusy]=useState(false),[message,setMessage]=useState(''),[error,setError]=useState('');
  const [draftKey,setDraftKey]=useState(''),[cart,setCart]=useState<Record<string,number>>({}),[customerId,setCustomerId]=useState(''),[paid,setPaid]=useState(''),[method,setMethod]=useState('CASH'),[saleRef,setSaleRef]=useState('');
@@ -72,30 +84,56 @@ function App(){
  const [courierShifts,setCourierShifts]=useState<CourierShift[]>([]),[selectedShift,setSelectedShift]=useState(''),[courierAmount,setCourierAmount]=useState(''),[courierNote,setCourierNote]=useState('');
  const [givenCash,setGivenCash]=useState('');
  const [compact,setCompact]=useState(()=>{try{return localStorage.getItem('fixi:v5:compact')==='1'}catch{return false}});
+ const [custom,setCustom]=useState<CustomLine[]>([]),[linePrice,setLinePrice]=useState<Record<string,number>>({}),[cartDiscount,setCartDiscount]=useState(0);
+ const [dialog,setDialog]=useState<''|'free'|'discount'|'settings'|'parked'>('');
+ const [parked,setParked]=useState<Parked[]>([]),[queue,setQueue]=useState<QueuedSale[]>([]),[offline,setOffline]=useState(false),[syncing,setSyncing]=useState(false);
+ const [settings,setSettingsState]=useState<Settings>(()=>({...defaultSettings,...readJson<Partial<Settings>>(SETTINGS_KEY,{})}));
+ const [version,setVersion]=useState(''),[update,setUpdate]=useState<{version:string;url:string;sha256:string;notes?:string}|null>(null),[updating,setUpdating]=useState(false);
+ const [cashSummary,setCashSummary]=useState<CashSummary|null>(null),[zData,setZData]=useState<CashSummary|null>(null);
+ const [me,setMe]=useState(''),[cashier,setCashier]=useState(''),[pickLogin,setPickLogin]=useState(''),[lockSwitch,setLockSwitch]=useState('');
  const scanRef=useRef<HTMLInputElement>(null);
  const saleRefFn=useRef<()=>void>(()=>{});
- const products=boot?.products||[];
+ const queued=useMemo(()=>{const m:Record<string,number>={};for(const q of queue)for(const [id,n] of Object.entries(q.stock))m[id]=(m[id]||0)+n;return m},[queue]);
+ // Le stock affiché retire les ventes hors ligne pas encore envoyées, même après une synchronisation.
+ const products=useMemo(()=>(boot?.products||[]).map(p=>queued[p.id]?{...p,stock:Math.max(0,p.stock-queued[p.id])}:p),[boot,queued]);
  const entries=Object.entries(cart).filter(([id,q])=>q>0&&products.some(p=>p.id===id)).map(([id,quantity])=>({product:products.find(p=>p.id===id)!,quantity}));
- const priceFor=(p:Product)=>priceMode==='WHOLESALE'&&p.wholesalePrice!==null&&p.wholesalePrice!==undefined?p.wholesalePrice:p.price;
- const total=useMemo(()=>entries.reduce((v,x)=>v+x.quantity*priceFor(x.product),0),[entries,priceMode]);
+ const basePrice=(p:Product)=>priceMode==='WHOLESALE'&&p.wholesalePrice!==null&&p.wholesalePrice!==undefined?p.wholesalePrice:p.price;
+ const priceFor=(p:Product)=>linePrice[p.id]!==undefined&&linePrice[p.id]>0?linePrice[p.id]:basePrice(p);
+ const subtotal=useMemo(()=>Math.round((entries.reduce((v,x)=>v+x.quantity*priceFor(x.product),0)+custom.reduce((v,c)=>v+c.price*c.quantity,0))*1000)/1000,[entries,custom,priceMode,linePrice]);
+ const discountValue=Math.min(subtotal,Math.max(0,cartDiscount));
+ const total=Math.round((subtotal-discountValue)*1000)/1000;
+ const lineCount=entries.length+custom.length;
+ const canDiscount=['OWNER','ADMIN','MANAGER','DEMO'].includes(boot?.role||'');
+ const serverOrigin=profile?.server||server;
+ const logo=useMemo(()=>{const u=boot?.receiptProfile?.logoUrl;if(!u)return undefined;try{const x=new URL(u,serverOrigin);return x.protocol==='https:'||x.protocol==='data:'?x.href:undefined}catch{return undefined}},[boot?.receiptProfile?.logoUrl,serverOrigin]);
+ const setSettings=(x:Settings)=>{setSettingsState(x);writeJson(SETTINGS_KEY,x)};
+ useArabic(settings.lang==='ar');
  const amount=paid.trim()===''?total:Number(paid);
  const due=Math.max(0,total-(Number.isFinite(amount)?amount:0));
  const categories=['Tous',...new Set(products.map(p=>p.category||'Autres'))];
- const visible=products.filter(p=>(category==='Tous'||(p.category||'Autres')===category)&&(!search||[p.name,p.sku,p.barcode||''].join(' ').toLowerCase().includes(search.toLowerCase())));
+ const visible=useMemo(()=>products.map(p=>({p,score:(category==='Tous'||category==='Top'?true:(p.category||'Autres')===category)&&(category!=='Top'||(p.sold30||0)>0)?matchScore(search,[p.name,p.sku,p.barcode,p.category]):0}))
+  .filter(x=>x.score>0).sort((a,b)=>search?b.score-a.score||(b.p.sold30||0)-(a.p.sold30||0):(b.p.sold30||0)-(a.p.sold30||0)||a.p.name.localeCompare(b.p.name,'fr')).map(x=>x.p),[products,search,category]);
+ const hasTop=products.some(p=>(p.sold30||0)>0);
  const low=products.filter(p=>p.stock<=(p.minStock??5));
  const focusScan=()=>{if(page==='caisse'&&!locked&&!labels)requestAnimationFrame(()=>scanRef.current?.focus())};
- useEffect(()=>{void invoke<{configured:boolean;server?:string;login?:string}>('supplier_saved_profile').then(p=>{setProfile(p);if(p.configured){setServer(p.server||initialServer);setLogin(p.login||'')}}).catch(()=>setProfile({configured:false}))},[]);
+ useEffect(()=>{void invoke<SavedProfile>('supplier_saved_profile').then(p=>{setProfile(p);if(p.configured){setServer(p.server||initialServer);setLogin(p.login||'');setPickLogin(p.login||'')}}).catch(()=>setProfile({configured:false}))},[]);
+ useEffect(()=>{void invoke<string>('app_version').then(setVersion).catch(()=>{});const t=window.setTimeout(()=>void checkUpdate(true),8000);return()=>window.clearTimeout(t)},[]);
+ useEffect(()=>{const root=document.documentElement;const dark=settings.theme==='dark'||(settings.theme==='auto'&&window.matchMedia?.('(prefers-color-scheme: dark)').matches);root.dataset.theme=dark?'dark':'light'},[settings.theme]);
  useEffect(()=>{if(!draftKey||!boot||boot.role==='DEMO')return;
-  try{const d:Draft={cart,customerId,amount:paid,method,reference:saleRef,priceMode};localStorage.setItem(draftKey,JSON.stringify(d))}
+  try{const d:Draft={cart,customerId,amount:paid,method,reference:saleRef,priceMode,custom,linePrice,discount:cartDiscount};localStorage.setItem(draftKey,JSON.stringify(d))}
   catch{setError('Impossible de conserver le panier sur cet ordinateur.')}
- },[draftKey,boot,cart,customerId,paid,method,saleRef,priceMode]);
+ },[draftKey,boot,cart,customerId,paid,method,saleRef,priceMode,custom,linePrice,cartDiscount]);
+ useEffect(()=>{if(!draftKey)return;setParked(readJson<Parked[]>(draftKey+':parked',[]));setQueue(readJson<QueuedSale[]>(draftKey+':queue',[]))},[draftKey]);
+ const saveParked=(list:Parked[])=>{setParked(list);if(draftKey)writeJson(draftKey+':parked',list)};
+ const saveQueue=(list:QueuedSale[])=>{setQueue(list);if(draftKey&&!writeJson(draftKey+':queue',list))setError('Stockage local plein : synchronisez les ventes hors ligne.')};
  useEffect(()=>{if(!draftKey)return;try{
    const debt=localStorage.getItem(draftKey+':debt');setDebtPending(debt?JSON.parse(debt):null);
    const ret=localStorage.getItem(draftKey+':return');setReturnPending(ret?JSON.parse(ret):null)
  }catch{setError('Une opération sauvegardée ne peut pas être lue. Vérifiez le journal fournisseur.')}},[draftKey]);
  useEffect(()=>{focusScan()},[page,locked,labels,boot]);
  useEffect(()=>{const handler=(e:KeyboardEvent)=>{if(e.key==='F2'&&boot&&!locked){e.preventDefault();setPage('caisse');requestAnimationFrame(()=>scanRef.current?.focus())}
-   if(e.key==='F9'&&boot&&!locked){e.preventDefault();saleRefFn.current()}};
+   if(e.key==='F9'&&boot&&!locked){e.preventDefault();saleRefFn.current()}
+   if(e.key==='F4'&&boot&&!locked){e.preventDefault();setPage('caisse');setDialog('free')}};
   window.addEventListener('keydown',handler);return()=>window.removeEventListener('keydown',handler)
  },[boot,locked]);
  function connectData(data:Boot,origin:string,user:string){
@@ -114,15 +152,18 @@ function App(){
    const saved:Record<string,number>={};
    if(draft?.cart)for(const [id,q] of Object.entries(draft.cart)){const prod=data.products.find(p=>p.id===id);if(prod&&Number.isInteger(q)&&q>0)saved[id]=Math.min(q,prod.stock)}
    setCart(saved);setCustomerId(data.customers.some(x=>x.id===draft?.customerId)?draft!.customerId:'');
+   setCustom(Array.isArray(draft?.custom)?draft!.custom.filter(c=>c&&c.name&&c.price>0&&c.quantity>0):[]);setLinePrice(draft?.linePrice||{});setCartDiscount(Number(draft?.discount)||0);
+   setCashier(data.account?.fullName||user);setMe(user.trim().toLowerCase());
    setPaid(draft?.amount||'');setPriceMode(draft?.priceMode==='WHOLESALE'?'WHOLESALE':'RETAIL');setMethod(['CASH','CARD','TRANSFER'].includes(draft?.method||'')?draft!.method:'CASH');
    setSaleRef(draft?.reference||'');setDraftKey(key);setBoot(data);setPage('caisse');setPinConfigured(Boolean(data.pinConfigured));setPassword('');setError('');setMessage(draft?.reference?'Vente interrompue à vérifier avant de continuer.':'');
  }
  async function connect(e:React.FormEvent){e.preventDefault();setBusy(true);setError('');
-  try{const data=await invoke<Boot>('supplier_login',{server,login,password});connectData(data,server,login);setProfile(data.pinConfigured?{configured:true,server,login}:{configured:false})}
+  try{const data=await invoke<Boot>('supplier_login',{server,login,password});connectData(data,server,login);void invoke<SavedProfile>('supplier_saved_profile').then(setProfile).catch(()=>{})}
   catch(e){setError(String(e))}finally{setBusy(false)}
  }
  async function quickLogin(e:React.FormEvent){e.preventDefault();setBusy(true);setError('');
-  try{const data=await invoke<Boot>('supplier_pin_login',{pin});connectData({...data,pinConfigured:true},profile?.server||server,profile?.login||login);setPin('')}
+  const who=profile?.profiles?.find(x=>x.login===pickLogin)||profile?.profiles?.[0];
+  try{const data=await invoke<Boot>('supplier_pin_login',{pin,login:who?.login||null});connectData({...data,pinConfigured:true},who?.server||profile?.server||server,who?.login||profile?.login||login);setPin('');void invoke<SavedProfile>('supplier_saved_profile').then(setProfile).catch(()=>{})}
   catch(e){setError(String(e));setPin('')}finally{setBusy(false)}
  }
  async function refresh(){if(!boot||boot.role==='DEMO')return;setBusy(true);setError('');
@@ -141,6 +182,7 @@ function App(){
    }
    if(target==='retours'){const data=await invoke<{sales:SaleSource[];returns:Credit[]}>('supplier_returns');setSources(data.sales);setCredits(data.returns)}
    if(target==='historique'||target==='session'){setHistory(await invoke<Hist>('supplier_history'))}
+   if(target==='session'){setCashSummary(await invoke<CashSummary>('supplier_cash_summary',{session:null}).catch(()=>null))}
    if(target==='livreurs'){const shifts=await invoke<CourierShift[]>('supplier_delivery_shifts');setCourierShifts(shifts)}
   }catch(e){setError(String(e))}
  }
@@ -160,21 +202,79 @@ function App(){
   if(p){add(p.id,1);setSearch('');setMessage(p.name+' ajouté au panier')}else setError('Code-barres introuvable : '+scan);
   setScan('');focusScan()
  }
- function localClearSale(){setGivenCash('');setCart({});setCustomerId('');setPaid('');setSaleRef('');setSearch('')}
+ function localClearSale(){setGivenCash('');setCart({});setCustom([]);setLinePrice({});setCartDiscount(0);setCustomerId('');setPaid('');setSaleRef('');setSearch('')}
+ const isOffline=(msg:string)=>/Connexion interrompue|HTTP 50[234]|Délai dépassé|Serveur inaccessible|Connexion HTTPS impossible|Erreur réseau/i.test(msg);
+ function saleItems():SaleItem[]{return [...entries.map(e=>({productId:e.product.id,quantity:e.quantity,unitPrice:priceFor(e.product)})),...custom.map(c=>({custom:true as const,name:c.name,quantity:c.quantity,unitPrice:c.price}))]}
+ function receipt(reference:string,offlineSale=false):ReceiptData{return {reference,lines:[...entries.map(x=>({name:x.product.name,quantity:x.quantity,price:priceFor(x.product)})),...custom.map(c=>({name:c.name,quantity:c.quantity,price:c.price}))],
+  paid:amount,total,discount:discountValue||undefined,company:boot!.companyName,profile:boot!.receiptProfile,date:new Date().toLocaleString('fr-FR'),customer:boot!.customers.find(x=>x.id===customerId)?.name,cashier,offline:offlineSale,logo}}
+ async function afterSale(t:ReceiptData,cashSale:boolean){
+  setTicket(t);setPrintRequest(n=>n+1);
+  if(cashSale&&settings.drawerAuto&&settings.drawerPrinter)void invoke('cash_drawer_open',{printer:settings.drawerPrinter}).catch(e=>setError('Tiroir-caisse : '+String(e)));
+  const change=givenCash.trim()!==''&&Number.isFinite(given)?Math.max(0,given-t.paid):null;
+  publishDisplay({company:boot!.companyName,logo,lines:[],discount:0,total:t.total,given:null,change:null,thanks:change!==null&&change>0?'Monnaie : '+money(change):'Merci !'});
+ }
  async function sale(replay=false){
-  if(!boot||busy||boot.role==='DEMO'||!entries.length||(saleRef&&!replay))return;
-  if(!Number.isFinite(amount)||amount<0||amount>total){setError('Montant payé incorrect.');return}
+  if(!boot||busy||boot.role==='DEMO'||!lineCount||(saleRef&&!replay))return;
+  if(!Number.isFinite(amount)||amount<0||amount>total+0.0005){setError('Montant payé incorrect.');return}
   if(amount<total&&!customerId){setError('Sélectionnez un client pour une vente à crédit.');return}
   const reference=saleRef||'WIN-'+crypto.randomUUID();
   if(!replay&&!window.confirm('Confirmer la vente de '+money(total)+' ?'))return;
-  try{if(!draftKey)throw Error('Profil de caisse absent');localStorage.setItem(draftKey,JSON.stringify({cart,customerId,amount:paid,method,reference}))}
+  try{if(!draftKey)throw Error('Profil de caisse absent');localStorage.setItem(draftKey,JSON.stringify({cart,customerId,amount:paid,method,reference,priceMode,custom,linePrice,discount:cartDiscount}))}
   catch{setError('Impossible de protéger le panier localement : vente non envoyée.');return}
+  const payload={reference,items:saleItems(),customerId:customerId||null,paid:Math.min(amount,total),method,discount:discountValue};
   setSaleRef(reference);setBusy(true);setError('');setMessage('');
-  try{const result=await invoke<{reference?:string}>('supplier_checkout',{sale:{reference,items:entries.map(e=>({productId:e.product.id,quantity:e.quantity,unitPrice:priceFor(e.product)})),customerId:customerId||null,paid:amount,method}});
-   setTicket({reference:result.reference||reference,lines:entries.map(x=>({name:x.product.name,quantity:x.quantity,price:priceFor(x.product)})),paid:amount,total,company:boot.companyName,profile:boot.receiptProfile,date:new Date().toLocaleString('fr-TN'),customer:boot.customers.find(x=>x.id===customerId)?.name});setPrintRequest(n=>n+1);
-   setMessage('Vente enregistrée : '+(result.reference||reference));localClearSale();await refresh();focusScan()
-  }catch(e){const msg=String(e);setError(msg);if(/HTTP 40[1349]|Vente refusée|Stock insuffisant/i.test(msg)){setSaleRef('')}else setMessage('Vente à vérifier, référence conservée : '+reference)}
+  try{const result=await invoke<{reference?:string}>('supplier_checkout',{sale:payload});
+   await afterSale(receipt(result.reference||reference),method==='CASH'&&amount>0);
+   setOffline(false);setMessage('Vente enregistrée : '+(result.reference||reference));localClearSale();await refresh();focusScan()
+  }catch(e){const msg=String(e);
+   if(isOffline(msg)){
+    // Pas de réseau : la vente part dans la file locale et sera renvoyée avec la même référence (pas de doublon possible).
+    const t=receipt(reference,true);
+    saveQueue([...queue.filter(q=>q.reference!==reference),{reference,createdAt:new Date().toISOString(),payload,ticket:t,stock:Object.fromEntries(entries.map(x=>[x.product.id,x.quantity]))}]);
+    await afterSale(t,method==='CASH'&&amount>0);setOffline(true);localClearSale();
+    setMessage('Pas de connexion : vente gardée sur ce PC, envoi automatique au retour d’Internet.');focusScan()
+   }else{setError(msg);if(/HTTP 40[1349]|Vente refusée|Stock insuffisant/i.test(msg)){setSaleRef('')}else setMessage('Vente à vérifier, référence conservée : '+reference)}}
   finally{setBusy(false)}
+ }
+ async function syncQueue(manual=false){
+  if(syncing||!queue.length||!boot||boot.role==='DEMO')return;
+  setSyncing(true);let list=[...queue],sent=0,stillOffline=false;
+  for(const q of [...list]){
+   if(q.error&&!manual)continue;
+   try{await invoke('supplier_checkout',{sale:q.payload});list=list.filter(x=>x.reference!==q.reference);sent++}
+   catch(e){const msg=String(e);if(isOffline(msg)){stillOffline=true;break}list=list.map(x=>x.reference===q.reference?{...x,error:msg}:x)}
+  }
+  saveQueue(list);setOffline(stillOffline);setSyncing(false);
+  if(sent){setMessage(sent+' vente(s) hors ligne envoyée(s) à FIXI.');await refresh()}
+  if(list.some(x=>x.error))setError('Une vente hors ligne a été refusée par le serveur : ouvrez « Ventes hors ligne » pour la régler.');
+ }
+ useEffect(()=>{if(!queue.length||!boot||boot.role==='DEMO')return;const t=window.setInterval(()=>void syncQueue(),30000);const on=()=>void syncQueue();window.addEventListener('online',on);return()=>{window.clearInterval(t);window.removeEventListener('online',on)}},[queue,boot,syncing]);
+ function dropQueued(ref:string){if(!window.confirm('Supprimer cette vente hors ligne ? Elle ne sera jamais envoyée à FIXI.'))return;saveQueue(queue.filter(q=>q.reference!==ref))}
+ function park(){
+  if(!lineCount||saleRef)return;
+  const name=boot?.customers.find(c=>c.id===customerId)?.name;
+  const item:Parked={id:crypto.randomUUID(),at:new Date().toISOString(),label:name||('Client '+(parked.length+1)),cart,custom,linePrice,discount:cartDiscount,customerId,priceMode};
+  saveParked([item,...parked].slice(0,12));localClearSale();setMessage('Panier mis en attente. Servez le client suivant.');focusScan()
+ }
+ function resume(id:string){
+  const item=parked.find(x=>x.id===id);if(!item||saleRef)return;
+  const rest=parked.filter(x=>x.id!==id);
+  if(lineCount){const name=boot?.customers.find(c=>c.id===customerId)?.name;rest.unshift({id:crypto.randomUUID(),at:new Date().toISOString(),label:name||('Client '+(parked.length+1)),cart,custom,linePrice,discount:cartDiscount,customerId,priceMode})}
+  const safe:Record<string,number>={};for(const [pid,q] of Object.entries(item.cart)){const prod=products.find(p=>p.id===pid);if(prod&&q>0)safe[pid]=Math.min(q,prod.stock)}
+  setCart(safe);setCustom(item.custom||[]);setLinePrice(item.linePrice||{});setCartDiscount(item.discount||0);setCustomerId(boot?.customers.some(c=>c.id===item.customerId)?item.customerId:'');setPriceMode(item.priceMode||'RETAIL');setPaid('');setGivenCash('');
+  saveParked(rest);setDialog('');setPage('caisse');focusScan()
+ }
+ async function checkUpdate(silent=false){
+  try{const r=await invoke<{available:boolean;version?:string;url?:string;sha256?:string;notes?:string}>('check_update');
+   if(r.available&&r.url&&r.sha256)setUpdate({version:r.version||'',url:r.url,sha256:r.sha256,notes:r.notes});else if(!silent)setMessage('FIXI Caisse est à jour.');
+  }catch(e){if(!silent)setError(String(e))}
+ }
+ async function installUpdate(){if(!update)return;if(lineCount&&!window.confirm('Un panier est en cours : il sera gardé. Installer la mise à jour maintenant ?'))return;
+  setUpdating(true);try{await invoke('install_update',{url:update.url,sha256:update.sha256})}catch(e){setError(String(e));setUpdating(false)}}
+ function shareTicket(t:ReceiptData,phone?:string|null){
+  let num=waPhone(phone||'');
+  if(!num){const typed=window.prompt('Numéro WhatsApp du client (8 chiffres) :','');if(typed===null)return;num=waPhone(typed);if(!num){setError('Numéro WhatsApp invalide.');return}}
+  void invoke('open_external',{url:waUrl(num,ticketMessage(t))}).catch(e=>setError(String(e)))
  }
  async function verify(kind:'sale'|'debt'|'return',reference:string){
   if(!reference)return;setBusy(true);setError('');
@@ -219,7 +319,7 @@ function App(){
  function showTicket(x:TicketSearch){
   if(!boot)return;
   setTicket({reference:x.reference,company:boot.companyName,profile:boot.receiptProfile,date:new Date(x.createdAt).toLocaleString('fr-TN'),
-   customer:x.customer,lines:x.items,total:x.total,paid:x.paid});setPrintRequest(n=>n+1);
+   customer:x.customer,lines:x.items,total:x.total,paid:x.paid,logo});setPrintRequest(n=>n+1);
   setMessage('Ticket '+x.reference+' prêt à être réimprimé.')
  }
  async function selectReturnFromTicket(x:TicketSearch){
@@ -287,13 +387,14 @@ function App(){
   catch(e){setError(String(e))}finally{setBusy(false)}
  }
  async function changePin(){if(setupPin.length!==4)return;setBusy(true);setError('');
-  try{await invoke('pin_setup',{pin:setupPin});setPinConfigured(true);setProfile({configured:true,server,login});setSetupPin('');setMessage('Code PIN protégé dans Windows.')}
+  try{await invoke('pin_setup',{pin:setupPin,name:cashier||null});setPinConfigured(true);void invoke<SavedProfile>('supplier_saved_profile').then(setProfile).catch(()=>{});setSetupPin('');setMessage('Code PIN protégé dans Windows.')}
   catch(e){setError(String(e))}finally{setBusy(false)}
  }
  async function lock(){setError('');try{await invoke('pin_lock');setLocked(true);setLockPin('')}catch(e){setError(String(e))}}
  async function unlock(e:React.FormEvent){e.preventDefault();try{await invoke('pin_unlock',{pin:lockPin});setLocked(false);setLockPin('');focusScan()}catch(e){setError(String(e));setLockPin('')}}
- async function logout(){if(!window.confirm('Changer de compte supprimera le PIN enregistré sur ce PC. Continuer ?'))return;try{await invoke('supplier_logout')}catch(e){setError(String(e));return}
-  setBoot(null);setProfile({configured:false});setDraftKey('');setPasswordMode(false);setLocked(false);setSaleRef('');setCart({})}
+ async function logout(){if(!window.confirm('Retirer '+(cashier||'ce caissier')+' de ce PC ? Son code PIN sera effacé (son compte FIXI reste intact).'))return;try{await invoke('supplier_logout')}catch(e){setError(String(e));return}
+  setBoot(null);setDraftKey('');setPasswordMode(false);setLocked(false);setSaleRef('');setCart({});setCustom([]);setDialog('');
+  void invoke<SavedProfile>('supplier_saved_profile').then(p=>{setProfile(p);setPickLogin('')}).catch(()=>setProfile({configured:false}))}
  function printTicket(){
   if(!ticket)return;
   document.body.dataset.printMode='ticket';
@@ -312,6 +413,30 @@ function App(){
  saleRefFn.current=()=>{if(page==='caisse')void sale()};
  useEffect(()=>{try{localStorage.setItem('fixi:v5:compact',compact?'1':'0')}catch{}},[compact]);
  useEffect(()=>{if(!message)return;const t=window.setTimeout(()=>setMessage(''),5000);return()=>window.clearTimeout(t)},[message]);
+ useEffect(()=>{if(!boot||!settings.customerDisplay||!lineCount)return;const g=Number(givenCash.replace(',','.'));const hasGiven=givenCash.trim()!==''&&Number.isFinite(g);
+  publishDisplay({company:boot.companyName,logo,lines:[...entries.map(x=>({name:x.product.name,quantity:x.quantity,price:priceFor(x.product)})),...custom.map(c=>({name:c.name,quantity:c.quantity,price:c.price}))],discount:discountValue,total,given:hasGiven?g:null,change:hasGiven?Math.round((g-total)*1000)/1000:null})
+ },[cart,custom,linePrice,cartDiscount,total,givenCash,settings.customerDisplay,boot]);
+ useEffect(()=>{if(boot&&boot.role!=='DEMO'&&settings.customerDisplay)void invoke('open_customer_display').catch(()=>{})},[boot?.companyName]);
+ useEffect(()=>{if(boot&&!pinConfigured&&boot.role!=='DEMO'&&cashier)setMessage('Activez un code PIN (en haut) pour ouvrir la caisse en 2 secondes la prochaine fois.')},[boot?.companyName]);
+ function printZ(data:CashSummary){setZData(data);document.body.dataset.printMode='z';window.addEventListener('afterprint',()=>{delete document.body.dataset.printMode},{once:true});requestAnimationFrame(()=>requestAnimationFrame(()=>window.print()))}
+ async function closeWithCount(counted:number,note:string){
+  if(!window.confirm('Clôturer la caisse avec '+money(counted)+' comptés ?'))return;
+  const id=cashSummary?.session?.id||null;setBusy(true);setError('');
+  try{await invoke('supplier_cash_action',{operation:{action:'CASH_CLOSE',closingAmount:counted,note}});
+   const z=await invoke<CashSummary>('supplier_cash_summary',{session:id}).catch(()=>null);
+   setMessage('Caisse clôturée.');if(z)printZ(z);await load('session')
+  }catch(e){setError(String(e))}finally{setBusy(false)}
+ }
+ async function switchCashier(){if(lineCount&&!window.confirm('Le panier reste gardé pour ce caissier. Changer de caissier ?'))return;
+  try{await invoke('supplier_switch_user')}catch{}
+  setBoot(null);setDraftKey('');setLocked(false);setSaleRef('');setCart({});setCustom([]);setPin('');setPasswordMode(false);
+  void invoke<SavedProfile>('supplier_saved_profile').then(p=>{setProfile(p);setPickLogin('')}).catch(()=>{})
+ }
+ async function unlockAs(e:React.FormEvent){e.preventDefault();if(!lockSwitch||lockSwitch===me)return unlock(e);
+  const who=profile?.profiles?.find(x=>x.login===lockSwitch);setBusy(true);setError('');
+  try{const data=await invoke<Boot>('supplier_pin_login',{pin:lockPin,login:lockSwitch});connectData({...data,pinConfigured:true},who?.server||serverOrigin,lockSwitch);setLocked(false);setLockPin('');setLockSwitch('')}
+  catch(err){setError(String(err));setLockPin('')}finally{setBusy(false)}
+ }
  const pendingOrders=orders.filter(o=>o.status==='PENDING').length;
  const cartCount=entries.reduce((n,e)=>n+e.quantity,0);
  const given=Number(givenCash.replace(',','.'));
@@ -322,11 +447,13 @@ function App(){
   <div className="v5-login-identity"><div className="v5-mark v5-mark--xl">F</div><h1>FIXI Caisse</h1><p>Le point de vente Windows de FIXI Supplier.</p>
    <ul><li><ScanBarcode size={18}/> Scanner rapide, panier gardé même après coupure</li><li><Wallet size={18}/> Ventes, dettes clients et retours au même endroit</li><li><Printer size={18}/> Tickets et étiquettes code-barres</li></ul></div>
   <div className="v5-login-panel">{profile?.configured&&!passwordMode?
-   <form onSubmit={quickLogin} className="v5-card v5-login-form"><h2>Bonjour 👋</h2><p>Ouvrir la caisse de <strong>{profile.login}</strong></p>
+   <form onSubmit={quickLogin} className="v5-card v5-login-form"><h2>Bonjour 👋</h2>
+    {(profile.profiles?.length||0)>1?<><p>Qui ouvre la caisse ?</p><div className="v6-cashiers" role="radiogroup" aria-label="Caissier">{profile.profiles!.map(x=><button type="button" role="radio" key={x.login} aria-checked={(pickLogin||profile.profiles![0].login)===x.login} onClick={()=>{setPickLogin(x.login);setPin('')}}><span className="v6-avatar">{(x.name||x.login).slice(0,1).toUpperCase()}</span><b>{x.name||x.login}</b></button>)}</div></>
+    :<p>Ouvrir la caisse de <strong>{profile.profiles?.[0]?.name||profile.login}</strong></p>}
     <PinPad value={pin} onChange={setPin} autoFocus/>
     <button disabled={busy||pin.length!==4} className="v5-btn v5-btn--primary v5-btn--lg">{busy?'Ouverture…':'Ouvrir la caisse'}</button>
-    <button type="button" className="v5-link" onClick={()=>setPasswordMode(true)}>Se connecter avec le mot de passe</button></form>:
-   <form onSubmit={connect} className="v5-card v5-login-form"><h2>Connexion</h2><p>Avec votre compte FIXI Supplier.</p>
+    <div className="v6-login-links"><button type="button" className="v5-link" onClick={()=>{setPasswordMode(true);setLogin('');setPassword('')}}><UserPlus size={15}/> Ajouter un caissier</button><button type="button" className="v5-link v5-link--muted" onClick={()=>{setPasswordMode(true);setLogin(pickLogin||profile.login||'')}}>Mot de passe</button></div></form>:
+   <form onSubmit={connect} className="v5-card v5-login-form"><h2>{profile?.configured?'Ajouter un caissier':'Connexion'}</h2><p>{profile?.configured?'Avec son propre compte FIXI Supplier (créé par le gérant dans Équipe).':'Avec votre compte FIXI Supplier.'}</p>
     <label className="v5-field"><span>Identifiant</span><input autoFocus required value={login} onChange={e=>setLogin(e.target.value)} autoComplete="username"/></label>
     <label className="v5-field"><span>Mot de passe</span><input required type="password" value={password} onChange={e=>setPassword(e.target.value)} autoComplete="current-password"/></label>
     <details className="v5-advanced"><summary>Serveur</summary><label className="v5-field"><span>Adresse du serveur FIXI</span><input type="url" required value={server} onChange={e=>setServer(e.target.value)}/></label></details>
@@ -340,15 +467,17 @@ function App(){
     <button className="v5-icon-btn v5-side-toggle" title={compact?'Agrandir le menu':'Réduire le menu'} aria-label={compact?'Agrandir le menu':'Réduire le menu'} onClick={()=>setCompact(v=>!v)}>{compact?<PanelLeftOpen size={18}/>:<PanelLeftClose size={18}/>}</button></div>
    <nav className="v5-nav" aria-label="Menu">{navGroups.map(g=><div key={g.label} className="v5-nav-group"><span className="v5-nav-heading">{g.label}</span>
     {g.items.map(id=>{const item=nav.find(n=>n.id===id)!;const I=item.icon;return <button key={id} title={item.label} aria-current={page===id?'page':undefined} className="v5-nav-item" onClick={()=>navigate(id)}><I size={19}/><span>{item.label}</span>{id==='commandes'&&pendingOrders>0&&<b>{pendingOrders}</b>}</button>})}</div>)}</nav>
-   <div className="v5-account"><span className="v5-led" aria-hidden/><div><strong>{boot.companyName}</strong><small>{boot.role==='DEMO'?'Démonstration':(roleLabel[boot.role]||boot.role)+' · connecté'}</small></div>
-    <div className="v5-account-actions"><button className="v5-icon-btn" title="Changer de compte" aria-label="Changer de compte" onClick={()=>void logout()}><UserRoundCog size={17}/></button><button className="v5-icon-btn" title="Fermer FIXI Caisse" aria-label="Fermer FIXI Caisse" onClick={()=>void getCurrentWindow().close()}><Power size={17}/></button></div></div>
+   <div className="v5-account"><span className="v5-led" aria-hidden/><div><strong>{cashier||boot.companyName}</strong><small>{boot.role==='DEMO'?'Démonstration':(roleLabel[boot.role]||boot.role)+' · '+boot.companyName}</small></div>
+    <div className="v5-account-actions"><button className="v5-icon-btn" title="Changer de caissier" aria-label="Changer de caissier" disabled={boot.role==='DEMO'} onClick={()=>void switchCashier()}><UserRoundCog size={17}/></button><button className="v5-icon-btn" title="Réglages" aria-label="Réglages" onClick={()=>setDialog('settings')}><Settings2 size={17}/></button><button className="v5-icon-btn" title="Fermer FIXI Caisse" aria-label="Fermer FIXI Caisse" onClick={()=>void getCurrentWindow().close()}><Power size={17}/></button></div></div>
   </aside>
   <main className="v5-main">
    <header className="v5-header"><div><h1>{page==='caisse'?'Caisse':current?.label}</h1>{current?.hint&&<p>{current.hint}</p>}</div><div className="v5-toolbar">
+    {(offline||queue.length>0)&&<button className={'v5-btn v6-offline'+(queue.some(q=>q.error)?' is-error':'')} onClick={()=>setDialog('parked')} title="Ventes hors ligne">{offline?<WifiOff size={16}/>:<CloudUpload size={16}/>} {offline?'Hors ligne':'À envoyer'}{queue.length>0&&<b>{queue.length}</b>}</button>}
     <button className="v5-btn v5-btn--ghost" onClick={()=>void refresh()} disabled={busy||boot.role==='DEMO'} title="Recharger produits, prix et stock"><RefreshCw size={16} className={busy?'v5-spin':''}/> Synchroniser</button>
     <button className="v5-btn v5-btn--ghost" onClick={()=>setLabels(true)}><Tags size={16}/> Étiquettes</button>
     {pinConfigured?<button className="v5-btn v5-btn--ghost" onClick={()=>void lock()} title="Verrouiller la caisse (code PIN)"><Lock size={16}/> Verrouiller</button>:boot.role!=='DEMO'?<div className="v5-pin-setup"><input type="password" inputMode="numeric" maxLength={4} value={setupPin} onChange={e=>setSetupPin(e.target.value.replace(/\D/g,'').slice(0,4))} placeholder="PIN 4 chiffres" aria-label="Nouveau code PIN"/><button className="v5-btn v5-btn--ghost" disabled={busy||setupPin.length!==4} onClick={()=>void changePin()}><KeyRound size={16}/> Activer</button></div>:null}
    </div></header>
+   {update&&<div className="v6-update"><Download size={18}/><span><b>FIXI Caisse {update.version} est disponible.</b> {update.notes||'Nouvelles fonctions et corrections.'}</span><button className="v5-btn v5-btn--primary v5-btn--sm" disabled={updating} onClick={()=>void installUpdate()}>{updating?'Téléchargement…':'Mettre à jour'}</button><button className="v5-icon-btn" aria-label="Plus tard" onClick={()=>setUpdate(null)}><X size={15}/></button></div>}
    {error&&<div role="alert" className="v5-alert v5-alert--danger"><CircleAlert size={18}/><span>{error}</span><button aria-label="Fermer" onClick={()=>setError('')}><X size={16}/></button></div>}
    {page==='caisse'&&<>
     <div className="v5-scan"><ScanBarcode size={22}/><input ref={scanRef} autoFocus placeholder="Scannez ou tapez une référence (F2)" value={scan} onChange={e=>setScan(e.target.value)} onKeyDown={e=>{if(e.key==='Enter')barcode();if(e.key==='Escape')setScan('')}}/><button className="v5-btn v5-btn--primary" onClick={barcode}><Plus size={18}/> Ajouter</button></div>
@@ -357,7 +486,7 @@ function App(){
      <div className="v5-seg" role="group" aria-label="Tarif" title={entries.length>0?'Videz le panier pour changer de tarif':'Tarif appliqué au panier'}>
       <button aria-pressed={priceMode==='RETAIL'} disabled={busy||!!saleRef||entries.length>0} onClick={()=>setPriceMode('RETAIL')}>Détail</button>
       <button aria-pressed={priceMode==='WHOLESALE'} disabled={busy||!!saleRef||entries.length>0} onClick={()=>setPriceMode('WHOLESALE')}>Gros</button></div></div>
-    <div className="v5-chips">{categories.map(x=><button key={x} aria-pressed={x===category} onClick={()=>setCategory(x)}>{x}<small>{x==='Tous'?products.length:products.filter(p=>(p.category||'Autres')===x).length}</small></button>)}</div>
+    <div className="v5-chips">{hasTop&&<button aria-pressed={category==='Top'} onClick={()=>setCategory('Top')}><Flame size={14}/> Les plus vendus</button>}{categories.map(x=><button key={x} aria-pressed={x===category} onClick={()=>setCategory(x)}>{x}<small>{x==='Tous'?products.length:products.filter(p=>(p.category||'Autres')===x).length}</small></button>)}</div>
     {visible.length===0?<div className="v5-empty"><PackageSearch size={40}/><h3>Aucun produit</h3><p>Essayez un autre mot ou une autre catégorie.</p></div>:
     <section className="v5-products">{visible.map(p=>{const inCart=cart[p.id]||0;return <button key={p.id} disabled={p.stock<=0||busy||!!saleRef} className={'v5-product'+(inCart?' is-in-cart':'')} onClick={()=>add(p.id,1)}>
      {inCart>0&&<span className="v5-product-qty">{inCart}</span>}
@@ -425,14 +554,19 @@ function App(){
     <div className="v5-card"><h2 className="v5-card-title"><Search size={19}/> Rechercher un ticket</h2>
     <TicketSearchV4 query={ticketQuery} from={ticketFrom} to={ticketTo} busy={busy} results={ticketMatches}
      onQuery={setTicketQuery} onFrom={setTicketFrom} onTo={setTicketTo} onSearch={()=>void searchTickets()}
-     onPrint={showTicket} onReturn={x=>{setPage('retours');void selectReturnFromTicket(x)}}/></div>
+     onPrint={showTicket} onReturn={x=>{setPage('retours');void selectReturnFromTicket(x)}} onShare={x=>shareTicket({reference:x.reference,company:boot.companyName,profile:boot.receiptProfile,date:new Date(x.createdAt).toLocaleString('fr-FR'),customer:x.customer,lines:x.items,total:x.total,paid:x.paid},x.phone)}/></div>
     <div className="v5-card"><div className="v5-card-head"><h2 className="v5-card-title">Dernières ventes</h2>{ticket&&<button className="v5-btn v5-btn--soft v5-btn--sm" disabled={busy} onClick={printTicket}><Printer size={15}/> Réimprimer {ticket.reference}</button>}</div>
     {!history?.sales.length?<Empty icon={ReceiptText} title="Aucune vente" text="Les ventes de la caisse apparaîtront ici."/>:<div className="v5-table-wrap"><table className="v5-table"><thead><tr><th>Référence</th><th>Date</th><th className="num">Total</th><th className="num">Payé</th><th>État</th></tr></thead><tbody>
     {history.sales.map(x=><tr key={x.id}><td className="v5-mono"><b>{x.reference}</b></td><td>{new Date(x.createdAt).toLocaleString('fr-FR',{dateStyle:'short',timeStyle:'short'})}</td><td className="num">{money(x.total)}</td><td className="num">{money(x.paid)}</td><td><StatusChip status={x.status}/></td></tr>)}
     </tbody></table></div>}</div></section>}
    {page==='session'&&<section className="v5-stack">{(()=>{const open=history?.sessions.find(s=>s.status==='OPEN');return <div className={'v5-session '+(open?'is-open':'is-closed')}><span className="v5-session-icon">{open?<LockOpen size={24}/>:<Lock size={24}/>}</span><div><b>{open?'Caisse ouverte':'Caisse fermée'}</b><small>{open?'Depuis le '+new Date(open.openedAt).toLocaleString('fr-FR',{dateStyle:'short',timeStyle:'short'}):'Ouvrez la caisse avant d’encaisser des espèces.'}</small></div></div>})()}
-    <div className="v5-card"><h2 className="v5-card-title"><Wallet size={19}/> Ouvrir ou clôturer</h2><div className="v5-form-row"><label className="v5-field"><span>Montant compté (DT)</span><input type="number" min="0" step=".001" value={cashAmount} onChange={e=>setCashAmount(e.target.value)} placeholder="0,000"/></label><label className="v5-field v5-field--wide"><span>Observation</span><input value={cashNote} onChange={e=>setCashNote(e.target.value)} placeholder="Facultatif"/></label>
-     <button className="v5-btn v5-btn--primary" disabled={busy} onClick={()=>void cash('CASH_OPEN')}><LockOpen size={17}/> Ouvrir</button><button className="v5-btn v5-btn--ghost" disabled={busy} onClick={()=>void cash('CASH_CLOSE')}><Lock size={17}/> Clôturer</button></div></div>
+    {cashSummary?.session?.status==='OPEN'?<>
+     <div className="v5-kpis"><div className="v5-kpi"><span>Fond de caisse</span><b>{money(cashSummary.session.opening)}</b></div><div className="v5-kpi"><span>Ventes de la session</span><b>{cashSummary.sales?.count||0}</b></div><div className="v5-kpi"><span>Encaissé (tous moyens)</span><b>{money(cashSummary.sales?.paid||0)}</b></div><div className="v5-kpi is-warning"><span>Espèces attendues</span><b>{money(cashSummary.expectedCash||0)}</b></div></div>
+     <CashCounter expected={cashSummary.expectedCash??null} busy={busy||boot.role==='DEMO'} onClose={(n,note)=>void closeWithCount(n,note)}/>
+     <div className="v6-actions"><ZButton disabled={busy} onPrint={()=>printZ(cashSummary)}/><small className="v5-hint">Rapport X : point de la journée sans clôturer.</small></div></>:
+    <div className="v5-card"><h2 className="v5-card-title"><LockOpen size={19}/> Ouvrir la caisse</h2><div className="v5-form-row"><label className="v5-field"><span>Fond de caisse (DT)</span><input type="number" min="0" step=".001" value={cashAmount} onChange={e=>setCashAmount(e.target.value)} placeholder="0,000"/></label><label className="v5-field v5-field--wide"><span>Observation</span><input value={cashNote} onChange={e=>setCashNote(e.target.value)} placeholder="Facultatif"/></label>
+     <button className="v5-btn v5-btn--primary" disabled={busy} onClick={()=>void cash('CASH_OPEN')}><LockOpen size={17}/> Ouvrir</button></div>
+     {cashSummary?.session&&<div className="v6-actions"><ZButton disabled={busy} onPrint={()=>printZ(cashSummary)}/><small className="v5-hint">Rapport Z de la dernière clôture.</small></div>}</div>}
     <div className="v5-card"><h2 className="v5-card-title">Dernières sessions</h2>{!history?.sessions.length?<Empty icon={Wallet} title="Aucune session" text="Les ouvertures et clôtures apparaîtront ici."/>:<div className="v5-table-wrap"><table className="v5-table"><thead><tr><th>Ouverture</th><th>Clôture</th><th>État</th></tr></thead><tbody>{history.sessions.map(x=><tr key={x.id}><td>{new Date(x.openedAt).toLocaleString('fr-FR',{dateStyle:'short',timeStyle:'short'})}</td><td>{x.closedAt?new Date(x.closedAt).toLocaleString('fr-FR',{dateStyle:'short',timeStyle:'short'}):'—'}</td><td><StatusChip status={x.status}/></td></tr>)}</tbody></table></div>}</div></section>}
    {page==='livreurs'&&<section className="v5-stack">
     {courierShifts.filter(s=>s.status==='PENDING_CASHIER').length===0?<div className="v5-card"><Empty icon={Truck} title="Aucune recette en attente" text="Quand un livreur termine sa tournée, sa remise apparaît ici."/></div>:
@@ -447,28 +581,52 @@ function App(){
    </section>}
   </main>
   {page==='caisse'&&<aside className="v5-basket" aria-label="Panier">
-   <div className="v5-basket-head"><h2><ShoppingCart size={20}/> Panier</h2><span className="v5-count">{cartCount} article{cartCount>1?'s':''}</span>{entries.length>0&&!saleRef&&<button className="v5-icon-btn" title="Vider le panier" aria-label="Vider le panier" disabled={busy} onClick={()=>{if(window.confirm('Supprimer ce panier non payé ?')){localClearSale();setGivenCash('');setMessage('Panier vidé.')}}}><Trash2 size={17}/></button>}</div>
+   <div className="v5-basket-head"><h2><ShoppingCart size={20}/> Panier</h2><span className="v5-count">{cartCount+custom.reduce((n,c)=>n+c.quantity,0)} article{cartCount+custom.length>1?'s':''}</span>{lineCount>0&&!saleRef&&<button className="v5-icon-btn" title="Vider le panier" aria-label="Vider le panier" disabled={busy} onClick={()=>{if(window.confirm('Supprimer ce panier non payé ?')){localClearSale();setGivenCash('');setMessage('Panier vidé.');if(boot)publishDisplay({company:boot.companyName,logo,lines:[],discount:0,total:0,given:null,change:null})}}}><Trash2 size={17}/></button>}</div>
+   <div className="v6-basket-tools"><button className="v5-btn v5-btn--ghost v5-btn--sm" disabled={busy||!!saleRef} onClick={()=>setDialog('free')} title="F4"><PencilLine size={15}/> Article libre</button>
+    {canDiscount&&<button className={'v5-btn v5-btn--sm '+(discountValue>0||Object.keys(linePrice).length?'v5-btn--soft':'v5-btn--ghost')} disabled={busy||!!saleRef||!lineCount} onClick={()=>setDialog('discount')}><Percent size={15}/> Remise</button>}
+    <button className="v5-btn v5-btn--ghost v5-btn--sm" disabled={busy||!!saleRef||!lineCount} onClick={park}><PauseCircle size={15}/> En attente</button></div>
+   {parked.length>0&&<div className="v6-parked" aria-label="Paniers en attente">{parked.map(x=><button key={x.id} disabled={busy||!!saleRef} onClick={()=>resume(x.id)} title={'Reprendre · '+new Date(x.at).toLocaleTimeString('fr-FR',{timeStyle:'short'})}><PlayCircle size={14}/> {x.label}<small>{Object.values(x.cart).reduce((a,b)=>a+b,0)+(x.custom||[]).reduce((a,c)=>a+c.quantity,0)}</small></button>)}</div>}
    {saleRef&&<Risk title="Vente à vérifier" text={saleRef}><button className="v5-btn v5-btn--soft v5-btn--sm" disabled={busy} onClick={()=>void verify('sale',saleRef)}>Vérifier la vente</button><button className="v5-btn v5-btn--ghost v5-btn--sm" disabled={busy} onClick={()=>void sale(true)}>Renvoyer</button></Risk>}
-   <div className="v5-basket-items">{entries.length?entries.map(e=><div className="v5-line" key={e.product.id}><div className="v5-line-info"><strong>{e.product.name}</strong><small>{money(priceFor(e.product))} l’unité</small></div>
+   <div className="v5-basket-items">{lineCount?entries.map(e=><div className="v5-line" key={e.product.id}><div className="v5-line-info"><strong>{e.product.name}</strong><small>{money(priceFor(e.product))} l’unité</small></div>
     <Stepper value={e.quantity} max={e.product.stock} disabled={busy||!!saleRef} onChange={v=>add(e.product.id,v-e.quantity)}/>
-    <b className="v5-line-total">{money(e.quantity*priceFor(e.product))}</b></div>):<div className="v5-empty v5-empty--basket"><ScanBarcode size={40}/><h3>Panier vide</h3><p>Scannez un article ou touchez un produit.</p></div>}</div>
+    <b className="v5-line-total">{linePrice[e.product.id]!==undefined&&linePrice[e.product.id]<basePrice(e.product)&&<s>{money(e.quantity*basePrice(e.product))}</s>}{money(e.quantity*priceFor(e.product))}</b></div>).concat(custom.map(c=><div className="v5-line is-custom" key={c.id}><div className="v5-line-info"><strong>{c.name}</strong><small>Article libre · {money(c.price)} l’unité</small></div>
+    <Stepper value={c.quantity} max={1000} disabled={busy||!!saleRef} onChange={v=>setCustom(list=>v<=0?list.filter(x=>x.id!==c.id):list.map(x=>x.id===c.id?{...x,quantity:v}:x))}/>
+    <b className="v5-line-total">{money(c.quantity*c.price)}</b></div>)):<div className="v5-empty v5-empty--basket"><ScanBarcode size={40}/><h3>Panier vide</h3><p>Scannez un article ou touchez un produit.</p></div>}</div>
    <div className="v5-basket-foot">
     <div className="v5-client-row"><label className="v5-field v5-field--inline"><span><UserRound size={15}/> Client</span><select disabled={busy||!!saleRef} value={customerId} onChange={e=>setCustomerId(e.target.value)}><option value="">Vente comptoir</option>{boot.customers.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label><button className="v5-icon-btn" title="Nouveau client" aria-label="Nouveau client" disabled={busy||!!saleRef} onClick={()=>setPage('clients')}><UserPlus size={17}/></button></div>
     <MethodSeg value={method} onChange={v=>{setMethod(v);if(v!=='CASH')setGivenCash('')}} disabled={busy||!!saleRef}/>
+    {discountValue>0&&<div className="v6-discount-row"><span>Sous-total {money(subtotal)}</span><span>Remise <b>-{money(discountValue)}</b></span></div>}
     <div className="v5-total"><span>Total <small>{priceMode==='WHOLESALE'?'tarif gros':'tarif détail'}</small></span><strong>{money(total)}</strong></div>
-    <div className="v5-pay-grid"><label className="v5-field"><span>Payé maintenant</span><input disabled={busy||!!saleRef||!entries.length} min="0" max={total} step=".001" type="number" placeholder={total.toFixed(3)} value={paid} onChange={e=>setPaid(e.target.value)}/></label>
-     {method==='CASH'&&<label className="v5-field"><span>Le client donne</span><input disabled={busy||!!saleRef||!entries.length} min="0" step=".5" type="number" placeholder="Espèces reçues" value={givenCash} onChange={e=>setGivenCash(e.target.value)}/></label>}</div>
-    {method==='CASH'&&entries.length>0&&!saleRef&&<div className="v5-quick">{quickCash.map(v=><button key={v} onClick={()=>setGivenCash(String(v))}>{v} DT</button>)}</div>}
+    <div className="v5-pay-grid"><label className="v5-field"><span>Payé maintenant</span><input disabled={busy||!!saleRef||!lineCount} min="0" max={total} step=".001" type="number" placeholder={total.toFixed(3)} value={paid} onChange={e=>setPaid(e.target.value)}/></label>
+     {method==='CASH'&&<label className="v5-field"><span>Le client donne</span><input disabled={busy||!!saleRef||!lineCount} min="0" step=".5" type="number" placeholder="Espèces reçues" value={givenCash} onChange={e=>setGivenCash(e.target.value)}/></label>}</div>
+    {method==='CASH'&&lineCount>0&&!saleRef&&<div className="v5-quick">{quickCash.map(v=><button key={v} onClick={()=>setGivenCash(String(v))}>{v} DT</button>)}</div>}
     {change!==null&&<div className={'v5-change '+(change<0?'is-neg':'')}><span>{change<0?'Il manque':'Monnaie à rendre'}</span><strong>{money(Math.abs(change))}</strong></div>}
     {due>0&&<div className="v5-due"><span>Reste dû {customerId?'(crédit client)':'— choisissez un client'}</span><strong>{money(due)}</strong></div>}
-    <button disabled={busy||!!saleRef||!entries.length||boot.role==='DEMO'} className="v5-btn v5-btn--primary v5-pay" onClick={()=>void sale()}>{busy?'Enregistrement…':<><Check size={20}/> Encaisser {entries.length?money(total):''}<kbd>F9</kbd></>}</button>
-    {ticket&&<button className="v5-btn v5-btn--ghost v5-btn--sm" onClick={printTicket}><Printer size={15}/> Réimprimer le dernier ticket</button>}{receiptWarning&&<p className="v5-hint">{receiptWarning}</p>}
+    <button disabled={busy||!!saleRef||!lineCount||boot.role==='DEMO'} className="v5-btn v5-btn--primary v5-pay" onClick={()=>void sale()}>{busy?'Enregistrement…':<><Check size={20}/> Encaisser {lineCount?money(total):''}<kbd>F9</kbd></>}</button>
+    {ticket&&<div className="v6-ticket-actions"><button className="v5-btn v5-btn--ghost v5-btn--sm" onClick={printTicket}><Printer size={15}/> Réimprimer</button><button className="v5-btn v5-btn--ghost v5-btn--sm v6-wa" onClick={()=>shareTicket(ticket,boot.customers.find(c=>c.name===ticket.customer)?.phone)}><MessageCircle size={15}/> WhatsApp</button>{settings.drawerPrinter&&<button className="v5-btn v5-btn--ghost v5-btn--sm" onClick={()=>void invoke('cash_drawer_open',{printer:settings.drawerPrinter}).catch(e=>setError(String(e)))}><Banknote size={15}/> Tiroir</button>}</div>}{receiptWarning&&<p className="v5-hint">{receiptWarning}</p>}
    </div>
   </aside>}
   {message&&<div role="status" className="v5-toast"><CircleCheck size={18}/><span>{message}</span><button aria-label="Fermer" onClick={()=>setMessage('')}><X size={15}/></button></div>}
   {labels&&<WindowsLabelStudio products={products} companyName={boot.companyName} onClose={()=>setLabels(false)}/>}
-  {locked&&<div className="v5-lock"><form onSubmit={unlock} className="v5-card v5-lock-card"><div className="v5-mark v5-mark--xl">F</div><h2>Caisse verrouillée</h2><p>{boot.companyName} · code PIN</p><PinPad value={lockPin} onChange={setLockPin} autoFocus/><button className="v5-btn v5-btn--primary v5-btn--lg" disabled={lockPin.length!==4}><LockOpen size={18}/> Déverrouiller</button>{error&&<p className="v5-alert v5-alert--danger">{error}</p>}</form></div>}
+  {locked&&<div className="v5-lock"><form onSubmit={unlockAs} className="v5-card v5-lock-card"><div className="v5-mark v5-mark--xl">F</div><h2>Caisse verrouillée</h2>
+   {(profile?.profiles?.length||0)>1?<div className="v6-cashiers v6-cashiers--lock" role="radiogroup" aria-label="Caissier">{profile!.profiles!.map(x=><button type="button" role="radio" key={x.login} aria-checked={(lockSwitch||me)===x.login} onClick={()=>{setLockSwitch(x.login);setLockPin('')}}><span className="v6-avatar">{(x.name||x.login).slice(0,1).toUpperCase()}</span><b>{x.name||x.login}</b></button>)}</div>:<p>{cashier||boot.companyName} · code PIN</p>}<PinPad value={lockPin} onChange={setLockPin} autoFocus/><button className="v5-btn v5-btn--primary v5-btn--lg" disabled={lockPin.length!==4}><LockOpen size={18}/> Déverrouiller</button>{error&&<p className="v5-alert v5-alert--danger">{error}</p>}</form></div>}
   <TicketPrint ticket={ticket}/>
+  <ZReport data={zData}/>
+  {dialog==='free'&&<FreeItemDialog onClose={()=>{setDialog('');focusScan()}} onAdd={x=>setCustom(list=>[...list,{id:crypto.randomUUID(),...x}])}/>}
+  {dialog==='discount'&&<DiscountDialog subtotal={subtotal} discount={cartDiscount} onClose={()=>setDialog('')}
+   lines={entries.map(e=>({key:e.product.id,name:e.product.name,quantity:e.quantity,base:basePrice(e.product),price:priceFor(e.product)} as DiscountLine))}
+   onApply={(d,prices)=>{const next:Record<string,number>={};for(const e of entries){const v=prices[e.product.id];if(v&&Math.abs(v-basePrice(e.product))>=0.0005)next[e.product.id]=v}setLinePrice(next);setCartDiscount(d)}}/>}
+  {dialog==='settings'&&<SettingsDialog settings={settings} onChange={setSettings} onClose={()=>setDialog('')} version={version} demo={boot.role==='DEMO'} onCheckUpdate={()=>void checkUpdate(false)} onRemoveCashier={boot.role==='DEMO'?undefined:()=>void logout()}/>}
+  {dialog==='parked'&&<div className="v6-modal-back" onMouseDown={e=>{if(e.target===e.currentTarget)setDialog('')}}><div className="v5-card v6-modal is-wide" role="dialog" aria-label="Ventes hors ligne">
+   <header className="v6-modal-head"><h2><CloudUpload size={19}/> Ventes hors ligne</h2><button className="v5-icon-btn" aria-label="Fermer" onClick={()=>setDialog('')}><X size={17}/></button></header>
+   <p className="v5-hint">{offline?'Pas de connexion à FIXI. Les ventes sont gardées sur ce PC et partent toutes seules dès que la connexion revient.':'Ces ventes attendent d’être envoyées à FIXI.'}</p>
+   {queue.length===0?<Empty icon={CloudUpload} title="Tout est envoyé" text="Aucune vente en attente."/>:<div className="v5-table-wrap"><table className="v5-table"><thead><tr><th>Vente</th><th className="num">Total</th><th>État</th><th className="act"></th></tr></thead><tbody>
+    {queue.map(q=><tr key={q.reference}><td><b>{new Date(q.createdAt).toLocaleString('fr-FR',{dateStyle:'short',timeStyle:'short'})}</b><small>{q.ticket.lines.length} ligne(s){q.ticket.customer?' · '+q.ticket.customer:''}</small></td><td className="num"><b>{money(q.ticket.total)}</b></td>
+     <td>{q.error?<span className="v5-chip is-danger" title={q.error}>Refusée</span>:<span className="v5-chip is-warning">En attente</span>}{q.error&&<small>{q.error}</small>}</td>
+     <td className="act"><div className="v5-row-actions"><button className="v5-btn v5-btn--ghost v5-btn--sm" onClick={()=>{setTicket(q.ticket);setPrintRequest(n=>n+1)}}><Printer size={14}/></button>{q.error&&<button className="v5-btn v5-btn--ghost v5-btn--sm" onClick={()=>dropQueued(q.reference)}><Trash2 size={14}/></button>}</div></td></tr>)}
+   </tbody></table></div>}
+   <div className="v6-actions"><button className="v5-btn v5-btn--primary" disabled={syncing||!queue.length} onClick={()=>void syncQueue(true)}><RefreshCw size={16} className={syncing?'v5-spin':''}/> Envoyer maintenant</button></div>
+  </div></div>}
  </div>;
 }
 const statusMap:Record<string,[string,'ok'|'warning'|'danger'|'info'|'muted'|'brand']>={
@@ -487,4 +645,5 @@ function PinPad({value,onChange,autoFocus}:{value:string;onChange:(v:string)=>vo
  return <div className="v5-pinpad"><input className="v5-pin-input" autoFocus={autoFocus} type="password" inputMode="numeric" maxLength={4} value={value} onChange={e=>onChange(e.target.value.replace(/\D/g,'').slice(0,4))} aria-label="Code PIN"/>
   <div className="v5-pin-dots" aria-hidden>{[0,1,2,3].map(i=><i key={i} className={i<value.length?'is-on':''}/>)}</div>
   <div className="v5-keys">{['1','2','3','4','5','6','7','8','9'].map(d=><button type="button" key={d} onClick={()=>press(d)}>{d}</button>)}<button type="button" aria-label="Effacer" onClick={()=>onChange(value.slice(0,-1))}><Delete size={20}/></button><button type="button" onClick={()=>press('0')}>0</button><button type="button" aria-label="Tout effacer" onClick={()=>onChange('')}><X size={20}/></button></div></div>}
-createRoot(document.getElementById('root')!).render(<App/>);
+const isCustomerWindow=(()=>{try{return getCurrentWindow().label==='client'}catch{return false}})();
+createRoot(document.getElementById('root')!).render(isCustomerWindow?<CustomerDisplay/>:<App/>);
