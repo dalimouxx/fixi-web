@@ -367,6 +367,51 @@ async fn supplier_delivery_close(state: State<'_,Arc<DesktopState>>, closure:ser
  v4_request(&state,"/api/supplier/delivery/settlements",Some(closure)).await
 }
 
+
+#[tauri::command]
+async fn supplier_invoice(state: State<'_,Arc<DesktopState>>, request:serde_json::Value) -> Result<serde_json::Value,String>{
+ v4_request(&state,"/api/supplier/desktop/v4/invoice",Some(request)).await
+}
+
+#[tauri::command]
+async fn supplier_update_customer(state: State<'_,Arc<DesktopState>>, customer:serde_json::Value) -> Result<serde_json::Value,String>{
+ let mut customer=customer;
+ let record=customer.as_object_mut().ok_or("Client invalide")?;
+ record.insert("action".into(),serde_json::json!("CUSTOMER_UPDATE"));
+ v4_request(&state,"/api/supplier/erp",Some(customer)).await
+}
+
+/// Inventaire au scanner : seules les actions de comptage sont relayées.
+#[tauri::command]
+async fn supplier_stock_count(state: State<'_,Arc<DesktopState>>, request:serde_json::Value) -> Result<serde_json::Value,String>{
+ let action=request.get("action").and_then(|v|v.as_str()).unwrap_or("");
+ if !["STOCK_COUNT_START","STOCK_COUNT_ITEM","STOCK_COUNT_CLOSE"].contains(&action){return Err("Action d’inventaire refusée".into())}
+ v4_request(&state,"/api/supplier/advanced",Some(request)).await
+}
+
+#[tauri::command]
+async fn supplier_open_stock_counts(state: State<'_,Arc<DesktopState>>) -> Result<serde_json::Value,String>{
+ let data=v4_request(&state,"/api/supplier/advanced",None).await?;
+ let open:Vec<serde_json::Value>=data.get("counts").and_then(|c|c.as_array()).map(|a|a.iter().filter(|c|c.get("status").and_then(|s|s.as_str())==Some("OPEN")).cloned().collect()).unwrap_or_default();
+ Ok(serde_json::json!({"counts":open}))
+}
+
+/// « Signaler un problème » depuis la caisse : arrive dans l'admin Fixi avec la version de l'application.
+#[tauri::command]
+async fn supplier_report_problem(app: tauri::AppHandle, state: State<'_,Arc<DesktopState>>, report:serde_json::Value) -> Result<serde_json::Value,String>{
+ let mut report=report;
+ let record=report.as_object_mut().ok_or("Signalement invalide")?;
+ record.insert("appVersion".into(),serde_json::json!(app.package_info().version.to_string()));
+ record.insert("space".into(),serde_json::json!("supplier"));
+ let guard=state.connection.lock().await;
+ let session=guard.as_ref().ok_or("Connectez-vous à FIXI Supplier")?;
+ let response=session.client.post(format!("{}/api/problem-report",session.origin)).header("x-fixi-client","windows").json(&report).send().await.map_err(connection_error)?;
+ let code=response.status();
+ let value:serde_json::Value=response.json().await.unwrap_or(serde_json::Value::Null);
+ if !code.is_success(){return Err(value.get("error").and_then(|v|v.as_str()).unwrap_or("Envoi impossible").to_string())}
+ Ok(value)
+}
+
 #[tauri::command]
 async fn supplier_checkout(
     state: State<'_, Arc<DesktopState>>,
@@ -470,7 +515,7 @@ fn open_external(url: String) -> Result<(),String> {
 pub fn run() {
     tauri::Builder::default()
         .manage(Arc::new(DesktopState{connection:Mutex::new(None),pin:Mutex::new(None)}))
-        .invoke_handler(tauri::generate_handler![supplier_login,supplier_refresh,supplier_logout,supplier_checkout,supplier_history,supplier_cash_action,supplier_orders,supplier_order_transition,supplier_debts,supplier_debt_payment,supplier_returns,supplier_return_create,pin_setup,pin_lock,pin_unlock,supplier_saved_profile,supplier_pin_login,supplier_operation_status,supplier_find_tickets,supplier_return_source,supplier_customer_debts,supplier_customer_payment,supplier_create_customer,supplier_delivery_shifts,supplier_delivery_close,supplier_switch_user,supplier_cash_summary,app_version,open_external,hardware::list_printers,hardware::cash_drawer_open,hardware::open_customer_display,hardware::close_customer_display,updater::check_update,updater::install_update])
+        .invoke_handler(tauri::generate_handler![supplier_login,supplier_refresh,supplier_logout,supplier_checkout,supplier_history,supplier_cash_action,supplier_orders,supplier_order_transition,supplier_debts,supplier_debt_payment,supplier_returns,supplier_return_create,pin_setup,pin_lock,pin_unlock,supplier_saved_profile,supplier_pin_login,supplier_operation_status,supplier_find_tickets,supplier_return_source,supplier_customer_debts,supplier_customer_payment,supplier_create_customer,supplier_delivery_shifts,supplier_delivery_close,supplier_switch_user,supplier_cash_summary,app_version,open_external,hardware::list_printers,hardware::cash_drawer_open,hardware::open_customer_display,hardware::close_customer_display,updater::check_update,updater::install_update,supplier_invoice,supplier_update_customer,supplier_stock_count,supplier_open_stock_counts,supplier_report_problem])
         .run(tauri::generate_context!())
         .expect("error while running FIXI Caisse Windows");
 }

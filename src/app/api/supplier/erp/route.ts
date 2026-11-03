@@ -9,6 +9,14 @@ import {supplierCashSummary} from '@/lib/supplier-cash-ledger';
 
 const allow=(role:SupplierRole,roles:SupplierRole[])=>roles.includes(role);
 const money=(v:any)=>Math.round(Number(v||0)*1000)/1000;
+/** Tarif client (détail/gros) et remise négociée 0–50 %, seulement si l'utilisateur peut fixer des conditions commerciales. */
+function customerPricing(b:any,canSet:boolean){
+ if(!canSet)return {};
+ const out:any={};
+ if(b.priceMode!==undefined)out.priceMode=String(b.priceMode).toUpperCase()==='WHOLESALE'?'WHOLESALE':'RETAIL';
+ if(b.discountPct!==undefined){const v=Number(b.discountPct);out.discountPct=Number.isFinite(v)?Math.min(50,Math.max(0,Math.round(v*100)/100)):0}
+ return out;
+}
 
 async function openCash(companyId:string,accountId:string){
  return prisma.supplierErpCashSession.findFirst({where:{companyId,accountId,status:'OPEN'},orderBy:{openedAt:'desc'}});
@@ -187,8 +195,21 @@ export async function POST(req:Request){
   if(action==='CUSTOMER'){
    if(!allow(s.role,['OWNER','ADMIN','MANAGER','SALES','CASHIER','ACCOUNTANT']))return bad('FORBIDDEN',403);
    if(!b.name)return bad('Nom client requis');
-   const x=await prisma.supplierErpCustomer.create({data:{companyId:s.companyId,name:String(b.name).trim(),phone:b.phone||null,email:b.email||null,address:b.address||null,region:b.region||null,taxId:b.taxId||null,creditLimit:Number(b.creditLimit||0),notes:b.notes||null}});
+   const pricing=customerPricing(b,allow(s.role,['OWNER','ADMIN','MANAGER']));
+   const x=await prisma.supplierErpCustomer.create({data:{companyId:s.companyId,name:String(b.name).trim(),phone:b.phone||null,email:b.email||null,address:b.address||null,region:b.region||null,taxId:b.taxId||null,creditLimit:Number(b.creditLimit||0),notes:b.notes||null,...pricing}});
    await audit(s.companyId,s.id,'CREATE','CUSTOMER',x.id,{name:x.name});return ok(plain(x),{status:201});
+  }
+
+  if(action==='CUSTOMER_UPDATE'){
+   // Tarif, remise négociée, plafond et coordonnées d'un client ; les conditions commerciales sont réservées aux responsables.
+   if(!allow(s.role,['OWNER','ADMIN','MANAGER']))return bad('FORBIDDEN',403);
+   const c=await prisma.supplierErpCustomer.findFirst({where:{id:String(b.id||''),companyId:s.companyId}});if(!c)return bad('Client introuvable',404);
+   const data:any={...customerPricing(b,true)};
+   for(const k of ['phone','email','address','region','taxId','notes'])if(typeof b[k]==='string')data[k]=b[k].trim().slice(0,240)||null;
+   if(typeof b.name==='string'&&b.name.trim().length>=2)data.name=b.name.trim().slice(0,160);
+   if(b.creditLimit!==undefined){const v=Number(b.creditLimit);if(!Number.isFinite(v)||v<0)return bad('Plafond invalide',400);data.creditLimit=money(v)}
+   const x=await prisma.supplierErpCustomer.update({where:{id:c.id},data});
+   await audit(s.companyId,s.id,'UPDATE','CUSTOMER',x.id,{fields:Object.keys(data)});return ok(plain(x));
   }
 
   if(action==='EXPENSE'){

@@ -4,6 +4,10 @@ import {Search,ShoppingCart,Plus,Minus,Trash2,Banknote,WalletCards,UserRound,Rec
 import {api} from './ui';
 import {money} from '@/lib/format';
 import {BarcodeCamera} from './barcode-camera';
+import {PauseCircle,PlayCircle,PencilLine,FileText} from 'lucide-react';
+
+const NOTES=[50,20,10,5],COINS=[5,2,1,0.5,0.2,0.1,0.05,0.02,0.01];
+type Parked={id:string;at:string;label:string;cart:CartLine[];customerId:string;discount:number;pricing:'retail'|'wholesale'};
 
 type Props={products:any[];customers:any[];cashSessions:any[];methods:any[];warehouses:any[];warehouseStock:any[];session:any;onChanged:()=>void};
 type CartLine={product:any;quantity:number;unitPrice:number};
@@ -18,6 +22,13 @@ export function SupplierPos({products,customers,cashSessions,methods,warehouses,
  const[cashAmount,setCashAmount]=useState('0'),[cashNote,setCashNote]=useState('');
  const[cashOverview,setCashOverview]=useState<any>(null),[cashBusy,setCashBusy]=useState(false);
  const[showCashDetails,setShowCashDetails]=useState(false);const[lastSale,setLastSale]=useState<any>(null);
+ const[parked,setParked]=useState<Parked[]>([]),[freeOpen,setFreeOpen]=useState(false),[freeName,setFreeName]=useState(''),[freePrice,setFreePrice]=useState(''),[counting,setCounting]=useState(false),[denoms,setDenoms]=useState<Record<string,string>>({});
+ useEffect(()=>{try{setParked(JSON.parse(localStorage.getItem('fixi-supplier-pos-parked')||'[]'))}catch{}},[]);
+ const saveParked=(l:Parked[])=>{setParked(l);try{localStorage.setItem('fixi-supplier-pos-parked',JSON.stringify(l))}catch{}};
+ const counted=Math.round([...NOTES,...COINS].reduce((a,v)=>a+v*Math.max(0,Math.trunc(Number(denoms[v])||0)),0)*1000)/1000;
+ useEffect(()=>{if(counting)setCashAmount(String(counted))},[counted,counting]);
+ const customer=customers.find(c=>c.id===customerId);
+ const customerDue=customer?Math.max(0,Number(customer.due??0)):0;
  const openSession=cashSessions.find(x=>x.status==='OPEN'&&(!x.accountId||x.accountId===session.id));const effectiveWarehouseId=openSession?.warehouseId??warehouseId;
  async function refreshCash(){
    setCashBusy(true);
@@ -42,12 +53,21 @@ export function SupplierPos({products,customers,cashSessions,methods,warehouses,
  const total=Math.max(0,Math.round((subtotal-Math.max(0,discount)+tax)*1000)/1000);const paid=payments.reduce((a,p)=>a+Math.max(0,Number(p.amount||0)),0);const due=Math.max(0,total-paid);
  function productPrice(p:any){return pricing==='wholesale'?Number(p.wholesalePrice??p.price):Number(p.retailPrice??p.price)}
  function detect(code:string){const key=code.trim().toLowerCase();const p=products.find(x=>String(x.barcode||'').trim().toLowerCase()===key||String(x.sku||'').trim().toLowerCase()===key);setScanner(false);if(!p){setQ(code);setErr('Aucun produit trouvé pour le code '+code);return}setQ('');add(p)}
- function available(p:any){if(effectiveWarehouseId){const r=warehouseStock.find(x=>x.warehouseId===effectiveWarehouseId&&x.productId===p.id);return Math.max(0,Number(r?.quantity||0)-Number(r?.reserved||0))}return Math.max(0,Number(p.stock||0)-Number(p.reservedStock||0))}
+ function available(p:any){if(p.custom)return 1000;if(effectiveWarehouseId){const r=warehouseStock.find(x=>x.warehouseId===effectiveWarehouseId&&x.productId===p.id);return Math.max(0,Number(r?.quantity||0)-Number(r?.reserved||0))}return Math.max(0,Number(p.stock||0)-Number(p.reservedStock||0))}
  function add(p:any){const av=available(p);if(av<=0){setErr('Stock indisponible pour '+p.name+(effectiveWarehouseId?' dans ce dépôt':''));return}setErr('');setCart(cur=>{const x=cur.find(l=>l.product.id===p.id);if(x){if(x.quantity>=av)return cur;return cur.map(l=>l.product.id===p.id?{...l,quantity:l.quantity+1}:l)}return [...cur,{product:p,quantity:1,unitPrice:productPrice(p)}]})}
  function qty(id:string,delta:number){setCart(cur=>cur.map(l=>l.product.id===id?{...l,quantity:Math.max(1,Math.min(available(l.product),l.quantity+delta))}:l))}
  function setPrice(id:string,v:number){setCart(cur=>cur.map(l=>l.product.id===id?{...l,unitPrice:Math.max(0,v)}:l))}
  function remove(id:string){setCart(cur=>cur.filter(l=>l.product.id!==id))}
- function updatePricing(v:'retail'|'wholesale'){setPricing(v);setCart(cur=>cur.map(l=>({...l,unitPrice:v==='wholesale'?Number(l.product.wholesalePrice??l.product.price):Number(l.product.retailPrice??l.product.price)})))}
+ function basePrice(p:any,v:'retail'|'wholesale'){return v==='wholesale'?Number(p.wholesalePrice??p.price):Number(p.retailPrice??p.price)}
+ function updatePricing(v:'retail'|'wholesale',pct=Number(customer?.discountPct||0)){setPricing(v);setCart(cur=>cur.map(l=>l.product.custom?l:({...l,unitPrice:Math.round(basePrice(l.product,v)*(1-pct/100)*1000)/1000})))}
+ // Le client choisi impose son tarif (détail/gros) et sa remise négociée.
+ function chooseCustomer(id:string){setCustomerId(id);const c=customers.find(x=>x.id===id);updatePricing(c?.priceMode==='WHOLESALE'?'wholesale':'retail',Number(c?.discountPct||0))}
+ function addFree(e:React.FormEvent){e.preventDefault();const price=Math.round(Number(freePrice.replace(',','.'))*1000)/1000;if(freeName.trim().length<2||!(price>0))return setErr('Nom et prix de l’article libre requis.');
+  setCart(cur=>[...cur,{product:{id:'custom-'+crypto.randomUUID(),name:freeName.trim(),sku:'Article libre',custom:true,taxRate:0},quantity:1,unitPrice:price}]);setFreeName('');setFreePrice('');setFreeOpen(false);setErr('')}
+ function park(){if(!cart.length)return;saveParked([{id:crypto.randomUUID(),at:new Date().toISOString(),label:customer?.name||('Client '+(parked.length+1)),cart,customerId,discount,pricing},...parked].slice(0,12));setCart([]);setCustomerId('');setDiscount(0);setMsg('Panier mis en attente.')}
+ function resume(id:string){const x=parked.find(p=>p.id===id);if(!x)return;const rest=parked.filter(p=>p.id!==id);if(cart.length)rest.unshift({id:crypto.randomUUID(),at:new Date().toISOString(),label:customer?.name||('Client '+(parked.length+1)),cart,customerId,discount,pricing});
+  setCart(x.cart);setCustomerId(x.customerId);setDiscount(x.discount);setPricing(x.pricing);saveParked(rest)}
+ async function invoice(){if(!lastSale)return;setBusy(true);setErr('');try{const r=await api('/api/supplier/documents/from-sale',{method:'POST',body:JSON.stringify({saleId:lastSale.id})});window.open('/supplier/commercial-documents/'+r.document.id,'_blank')}catch(e:any){setErr(e.message)}finally{setBusy(false)}}
  function payment(i:number,key:keyof PaymentLine,value:any){setPayments(cur=>cur.map((p,n)=>n===i?{...p,[key]:key==='amount'?Number(value):value}:p))}
  function addPayment(){setPayments(cur=>[...cur,{method:methods.find(m=>m.active&&m.code!=='CREDIT'&&!cur.some(x=>x.method===m.code))?.code||'CARD',amount:0}])}
  async function checkout(){
@@ -56,7 +76,7 @@ export function SupplierPos({products,customers,cashSessions,methods,warehouses,
   if(paid>total+0.001)return setErr('Le total des paiements dépasse le total de la vente.');
   setBusy(true);setErr('');setMsg('');
   try{
-   const sale=await api('/api/supplier/erp',{method:'POST',body:JSON.stringify({action:'SALE',warehouseId:effectiveWarehouseId||null,customerId:customerId||null,items:cart.map(l=>({productId:l.product.id,quantity:l.quantity,unitPrice:l.unitPrice})),discount,tax,note:saleNote.trim()||null,payments:payments.filter(p=>p.amount>0),dueAt:due>0?new Date(Date.now()+7*86400000).toISOString():null})});
+   const sale=await api('/api/supplier/erp',{method:'POST',body:JSON.stringify({action:'SALE',warehouseId:effectiveWarehouseId||null,customerId:customerId||null,items:cart.map(l=>l.product.custom?{custom:true,name:l.product.name,quantity:l.quantity,unitPrice:l.unitPrice}:{productId:l.product.id,quantity:l.quantity,unitPrice:l.unitPrice}),discount,tax,note:saleNote.trim()||null,payments:payments.filter(p=>p.amount>0),dueAt:due>0?new Date(Date.now()+7*86400000).toISOString():null})});
    setLastSale(sale);setMsg('Vente '+sale.reference+' enregistrée avec succès.');try{localStorage.removeItem('fixi-supplier-pos-draft')}catch{}setCart([]);setDiscount(0);setSaleNote('');setPayments([{method:'CASH',amount:0}]);setCustomerId('');onChanged();void refreshCash();
   }catch(e:any){setErr(e.message||'Vente impossible')}finally{setBusy(false)}
  }
@@ -79,7 +99,8 @@ export function SupplierPos({products,customers,cashSessions,methods,warehouses,
   {err&&<div className="supplier-pos-alert error"><X/>{err}</div>}{msg&&<div className="supplier-pos-alert success"><CheckCircle2/>{msg}{lastSale&&<><button type="button" onClick={()=>window.open('/supplier/documents/'+lastSale.id,'_blank')}>
      <Printer/> Facture A4</button>
      <button type="button" onClick={()=>window.open('/supplier/documents/'+lastSale.id+'?format=ticket','_blank')}>
-       <ReceiptText/> Ticket 80 mm</button></>}</div>}
+       <ReceiptText/> Ticket 80 mm</button>
+     <button type="button" disabled={busy} onClick={()=>void invoice()}><FileText/> Facture numérotée</button></>}</div>}
   <section className="fixi-pos-cash-dashboard" aria-label="Suivi de caisse du fournisseur">
     <div className="fixi-pos-cash-heading">
       <div><span className="smart-kicker"><ClipboardCheck size={15}/> CONTRÔLE DE CAISSE</span>
@@ -129,7 +150,13 @@ export function SupplierPos({products,customers,cashSessions,methods,warehouses,
    {cart.length>0&&<a href="#fx-pos-cart" className="fx-pos-cartbar"><span><b>{cart.reduce((a,l)=>a+l.quantity,0)} article(s)</b><small>Voir le panier et encaisser</small></span><strong>{total.toFixed(3)}</strong></a>}
    <aside className="supplier-pos-cart" id="fx-pos-cart">
     <div className="supplier-pos-cart-title"><div><ShoppingCart/><span><b>Panier</b><small>{cart.reduce((a,l)=>a+l.quantity,0)} article(s)</small></span></div><button onClick={()=>setCart([])} disabled={!cart.length}>Vider</button></div>
-    <label className="supplier-pos-customer"><UserRound/><select value={customerId} onChange={e=>setCustomerId(e.target.value)}><option value="">Client comptoir</option>{customers.filter(c=>c.active!==false).map(c=><option key={c.id} value={c.id}>{c.name}{Number(c.creditLimit)>0?' · crédit '+money(c.creditLimit):''}</option>)}</select></label>
+    <div className="fx-pos-tools"><button type="button" onClick={()=>setFreeOpen(v=>!v)}><PencilLine size={15}/> Article libre</button><button type="button" disabled={!cart.length} onClick={park}><PauseCircle size={15}/> En attente</button></div>
+    {freeOpen&&<form className="fx-pos-free" onSubmit={addFree}><input className="input" autoFocus placeholder="Main-d’œuvre, accessoire…" value={freeName} maxLength={120} onChange={e=>setFreeName(e.target.value)}/><input className="input" type="number" min={0.001} step="0.001" placeholder="Prix DT" value={freePrice} onChange={e=>setFreePrice(e.target.value)}/><button className="btn btn-primary btn-sm">Ajouter</button></form>}
+    {parked.length>0&&<div className="fx-pos-parked">{parked.map(x=><button type="button" key={x.id} onClick={()=>resume(x.id)}><PlayCircle size={14}/> {x.label}<small>{x.cart.reduce((a,l)=>a+l.quantity,0)}</small></button>)}</div>}
+    <label className="supplier-pos-customer"><UserRound/><select value={customerId} onChange={e=>chooseCustomer(e.target.value)}><option value="">Client comptoir</option>{customers.filter(c=>c.active!==false).map(c=><option key={c.id} value={c.id}>{c.name}{Number(c.creditLimit)>0?' · crédit '+money(c.creditLimit):''}</option>)}</select></label>
+    {customer&&(Number(customer.creditLimit)>0||customerDue>0||customer.priceMode==='WHOLESALE'||Number(customer.discountPct)>0)&&<p className={'fx-pos-credit'+(Number(customer.creditLimit)>0&&customerDue+due>Number(customer.creditLimit)?' is-over':'')}>
+     {customer.priceMode==='WHOLESALE'?'Tarif gros':'Tarif détail'}{Number(customer.discountPct)>0?' · remise '+Number(customer.discountPct)+' %':''}{customerDue>0?' · doit déjà '+money(customerDue):''}{Number(customer.creditLimit)>0?' · plafond '+money(customer.creditLimit):''}
+     {Number(customer.creditLimit)>0&&customerDue+due>Number(customer.creditLimit)&&<b> — plafond dépassé avec cette vente</b>}</p>}
     <div className="supplier-pos-lines">{cart.map(l=><div className="supplier-pos-line" key={l.product.id}><div className="supplier-pos-line-main"><div><b>{l.product.name}</b><span>{l.product.sku}</span></div><button onClick={()=>remove(l.product.id)}><Trash2/></button></div><div className="supplier-pos-line-controls"><div><button onClick={()=>qty(l.product.id,-1)}><Minus/></button><b>{l.quantity}</b><button onClick={()=>qty(l.product.id,1)}><Plus/></button></div><label><input type="number" min={0} step="0.001" value={l.unitPrice} onChange={e=>setPrice(l.product.id,Number(e.target.value))}/><span>DT</span></label><strong>{money(l.unitPrice*l.quantity)}</strong></div></div>)}{!cart.length&&<div className="supplier-pos-cart-empty"><ShoppingCart/><b>Panier vide</b><span>Scannez ou choisissez un produit.</span></div>}</div>
     <div className="supplier-pos-totals"><div><span>Sous-total</span><b>{money(subtotal)}</b></div><label><span><Percent/> Remise</span><input type="number" min={0} max={subtotal} step="0.001" value={discount} onChange={e=>setDiscount(Number(e.target.value))}/></label><div><span>Taxes</span><b>{money(tax)}</b></div><div className="grand"><span>Total</span><b>{money(total)}</b></div></div>
     <div className="supplier-pos-payments"><div className="supplier-pos-pay-head"><b>Règlements</b><button onClick={addPayment}><Plus/> Ajouter</button></div>{payments.map((p,i)=><div key={i} className="supplier-payment-line"><select value={p.method} onChange={e=>payment(i,'method',e.target.value)}>{methods.filter(m=>m.active&&m.code!=='CREDIT').map(m=><option key={m.id||m.code} value={m.code}>{m.name}</option>)}</select><input type="number" min={0} step="0.001" value={p.amount||''} placeholder="0.000" onChange={e=>payment(i,'amount',e.target.value)}/>{payments.length>1&&<button onClick={()=>setPayments(cur=>cur.filter((_,n)=>n!==i))}><X/></button>}</div>)}<button className="supplier-pay-balance" onClick={()=>setPayments(cur=>{
@@ -160,6 +187,8 @@ export function SupplierPos({products,customers,cashSessions,methods,warehouses,
         <div><span>Sorties & dépenses</span><b>{money(Number(cashOverview?.summary?.outgoing||0)+Number(cashOverview?.summary?.expenses||0))}</b></div>
         <div className="total"><span>Théorique attendu</span><b>{money(cashOverview?.summary?.expected||0)}</b></div>
       </div>}
+      <button type="button" className="btn btn-soft btn-sm fx-count-toggle" onClick={()=>setCounting(v=>!v)}><Calculator size={15}/> {counting?'Saisir le total directement':'Compter billets et pièces'}</button>
+      {counting&&<div className="fx-denoms">{[...NOTES,...COINS].map(v=><label key={v}><span>{v>=1?v+' DT':Math.round(v*1000)+' mil.'}</span><input type="number" min={0} step={1} inputMode="numeric" value={denoms[v]||''} placeholder="0" onChange={e=>setDenoms(d=>({...d,[v]:e.target.value.replace(/\D/g,'')}))}/><b>{money(v*(Number(denoms[v])||0))}</b></label>)}</div>}
       <label className="label">{cashModal==='open'?'Fond initial compté (DT)':'Espèces réellement comptées (DT)'}</label>
       <div className="supplier-money-input"><input autoFocus inputMode="decimal" type="number" min={0} step="0.001"
         value={cashAmount} placeholder="0.000" onChange={e=>setCashAmount(e.target.value)}/><b>DT</b></div>

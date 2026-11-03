@@ -70,6 +70,9 @@ export async function GET(req:Request){
    period:{days,from,to:new Date()},
    metrics:{grossRevenue,returnsTotal,refundsTotal,revenue,cogs,grossProfit:revenue-cogs,expenses:expenseTotal,netProfit:revenue-cogs-expenseTotal,collected,out,cashFlow:collected-out-expenseTotal,purchaseTotal,receivables,payables,stockCost,stockRetail,stockPotentialMargin:stockRetail-stockCost,salesCount:sales.length,returnCount:returns.length,purchaseCount:purchases.length},
    topProducts:[...byProduct.values()].sort((a,b)=>b.revenue-a.revenue).slice(0,20),
+   // Rentabilité : les articles qui rapportent le plus, et ceux vendus presque sans marge (ou à perte).
+   topProfit:[...byProduct.values()].filter(x=>x.revenue>0).sort((a,b)=>b.profit-a.profit).slice(0,10).map(x=>({...x,marginPct:Math.round(x.profit/x.revenue*1000)/10})),
+   lowMargin:[...byProduct.values()].filter(x=>x.revenue>0&&x.cost>0&&x.profit/x.revenue<0.1).map(x=>({...x,marginPct:Math.round(x.profit/x.revenue*1000)/10})).sort((a,b)=>a.marginPct-b.marginPct).slice(0,15),
    salesByCategory:[...byCategory.values()].sort((a,b)=>b.revenue-a.revenue),
    salesByBrand:[...byBrand.values()].sort((a,b)=>b.revenue-a.revenue),
    topCustomers:[...byCustomer.values()].sort((a,b)=>b.revenue-a.revenue).slice(0,20),

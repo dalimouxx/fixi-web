@@ -1,4 +1,5 @@
 'use client';
+import {ReportProblemButton} from './report-problem';
 import {TextSizeToggle} from './text-size-toggle';
 import {LangToggle} from './lang-toggle';
 import {orderStops,mapsRouteUrl} from '@/lib/route-order';
@@ -112,6 +113,7 @@ export function DriverApp({session}:{session:any}){
       <Truck aria-hidden="true"/><span><b>Fixi Livreur</b><small>{session.companyName}</small></span>
     </div>
     <div className="fixi-driver-header-state">
+      <ReportProblemButton space="delivery"/>
       <div className="driver-live-state" aria-label={online?'Connexion active':'Connexion perdue'}>
         {online?<Wifi size={17}/>:<WifiOff size={17}/>}<span>{online?'En ligne':'Hors ligne'}</span>
       </div>

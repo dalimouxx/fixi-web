@@ -2052,6 +2052,9 @@ model SupplierErpCustomer {
   region      String?
   taxId       String?
   creditLimit Decimal  @default(0) @db.Decimal(12,3)
+  // Tarif appliqué automatiquement à la caisse : RETAIL (détail) ou WHOLESALE (gros), plus une remise négociée en %.
+  priceMode   String   @default("RETAIL")
+  discountPct Decimal  @default(0) @db.Decimal(5,2)
   notes       String?
   active      Boolean  @default(true)
   createdAt   DateTime @default(now())
@@ -2089,6 +2092,7 @@ model SupplierCommercialDocument {
   subtotal    Decimal  @default(0) @db.Decimal(12,3)
   discount    Decimal  @default(0) @db.Decimal(12,3)
   tax         Decimal  @default(0) @db.Decimal(12,3)
+  stamp       Decimal  @default(0) @db.Decimal(12,3)
   total       Decimal  @default(0) @db.Decimal(12,3)
   validUntil  DateTime?
   issuedAt    DateTime @default(now())
@@ -2671,4 +2675,25 @@ model ImeiReport {
 
   @@index([imei])
   @@unique([imei, shopId])
+}
+
+/// Problème signalé depuis l'application (atelier, fournisseur, livreur ou caisse Windows) — visible dans l'admin Fixi.
+model ProblemReport {
+  id         String    @id @default(cuid())
+  source     String
+  shopId     String?
+  companyId  String?
+  reporter   String?
+  contact    String?
+  message    String
+  page       String?
+  userAgent  String?
+  appVersion String?
+  lastError  String?
+  screenshot String?
+  status     String    @default("OPEN")
+  createdAt  DateTime  @default(now())
+  resolvedAt DateTime?
+
+  @@index([status, createdAt])
 }
