@@ -1,0 +1,11 @@
+{
+  "identifier": "default",
+  "description": "Default capability for FIXI Caisse Windows",
+  "windows": [
+    "main",
+    "client"
+  ],
+  "permissions": [
+    "core:default"
+  ]
+}
