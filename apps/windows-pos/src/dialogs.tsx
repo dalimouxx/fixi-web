@@ -52,7 +52,7 @@ export function DiscountDialog({lines,subtotal,discount,onApply,onClose}:{lines:
  </Modal>;
 }
 
-export function SettingsDialog({settings,onChange,onClose,version,onCheckUpdate,demo,onRemoveCashier}:{settings:Settings;onChange:(s:Settings)=>void;onClose:()=>void;version:string;onCheckUpdate:()=>void;demo:boolean;onRemoveCashier?:()=>void}){
+export function SettingsDialog({settings,onChange,onClose,version,onCheckUpdate,demo,onRemoveCashier,onReport}:{settings:Settings;onChange:(s:Settings)=>void;onClose:()=>void;version:string;onCheckUpdate:()=>void;demo:boolean;onRemoveCashier?:()=>void;onReport?:()=>void}){
  const [printers,setPrinters]=useState<string[]>([]),[note,setNote]=useState('');
  useEffect(()=>{void invoke<string[]>('list_printers').then(setPrinters).catch(()=>setPrinters([]))},[]);
  const set=(patch:Partial<Settings>)=>onChange({...settings,...patch});
@@ -70,6 +70,7 @@ export function SettingsDialog({settings,onChange,onClose,version,onCheckUpdate,
     <div className="v5-seg v5-seg--block" role="group"><button type="button" aria-pressed={settings.customerDisplay} onClick={()=>void toggleDisplay(true)}>Afficher</button><button type="button" aria-pressed={!settings.customerDisplay} onClick={()=>void toggleDisplay(false)}>Masquer</button></div></section>
    <section><h3 className="v6-sub"><RefreshCw size={17}/> Mises à jour</h3><p className="v5-hint">Version installée : <b>{version||'—'}</b>. La caisse vérifie toute seule au démarrage.</p>
     <button className="v5-btn v5-btn--ghost v5-btn--sm" disabled={demo} onClick={onCheckUpdate}><RefreshCw size={15}/> Vérifier maintenant</button></section>
+   {onReport&&<section><h3 className="v6-sub">Un souci ?</h3><p className="v5-hint">Décrivez le problème : l’équipe Fixi le reçoit avec la version de la caisse.</p><button className="v5-btn v5-btn--ghost v5-btn--sm" onClick={onReport}>Signaler un problème</button></section>}
    {onRemoveCashier&&<section><h3 className="v6-sub">Caissier</h3><p className="v5-hint">Retire le caissier connecté de ce PC (son code PIN est effacé, son compte FIXI reste intact).</p><button className="v5-btn v5-btn--ghost v5-btn--sm v6-danger" onClick={onRemoveCashier}>Retirer ce caissier du PC</button></section>}
   </div>
   {note&&<p className="v6-note" role="status">{note}</p>}

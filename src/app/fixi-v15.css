@@ -610,3 +610,40 @@ body:has(.fx-counter) .global-lang-toggle,body:has(.fx-counter) .fx-install{disp
 .fx-catalog-cta{display:flex;gap:8px;flex-wrap:wrap}
 .fx-in-stock{color:var(--fx-success);font-weight:700}.fx-out-stock{color:var(--fx-danger);font-weight:700}
 .fx-route-tools{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+
+/* ===== 16.3 : signaler un problème, caisse web ===== */
+.fx-report-shot{position:relative;border:1px solid var(--fx-line);border-radius:var(--fx-radius);overflow:hidden}
+.fx-report-shot img{display:block;width:100%;max-height:220px;object-fit:contain;background:var(--fx-surface-2)}
+.fx-report-shot .fx-icon-btn{position:absolute;top:8px;inset-inline-end:8px;background:var(--fx-surface)}
+.fx-report-attach{cursor:pointer}
+.fx-report-done{display:grid;gap:10px;text-align:center;padding:10px 0}
+.fx-report-done b{font-size:18px}
+.fx-problems .fx-seg{display:inline-flex;padding:3px;gap:3px;background:var(--fx-surface-3);border-radius:var(--fx-radius-sm)}
+.fx-problems .fx-seg button{border:0;background:transparent;padding:7px 12px;border-radius:8px;font-weight:600;color:var(--fx-muted)}
+.fx-problems .fx-seg button[aria-pressed=true]{background:var(--fx-surface);color:var(--fx-ink);box-shadow:var(--fx-shadow-sm)}
+.fx-problem{display:grid;gap:6px;padding:14px 16px;border:1px solid var(--fx-line);border-radius:var(--fx-radius);background:var(--fx-surface)}
+.fx-problem header{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.fx-problem header time{margin-inline-start:auto;color:var(--fx-muted);font-size:12px}
+.fx-problem p{margin:0;white-space:pre-wrap}
+.fx-problem small{color:var(--fx-muted);overflow-wrap:anywhere}
+.fx-problem pre{margin:0;padding:8px 10px;border-radius:8px;background:var(--fx-surface-3);font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere;max-height:120px;overflow:auto}
+.fx-problem-actions{display:flex;gap:6px;flex-wrap:wrap}
+.fx-problem-shot{position:fixed;inset:0;z-index:1300;display:grid;place-items:center;padding:20px;background:rgba(28,25,23,.8)}
+.fx-problem-shot img{max-width:100%;max-height:100%;border-radius:12px}
+.fx-problem-shot .fx-icon-btn{position:absolute;top:16px;inset-inline-end:16px;background:var(--fx-surface)}
+.fx-pos-tools{display:flex;gap:6px;margin:8px 0}
+.fx-pos-tools button{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:38px;border:1px solid var(--fx-line);border-radius:10px;background:var(--fx-surface);font-weight:600;font-size:13px;color:var(--fx-ink-2)}
+.fx-pos-tools button:disabled{color:var(--fx-line-strong)}
+.fx-pos-free{display:grid;grid-template-columns:1fr 100px auto;gap:6px;margin-bottom:8px}
+.fx-pos-parked{display:flex;gap:6px;overflow-x:auto;margin-bottom:8px;scrollbar-width:none}
+.fx-pos-parked button{flex:none;display:inline-flex;align-items:center;gap:5px;min-height:32px;padding:0 10px;border:1px dashed var(--fx-brand);border-radius:999px;background:var(--fx-brand-soft);color:var(--fx-brand-ink);font-weight:600;font-size:12px}
+.fx-pos-parked small{min-width:18px;height:18px;display:grid;place-items:center;border-radius:999px;background:var(--fx-brand);color:#fff;font-size:11px}
+.fx-pos-credit{margin:6px 0 0;padding:8px 10px;border-radius:10px;background:var(--fx-surface-2);color:var(--fx-muted);font-size:12.5px}
+.fx-pos-credit.is-over{background:var(--fx-danger-soft);color:var(--fx-danger)}
+.fx-count-toggle{margin:4px 0 8px}
+.fx-denoms{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;margin-bottom:10px}
+.fx-denoms label{display:grid;grid-template-columns:60px 1fr;grid-template-rows:auto auto;gap:2px 6px;align-items:center;padding:6px 8px;border:1px solid var(--fx-line);border-radius:10px}
+.fx-denoms span{font-weight:700;font-size:13px}
+.fx-denoms input{height:32px;border:1px solid var(--fx-line-strong);border-radius:8px;text-align:center;font-weight:700;background:var(--fx-surface);color:var(--fx-ink)}
+.fx-denoms b{grid-column:1/-1;font-size:11.5px;font-weight:500;color:var(--fx-muted);text-align:end}
+.supplier-alert-list strong.negative{color:var(--fx-danger)}

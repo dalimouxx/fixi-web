@@ -1,4 +1,5 @@
 'use client';
+import {ReportProblemButton} from './report-problem';
 import {useEffect,useMemo,useState} from 'react';
 import Link from 'next/link';
 import {
@@ -167,7 +168,7 @@ export function SupplierDashboard({session}:{session:any}){
     </aside>
 
     <main>
-      <header><div className="fixi-supplier-header-title"><button type="button" className="fixi-supplier-menu-button" aria-label="Ouvrir les modules fournisseur" aria-expanded={mobileNavOpen} onClick={()=>setMobileNavOpen(true)}><span>☰</span></button><div><span>{currentGroup&&currentGroup.label!==nav.find(x=>x[0]===tab)?.[1]?currentGroup.label:'Fixi Fournisseur'}</span><h1>{nav.find(x=>x[0]===tab)?.[1]}</h1></div></div><div className="toolbar"><SupplierSearch products={products} orders={orders} customers={erp.customers||[]} onProduct={v=>{setTab('products' as Tab);setQ(v)}} onOrder={v=>{setTab('orders' as Tab);setOrderView('active');setStage('ALL');setOrderSearch(v)}} onCustomer={()=>setTab('clients' as Tab)}/><RealtimeNotificationCenter apiUrl="/api/supplier/notifications" eventsUrl="/api/supplier/events" storageKey="fixi-supplier-notifications" onEvent={()=>setRefresh(x=>x+1)} onNavigate={navigateNotification}/><InstallAppButton label="Installer"/><button className="btn btn-ghost" onClick={()=>setRefresh(x=>x+1)}><RefreshCw/> Actualiser</button></div></header>
+      <header><div className="fixi-supplier-header-title"><button type="button" className="fixi-supplier-menu-button" aria-label="Ouvrir les modules fournisseur" aria-expanded={mobileNavOpen} onClick={()=>setMobileNavOpen(true)}><span>☰</span></button><div><span>{currentGroup&&currentGroup.label!==nav.find(x=>x[0]===tab)?.[1]?currentGroup.label:'Fixi Fournisseur'}</span><h1>{nav.find(x=>x[0]===tab)?.[1]}</h1></div></div><div className="toolbar"><SupplierSearch products={products} orders={orders} customers={erp.customers||[]} onProduct={v=>{setTab('products' as Tab);setQ(v)}} onOrder={v=>{setTab('orders' as Tab);setOrderView('active');setStage('ALL');setOrderSearch(v)}} onCustomer={()=>setTab('clients' as Tab)}/><ReportProblemButton space="supplier"/><RealtimeNotificationCenter apiUrl="/api/supplier/notifications" eventsUrl="/api/supplier/events" storageKey="fixi-supplier-notifications" onEvent={()=>setRefresh(x=>x+1)} onNavigate={navigateNotification}/><InstallAppButton label="Installer"/><button className="btn btn-ghost" onClick={()=>setRefresh(x=>x+1)}><RefreshCw/> Actualiser</button></div></header>
       {currentGroup&&currentGroup.items.length>1&&<nav className="fx-subtabs" aria-label={currentGroup.label}>
         {currentGroup.items.map(([key,label])=><button type="button" key={key} aria-current={tab===key?'page':undefined} onClick={()=>setTab(key as Tab)}>{label}</button>)}
       </nav>}
@@ -248,7 +249,7 @@ export function SupplierDashboard({session}:{session:any}){
 
       {tab==='finance'&&<><div className="supplier-kpis"><K icon={BadgeDollarSign} label="CA marketplace" value={money(revenue)}/><K icon={Banknote} label="Ventes directes" value={money(directSales)}/><K icon={AlertTriangle} label="Créances clients" value={money(dueSales)}/><K icon={Warehouse} label="Dettes achats" value={money(duePurchases)}/></div><section className="supplier-panel"><div className="supplier-section-head"><div><b>Finance fournisseur</b><span>Ventes, paiements, achats et dépenses enregistrés.</span></div><button className="btn btn-soft btn-sm" onClick={newExpense}><Plus/> Dépense</button></div><div className="supplier-metrics"><div><span>Encaissements directs</span><b>{money(directPaid)}</b></div><div><span>Dépenses</span><b>{money(expensesTotal)}</b></div><div><span>Achats</span><b>{money(purchaseTotal)}</b></div><div><span>Résultat de flux</span><b>{money(revenue+directPaid-expensesTotal-purchaseTotal)}</b></div></div></section></>}
 
-      {tab==='cashier'&&<SupplierPos products={products} customers={erp.customers||[]} cashSessions={erp.cashSessions||[]} methods={master.paymentMethods||[]} warehouses={advanced.warehouses||[]} warehouseStock={advanced.warehouseStock||[]} session={session} onChanged={()=>setRefresh(x=>x+1)}/>} 
+      {tab==='cashier'&&<SupplierPos products={products} customers={(erp.customers||[]).map((c:any)=>({...c,due:(erp.sales||[]).filter((x:any)=>x.customerId===c.id&&x.status!=='CANCELLED').reduce((a:number,x:any)=>a+Math.max(0,Number(x.total)-Number(x.paid)),0)}))} cashSessions={erp.cashSessions||[]} methods={master.paymentMethods||[]} warehouses={advanced.warehouses||[]} warehouseStock={advanced.warehouseStock||[]} session={session} onChanged={()=>setRefresh(x=>x+1)}/>} 
       {tab==='masters'&&<SupplierMasterData data={master} onChanged={()=>setRefresh(x=>x+1)}/>} 
 
       

@@ -11,13 +11,16 @@ import {matchScore} from './search';
 import {readJson,writeJson,defaultSettings,SETTINGS_KEY,type Settings} from './storage';
 import {waPhone,ticketMessage,waUrl} from './whatsapp';
 import {useArabic} from './i18n';
-import {Banknote,BookOpen,Boxes,Check,ChevronRight,CircleAlert,CircleCheck,CreditCard,Delete,HandCoins,Inbox,KeyRound,Landmark,Lock,LockOpen,LogIn,Minus,PackageOpen,PackageSearch,PanelLeftClose,PanelLeftOpen,Plus,Power,Printer,ReceiptText,RefreshCw,ScanBarcode,Search,ShieldCheck,ShoppingCart,Tags,Trash2,TriangleAlert,Truck,Undo2,UserPlus,UserRound,UserRoundCog,Users,Wallet,X,PencilLine,Percent,PauseCircle,PlayCircle,Settings2,WifiOff,CloudUpload,MessageCircle,Download,Flame,type LucideIcon} from 'lucide-react';
+import {InvoiceDialog,InvoicePrint,PaymentSlip,type InvoiceData,type PaymentSlipData} from './invoice';
+import {InventoryPage} from './inventory';
+import {ReportDialog} from './report';
+import {Banknote,BookOpen,Boxes,Check,ChevronRight,CircleAlert,CircleCheck,CreditCard,Delete,HandCoins,Inbox,KeyRound,Landmark,Lock,LockOpen,LogIn,Minus,PackageOpen,PackageSearch,PanelLeftClose,PanelLeftOpen,Plus,Power,Printer,ReceiptText,RefreshCw,ScanBarcode,Search,ShieldCheck,ShoppingCart,Tags,Trash2,TriangleAlert,Truck,Undo2,UserPlus,UserRound,UserRoundCog,Users,Wallet,X,PencilLine,Percent,PauseCircle,PlayCircle,Settings2,WifiOff,CloudUpload,MessageCircle,Download,Flame,ClipboardList,FileText,type LucideIcon} from 'lucide-react';
 import './style.css';
 import './v4.css';
 import './v5.css';
 
-type Product={id:string;name:string;sku:string;barcode?:string|null;category:string|null;price:number;wholesalePrice?:number|null;minStock?:number;stock:number;sold30?:number};
-type Customer={id:string;name:string;phone?:string|null};
+type Product={id:string;name:string;sku:string;barcode?:string|null;category:string|null;price:number;wholesalePrice?:number|null;minStock?:number;stock:number;sold30?:number;onHand?:number;tiers?:{minQty:number;unitPrice:number}[]};
+type Customer={id:string;name:string;phone?:string|null;taxId?:string|null;address?:string|null;creditLimit?:number;priceMode?:string;discountPct?:number;due?:number};
 type Boot={companyName:string;role:string;products:Product[];customers:Customer[];pinConfigured?:boolean;receiptProfile?:import('./TicketV4').ReceiptBusinessProfile|null;account?:{id:string;fullName:string}};
 type CustomLine={id:string;name:string;price:number;quantity:number};
 type SaleItem={productId:string;quantity:number;unitPrice:number}|{custom:true;name:string;quantity:number;unitPrice:number};
@@ -37,7 +40,7 @@ type Draft={cart:Record<string,number>;customerId:string;amount:string;method:st
 type DebtRequest={saleId?:string;customerId?:string;amount:number;method:string;reference:string};
 type ReturnRequest={sourceSaleId:string;items:{saleItemId:string;quantity:number;restock:boolean;condition:string;reason:string}[];refund:number;refundMethod:string;note:string;reference:string};
 type Result={exists:boolean;reference:string;record?:{reference?:string;remaining?:number}|null};
-type Page='caisse'|'produits'|'stock'|'clients'|'commandes'|'dettes'|'retours'|'historique'|'session'|'livreurs';
+type Page='caisse'|'produits'|'stock'|'clients'|'commandes'|'dettes'|'retours'|'historique'|'session'|'livreurs'|'inventaire';
 // Isolé (\u2066…\u2069) pour que « 185,000 DT » reste lisible en arabe.
 const money=(n:number)=>'\u2066'+new Intl.NumberFormat('fr-TN',{minimumFractionDigits:3,maximumFractionDigits:3}).format(n)+' DT\u2069';
 const initialServer='https://fixi-web.onrender.com';
@@ -53,12 +56,13 @@ const nav:NavItem[]=[
  {id:'livreurs',icon:Truck,label:'Recettes livreurs',hint:'Comptez l’argent rapporté par chaque livreur.'},
  {id:'produits',icon:BookOpen,label:'Catalogue',hint:'Prix détail et gros de chaque article.'},
  {id:'stock',icon:Boxes,label:'Stock',hint:'Les ruptures d’abord.'},
+ {id:'inventaire',icon:ClipboardList,label:'Inventaire',hint:'Scannez les articles du rayon, comparez avec le stock FIXI, corrigez.'},
 ];
 const navGroups:{label:string;items:Page[]}[]=[
  {label:'Vente',items:['caisse','historique','retours','session']},
  {label:'Clients',items:['clients','dettes']},
  {label:'Livraison',items:['commandes','livreurs']},
- {label:'Articles',items:['produits','stock']},
+ {label:'Articles',items:['produits','stock','inventaire']},
 ];
 const demo:Boot={companyName:'Mode démonstration',role:'DEMO',products:[
  {id:'d1',name:'Écran Samsung A04',sku:'A04-LCD',price:89,stock:12,category:'Afficheurs'},
@@ -90,6 +94,8 @@ function App(){
  const [settings,setSettingsState]=useState<Settings>(()=>({...defaultSettings,...readJson<Partial<Settings>>(SETTINGS_KEY,{})}));
  const [version,setVersion]=useState(''),[update,setUpdate]=useState<{version:string;url:string;sha256:string;notes?:string}|null>(null),[updating,setUpdating]=useState(false);
  const [cashSummary,setCashSummary]=useState<CashSummary|null>(null),[zData,setZData]=useState<CashSummary|null>(null);
+ const [invoiceFor,setInvoiceFor]=useState<{reference:string;customer?:Customer|null}|null>(null),[invoiceData,setInvoiceData]=useState<InvoiceData|null>(null),[paySlip,setPaySlip]=useState<PaymentSlipData|null>(null),[reportOpen,setReportOpen]=useState(false),[gridLimit,setGridLimit]=useState(120);
+ const gridEnd=useRef<HTMLDivElement>(null);
  const [me,setMe]=useState(''),[cashier,setCashier]=useState(''),[pickLogin,setPickLogin]=useState(''),[lockSwitch,setLockSwitch]=useState('');
  const scanRef=useRef<HTMLInputElement>(null);
  const saleRefFn=useRef<()=>void>(()=>{});
@@ -97,7 +103,14 @@ function App(){
  // Le stock affiché retire les ventes hors ligne pas encore envoyées, même après une synchronisation.
  const products=useMemo(()=>(boot?.products||[]).map(p=>queued[p.id]?{...p,stock:Math.max(0,p.stock-queued[p.id])}:p),[boot,queued]);
  const entries=Object.entries(cart).filter(([id,q])=>q>0&&products.some(p=>p.id===id)).map(([id,quantity])=>({product:products.find(p=>p.id===id)!,quantity}));
- const basePrice=(p:Product)=>priceMode==='WHOLESALE'&&p.wholesalePrice!==null&&p.wholesalePrice!==undefined?p.wholesalePrice:p.price;
+ const cust=boot?.customers.find(c=>c.id===customerId);
+ // Prix de base : tarif détail/gros, palier de quantité s'il est plus bas, puis remise négociée du client.
+ const basePrice=(p:Product,qty=cart[p.id]||1)=>{
+  let v=priceMode==='WHOLESALE'&&p.wholesalePrice!==null&&p.wholesalePrice!==undefined?p.wholesalePrice:p.price;
+  for(const t of p.tiers||[])if(qty>=t.minQty&&t.unitPrice>0&&t.unitPrice<v)v=t.unitPrice;
+  const pct=Math.min(50,Math.max(0,Number(cust?.discountPct||0)));
+  return Math.round(v*(1-pct/100)*1000)/1000;
+ };
  const priceFor=(p:Product)=>linePrice[p.id]!==undefined&&linePrice[p.id]>0?linePrice[p.id]:basePrice(p);
  const subtotal=useMemo(()=>Math.round((entries.reduce((v,x)=>v+x.quantity*priceFor(x.product),0)+custom.reduce((v,c)=>v+c.price*c.quantity,0))*1000)/1000,[entries,custom,priceMode,linePrice]);
  const discountValue=Math.min(subtotal,Math.max(0,cartDiscount));
@@ -250,6 +263,8 @@ function App(){
  }
  useEffect(()=>{if(!queue.length||!boot||boot.role==='DEMO')return;const t=window.setInterval(()=>void syncQueue(),30000);const on=()=>void syncQueue();window.addEventListener('online',on);return()=>{window.clearInterval(t);window.removeEventListener('online',on)}},[queue,boot,syncing]);
  function dropQueued(ref:string){if(!window.confirm('Supprimer cette vente hors ligne ? Elle ne sera jamais envoyée à FIXI.'))return;saveQueue(queue.filter(q=>q.reference!==ref))}
+ function chooseCustomer(id:string){setCustomerId(id);const c=boot?.customers.find(x=>x.id===id);if(c?.priceMode)setPriceMode(c.priceMode==='WHOLESALE'?'WHOLESALE':'RETAIL')}
+ async function updateCustomer(c:Customer,patch:Partial<Customer>){setError('');try{await invoke('supplier_update_customer',{customer:{id:c.id,...patch}});setBoot(b=>b?{...b,customers:b.customers.map(x=>x.id===c.id?{...x,...patch}:x)}:b);setMessage('Client '+c.name+' mis à jour.')}catch(e){setError(String(e))}}
  function park(){
   if(!lineCount||saleRef)return;
   const name=boot?.customers.find(c=>c.id===customerId)?.name;
@@ -303,6 +318,8 @@ function App(){
    const r=await invoke<{remaining:number;allocated:number}>('supplier_customer_payment',{payment:request});
    localStorage.removeItem(draftKey+':debt');setDebtPending(null);setDebtAmount('');
    setMessage('Règlement global confirmé : '+money(request.amount)+' sur '+r.allocated+' facture(s). Solde : '+money(r.remaining));
+   const who=customerDebts.find(x=>x.customerId===request!.customerId)?.customer||'Client';
+   printSlip({company:boot.companyName,customer:who,amount:request.amount,method:request.method,allocated:r.allocated,remaining:r.remaining,reference:request.reference,date:new Date().toLocaleString('fr-FR'),cashier});
    await load('dettes')
   }catch(e){const msg=String(e);setError(msg);
    if(/HTTP 40[1349]|versement refusé|Montant non valide/i.test(msg)){localStorage.removeItem(draftKey+':debt');setDebtPending(null)}
@@ -412,13 +429,17 @@ function App(){
  },[ticket?.reference,printRequest]);
  saleRefFn.current=()=>{if(page==='caisse')void sale()};
  useEffect(()=>{try{localStorage.setItem('fixi:v5:compact',compact?'1':'0')}catch{}},[compact]);
+ useEffect(()=>{setGridLimit(120)},[search,category]);
+ useEffect(()=>{const el=gridEnd.current;if(!el)return;const io=new IntersectionObserver(e=>{if(e[0]?.isIntersecting)setGridLimit(n=>n+120)},{rootMargin:'400px'});io.observe(el);return()=>io.disconnect()},[visible.length,gridLimit,page]);
  useEffect(()=>{if(!message)return;const t=window.setTimeout(()=>setMessage(''),5000);return()=>window.clearTimeout(t)},[message]);
  useEffect(()=>{if(!boot||!settings.customerDisplay||!lineCount)return;const g=Number(givenCash.replace(',','.'));const hasGiven=givenCash.trim()!==''&&Number.isFinite(g);
   publishDisplay({company:boot.companyName,logo,lines:[...entries.map(x=>({name:x.product.name,quantity:x.quantity,price:priceFor(x.product)})),...custom.map(c=>({name:c.name,quantity:c.quantity,price:c.price}))],discount:discountValue,total,given:hasGiven?g:null,change:hasGiven?Math.round((g-total)*1000)/1000:null})
  },[cart,custom,linePrice,cartDiscount,total,givenCash,settings.customerDisplay,boot]);
  useEffect(()=>{if(boot&&boot.role!=='DEMO'&&settings.customerDisplay)void invoke('open_customer_display').catch(()=>{})},[boot?.companyName]);
  useEffect(()=>{if(boot&&!pinConfigured&&boot.role!=='DEMO'&&cashier)setMessage('Activez un code PIN (en haut) pour ouvrir la caisse en 2 secondes la prochaine fois.')},[boot?.companyName]);
- function printZ(data:CashSummary){setZData(data);document.body.dataset.printMode='z';window.addEventListener('afterprint',()=>{delete document.body.dataset.printMode},{once:true});requestAnimationFrame(()=>requestAnimationFrame(()=>window.print()))}
+ function printSlip(x:PaymentSlipData){setZData(null);setPaySlip(x);document.body.dataset.printMode='z';window.addEventListener('afterprint',()=>{delete document.body.dataset.printMode},{once:true});requestAnimationFrame(()=>requestAnimationFrame(()=>window.print()))}
+ function printInvoice(x:InvoiceData){setInvoiceData(x);document.body.dataset.printMode='invoice';window.addEventListener('afterprint',()=>{delete document.body.dataset.printMode},{once:true});requestAnimationFrame(()=>requestAnimationFrame(()=>window.print()))}
+ function printZ(data:CashSummary){setPaySlip(null);setZData(data);document.body.dataset.printMode='z';window.addEventListener('afterprint',()=>{delete document.body.dataset.printMode},{once:true});requestAnimationFrame(()=>requestAnimationFrame(()=>window.print()))}
  async function closeWithCount(counted:number,note:string){
   if(!window.confirm('Clôturer la caisse avec '+money(counted)+' comptés ?'))return;
   const id=cashSummary?.session?.id||null;setBusy(true);setError('');
@@ -488,12 +509,13 @@ function App(){
       <button aria-pressed={priceMode==='WHOLESALE'} disabled={busy||!!saleRef||entries.length>0} onClick={()=>setPriceMode('WHOLESALE')}>Gros</button></div></div>
     <div className="v5-chips">{hasTop&&<button aria-pressed={category==='Top'} onClick={()=>setCategory('Top')}><Flame size={14}/> Les plus vendus</button>}{categories.map(x=><button key={x} aria-pressed={x===category} onClick={()=>setCategory(x)}>{x}<small>{x==='Tous'?products.length:products.filter(p=>(p.category||'Autres')===x).length}</small></button>)}</div>
     {visible.length===0?<div className="v5-empty"><PackageSearch size={40}/><h3>Aucun produit</h3><p>Essayez un autre mot ou une autre catégorie.</p></div>:
-    <section className="v5-products">{visible.map(p=>{const inCart=cart[p.id]||0;return <button key={p.id} disabled={p.stock<=0||busy||!!saleRef} className={'v5-product'+(inCart?' is-in-cart':'')} onClick={()=>add(p.id,1)}>
+    <section className="v5-products">{visible.slice(0,gridLimit).map(p=>{const inCart=cart[p.id]||0;return <button key={p.id} disabled={p.stock<=0||busy||!!saleRef} className={'v5-product'+(inCart?' is-in-cart':'')} onClick={()=>add(p.id,1)}>
      {inCart>0&&<span className="v5-product-qty">{inCart}</span>}
      <span className="v5-product-cat">{p.category||'Autres'}</span><strong>{p.name}</strong><small className="v5-mono">{p.sku}</small>
      <span className="v5-product-foot"><b>{money(priceFor(p))}</b><span className={'v5-stock '+(p.stock===0?'is-out':p.stock<=(p.minStock??5)?'is-low':'')}>{p.stock===0?'Rupture':p.stock}</span></span>
      {priceMode==='RETAIL'&&p.wholesalePrice!=null&&<small className="v5-product-alt">Gros {money(p.wholesalePrice)}</small>}{priceMode==='WHOLESALE'&&<small className="v5-product-alt">Détail {money(p.price)}</small>}
     </button>})}</section>}
+    {visible.length>gridLimit&&<div ref={gridEnd} className="v6-grid-more"><button className="v5-btn v5-btn--ghost" onClick={()=>setGridLimit(n=>n+120)}>Afficher plus ({visible.length-gridLimit})</button></div>}
    </>}
    {page==='produits'&&<section className="v5-card"><label className="v5-search v5-search--panel"><Search size={17}/><input placeholder="Chercher par nom ou référence" value={search} onChange={e=>setSearch(e.target.value)}/></label><div className="v5-table-wrap"><table className="v5-table"><thead><tr><th>Produit</th><th>Référence</th><th>Catégorie</th><th className="num">Prix détail</th><th className="num">Prix gros</th><th className="num">Disponible</th></tr></thead><tbody>{products.filter(p=>(p.name+' '+p.sku).toLowerCase().includes(search.toLowerCase())).map(p=><tr key={p.id}><td><b>{p.name}</b></td><td className="v5-mono">{p.sku}</td><td>{p.category||'—'}</td><td className="num">{money(p.price)}</td><td className="num">{p.wholesalePrice===undefined||p.wholesalePrice===null?'—':money(p.wholesalePrice)}</td><td className="num"><span className={'v5-stock '+(p.stock===0?'is-out':p.stock<=(p.minStock??5)?'is-low':'')}>{p.stock}</span></td></tr>)}</tbody></table></div></section>}
    {page==='stock'&&<section className="v5-card"><div className="v5-kpis"><div className="v5-kpi is-danger"><span>En rupture</span><b>{products.filter(p=>p.stock===0).length}</b></div><div className="v5-kpi is-warning"><span>Stock faible</span><b>{products.filter(p=>p.stock>0&&p.stock<=(p.minStock??5)).length}</b></div><div className="v5-kpi"><span>Articles</span><b>{products.length}</b></div></div>
@@ -508,8 +530,13 @@ function App(){
     </div>
     <h2 className="v5-card-title">Clients <small>{boot.customers.length}</small></h2>
     {boot.customers.length===0?<Empty icon={Users} title="Aucun client" text="Ajoutez votre premier client ci-dessus."/>:
-    <div className="v5-table-wrap"><table className="v5-table"><thead><tr><th>Client</th><th className="act"></th></tr></thead><tbody>
-    {boot.customers.map(c=><tr key={c.id}><td><b>{c.name}</b></td><td className="act"><button className="v5-btn v5-btn--soft v5-btn--sm" onClick={()=>{setCustomerId(c.id);setPage('caisse')}}><ShoppingCart size={15}/> Vendre</button></td></tr>)}
+    <div className="v5-table-wrap"><table className="v5-table"><thead><tr><th>Client</th><th>Tarif · remise · plafond</th><th className="act"></th></tr></thead><tbody>
+    {boot.customers.map(c=><tr key={c.id}><td><b>{c.name}</b><small>{[c.phone,c.taxId?'MF '+c.taxId:''].filter(Boolean).join(' · ')}{Number(c.due)>0?' · doit '+money(Number(c.due)):''}</small></td>
+     <td>{canDiscount&&boot.role!=='DEMO'?<div className="v6-client-terms"><select aria-label={'Tarif '+c.name} value={c.priceMode||'RETAIL'} onChange={e=>void updateCustomer(c,{priceMode:e.target.value})}><option value="RETAIL">Détail</option><option value="WHOLESALE">Gros</option></select>
+      <label><input type="number" min={0} max={50} step={0.5} defaultValue={Number(c.discountPct||0)} onBlur={e=>{const v=Number(e.target.value);if(v!==Number(c.discountPct||0))void updateCustomer(c,{discountPct:v})}} aria-label={'Remise '+c.name}/> %</label>
+      <label>Plafond <input type="number" min={0} step={10} defaultValue={Number(c.creditLimit||0)} onBlur={e=>{const v=Number(e.target.value);if(v!==Number(c.creditLimit||0))void updateCustomer(c,{creditLimit:v})}} aria-label={'Plafond '+c.name}/></label></div>
+      :<small>{c.priceMode==='WHOLESALE'?'Gros':'Détail'}{Number(c.discountPct)>0?' · -'+c.discountPct+' %':''}</small>}</td>
+     <td className="act"><button className="v5-btn v5-btn--soft v5-btn--sm" onClick={()=>{chooseCustomer(c.id);setPage('caisse')}}><ShoppingCart size={15}/> Vendre</button></td></tr>)}
     </tbody></table></div>}</section>}
    {page==='commandes'&&<section><div className="v5-section-head"><p>Mise à jour automatique toutes les 20 secondes.</p><button className="v5-btn v5-btn--ghost v5-btn--sm" onClick={()=>void load('commandes')}><RefreshCw size={15}/> Actualiser</button></div>
     {orders.length===0?<div className="v5-card"><Empty icon={Inbox} title="Aucune commande en attente" text="Les commandes des ateliers arrivent ici."/></div>:
@@ -554,7 +581,7 @@ function App(){
     <div className="v5-card"><h2 className="v5-card-title"><Search size={19}/> Rechercher un ticket</h2>
     <TicketSearchV4 query={ticketQuery} from={ticketFrom} to={ticketTo} busy={busy} results={ticketMatches}
      onQuery={setTicketQuery} onFrom={setTicketFrom} onTo={setTicketTo} onSearch={()=>void searchTickets()}
-     onPrint={showTicket} onReturn={x=>{setPage('retours');void selectReturnFromTicket(x)}} onShare={x=>shareTicket({reference:x.reference,company:boot.companyName,profile:boot.receiptProfile,date:new Date(x.createdAt).toLocaleString('fr-FR'),customer:x.customer,lines:x.items,total:x.total,paid:x.paid},x.phone)}/></div>
+     onPrint={showTicket} onReturn={x=>{setPage('retours');void selectReturnFromTicket(x)}} onInvoice={x=>setInvoiceFor({reference:x.reference,customer:boot.customers.find(c=>c.name===x.customer)})} onShare={x=>shareTicket({reference:x.reference,company:boot.companyName,profile:boot.receiptProfile,date:new Date(x.createdAt).toLocaleString('fr-FR'),customer:x.customer,lines:x.items,total:x.total,paid:x.paid},x.phone)}/></div>
     <div className="v5-card"><div className="v5-card-head"><h2 className="v5-card-title">Dernières ventes</h2>{ticket&&<button className="v5-btn v5-btn--soft v5-btn--sm" disabled={busy} onClick={printTicket}><Printer size={15}/> Réimprimer {ticket.reference}</button>}</div>
     {!history?.sales.length?<Empty icon={ReceiptText} title="Aucune vente" text="Les ventes de la caisse apparaîtront ici."/>:<div className="v5-table-wrap"><table className="v5-table"><thead><tr><th>Référence</th><th>Date</th><th className="num">Total</th><th className="num">Payé</th><th>État</th></tr></thead><tbody>
     {history.sales.map(x=><tr key={x.id}><td className="v5-mono"><b>{x.reference}</b></td><td>{new Date(x.createdAt).toLocaleString('fr-FR',{dateStyle:'short',timeStyle:'short'})}</td><td className="num">{money(x.total)}</td><td className="num">{money(x.paid)}</td><td><StatusChip status={x.status}/></td></tr>)}
@@ -579,6 +606,7 @@ function App(){
     <div className="v5-card"><h2 className="v5-card-title">Remises livreurs</h2>{courierShifts.length===0?<Empty icon={Truck} title="Aucune remise" text="L’historique des remises apparaîtra ici."/>:<div className="v5-table-wrap"><table className="v5-table"><thead><tr><th>Livreur</th><th className="num">Déclaré</th><th className="num">Attendu</th><th>État</th></tr></thead><tbody>{courierShifts.map(x=><tr key={x.id}><td><b>{x.driver?.fullName||'Livreur'}</b></td>
     <td className="num">{money(Number(x.declaredRemit||0))}</td><td className="num">{money(Number(x.expectedCod||0))}</td><td><StatusChip status={x.status}/></td></tr>)}</tbody></table></div>}</div>
    </section>}
+   {page==='inventaire'&&<InventoryPage products={products} storageKey={(draftKey||'demo')+':inventory'} demo={boot.role==='DEMO'} canClose={['OWNER','ADMIN','MANAGER','DEMO'].includes(boot.role)} onDone={()=>void refresh()} onError={setError} onMessage={setMessage}/>}
   </main>
   {page==='caisse'&&<aside className="v5-basket" aria-label="Panier">
    <div className="v5-basket-head"><h2><ShoppingCart size={20}/> Panier</h2><span className="v5-count">{cartCount+custom.reduce((n,c)=>n+c.quantity,0)} article{cartCount+custom.length>1?'s':''}</span>{lineCount>0&&!saleRef&&<button className="v5-icon-btn" title="Vider le panier" aria-label="Vider le panier" disabled={busy} onClick={()=>{if(window.confirm('Supprimer ce panier non payé ?')){localClearSale();setGivenCash('');setMessage('Panier vidé.');if(boot)publishDisplay({company:boot.companyName,logo,lines:[],discount:0,total:0,given:null,change:null})}}}><Trash2 size={17}/></button>}</div>
@@ -593,7 +621,11 @@ function App(){
     <Stepper value={c.quantity} max={1000} disabled={busy||!!saleRef} onChange={v=>setCustom(list=>v<=0?list.filter(x=>x.id!==c.id):list.map(x=>x.id===c.id?{...x,quantity:v}:x))}/>
     <b className="v5-line-total">{money(c.quantity*c.price)}</b></div>)):<div className="v5-empty v5-empty--basket"><ScanBarcode size={40}/><h3>Panier vide</h3><p>Scannez un article ou touchez un produit.</p></div>}</div>
    <div className="v5-basket-foot">
-    <div className="v5-client-row"><label className="v5-field v5-field--inline"><span><UserRound size={15}/> Client</span><select disabled={busy||!!saleRef} value={customerId} onChange={e=>setCustomerId(e.target.value)}><option value="">Vente comptoir</option>{boot.customers.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label><button className="v5-icon-btn" title="Nouveau client" aria-label="Nouveau client" disabled={busy||!!saleRef} onClick={()=>setPage('clients')}><UserPlus size={17}/></button></div>
+    <div className="v5-client-row"><label className="v5-field v5-field--inline"><span><UserRound size={15}/> Client</span><select disabled={busy||!!saleRef} value={customerId} onChange={e=>chooseCustomer(e.target.value)}><option value="">Vente comptoir</option>{boot.customers.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label><button className="v5-icon-btn" title="Nouveau client" aria-label="Nouveau client" disabled={busy||!!saleRef} onClick={()=>setPage('clients')}><UserPlus size={17}/></button></div>
+    {cust&&(cust.priceMode==='WHOLESALE'||Number(cust.discountPct)>0||Number(cust.due)>0||Number(cust.creditLimit)>0)&&(()=>{const limit=Number(cust.creditLimit||0),owed=Number(cust.due||0),after=owed+due,over=limit>0&&after>limit+0.0005;
+     return <div className={'v6-credit'+(over?' is-over':'')}><span>{cust.priceMode==='WHOLESALE'?'Tarif gros':'Tarif détail'}{Number(cust.discountPct)>0?' · remise '+cust.discountPct+' %':''}</span>
+      {(owed>0||limit>0)&&<span>Doit déjà <b>{money(owed)}</b>{limit>0&&<> · plafond <b>{money(limit)}</b></>}</span>}
+      {over&&<b>Plafond dépassé avec cette vente : encaissez au moins {money(after-limit)}.</b>}</div>})()}
     <MethodSeg value={method} onChange={v=>{setMethod(v);if(v!=='CASH')setGivenCash('')}} disabled={busy||!!saleRef}/>
     {discountValue>0&&<div className="v6-discount-row"><span>Sous-total {money(subtotal)}</span><span>Remise <b>-{money(discountValue)}</b></span></div>}
     <div className="v5-total"><span>Total <small>{priceMode==='WHOLESALE'?'tarif gros':'tarif détail'}</small></span><strong>{money(total)}</strong></div>
@@ -603,7 +635,7 @@ function App(){
     {change!==null&&<div className={'v5-change '+(change<0?'is-neg':'')}><span>{change<0?'Il manque':'Monnaie à rendre'}</span><strong>{money(Math.abs(change))}</strong></div>}
     {due>0&&<div className="v5-due"><span>Reste dû {customerId?'(crédit client)':'— choisissez un client'}</span><strong>{money(due)}</strong></div>}
     <button disabled={busy||!!saleRef||!lineCount||boot.role==='DEMO'} className="v5-btn v5-btn--primary v5-pay" onClick={()=>void sale()}>{busy?'Enregistrement…':<><Check size={20}/> Encaisser {lineCount?money(total):''}<kbd>F9</kbd></>}</button>
-    {ticket&&<div className="v6-ticket-actions"><button className="v5-btn v5-btn--ghost v5-btn--sm" onClick={printTicket}><Printer size={15}/> Réimprimer</button><button className="v5-btn v5-btn--ghost v5-btn--sm v6-wa" onClick={()=>shareTicket(ticket,boot.customers.find(c=>c.name===ticket.customer)?.phone)}><MessageCircle size={15}/> WhatsApp</button>{settings.drawerPrinter&&<button className="v5-btn v5-btn--ghost v5-btn--sm" onClick={()=>void invoke('cash_drawer_open',{printer:settings.drawerPrinter}).catch(e=>setError(String(e)))}><Banknote size={15}/> Tiroir</button>}</div>}{receiptWarning&&<p className="v5-hint">{receiptWarning}</p>}
+    {ticket&&<div className="v6-ticket-actions"><button className="v5-btn v5-btn--ghost v5-btn--sm" onClick={printTicket}><Printer size={15}/> Réimprimer</button><button className="v5-btn v5-btn--ghost v5-btn--sm v6-wa" onClick={()=>shareTicket(ticket,boot.customers.find(c=>c.name===ticket.customer)?.phone)}><MessageCircle size={15}/> WhatsApp</button>{!ticket.offline&&boot.role!=='DEMO'&&<button className="v5-btn v5-btn--ghost v5-btn--sm" onClick={()=>setInvoiceFor({reference:ticket.reference,customer:boot.customers.find(c=>c.name===ticket.customer)})}><FileText size={15}/> Facture</button>}{settings.drawerPrinter&&<button className="v5-btn v5-btn--ghost v5-btn--sm" onClick={()=>void invoke('cash_drawer_open',{printer:settings.drawerPrinter}).catch(e=>setError(String(e)))}><Banknote size={15}/> Tiroir</button>}</div>}{receiptWarning&&<p className="v5-hint">{receiptWarning}</p>}
    </div>
   </aside>}
   {message&&<div role="status" className="v5-toast"><CircleCheck size={18}/><span>{message}</span><button aria-label="Fermer" onClick={()=>setMessage('')}><X size={15}/></button></div>}
@@ -612,11 +644,15 @@ function App(){
    {(profile?.profiles?.length||0)>1?<div className="v6-cashiers v6-cashiers--lock" role="radiogroup" aria-label="Caissier">{profile!.profiles!.map(x=><button type="button" role="radio" key={x.login} aria-checked={(lockSwitch||me)===x.login} onClick={()=>{setLockSwitch(x.login);setLockPin('')}}><span className="v6-avatar">{(x.name||x.login).slice(0,1).toUpperCase()}</span><b>{x.name||x.login}</b></button>)}</div>:<p>{cashier||boot.companyName} · code PIN</p>}<PinPad value={lockPin} onChange={setLockPin} autoFocus/><button className="v5-btn v5-btn--primary v5-btn--lg" disabled={lockPin.length!==4}><LockOpen size={18}/> Déverrouiller</button>{error&&<p className="v5-alert v5-alert--danger">{error}</p>}</form></div>}
   <TicketPrint ticket={ticket}/>
   <ZReport data={zData}/>
+  <PaymentSlip data={paySlip}/>
+  <InvoicePrint data={invoiceData} logo={logo}/>
+  {invoiceFor&&<InvoiceDialog reference={invoiceFor.reference} customer={invoiceFor.customer} onClose={()=>setInvoiceFor(null)} onDone={printInvoice}/>}
+  {reportOpen&&<ReportDialog page={page} onClose={()=>setReportOpen(false)} onSent={()=>setMessage('Merci, le problème est envoyé à l’équipe Fixi.')}/>}
   {dialog==='free'&&<FreeItemDialog onClose={()=>{setDialog('');focusScan()}} onAdd={x=>setCustom(list=>[...list,{id:crypto.randomUUID(),...x}])}/>}
   {dialog==='discount'&&<DiscountDialog subtotal={subtotal} discount={cartDiscount} onClose={()=>setDialog('')}
    lines={entries.map(e=>({key:e.product.id,name:e.product.name,quantity:e.quantity,base:basePrice(e.product),price:priceFor(e.product)} as DiscountLine))}
    onApply={(d,prices)=>{const next:Record<string,number>={};for(const e of entries){const v=prices[e.product.id];if(v&&Math.abs(v-basePrice(e.product))>=0.0005)next[e.product.id]=v}setLinePrice(next);setCartDiscount(d)}}/>}
-  {dialog==='settings'&&<SettingsDialog settings={settings} onChange={setSettings} onClose={()=>setDialog('')} version={version} demo={boot.role==='DEMO'} onCheckUpdate={()=>void checkUpdate(false)} onRemoveCashier={boot.role==='DEMO'?undefined:()=>void logout()}/>}
+  {dialog==='settings'&&<SettingsDialog settings={settings} onChange={setSettings} onClose={()=>setDialog('')} version={version} demo={boot.role==='DEMO'} onCheckUpdate={()=>void checkUpdate(false)} onRemoveCashier={boot.role==='DEMO'?undefined:()=>void logout()} onReport={boot.role==='DEMO'?undefined:()=>{setDialog('');setReportOpen(true)}}/>}
   {dialog==='parked'&&<div className="v6-modal-back" onMouseDown={e=>{if(e.target===e.currentTarget)setDialog('')}}><div className="v5-card v6-modal is-wide" role="dialog" aria-label="Ventes hors ligne">
    <header className="v6-modal-head"><h2><CloudUpload size={19}/> Ventes hors ligne</h2><button className="v5-icon-btn" aria-label="Fermer" onClick={()=>setDialog('')}><X size={17}/></button></header>
    <p className="v5-hint">{offline?'Pas de connexion à FIXI. Les ventes sont gardées sur ce PC et partent toutes seules dès que la connexion revient.':'Ces ventes attendent d’être envoyées à FIXI.'}</p>
