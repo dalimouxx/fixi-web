@@ -545,3 +545,4 @@ a.fx-kpi{text-decoration:none}
   .supplier-os main :is(.rt-empty,.delivery-empty) :is(b,strong){font-size:15px!important}
   .supplier-os main :is(.rt-empty,.delivery-empty) :is(span,p,small){font-size:13px!important}
 }
+.fx-android-tip{margin:0;padding:10px 12px;border-radius:var(--fx-radius);background:var(--fx-warning-soft);color:var(--fx-ink-2);font-size:13px;line-height:1.45}
