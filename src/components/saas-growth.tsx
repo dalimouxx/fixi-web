@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Activity, CalendarClock, MessageCircle, RefreshCw, Rocket, TrendingDown, TrendingUp, UserPlus, Wallet } from 'lucide-react';
 import { money } from '@/lib/format';
 import { ErrorState, Skeleton } from './ui-states';
+import { pitch } from '@/lib/help-center';
 
 const ago = (d?: string | null) => { if (!d) return 'jamais'; const h = (Date.now() - new Date(d).getTime()) / 36e5; return h < 24 ? `il y a ${Math.max(1, Math.round(h))} h` : `il y a ${Math.round(h / 24)} j`; };
 const tierLabel: Record<string, string> = { CONNECT: 'Gratuit', TRIAL: 'Essai', PRO: 'Pro' };
@@ -34,6 +35,9 @@ export function SaasGrowth() {
       <div className="control-panel"><h3><CalendarClock size={16} /> Essais qui se terminent</h3>{d.trialsEnding.length ? <ul className="gr-list">{d.trialsEnding.map((r: any) => <Row key={r.tenantId} r={r} extra={`fin ${new Date(r.trialEndsAt).toLocaleDateString('fr-TN')}`} />)}</ul> : <p className="gr-empty">Aucun essai ne se termine sous 3 jours.</p>}</div>
       <div className="control-panel"><h3><TrendingDown size={16} /> Inactifs depuis 7 jours</h3>{d.inactive.length ? <ul className="gr-list">{d.inactive.map((r: any) => <Row key={r.tenantId} r={r} extra={`vu ${ago(r.lastSeenAt)}`} />)}</ul> : <p className="gr-empty">Tous les ateliers sont actifs.</p>}</div>
     </div>
+    <div className="control-panel gr-pitch"><h3><MessageCircle size={16} /> Message de présentation <small>à envoyer aux ateliers que vous démarchez</small></h3>
+      {(['fr', 'ar'] as const).map(l => { const t = pitch('Fixi', (typeof window !== 'undefined' ? window.location.origin : '') + '/inscription')[l]; return <div key={l} className="gr-pitch-row" dir={l === 'ar' ? 'rtl' : 'ltr'}><p data-no-i18n>{t}</p><div><button className="btn btn-soft btn-sm" onClick={() => navigator.clipboard?.writeText(t)}>Copier</button><a className="btn btn-soft btn-sm" href={'https://wa.me/?text=' + encodeURIComponent(t)} target="_blank" rel="noreferrer">WhatsApp</a></div></div>; })}
+      <p className="gr-note">Guide en ligne à partager : <a href="/aide" target="_blank">/aide</a> (atelier, fournisseur, livreur, en français et en arabe).</p></div>
     <p className="gr-note">Les boutons WhatsApp ouvrent un message prêt à envoyer depuis votre téléphone : rien n’est envoyé automatiquement.</p>
   </section>;
 }

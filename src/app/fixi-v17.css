@@ -330,7 +330,10 @@ html[data-theme=dark] .supplier-os aside :is(a,button).active,html[data-theme=da
 html[data-theme=dark] .supplier-os main>header,html[data-theme=dark] .supplier-os main header,html[data-theme=dark] .supplier-os header.fixi-supplier-header{background:var(--fx-bg)!important;color:var(--fx-ink)}
 html[data-theme=dark] .supplier-os :is(.supplier-panel,.supplier-stock-toolbar>div,.supplier-kpis>*,.supplier-metrics>div,.supplier-product-grid article,.supplier-order,.global-search){background:var(--fx-surface)!important;border-color:var(--fx-line)!important;color:var(--fx-ink)}
 html[data-theme=dark] .supplier-os :is(input,select,textarea).input{background:var(--fx-surface-2)!important;color:var(--fx-ink)!important;border-color:var(--fx-line)!important}
-html[data-theme=dark] .supplier-os :is(h1,h2,h3,b,strong){color:var(--fx-ink)}
+html[data-theme=dark] .supplier-os :is(h1,h2,h3,h4,b,strong){color:var(--fx-ink)!important}
+html[data-theme=dark] .fixi-widget-edit-button{background:var(--fx-surface-2)!important;color:var(--fx-ink)!important;border-color:var(--fx-line)!important}
+html[data-theme=dark] .supplier-os main :is(.fixi-workflow-actions button,.fixi-widget-deck-header,.supplier-section-head) :is(span,p,small){color:var(--fx-muted)!important}
+html[data-theme=dark] .supplier-os main header :is(.btn-primary,.fixi-install-btn,[class*=install]){background:var(--fx-brand)!important;color:#fff!important}
 html[data-theme=dark] .supplier-os :is(aside,main>header,main header) :is(h1,h2,b,strong,small,span:not([class*=badge]),div:not([class*=badge])){color:var(--fx-ink)!important}
 html[data-theme=dark] .supplier-os :is(aside,main header) small{color:var(--fx-muted)!important}
 html[data-theme=dark] .supplier-os :is(.supplier-side-foot,.fx-sup-tools,.fx-mode){background:var(--fx-surface)!important;border-color:var(--fx-line)!important}
@@ -363,3 +366,15 @@ html[data-theme=dark] .supplier-os main header .btn[disabled],html[data-theme=da
 .pc-off{margin:0;font-size:13.5px;color:var(--fx-muted)}.pc-note{display:flex;gap:5px;align-items:center;margin-top:8px;font-size:12px;color:var(--fx-muted)}
 .dv-partner{display:inline-flex;gap:4px;align-items:center;margin:4px 0;padding:2px 9px;border-radius:99px;background:var(--fx-info-soft);color:var(--fx-info);font-size:12px;font-weight:800}
 @media (max-width:860px){.pc-grid{grid-template-columns:1fr}}
+.gr-pitch{margin-top:12px}.gr-pitch-row{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--fx-line)}.gr-pitch-row p{flex:1;margin:0;font-size:14px;line-height:1.55}.gr-pitch-row div{display:flex;gap:6px;flex:nonehtml[data-theme=dark] :is(.repair-card,.fx-repair-card){background:var(--fx-surface)!important;border-color:var(--fx-line)!important;color:var(--fx-ink)!important}
+html[data-theme=dark] :is(.repair-card,.fx-repair-card) :is(b,strong,h3,h4,span:not([class*=badge]):not(.fx-age)){color:inherit}
+html[data-theme=dark] .fixi-smart-widget,html[data-theme=dark] .fixi-smart-widget *{color:var(--fx-ink)!important}
+html[data-theme=dark] .fixi-smart-widget :is(small,p,.fixi-widget-hint){color:var(--fx-muted)!important}
+}
+
+/* ============ 18.3 — finitions de mouvement ============ */
+::view-transition-old(root),::view-transition-new(root){animation-duration:260ms;animation-timing-function:cubic-bezier(.23,1,.32,1)}
+@keyframes fx-page-in{from{opacity:0;transform:translateY(6px)}}
+:is(.fx-content,.control-content)>:first-child{animation:fx-page-in 280ms cubic-bezier(.23,1,.32,1) backwards}
+@media (hover:hover){.fixi-smart-widget.interactive,.fx-tile{transition:transform 180ms cubic-bezier(.23,1,.32,1),box-shadow 180ms ease,border-color 180ms ease}.fixi-smart-widget.interactive:hover,.fx-tile:hover{transform:translateY(-2px)}}
+@media (prefers-reduced-motion:reduce){:is(.fx-content,.control-content)>:first-child{animation:none}.fixi-smart-widget.interactive:hover,.fx-tile:hover{transform:none}::view-transition-old(root),::view-transition-new(root){animation:none}}

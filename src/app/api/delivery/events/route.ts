@@ -123,6 +123,6 @@ export async function POST(req:Request){
  }catch(e:any){return bad(e.message,e.status||500)}
 }
 export async function GET(){
- try{const s=await requireDeliverySession();const rows=await prisma.supplierDeliveryEvent.findMany({where:{companyId:s.companyId,accountId:s.id},orderBy:{createdAt:'desc'},take:1000});return ok(plain(rows))}
+ try{const s=await requireDeliverySession();const rows=await prisma.supplierDeliveryEvent.findMany({where:{accountId:s.id},orderBy:{createdAt:'desc'},take:1000});return ok(plain(rows))}
  catch(e:any){return bad(e.message,e.status||500)}
 }

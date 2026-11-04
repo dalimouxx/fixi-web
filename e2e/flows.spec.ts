@@ -24,6 +24,7 @@ function totp(secret: string, offset = 0) {
 
 test.describe.configure({ mode: 'serial' });
 let atelier: Page, supplier: Page;
+let orderId = '';
 
 test('1 · un réparateur crée son compte seul (offre gratuite)', async ({ browser }) => {
   const ctx = await browser.newContext(); await fr(ctx); atelier = await ctx.newPage();
@@ -80,6 +81,7 @@ test('4 · l’atelier voit la promo et commande au prix promo', async () => {
   const orders = await (await atelier.request.get('/api/marketplace/orders')).json();
   const o = orders.find((x: any) => x.items.some((i: any) => i.product.name === PRODUCT));
   expect(Number(o.items[0].unitPrice)).toBe(35);
+  orderId = o.id;
 });
 
 test('5 · le fournisseur reçoit la commande', async () => {
@@ -130,6 +132,46 @@ test('5e · livreurs partenaires : réservé à l’abonnement actif (pas pendan
   const g = await supplier.request.get('/api/supplier/partner-couriers');
   expect(g.ok(), await g.text()).toBeTruthy(); expect((await g.json()).allowed).toBe(false);
   expect((await supplier.request.post('/api/supplier/partner-couriers', { data: { orderId: 'x', driverId: 'y' } })).status()).toBe(403);
+});
+
+test('5f · livraison complète : préparation, livreur, arrivée, code, signature, puis reprise et avoir', async ({ browser }) => {
+  const drv = { fullName: 'Livreur Robot', login: `livreur${RUN}`, password: 'Livreur-2026!', phone: '98' + RUN.replace(/\D/g, '').padEnd(6, '1').slice(0, 6) };
+  const created = await supplier.request.post('/api/supplier/drivers', { data: drv });
+  expect(created.status(), await created.text()).toBeLessThan(300);
+  const driverId = (await created.json()).id || (await created.json()).account?.id;
+  for (const status of ['CONFIRMED', 'PREPARING', 'READY_FOR_DELIVERY']) { const r = await supplier.request.patch('/api/supplier/orders/' + orderId, { data: { status } }); expect(r.ok(), status + ' ' + await r.text()).toBeTruthy(); }
+  const drivers = await (await supplier.request.get('/api/supplier/return-pickups')).json();
+  const did = driverId || drivers.drivers.find((d: any) => d.fullName === drv.fullName)?.id;
+  const assign = await supplier.request.post('/api/supplier/delivery/assign', { data: { orderId, driverAccountId: did } });
+  expect(assign.ok(), await assign.text()).toBeTruthy();
+  const dctx = await browser.newContext(); const d = dctx.request;
+  expect((await d.post('/api/delivery/auth/login', { data: { login: drv.login, password: drv.password } })).ok()).toBeTruthy();
+  expect((await d.post('/api/delivery/shift', { data: { action: 'OPEN', startCash: 0 } })).ok()).toBeTruthy();
+  const out = await d.patch('/api/delivery/orders/' + orderId, { data: { status: 'OUT_FOR_DELIVERY' } }); expect(out.ok(), await out.text()).toBeTruthy();
+  expect((await d.post('/api/delivery/events', { data: { orderId, type: 'ARRIVED_AT_SHOP' } })).ok()).toBeTruthy();
+  const mine = (await (await atelier.request.get('/api/marketplace/orders')).json()).find((x: any) => x.id === orderId);
+  expect((await d.patch('/api/delivery/orders/' + orderId, { data: { status: 'DELIVERED', recipientName: 'Robot', proofCode: '000000' } })).status()).toBe(409);
+  const sig = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+  const ok = await d.patch('/api/delivery/orders/' + orderId, { data: { status: 'DELIVERED', recipientName: 'Robot', proofCode: mine.deliveryCode, signatureUrl: sig } });
+  expect(ok.ok(), await ok.text()).toBeTruthy();
+  const after = (await (await atelier.request.get('/api/marketplace/orders')).json()).find((x: any) => x.id === orderId);
+  expect(after.status).toBe('DELIVERED'); expect(after.delivery.signatureUrl).toBe(sig);
+  // Reprise d'une pièce défectueuse pendant la tournée, puis avoir.
+  const ret = await atelier.request.post('/api/marketplace/returns', { data: { orderId, items: [{ itemId: after.items[0].id, quantity: 1 }], reason: 'DEFECTIVE' } });
+  expect(ret.status(), await ret.text()).toBe(201);
+  const pick = await ret.json();
+  expect((await supplier.request.patch('/api/supplier/return-pickups', { data: { id: pick.id, action: 'accept', driverAccountId: did } })).ok()).toBeTruthy();
+  const todo = await (await d.get('/api/delivery/pickups')).json(); expect(todo.some((x: any) => x.id === pick.id)).toBe(true);
+  expect((await d.patch('/api/delivery/pickups', { data: { id: pick.id } })).ok()).toBeTruthy();
+  const p2 = (await (await supplier.request.get('/api/supplier/return-pickups')).json()).rows.find((x: any) => x.id === pick.id);
+  expect(p2.status).toBe('COLLECTED');
+  if (p2.saleId) {
+    const av = await supplier.request.post('/api/supplier/advanced', { data: { action: 'RETURN', type: 'SALE_RETURN', sourceSaleId: p2.saleId, refund: 0, items: p2.items.filter((i: any) => i.saleItemId).map((i: any) => ({ saleItemId: i.saleItemId, quantity: i.quantity, restock: false })) } });
+    expect(av.ok(), await av.text()).toBeTruthy();
+    expect((await supplier.request.patch('/api/supplier/return-pickups', { data: { id: pick.id, action: 'complete', returnId: (await av.json()).id } })).ok()).toBeTruthy();
+  }
+  const stats = await (await d.get('/api/delivery/stats')).json(); expect(stats.today.delivered).toBeGreaterThanOrEqual(1);
+  await dctx.close();
 });
 
 test('6 · le module Réparations propose l’essai Pro, qui s’active en un clic', async () => {
