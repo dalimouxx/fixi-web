@@ -10,15 +10,17 @@ import {MAX_ATTEMPTS,RETRY_FAILURES} from '@/lib/field-ops';
 export async function POST(req:Request){
  try{
   const s=await requireDeliverySession();const b=await req.json();const orderId=String(b.orderId||''),type=String(b.type||'NOTE');
-  const o=await prisma.supplierOrder.findFirst({where:{id:orderId,companyId:s.companyId,delivery:{is:{driverAccountId:s.id}}},include:{delivery:true,shop:{select:{name:true}}}});
+  const o=await prisma.supplierOrder.findFirst({where:{id:orderId,delivery:{is:{driverAccountId:s.id}},OR:[{companyId:s.companyId},{delivery:{is:{partnerCompanyId:s.companyId}}}]},include:{delivery:true,shop:{select:{name:true}}}});
   if(!o)return bad('Livraison introuvable',404);
+  const partner=o.companyId!==s.companyId;
+  if(partner&&['COD_COLLECTED','DUE_COLLECTED'].includes(type))return bad('Course partenaire : aucun encaissement par le livreur, le paiement est réglé hors livraison.',409);
   if(type==='ARRIVED_AT_SHOP'&&o.status!==SupplierOrderStatus.OUT_FOR_DELIVERY)
     return bad('Démarrez la livraison avant de signaler votre arrivée.',409);
   let amount:number|null=null;let dueCustomer:any=null;let dueSales:any[]=[];
   if(['COD_COLLECTED','DUE_COLLECTED'].includes(type)){const shift=await prisma.supplierDeliveryShift.findFirst({where:{companyId:s.companyId,driverAccountId:s.id,status:'OPEN'}});if(!shift)return bad('Ouvrez votre journée livreur avant tout encaissement.',409)}
   if(type==='COD_COLLECTED'){
    const n=Number(b.amount);if(!(n>0))return bad('Montant COD invalide');
-   const prev=await prisma.supplierDeliveryEvent.aggregate({where:{companyId:s.companyId,orderId,type:'COD_COLLECTED'},_sum:{amount:true}});
+   const prev=await prisma.supplierDeliveryEvent.aggregate({where:{companyId:o.companyId,orderId,type:'COD_COLLECTED'},_sum:{amount:true}});
    const total=Number(prev._sum.amount||0)+n;if(total>Number(o.total)+0.001)return bad('Le COD encaissé dépasse le montant de la commande',409);amount=n;
   }
   if(type==='DUE_COLLECTED'){
@@ -39,7 +41,7 @@ export async function POST(req:Request){
      });
      if(arrived.count!==1)return null;
    }
-   const event=await tx.supplierDeliveryEvent.create({data:{companyId:s.companyId,orderId,accountId:s.id,type,note:b.note||null,amount:amount===null?null:Number(amount),latitude:Number.isFinite(Number(b.latitude))?Number(b.latitude):null,longitude:Number.isFinite(Number(b.longitude))?Number(b.longitude):null,proofUrl:b.proofUrl||null}});
+   const event=await tx.supplierDeliveryEvent.create({data:{companyId:o.companyId,orderId,accountId:s.id,type,note:b.note||null,amount:amount===null?null:Number(amount),latitude:Number.isFinite(Number(b.latitude))?Number(b.latitude):null,longitude:Number.isFinite(Number(b.longitude))?Number(b.longitude):null,proofUrl:b.proofUrl||null}});
    if(type==='COD_COLLECTED')await tx.supplierDelivery.update({where:{orderId},data:{cashCollected:{increment:Number(amount)}}});
    if(type==='DUE_COLLECTED'&&dueCustomer){let remaining=Number(amount||0);for(const sale of dueSales){if(remaining<=0.0001)break;const due=Math.max(0,Number(sale.total)-Number(sale.paid));const take=Math.min(remaining,due);if(take<=0)continue;const paid=Number(sale.paid)+take;await tx.supplierErpSale.update({where:{id:sale.id},data:{paid,status:paid+0.0001>=Number(sale.total)?'PAID':'PARTIALLY_PAID'}});await tx.supplierErpPayment.create({data:{companyId:s.companyId,customerId:dueCustomer.id,saleId:sale.id,kind:'IN',method:'CASH',amount:take,reference:sale.reference,note:'Ancien dû encaissé par livreur',accountId:s.id}});remaining-=take}}
    if(['CUSTOMER_ABSENT','SHOP_CLOSED','DELIVERY_REFUSED','INCIDENT'].includes(type))await tx.supplierDelivery.update({where:{orderId},data:{attemptCount:{increment:1}}});
@@ -67,7 +69,7 @@ export async function POST(req:Request){
         experienceKey:'DRIVER_ARRIVED',eventId:orderId,accountIds:[s.id],
         metadata:{orderId,reference:o.reference,eventType:type}
       }),
-      notifySupplier(s.companyId,'Livreur arrivé chez la boutique',s.fullName+' est arrivé pour '+o.reference+' · '+o.shop.name+'.',{
+      notifySupplier(o.companyId,'Livreur arrivé chez la boutique',s.fullName+' est arrivé pour '+o.reference+' · '+o.shop.name+'.',{
         href:'/supplier?tab=delivery',kind:'DELIVERY',
         experienceKey:'SUPPLIER_UPDATE',eventId:orderId+'-ARRIVED',
         roles:managers,metadata:{orderId,reference:o.reference,eventType:type}
@@ -106,14 +108,14 @@ export async function POST(req:Request){
    const retry=attempts<MAX_ATTEMPTS;
    await Promise.allSettled([
     notifyShop(o.shopId,retry?'Nous sommes passés, nouvelle livraison prévue':'Livraison impossible après 3 passages',retry?`${s.fullName} est passé pour la commande ${o.reference} (${incidentLabels[type].toLowerCase()}). Une nouvelle tentative est programmée : gardez votre téléphone allumé.`:`La commande ${o.reference} n’a pas pu être livrée après ${attempts} passages. Le fournisseur va vous contacter.`,'/app/suppliers?tab=orders',NotificationType.WARNING,undefined,{experienceKey:'SHOP_ORDER_PROGRESS',eventId:orderId+'-FAIL-'+attempts}),
-    notifySupplier(s.companyId,retry?`${incidentLabels[type]} · nouvelle tentative`:'3 passages sans livraison',`${o.reference} · ${o.shop.name} · passage ${attempts}/${MAX_ATTEMPTS}${b.note?' · '+String(b.note):''}`,{href:'/supplier?tab=delivery',kind:'WARNING',priority:retry?'HIGH':'URGENT',soundKey:'WARNING',roles:managers,metadata:{orderId,attempts,proofUrl:b.proofUrl||null}}),
+    notifySupplier(o.companyId,retry?`${incidentLabels[type]} · nouvelle tentative`:'3 passages sans livraison',`${o.reference} · ${o.shop.name} · passage ${attempts}/${MAX_ATTEMPTS}${b.note?' · '+String(b.note):''}`,{href:'/supplier?tab=delivery',kind:'WARNING',priority:retry?'HIGH':'URGENT',soundKey:'WARNING',roles:managers,metadata:{orderId,attempts,proofUrl:b.proofUrl||null}}),
    ]);
    return ok({...plain(x),rescheduled:retry,attempts},{status:201});
   }
   if(incidentLabels[type]){
    const urgent=['DELIVERY_REFUSED','INCIDENT','RETURN_TO_DEPOT'].includes(type);
    await Promise.allSettled([
-    notifySupplier(s.companyId,incidentLabels[type],`${o.reference} · ${o.shop.name}${b.note?' · '+String(b.note):''}`,{href:'/supplier?tab=delivery',kind:urgent?'WARNING':'DELIVERY',priority:urgent?'URGENT':'HIGH',soundKey:urgent?'URGENT':'WARNING',roles:managers,metadata:{orderId:o.id,reference:o.reference,eventType:type}}),
+    notifySupplier(o.companyId,incidentLabels[type],`${o.reference} · ${o.shop.name}${b.note?' · '+String(b.note):''}`,{href:'/supplier?tab=delivery',kind:urgent?'WARNING':'DELIVERY',priority:urgent?'URGENT':'HIGH',soundKey:urgent?'URGENT':'WARNING',roles:managers,metadata:{orderId:o.id,reference:o.reference,eventType:type}}),
     notifyShop(o.shopId,incidentLabels[type],`Commande ${o.reference}${b.note?' · '+String(b.note):''}`,'/app/suppliers',urgent?NotificationType.WARNING:NotificationType.INFO)
    ]);
   }

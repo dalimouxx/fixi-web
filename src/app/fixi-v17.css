@@ -354,3 +354,12 @@ html[data-theme=dark] .supplier-os main header .btn[disabled],html[data-theme=da
 .cash-simple-search{border:1.5px solid var(--fx-line)!important;border-radius:14px!important;background:var(--fx-surface-2)!important;min-height:48px}
 .cash-simple-search:focus-within{border-color:var(--fx-brand)!important;box-shadow:var(--fx-focus)}
 .cash-simple-list .fx-state{margin:8px 0;padding:22px 12px}
+
+/* ============ 18.2 — livreurs partenaires ============ */
+.pc{margin:0 0 12px;padding:14px 16px!important}.pc h3{display:flex;gap:8px;align-items:center;margin:0 0 10px;font-size:16px}.pc h4{margin:0 0 8px;font-size:13.5px;color:var(--fx-ink-2)}
+.pc-grid{display:grid;grid-template-columns:1fr 1.3fr;gap:16px}
+.pc-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--fx-line)}.pc-row b{flex:1;min-width:0;font-size:14px}.pc-row b small{display:block;font-weight:500;font-size:12px;color:var(--fx-muted)}
+.pc-row input{width:110px;height:36px;border:1.5px solid var(--fx-line);border-radius:10px;padding:0 10px;font:inherit;background:var(--fx-surface)}.pc-row select{width:auto;max-width:240px;height:36px!important}
+.pc-off{margin:0;font-size:13.5px;color:var(--fx-muted)}.pc-note{display:flex;gap:5px;align-items:center;margin-top:8px;font-size:12px;color:var(--fx-muted)}
+.dv-partner{display:inline-flex;gap:4px;align-items:center;margin:4px 0;padding:2px 9px;border-radius:99px;background:var(--fx-info-soft);color:var(--fx-info);font-size:12px;font-weight:800}
+@media (max-width:860px){.pc-grid{grid-template-columns:1fr}}

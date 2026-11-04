@@ -162,7 +162,7 @@ export function DriverApp({session}:{session:any}){
      <h2 className="dv-h2"><span className="dv-pulse"/> Nouvelles missions <em>{available.length}</em></h2>
      <div className="dv-offers">{available.map((o:any)=><article key={o.id} className="dv-offer">
       <header><span className="dv-ref">{o.reference}</span><strong>{money(o.total)}</strong></header>
-      <h3>{o.shop?.name}</h3>
+      <h3>{o.shop?.name}</h3>{o.partner&&<span className="dv-partner">Course pour {o.partnerName} · {Number(o.delivery?.courierFee||0).toFixed(3)} DT · sans encaissement</span>}
       <p><MapPinned size={15}/> {addr(o)||'Adresse non renseignée'}</p>
       <div className="dv-offer-meta"><span><PackageCheck size={14}/> {o.items?.length||0} article{(o.items?.length||0)>1?'s':''}</span>{Number(o.customerDue||0)>0&&<span><WalletCards size={14}/> Dû {money(o.customerDue)}</span>}<span><Clock3 size={14}/> {dateTime(o.createdAt)}</span></div>
       <SlideToConfirm label={onShift?'Glisser pour accepter':'Démarrez la journée d’abord'} disabled={busy===o.id||!onShift} onConfirm={()=>void accept(o)}/>
@@ -178,7 +178,7 @@ export function DriverApp({session}:{session:any}){
       <div className="dv-quick">
        {addr(o)&&<a href={maps(addr(o))} target="_blank" rel="noreferrer"><Navigation size={20}/><span>Itinéraire</span></a>}
        {o.shop?.phone&&<a href={'tel:'+o.shop.phone}><Phone size={20}/><span>Appeler</span></a>}
-       {o.status==='OUT_FOR_DELIVERY'&&<button type="button" onClick={()=>openEvent(o,'COD_COLLECTED')}><Banknote size={20}/><span>Encaisser</span></button>}
+       {o.status==='OUT_FOR_DELIVERY'&&!o.partner&&<button type="button" onClick={()=>openEvent(o,'COD_COLLECTED')}><Banknote size={20}/><span>Encaisser</span></button>}
        {o.status==='OUT_FOR_DELIVERY'&&Number(o.customerDue||0)>0&&<button type="button" onClick={()=>openDue(o)}><WalletCards size={20}/><span>Dû client</span></button>}
        <Link href={'/delivery/orders/'+o.id+'/ticket'} target="_blank"><PackageCheck size={20}/><span>Bon</span></Link>
        {o.status==='OUT_FOR_DELIVERY'&&<button type="button" onClick={()=>setMoreFor(o)}><AlertTriangle size={20}/><span>Problème</span></button>}
