@@ -1,8 +1,8 @@
 import { test, expect, type Page, type BrowserContext } from '@playwright/test';
 import crypto from 'node:crypto';
 
-/** Parcours essentiels : inscription → essai Pro → fournisseur crée un produit (+ promo) → atelier commande → fournisseur reçoit.
- *  Puis double vérification de l'admin. Les données sont créées à la volée, chaque exécution est indépendante. */
+/** Parcours essentiels : inscription → fournisseur crée un produit (+ promo) → atelier commande → fournisseur reçoit.
+ *  Puis essai Pro et double vérification de l'admin. Les données sont créées à la volée, chaque exécution est indépendante. */
 const RUN = Date.now().toString(36).slice(-5);
 const PLATFORM = { login: process.env.PLATFORM_ADMIN_LOGIN || 'platform', password: process.env.PLATFORM_ADMIN_PASSWORD || 'ChangeMe-Fixi-2026!' };
 const SUPPLIER = { name: `Pièces Test ${RUN}`, slug: `pieces-test-${RUN}`, login: `fournisseur${RUN}`, password: 'Fournisseur-2026!' };
@@ -40,24 +40,14 @@ test('1 · un réparateur crée son compte seul (offre gratuite)', async ({ brow
   await expect(atelier.getByText('Premiers pas')).toBeVisible();
 });
 
-test('2 · le module Réparations propose l’essai Pro, qui s’active en un clic', async () => {
-  await atelier.goto('/app/repairs');
-  await expect(atelier).toHaveURL(/\/app\/upgrade\?from=%2Fapp%2Frepairs/);
-  await expect(atelier.getByText(/fait partie de Fixi Pro/)).toBeVisible();
-  await atelier.getByRole('button', { name: /Essayer Fixi Pro \d+ jours/ }).click();
-  await expect(atelier).not.toHaveURL(/\/app\/upgrade/, { timeout: 30_000 });
-  const r = await atelier.request.get('/api/subscription/trial');
-  expect((await r.json()).eligible).toBe(false); // un seul essai par atelier
-});
-
-test('3 · Fixi Control crée un fournisseur', async ({ request }) => {
+test('2 · Fixi Control crée un fournisseur', async ({ request }) => {
   const login = await request.post('/api/platform/auth/login', { data: PLATFORM });
   expect(login.ok(), await login.text()).toBeTruthy();
   const r = await request.post('/api/platform/suppliers', { data: { ...SUPPLIER, fullName: 'Gérant Robot', region: 'Gabès', verified: true } });
   expect(r.status(), await r.text()).toBe(201);
 });
 
-test('4 · le fournisseur ajoute un produit avec 3 champs et lance une promo', async ({ browser }) => {
+test('3 · le fournisseur ajoute un produit avec 3 champs et lance une promo', async ({ browser }) => {
   const ctx = await browser.newContext(); await fr(ctx); supplier = await ctx.newPage();
   await supplier.goto('/supplier/login');
   await supplier.locator('input.input').nth(0).fill(SUPPLIER.login);
@@ -79,7 +69,7 @@ test('4 · le fournisseur ajoute un produit avec 3 champs et lance une promo', a
   expect(promo.status(), await promo.text()).toBe(201);
 });
 
-test('5 · l’atelier voit la promo et commande au prix promo', async () => {
+test('4 · l’atelier voit la promo et commande au prix promo', async () => {
   await atelier.goto('/app/suppliers?q=' + encodeURIComponent(PRODUCT));
   const card = atelier.locator('.market-product', { hasText: PRODUCT });
   await expect(card).toBeVisible();
@@ -92,9 +82,19 @@ test('5 · l’atelier voit la promo et commande au prix promo', async () => {
   expect(Number(o.items[0].unitPrice)).toBe(35);
 });
 
-test('6 · le fournisseur reçoit la commande', async () => {
+test('5 · le fournisseur reçoit la commande', async () => {
   const orders = await (await supplier.request.get('/api/supplier/orders')).json();
   expect(orders.some((o: any) => o.items.some((i: any) => i.product.name === PRODUCT) && o.status === 'PENDING')).toBeTruthy();
+});
+
+test('6 · le module Réparations propose l’essai Pro, qui s’active en un clic', async () => {
+  await atelier.goto('/app/repairs');
+  await expect(atelier).toHaveURL(/\/app\/upgrade\?from=%2Fapp%2Frepairs/);
+  await expect(atelier.getByText(/fait partie de Fixi Pro/)).toBeVisible();
+  await atelier.getByRole('button', { name: /Essayer Fixi Pro \d+ jours/ }).click();
+  await expect(atelier).not.toHaveURL(/\/app\/upgrade/, { timeout: 30_000 });
+  const r = await atelier.request.get('/api/subscription/trial');
+  expect((await r.json()).eligible).toBe(false); // un seul essai par atelier
 });
 
 test('7 · double vérification de l’admin : le code est exigé à la connexion', async ({ browser }) => {
