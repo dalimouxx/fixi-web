@@ -381,6 +381,27 @@ async fn supplier_update_customer(state: State<'_,Arc<DesktopState>>, customer:s
  v4_request(&state,"/api/supplier/erp",Some(customer)).await
 }
 
+/// Création d'un produit depuis la caisse (gérant / stock) : le serveur vérifie le rôle et complète SKU, catégorie, marque.
+#[tauri::command]
+async fn supplier_create_product(state: State<'_,Arc<DesktopState>>, product:serde_json::Value) -> Result<serde_json::Value,String>{
+ let o=product.as_object().ok_or("Produit invalide")?;
+ let name=o.get("name").and_then(|v|v.as_str()).unwrap_or("").trim();
+ if name.chars().count()<2||name.chars().count()>160{return Err("Nom du produit requis".into())}
+ let mut clean=serde_json::Map::new();
+ for k in ["name","barcode","price","stock","purchasePrice","category","brand","qualityGrade","wholesalePrice","minStock","location"]{
+  if let Some(v)=o.get(k){clean.insert(k.into(),v.clone());}
+ }
+ v4_request(&state,"/api/supplier/products",Some(serde_json::Value::Object(clean))).await
+}
+
+/// Code-barres inconnu : suggestion du réseau Fixi (nom, catégorie, marque) avant création.
+#[tauri::command]
+async fn supplier_lookup_barcode(state: State<'_,Arc<DesktopState>>, barcode:String) -> Result<serde_json::Value,String>{
+ let b=barcode.trim();
+ if b.len()<3||b.len()>64||!b.chars().all(|c|c.is_ascii_alphanumeric()||c=='-'||c=='.'||c=='_'){return Err("Code-barres invalide".into())}
+ v4_request(&state,&format!("/api/supplier/products/lookup?barcode={}",b),None).await
+}
+
 /// Inventaire au scanner : seules les actions de comptage sont relayées.
 #[tauri::command]
 async fn supplier_stock_count(state: State<'_,Arc<DesktopState>>, request:serde_json::Value) -> Result<serde_json::Value,String>{
@@ -515,7 +536,7 @@ fn open_external(url: String) -> Result<(),String> {
 pub fn run() {
     tauri::Builder::default()
         .manage(Arc::new(DesktopState{connection:Mutex::new(None),pin:Mutex::new(None)}))
-        .invoke_handler(tauri::generate_handler![supplier_login,supplier_refresh,supplier_logout,supplier_checkout,supplier_history,supplier_cash_action,supplier_orders,supplier_order_transition,supplier_debts,supplier_debt_payment,supplier_returns,supplier_return_create,pin_setup,pin_lock,pin_unlock,supplier_saved_profile,supplier_pin_login,supplier_operation_status,supplier_find_tickets,supplier_return_source,supplier_customer_debts,supplier_customer_payment,supplier_create_customer,supplier_delivery_shifts,supplier_delivery_close,supplier_switch_user,supplier_cash_summary,app_version,open_external,hardware::list_printers,hardware::cash_drawer_open,hardware::open_customer_display,hardware::close_customer_display,updater::check_update,updater::install_update,supplier_invoice,supplier_update_customer,supplier_stock_count,supplier_open_stock_counts,supplier_report_problem])
+        .invoke_handler(tauri::generate_handler![supplier_login,supplier_refresh,supplier_logout,supplier_checkout,supplier_history,supplier_cash_action,supplier_orders,supplier_order_transition,supplier_debts,supplier_debt_payment,supplier_returns,supplier_return_create,pin_setup,pin_lock,pin_unlock,supplier_saved_profile,supplier_pin_login,supplier_operation_status,supplier_find_tickets,supplier_return_source,supplier_customer_debts,supplier_customer_payment,supplier_create_customer,supplier_delivery_shifts,supplier_delivery_close,supplier_switch_user,supplier_cash_summary,app_version,open_external,hardware::list_printers,hardware::cash_drawer_open,hardware::open_customer_display,hardware::close_customer_display,updater::check_update,updater::install_update,supplier_invoice,supplier_update_customer,supplier_stock_count,supplier_open_stock_counts,supplier_report_problem,supplier_create_product,supplier_lookup_barcode])
         .run(tauri::generate_context!())
         .expect("error while running FIXI Caisse Windows");
 }

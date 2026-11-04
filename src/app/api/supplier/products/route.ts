@@ -3,6 +3,8 @@ import {requireSupplierRole,requireSupplierSession} from '@/lib/supplier-auth';
 import {bad,ok} from '@/lib/http';
 import {plain} from '@/lib/serializers';
 import {requireSupplierCreationCapacity} from '@/lib/supplier-saas';
+import {autoSku,fillGuesses,PRODUCT_EDITORS} from '@/lib/supplier-product-quick';
+import {parseAmount} from '@/lib/product-quick';
 
 async function resolveMaster(companyId:string,categoryId?:string|null,brandId?:string|null,unitId?:string|null){
  const [category,brand,unit]=await Promise.all([
@@ -25,24 +27,31 @@ export async function GET(){
 
 export async function POST(req:Request){
  try{
-  const s=await requireSupplierRole(['OWNER','ADMIN','MANAGER','STOCK']);
+  const s=await requireSupplierRole(PRODUCT_EDITORS);
   const b=await req.json();
-  const price=Number(b.price??b.retailPrice),stock=Math.trunc(Number(b.stock||0)),purchasePrice=Math.max(0,Number(b.purchasePrice||0));
-  if(!b.sku||!b.name||!(price>=0)||stock<0)return bad('Produit invalide');
+  // 17.4 : seuls le nom et le prix sont obligatoires ; SKU, catégorie, marque et qualité sont déduits.
+  const price=parseAmount(b.price??b.retailPrice),stock=Math.trunc(Number(b.stock||0)),purchasePrice=Math.max(0,parseAmount(b.purchasePrice)||0);
+  const name=String(b.name||'').trim();
+  if(name.length<2)return bad('Nom du produit requis');
+  if(!Number.isFinite(price))return bad('Prix de vente requis');
+  if(!(stock>=0))return bad('Stock invalide');
   await requireSupplierCreationCapacity(s.companyId,'PRODUCT');
   const {category,brand}=await resolveMaster(s.companyId,b.categoryId||null,b.brandId||null,b.unitId||null);
+  const guess=fillGuesses({name,category:category?.name||b.category,brand:brand?.name||b.brand,qualityGrade:b.qualityGrade});
+  const sku=String(b.sku||'').trim().toUpperCase()||await autoSku(s.companyId,name,guess.category);
+  // Catégorie déduite : on la relie à la catégorie du fournisseur portant le même nom, si elle existe.
+  const linkedCat=!category&&guess.category?await prisma.supplierCategory.findFirst({where:{companyId:s.companyId,active:true,name:{equals:guess.category,mode:'insensitive'}},select:{id:true}}):null;
+  const barcode=String(b.barcode||'').trim()||null;
+  if(barcode&&await prisma.supplierProduct.findFirst({where:{companyId:s.companyId,barcode},select:{id:true}}))return bad('Ce code-barres existe déjà dans votre catalogue',409);
   const x=await prisma.supplierProduct.create({data:{
    companyId:s.companyId,
-   sku:String(b.sku).trim().toUpperCase(),
-   barcode:String(b.barcode||'').trim()||null,
-   name:String(b.name).trim(),
-   brand:brand?.name||String(b.brand||'').trim()||null,
-   category:category?.name||String(b.category||'').trim()||null,
-   brandId:b.brandId||null,categoryId:b.categoryId||null,unitId:b.unitId||null,
-   description:b.description||null,imageUrl:b.imageUrl||null,qualityGrade:b.qualityGrade||null,
-   price,retailPrice:Number.isFinite(Number(b.retailPrice))?Number(b.retailPrice):price,
-   wholesalePrice:Number.isFinite(Number(b.wholesalePrice))?Number(b.wholesalePrice):null,
-   minimumPrice:Number.isFinite(Number(b.minimumPrice))?Number(b.minimumPrice):null,
+   sku,barcode,name,
+   brand:guess.brand,category:guess.category,
+   brandId:b.brandId||null,categoryId:b.categoryId||linkedCat?.id||null,unitId:b.unitId||null,
+   description:b.description||null,imageUrl:b.imageUrl||null,qualityGrade:guess.qualityGrade,
+   price,retailPrice:price,
+   wholesalePrice:Number.isFinite(parseAmount(b.wholesalePrice))?parseAmount(b.wholesalePrice):null,
+   minimumPrice:Number.isFinite(parseAmount(b.minimumPrice))?parseAmount(b.minimumPrice):null,
    purchasePrice,averageCost:purchasePrice,taxRate:Math.max(0,Number(b.taxRate||0)),
    stock,reservedStock:0,minStock:Math.max(0,Math.trunc(Number(b.minStock||0))),
    maxStock:Number.isFinite(Number(b.maxStock))?Math.max(0,Math.trunc(Number(b.maxStock))):null,
