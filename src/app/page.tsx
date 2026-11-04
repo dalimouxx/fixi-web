@@ -90,7 +90,7 @@ export default function Landing() {
         <a href="#apps">Applications</a><a href="#comment">Comment ça marche</a><a href="#demo">Démo</a><a href="#tarifs">Tarifs</a><Link href="/stores">Boutiques</Link><a href="#faq">FAQ</a>
         <Link className="lp-btn lp-btn--ghost lp-only-mobile" href="/login">Connexion</Link>
       </div>
-      <div className="lp-nav-cta"><Link className="lp-btn lp-btn--ghost lp-hide-mobile" href="/login">Connexion</Link><Link className="lp-btn lp-btn--primary" href="/onboarding">Commencer <ArrowRight size={16} /></Link>
+      <div className="lp-nav-cta"><Link className="lp-btn lp-btn--ghost lp-hide-mobile" href="/login">Connexion</Link><Link className="lp-btn lp-btn--primary" href="/inscription">Commencer <ArrowRight size={16} /></Link>
         <button className="lp-burger" aria-label={menu ? 'Fermer le menu' : 'Ouvrir le menu'} aria-expanded={menu} onClick={() => setMenu(v => !v)}>{menu ? <X size={22} /> : <Menu size={22} />}</button></div>
     </nav>
 
@@ -102,10 +102,10 @@ export default function Landing() {
         <h1>{brand?.landingHeadline || <>Le réseau qui fait tourner<br /><Rotator words={['les ateliers', 'les fournisseurs', 'les livreurs', 'le comptoir']} /></>}</h1>
         <p>{brand?.landingSubheadline || 'Réparations, pièces, livraisons et caisse : tout le monde de la réparation de téléphones connecté dans une seule application, en français et en arabe.'}</p>
         <div className="lp-hero-actions">
-          <Link className="lp-btn lp-btn--primary lp-btn--lg lp-shine" href="/onboarding">Essayer gratuitement <ArrowRight size={18} /></Link>
+          <Link className="lp-btn lp-btn--primary lp-btn--lg lp-shine" href="/inscription">Essayer gratuitement <ArrowRight size={18} /></Link>
           <a className="lp-play" href="#demo"><i><Play size={18} /></i><span>Voir la démo<small>Une réparation en 60 secondes</small></span></a>
         </div>
-        <ul className="lp-trust"><li><Check size={16} /> 30 jours d’essai</li><li><Check size={16} /> Sans installation</li><li><Check size={16} /> Android &amp; Windows</li></ul>
+        <ul className="lp-trust"><li><Check size={16} /> Compte gratuit</li><li><Check size={16} /> Sans installation</li><li><Check size={16} /> Android &amp; Windows</li></ul>
       </div>
 
       <div className="lp-stage" aria-hidden="true">
@@ -190,7 +190,7 @@ export default function Landing() {
         <Logo size={64} />
         <h2>Prêt à passer à <em>{name}</em> ?</h2>
         <p>Créez votre atelier en 2 minutes. 30 jours pour essayer, sans engagement.</p>
-        <div className="lp-hero-actions center"><Link className="lp-btn lp-btn--primary lp-btn--lg lp-shine" href="/onboarding">Créer mon atelier <ArrowRight size={18} /></Link><Link className="lp-btn lp-btn--glass lp-btn--lg" href="/android"><Smartphone size={18} /> Application Android</Link><a className="lp-btn lp-btn--glass lp-btn--lg" href={WINDOWS_URL}><Monitor size={18} /> Caisse Windows</a></div>
+        <div className="lp-hero-actions center"><Link className="lp-btn lp-btn--primary lp-btn--lg lp-shine" href="/inscription">Créer mon atelier <ArrowRight size={18} /></Link><Link className="lp-btn lp-btn--glass lp-btn--lg" href="/android"><Smartphone size={18} /> Application Android</Link><a className="lp-btn lp-btn--glass lp-btn--lg" href={WINDOWS_URL}><Monitor size={18} /> Caisse Windows</a></div>
       </Reveal>
     </section>
 

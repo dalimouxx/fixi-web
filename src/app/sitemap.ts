@@ -8,6 +8,7 @@ export default async function sitemap():Promise<MetadataRoute.Sitemap>{
  return [
   {url:base,lastModified:new Date(),changeFrequency:'weekly',priority:1},
   {url:`${base}/stores`,lastModified:new Date(),changeFrequency:'daily',priority:.9},
+  {url:`${base}/inscription`,lastModified:new Date(),changeFrequency:'monthly',priority:.7},
   ...shops.map(s=>({url:`${base}/stores/${s.slug}`,lastModified:s.createdAt,changeFrequency:'weekly' as const,priority:.8}))
  ];
 }

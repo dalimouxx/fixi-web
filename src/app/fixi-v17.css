@@ -255,3 +255,8 @@ h1,h2,h3,.page-title{letter-spacing:-.02em}
  .fixi-supplier-quick-workflow .fixi-workflow-heading p{color:#d6d3d1!important}
  .fixi-supplier-quick-workflow .fixi-workflow-heading .btn-ghost{background:rgba(255,255,255,.1)!important;border-color:rgba(255,255,255,.18)!important;color:#fff!important}
 }
+
+/* 17.3 — lien d'inscription sous la connexion */
+.login-signup{margin:14px 0 0;text-align:center;font-size:14px;color:#78716c}
+.login-signup a{color:#c2500a;font-weight:700;text-decoration:none}
+.login-signup a:hover{text-decoration:underline}
