@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { Activity, CalendarClock, MessageCircle, RefreshCw, Rocket, TrendingDown, TrendingUp, UserPlus, Wallet } from 'lucide-react';
 import { money } from '@/lib/format';
+import { ErrorState, Skeleton } from './ui-states';
 
 const ago = (d?: string | null) => { if (!d) return 'jamais'; const h = (Date.now() - new Date(d).getTime()) / 36e5; return h < 24 ? `il y a ${Math.max(1, Math.round(h))} h` : `il y a ${Math.round(h / 24)} j`; };
 const tierLabel: Record<string, string> = { CONNECT: 'Gratuit', TRIAL: 'Essai', PRO: 'Pro' };
@@ -9,8 +10,8 @@ const tierLabel: Record<string, string> = { CONNECT: 'Gratuit', TRIAL: 'Essai', 
 export function SaasGrowth() {
   const [d, setD] = useState<any>(null); const [err, setErr] = useState(''); const [n, setN] = useState(0);
   useEffect(() => { setErr(''); fetch('/api/platform/growth', { cache: 'no-store' }).then(async r => { const j = await r.json(); if (!r.ok) throw new Error(j.error || 'Chargement impossible'); setD(j); }).catch(e => setErr(e.message)); }, [n]);
-  if (err) return <section className="control-content"><div className="gr-err">{err} <button className="btn btn-soft btn-sm" onClick={() => setN(x => x + 1)}>Réessayer</button></div></section>;
-  if (!d) return <section className="control-content"><div className="gr-skel" /></section>;
+  if (err) return <section className="control-content"><ErrorState message={err} onRetry={() => setN(x => x + 1)} /></section>;
+  if (!d) return <section className="control-content"><Skeleton card lines={6} /></section>;
   const k = d.kpis, max = Math.max(1, ...d.series.map((x: any) => x.count)), maxR = Math.max(1, ...d.regions.map((x: any) => x.count));
   const Row = ({ r, extra }: { r: any; extra: string }) => <li><div><b>{r.name}</b><small>{r.region} · {extra}</small></div><span className={'gr-tier gr-tier--' + r.tier}>{tierLabel[r.tier]}</span>{r.wa ? <a className="btn btn-soft btn-sm" href={r.wa} target="_blank" rel="noreferrer"><MessageCircle size={14} /> WhatsApp</a> : <span className="gr-nophone">pas de téléphone</span>}</li>;
   return <section className="control-content gr">

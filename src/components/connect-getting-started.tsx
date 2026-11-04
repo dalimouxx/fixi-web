@@ -35,7 +35,7 @@ export function ConnectGettingStarted({ onShop }: { onShop?: () => void }) {
   return <section className="gs" aria-label="Premiers pas">
     <header className="gs-head">
       <div className="gs-ring" style={{ ['--p' as any]: d.pct }}><Rocket size={18} /></div>
-      <div><b>Premiers pas</b><span>{d.done} sur {d.total} · encore {d.total - d.done} étape{d.total - d.done > 1 ? 's' : ''} pour bien démarrer</span></div>
+      <div><b>Premiers pas</b><span><bdi>{d.done}/{d.total}</bdi> <span>étapes faites</span></span></div>
       <button className="gs-x" aria-label="Masquer les premiers pas" onClick={() => { try { localStorage.setItem(HIDE, '1'); } catch {} setHidden(true); }}><X size={16} /></button>
     </header>
     <div className="gs-bar"><i style={{ width: d.pct + '%' }} /></div>
