@@ -9,6 +9,10 @@ import {useRouter} from 'next/navigation';
 import Link from 'next/link';
 import {MapPinned,Navigation,Phone,Truck,CheckCircle2,RefreshCw,Map,Clock3,Banknote,AlertTriangle,RotateCcw,CalendarClock,PackageCheck,LogOut,PlayCircle,PauseCircle,Route,WalletCards,Camera,ShieldCheck,X,UserRound,Gauge,Wifi,WifiOff,Radio,History} from 'lucide-react';
 import {api} from './ui';
+import {FxSheet} from './fx-sheet';
+import {SlideToConfirm} from './slide-to-confirm';
+import {haptic} from '@/lib/haptics';
+import {playFixiSound} from '@/lib/notification-audio';
 import {RealtimeNotificationCenter} from './realtime-notification-center';
 import {PwaRegister} from './pwa-register';
 import {FixiSmartWidgets,type FixiWidgetData} from './fixi-smart-widgets';
@@ -24,7 +28,7 @@ export function DriverApp({session}:{session:any}){
  const router=useRouter();const[orders,setOrders]=useState<any[]>([]);const[events,setEvents]=useState<any[]>([]);const[shift,setShift]=useState<any>({current:null,pendingCashier:null,recent:[]});const[busy,setBusy]=useState('');const[msg,setMsg]=useState('');const[err,setErr]=useState('');
  const[view,setView]=useState<'orders'|'dues'|'history'>('orders');const[eventModal,setEventModal]=useState<EventModal>(null);const[dueModal,setDueModal]=useState<any>(null);const[dueData,setDueData]=useState<any>(null);const[dueAmount,setDueAmount]=useState('');const[eventNote,setEventNote]=useState('');const[eventAmount,setEventAmount]=useState('');const[proofModal,setProofModal]=useState<ProofModal>(null);const[proofScanner,setProofScanner]=useState(false);const[proof,setProof]=useState({recipientName:'',recipientPhone:'',proofCode:'',proofUrl:''});
  const[shiftModal,setShiftModal]=useState<'open'|'close'|null>(null);const[driverAvailable,setDriverAvailable]=useState(true);const[shiftForm,setShiftForm]=useState({startCash:'0',startMileage:'',endMileage:'',remittedCod:'0',note:''});const[tracking,setTracking]=useState(true);const[online,setOnline]=useState(true);const lastGps=useRef<Record<string,number>>({});
- async function load(){const rs=await Promise.all([fetch('/api/delivery/orders',{cache:'no-store'}),fetch('/api/delivery/events',{cache:'no-store'}),fetch('/api/delivery/shift',{cache:'no-store'}),fetch('/api/delivery/profile',{cache:'no-store'})]);if(rs.some(r=>r.status===401)){await fetch('/api/delivery/auth/logout',{method:'POST'}).catch(()=>{});router.replace('/delivery/login');router.refresh();return}const [o,e,s,p]=rs;const oj=await o.json(),ej=await e.json(),sj=await s.json(),pj=await p.json();setOrders(Array.isArray(oj)?oj:[]);setEvents(Array.isArray(ej)?ej:[]);setShift(sj&&typeof sj==='object'?sj:{current:null,pendingCashier:null,recent:[]});if(typeof pj?.driverAvailable==='boolean')setDriverAvailable(pj.driverAvailable)}
+ async function load(){const rs=await Promise.all([fetch('/api/delivery/orders',{cache:'no-store'}),fetch('/api/delivery/events',{cache:'no-store'}),fetch('/api/delivery/shift',{cache:'no-store'}),fetch('/api/delivery/profile',{cache:'no-store'})]);if(rs.some(r=>r.status===401)){await fetch('/api/delivery/auth/logout',{method:'POST'}).catch(()=>{});router.replace('/delivery/login');router.refresh();return}const [o,e,s,p]=rs;const oj=await o.json(),ej=await e.json(),sj=await s.json(),pj=await p.json();setOrders(Array.isArray(oj)?oj:[]);loaded.current=true;setEvents(Array.isArray(ej)?ej:[]);setShift(sj&&typeof sj==='object'?sj:{current:null,pendingCashier:null,recent:[]});if(typeof pj?.driverAvailable==='boolean')setDriverAvailable(pj.driverAvailable)}
  useEffect(()=>{load();const vis=()=>{if(document.visibilityState==='visible')load()};const focus=()=>load();document.addEventListener('visibilitychange',vis);window.addEventListener('focus',focus);const t=setInterval(()=>{if(document.visibilityState==='visible')load()},15000);return()=>{clearInterval(t);document.removeEventListener('visibilitychange',vis);window.removeEventListener('focus',focus)}},[]);
  useEffect(()=>{const sync=()=>setOnline(navigator.onLine);sync();addEventListener('online',sync);addEventListener('offline',sync);return()=>{removeEventListener('online',sync);removeEventListener('offline',sync)}},[]);
  const available=useMemo(()=>orders.filter(o=>o.status==='READY_FOR_DELIVERY'&&!o.delivery?.driverAccountId),[orders]);
@@ -107,120 +111,124 @@ export function DriverApp({session}:{session:any}){
   const id=navigator.geolocation.watchPosition(pos=>{for(const o of current){const now=Date.now();if(now-(lastGps.current[o.id]||0)<15000)continue;lastGps.current[o.id]=now;patch(o,{status:o.status,trackingNote:`GPS:${pos.coords.latitude},${pos.coords.longitude}|${new Date().toISOString()}`,latitude:pos.coords.latitude,longitude:pos.coords.longitude,accuracy:pos.coords.accuracy},true)}},()=>{}, {enableHighAccuracy:true,maximumAge:8000,timeout:12000});
   return()=>navigator.geolocation.clearWatch(id)
  },[tracking,shift.current?.id,online,active.map(o=>o.id+o.status).join('|')]);
- return <div className="delivery-app driver-app driver-v2"><PwaRegister/>
-  <header className="fixi-driver-topbar">
-    <div className="driver-header-brand">
-      <Truck aria-hidden="true"/><span><b>Fixi Livreur</b><small>{session.companyName}</small></span>
-    </div>
-    <div className="fixi-driver-header-state">
-      <ReportProblemButton space="delivery"/>
-      <div className="driver-live-state" aria-label={online?'Connexion active':'Connexion perdue'}>
-        {online?<Wifi size={17}/>:<WifiOff size={17}/>}<span>{online?'En ligne':'Hors ligne'}</span>
-      </div>
-      <button type="button" className={'driver-availability '+(driverAvailable?'on':'off')} onClick={toggleAvailable}
-         aria-label={driverAvailable?'Se rendre indisponible':'Se rendre disponible'} title="Changer ma disponibilité">
-        <Radio size={17}/><span>{driverAvailable?'Disponible':'Indisponible'}</span>
-      </button>
-    </div>
-    <div className="fixi-driver-header-actions">
-      <RealtimeNotificationCenter apiUrl="/api/delivery/notifications" eventsUrl="/api/delivery/events-stream"
-        storageKey="fixi-delivery-notifications" onEvent={load}/>
-      <LangToggle/>
-      <AndroidWidgetButton space="delivery"/>
-      <TextSizeToggle/>
-      <span className="fixi-driver-user"><b>{session.fullName}</b><small>Livreur</small></span>
-      <button type="button" className="fixi-driver-logout" onClick={logout} title="Déconnexion" aria-label="Déconnexion"><LogOut size={18}/></button>
-    </div>
+ useEffect(()=>{const v=new URLSearchParams(location.search).get('v');if(v==='dues'||v==='history')setView(v)},[]);
+ const [menu,setMenu]=useState(false),[moreFor,setMoreFor]=useState<any>(null),[toast,setToast]=useState('');
+ const seen=useRef<Set<string>|null>(null);const loaded=useRef(false);
+ // Nouvelle mission : vibration, son et bandeau, comme une vraie appli de livraison.
+ useEffect(()=>{if(!loaded.current)return;const ids=new Set(available.map((o:any)=>o.id));
+  if(seen.current){const fresh=[...ids].filter(id=>!seen.current!.has(id));if(fresh.length&&driverAvailable){haptic('warn');playFixiSound('livraison');const o=available.find((x:any)=>x.id===fresh[0]);setToast('Nouvelle mission · '+(o?.shop?.name||'')+' · '+money(o?.total||0))}}
+  seen.current=ids},[available.map((o:any)=>o.id).join(',')]);
+ useEffect(()=>{if(!toast)return;const t=setTimeout(()=>setToast(''),5000);return()=>clearTimeout(t)},[toast]);
+ useEffect(()=>{if(!msg)return;const t=setTimeout(()=>setMsg(''),4500);return()=>clearTimeout(t)},[msg]);
+ const stops=route?route.ordered:[...active].sort((a:any,b:any)=>(a.status==='OUT_FOR_DELIVERY'?0:1)-(b.status==='OUT_FOR_DELIVERY'?0:1));
+ const current:any=stops[0];const others=stops.slice(1);
+ const initials=String(session.fullName||'L').split(/\s+/).map((x:string)=>x[0]).slice(0,2).join('').toUpperCase();
+ const stepOf=(o:any)=>o.status==='READY_FOR_DELIVERY'?1:o.status==='OUT_FOR_DELIVERY'&&!o.delivery?.arrivedAt?2:o.status==='OUT_FOR_DELIVERY'?3:o.status==='RETURNING'?3:1;
+ const addr=(o:any)=>o.deliveryAddress||o.shop?.address||o.shop?.region||'';
+ const onShift=!!shift.current;
+ return <div className="delivery-app driver-app driver-v3"><PwaRegister/>
+  <header className="dv-top">
+   <button type="button" className="dv-avatar" onClick={()=>setMenu(true)} aria-label="Menu du livreur"><span>{initials}</span><i className={online?'on':'off'}/></button>
+   <div className="dv-top-title"><b>{session.fullName}</b><small>{session.companyName}{!online&&' · hors ligne'}</small></div>
+   <RealtimeNotificationCenter apiUrl="/api/delivery/notifications" eventsUrl="/api/delivery/events-stream" storageKey="fixi-delivery-notifications" onEvent={load}/>
   </header>
-  <main>
-   <section className={'fixi-driver-next-step'+(!online?' offline':'')} aria-label="Étape suivante pour le livreur">
-     <div className="fixi-driver-next-step-content">
-       <span>VOTRE PROCHAINE ÉTAPE</span>
-       <h2>{!online?'Connexion indisponible':
-         shift.pendingCashier?'Recette en attente de validation':
-         !shift.current?'Ouvrir votre journée':
-         active.length?'Poursuivre vos livraisons':
-         available.length?'Accepter une nouvelle mission':'Prêt pour une nouvelle mission'}</h2>
-       <p>{!online?'Vérifiez la connexion avant toute confirmation. Les opérations non enregistrées ne sont pas considérées comme validées.':
-         shift.pendingCashier?'Le caissier doit confirmer votre remise avant une nouvelle tournée.':
-         !shift.current?'Démarrez une journée pour accepter et suivre vos livraisons.':
-         active.length?active.length+' livraison(s) active(s) à terminer.':
-         available.length?available.length+' mission(s) disponible(s) dans votre espace.':
-         'Aucune mission en attente pour le moment. Activez les notifications pour être averti.'}</p>
-     </div>
-     {!online?<button type="button" className="btn btn-soft" onClick={load}>Réessayer</button>:
-       shift.pendingCashier?<Link className="btn btn-soft" href="/delivery/encaissements">Voir ma recette</Link>:
-       !shift.current?<button type="button" className="btn btn-primary" onClick={()=>setShiftModal('open')}>Démarrer</button>:
-       <button type="button" className="btn btn-soft" onClick={()=>setView('orders')}>Voir les missions</button>}
+  <main className="dv-main">
+   <section className={'dv-hero'+(onShift?' is-on':'')+(!online?' is-offline':'')}>
+    <div className="dv-hero-row">
+     <div><span className="dv-kicker">{!online?'Connexion perdue':shift.pendingCashier?'Recette en attente':onShift?'En service':'Hors service'}</span>
+      <h1>{!online?'Vérifiez Internet':shift.pendingCashier?'Le caissier valide votre recette':onShift?(active.length?`${active.length} livraison${active.length>1?'s':''} en cours`:available.length?`${available.length} mission${available.length>1?'s':''} à prendre`:'En attente de missions'):'Démarrez votre journée'}</h1></div>
+     {onShift&&<button type="button" className={'dv-switch'+(driverAvailable?' is-on':'')} onClick={toggleAvailable} aria-pressed={driverAvailable} aria-label="Disponible pour de nouvelles missions"><span/><b>{driverAvailable?'Disponible':'Pause'}</b></button>}
+    </div>
+    <div className="dv-stats">
+     <div><b>{deliveredToday.length}</b><span>Livrées</span></div>
+     <div><b>{money(codToday)}</b><span>Encaissé</span></div>
+     <div><b>{exceptionsToday}</b><span>Incidents</span></div>
+    </div>
+    {!online?<button className="dv-hero-cta" onClick={load}><RefreshCw size={18}/> Réessayer</button>:
+     shift.pendingCashier?<Link className="dv-hero-cta" href="/delivery/encaissements"><Banknote size={18}/> Voir ma recette · {money(shift.pendingCashier.declaredRemit||0)}</Link>:
+     !onShift?<SlideToConfirm label="Glisser pour démarrer la journée" tone="dark" onConfirm={()=>setShiftModal('open')}/>:
+     <div className="dv-hero-tools"><button type="button" className={'dv-chip'+(tracking?' is-on':'')} onClick={()=>setTracking(v=>!v)}><Map size={15}/> GPS {tracking?'actif':'en pause'}</button>
+      <button type="button" className="dv-chip" onClick={load}><RefreshCw size={15}/> Actualiser</button>
+      <button type="button" className="dv-chip dv-chip--end" onClick={()=>{setShiftForm(x=>({...x,remittedCod:String(codToday.toFixed?codToday.toFixed(3):codToday),endMileage:'',note:''}));setShiftModal('close')}}><PauseCircle size={15}/> Fin de journée</button></div>}
    </section>
-   <nav className="driver-mobile-nav">
-    <button className={view==='orders'?'active':''} onClick={()=>setView('orders')}><Truck/> <span>Commandes</span> <b>{available.length+active.length}</b></button>
-    <button className={view==='dues'?'active':''} onClick={()=>setView('dues')}><WalletCards/> <span>Dus</span> <b>{active.filter(o=>Number(o.customerDue||0)>0).length}</b></button>
-    <button className={view==='history'?'active':''} onClick={()=>setView('history')}><History/> <span>Historique</span> <b>{done.length}</b></button>
-    <Link href="/delivery/encaissements" className="fixi-driver-nav-payments"><Banknote/><span>Caisse</span></Link>
-   </nav>
-   <section className="driver-command">
-    <div className="driver-command-title"><span className="smart-kicker"><Route size={13}/> JOURNÉE & TOURNÉE</span><h1>{shift.current?'Tournée active':'Prêt à démarrer'}</h1><p>{shift.current?'GPS actif uniquement pendant les livraisons en cours.':'Ouvrez votre journée avant de prendre la route.'}</p></div>
-    <div className="driver-command-actions"><button className={'driver-availability '+(driverAvailable?'active':'')} onClick={toggleAvailable}><span/>{driverAvailable?'Disponible':'Indisponible'}</button><button className={'driver-tracking '+(tracking?'active':'')} disabled={!shift.current} onClick={()=>setTracking(v=>!v)}><Map/>{tracking?'GPS automatique':'GPS en pause'}</button><button className="btn btn-soft" onClick={load}><RefreshCw/> Actualiser</button>{!shift.current&&!shift.pendingCashier?<button className="btn btn-primary" onClick={()=>setShiftModal('open')}><PlayCircle/> Démarrer journée</button>:shift.current?<button className="btn btn-danger" onClick={()=>{setShiftForm(x=>({...x,remittedCod:String(codToday)}));setShiftModal('close')}}><PauseCircle/> Fin de journée</button>:<span className="driver-wait-cashier">Validation caisse requise</span>}</div>
-   </section>
-   <FixiSmartWidgets area="delivery" onAction={action=>setView(action as 'orders'|'dues'|'history')}
-     subtitle="Vos missions, les sommes réellement enregistrées et les validations de votre tournée."
-     widgets={([
-       {id:'delivery-active',label:'Missions à traiter',value:active.length,
-        description:'Livraisons réservées pour vous',icon:'orders',action:'orders',urgent:active.length>0},
-       {id:'delivery-new',label:'Missions disponibles',value:available.length,
-        description:'Nouvelles courses à accepter',icon:'delivery',action:'orders',accent:'info',urgent:available.length>0},
-       {id:'delivery-completed',label:"Livrées aujourd'hui",value:deliveredToday.length,
-        description:'Livraisons confirmées',icon:'success',accent:'success',action:'history'},
-       {id:'delivery-delivered',label:'Valeur livrée',value:money(deliveredValueToday),
-        description:'Total des commandes livrées',icon:'finance',accent:'neutral',action:'history'},
-       {id:'delivery-collected',label:'Encaissements du jour',value:money(codToday),
-        description:'Événements de collecte enregistrés',icon:'finance',accent:'success',href:'/delivery/encaissements'},
-       {id:'delivery-dues',label:'Anciens dus encaissés',value:money(dueCollectedToday),
-        description:'Collectes de dettes déclarées',icon:'due',action:'dues'},
-       {id:'delivery-incidents',label:'Incidents aujourd’hui',value:exceptionsToday,
-        description:'Événements à vérifier',icon:'alert',accent:'warning',urgent:exceptionsToday>0,action:'history'},
-     ]).filter(w=>['delivery-active','delivery-new','delivery-collected'].includes(w.id)) as FixiWidgetData[]}/>
-   {err&&<div className="driver-banner error"><AlertTriangle/>{err}</div>}{msg&&<div className="driver-banner success"><CheckCircle2/>{msg}</div>}
-   {shift.pendingCashier&&<div className="driver-shift-lock pending"><ShieldCheck/><div><h2>Remise caisse en attente</h2><p>Attendu {money(shift.pendingCashier.expectedCod||shift.pendingCashier.collectedCod||0)} · déclaré {money(shift.pendingCashier.declaredRemit||0)}. Le caissier doit recompter et confirmer avant votre prochaine journée.</p></div></div>}{!shift.current&&!shift.pendingCashier&&<div className="driver-shift-lock"><ShieldCheck/><div><h2>Journée non ouverte</h2><p>Les commandes restent visibles, mais une livraison ne peut pas être démarrée tant que le livreur n’a pas ouvert sa journée.</p></div><button className="btn btn-primary" onClick={()=>setShiftModal('open')}>Ouvrir ma journée</button></div>}
-   {view==='orders'&&available.length>0&&<section id="driver-orders" className="driver-available"><div className="supplier-section-head"><div><b>Nouvelles missions disponibles</b><span>Le premier livreur qui accepte réserve la commande.</span></div><em>{available.length}</em></div><div className="driver-available-grid">{available.map(o=>{const address=o.deliveryAddress||o.shop?.address||o.shop?.region||'';return <article key={o.id}><div><code>{o.reference}</code><h3>{o.shop?.name}</h3><span><MapPinned/> {address||'Adresse non renseignée'}</span><strong>{money(o.total)}</strong></div><button className="btn btn-primary" disabled={busy===o.id} onClick={()=>accept(o)}><CheckCircle2/> Accepter</button></article>})}</div></section>}
 
-   {view==='dues'&&<section id="driver-dues" className="driver-due-overview"><div className="supplier-section-head"><div><b>Dus clients à suivre</b><span>Chaque créance est détaillée par facture. Encaissement autorisé uniquement pendant une journée ouverte.</span></div></div><div className="driver-due-client-list">{active.filter(o=>Number(o.customerDue||0)>0).map(o=><article key={'due-'+o.id}><div className="driver-due-client-head"><div><b>{o.shop?.name}</b><span>{o.shop?.phone||'Sans téléphone'} · {o.shop?.address||o.shop?.region||'Adresse non renseignée'}</span></div><strong>{money(o.customerDue)}</strong></div><div className="driver-due-invoices">{(o.dueDetails||[]).map((d:any)=><div key={d.id}><span><b>{d.reference}</b><small>{dateTime(d.createdAt)}{d.dueAt?' · échéance '+dateTime(d.dueAt):''}</small></span><span><small>Total {money(d.total)}</small><small>Payé {money(d.paid)}</small><b>Reste {money(d.due)}</b></span></div>)}</div><button className="btn btn-soft btn-block" disabled={!shift.current||busy===o.id} onClick={()=>openDue(o)}><WalletCards/> Encaisser un dû</button></article>)}</div>{!active.some(o=>Number(o.customerDue||0)>0)&&<div className="delivery-empty compact"><WalletCards/><h3>Aucun dû disponible</h3><p>Pour sécurité, les dus sont visibles uniquement pour les clients de vos livraisons actives.</p></div>}</section>}
-   {view==='orders'&&<div id="driver-orders" className="driver-route-list">
-    {active.length>0&&<div className="fx-route-head"><b>Ma tournée</b><span>{active.length} arrêt{active.length>1?'s':''} · {route?`ordre optimisé · ≈ ${route.km} km`:'la livraison en cours d’abord'}</span>
-      {active.length>1&&<div className="fx-route-tools"><button type="button" className="btn btn-soft btn-sm" onClick={optimizeRoute}><Navigation size={15}/> {route?'Recalculer':'Optimiser l’ordre'}</button>{route?.url&&<a className="btn btn-ghost btn-sm" href={route.url} target="_blank" rel="noreferrer"><MapPinned size={15}/> Itinéraire complet</a>}</div>}</div>}
-    {(route?route.ordered:[...active].sort((a,b)=>(a.status==='OUT_FOR_DELIVERY'?0:1)-(b.status==='OUT_FOR_DELIVERY'?0:1))).map((o:any,index:number)=>{const address=o.deliveryAddress||o.shop?.address||o.shop?.region||'';const collected=Number(o.delivery?.cashCollected||0);return <article key={o.id} className={o.status==='OUT_FOR_DELIVERY'?'active-delivery':''}>
-      <div className="driver-stop-number">{index+1}</div>
-      <div className="driver-stop-main">
-       <div className="delivery-card-top"><div><code>{o.reference}</code><h2>{o.shop?.name}</h2><span><Clock3/> {dateTime(o.createdAt)}</span></div><span className={'status-pill '+o.status.toLowerCase()}>{labels[o.status]||o.status}</span></div>
-       <div className="driver-stop-grid"><div className="delivery-destination"><MapPinned/><div><b>{address||'Adresse non renseignée'}</b><span>{o.shop?.phone||'Téléphone non renseigné'}</span><small>Client: {o.shop?.name} · Dû actuel: {money(o.customerDue||0)}</small></div></div><div className="driver-stop-money"><WalletCards/><div><span>Commande</span><b>{money(o.total)}</b><small>{collected>0?'COD encaissé '+money(collected):'Aucun COD enregistré'}</small></div></div></div>
-       <details className="driver-parcel"><summary>{o.items.length} ligne(s) dans le colis</summary><div className="delivery-items">{o.items.map((i:any)=><div key={i.id}><span>{i.product.name} × {i.quantity}</span><b>{money(Number(i.unitPrice)*i.quantity)}</b></div>)}</div></details>
-       <div className="delivery-actions driver-actions">
-        {address&&<a className="btn btn-soft" target="_blank" href={maps(address)}><Navigation/> Itinéraire</a>}
-        {o.shop?.phone&&<a className="btn btn-soft" href={'tel:'+o.shop.phone}><Phone/> Appeler</a>}{o.delivery?.driverAccountId===session.id&&<Link className="btn btn-soft" target="_blank" href={'/delivery/orders/'+o.id+'/ticket'}><PackageCheck/> Bon livraison</Link>}{o.status==='OUT_FOR_DELIVERY'&&o.delivery?.driverAccountId===session.id&&<button className="btn btn-soft" onClick={()=>openDue(o)}><WalletCards/> Dû client</button>}
-        {o.status==='READY_FOR_DELIVERY'&&!o.delivery?.driverAccountId&&<button disabled={busy===o.id} className="btn btn-primary" onClick={()=>acceptOrder(o)}><Truck/> Accepter</button>}{o.status==='READY_FOR_DELIVERY'&&o.delivery?.driverAccountId===session.id&&<button disabled={busy===o.id||!shift.current} className="btn btn-primary" onClick={()=>patch(o,{status:'OUT_FOR_DELIVERY'})}><PlayCircle/> Démarrer</button>}
-        {o.status==='OUT_FOR_DELIVERY'&&!o.delivery?.arrivedAt&&<button disabled={busy===o.id} className="btn btn-primary fixi-driver-arrival-button" onClick={()=>confirmArrival(o)}><MapPinned/> Je suis arrivé</button>}
-        {o.status==='OUT_FOR_DELIVERY'&&o.delivery?.arrivedAt&&<span className="fixi-driver-arrival-confirmed"><CheckCircle2 size={17}/> Arrivée confirmée · {dateTime(o.delivery.arrivedAt)}</span>}
-        {o.status==='OUT_FOR_DELIVERY'&&<button className="btn btn-soft" onClick={()=>openEvent(o,'COD_COLLECTED')}><Banknote/> Encaisser COD</button>}
-        {o.status==='OUT_FOR_DELIVERY'&&<button className="btn btn-soft" onClick={()=>openEvent(o,'CUSTOMER_ABSENT')}><AlertTriangle/> Absent</button>}
-        {o.status==='OUT_FOR_DELIVERY'&&<button className="btn btn-soft" onClick={()=>openEvent(o,'DELIVERY_REFUSED')}><RotateCcw/> Refus</button>}
-        {o.status==='OUT_FOR_DELIVERY'&&<button className="btn btn-soft" onClick={()=>openEvent(o,'RESCHEDULED')}><CalendarClock/> Reprogrammer</button>}
-        {o.status==='OUT_FOR_DELIVERY'&&<button className="btn btn-soft" onClick={()=>openEvent(o,'INCIDENT')}><AlertTriangle/> Incident</button>}
-        {o.status==='OUT_FOR_DELIVERY'&&<button className="btn btn-soft" onClick={()=>openEvent(o,'RETURN_TO_DEPOT')}><PackageCheck/> Retour fournisseur</button>}{o.status==='RETURNING'&&<div className="driver-return-wait"><PackageCheck/><span><b>Retour à remettre au Supplier</b><small>Le stock sera réintégré seulement après contrôle physique côté fournisseur.</small></span></div>}
-        {o.status==='OUT_FOR_DELIVERY'&&<button disabled={busy===o.id} className="btn btn-primary" onClick={()=>{setProof({recipientName:'',recipientPhone:o.shop?.phone||'',proofCode:'',proofUrl:''});setProofModal({order:o})}}><CheckCircle2/> Confirmer remise</button>}
-       </div>
-       <div className="delivery-event-log">{events.filter((e:any)=>e.orderId===o.id).slice(0,6).map((e:any)=><div key={e.id}><i/><span><b>{eventLabel(e.type)}</b><small>{e.note||''}{e.amount!==null&&e.amount!==undefined?' · '+money(e.amount):''}</small></span><time>{dateTime(e.createdAt)}</time></div>)}</div>
+   {err&&<div className="dv-alert is-error" role="alert"><AlertTriangle size={18}/><span>{err}</span><button onClick={()=>setErr('')} aria-label="Fermer"><X size={16}/></button></div>}
+
+   {view==='orders'&&<>
+    {available.length>0&&<section className="dv-section">
+     <h2 className="dv-h2"><span className="dv-pulse"/> Nouvelles missions <em>{available.length}</em></h2>
+     <div className="dv-offers">{available.map((o:any)=><article key={o.id} className="dv-offer">
+      <header><span className="dv-ref">{o.reference}</span><strong>{money(o.total)}</strong></header>
+      <h3>{o.shop?.name}</h3>
+      <p><MapPinned size={15}/> {addr(o)||'Adresse non renseignée'}</p>
+      <div className="dv-offer-meta"><span><PackageCheck size={14}/> {o.items?.length||0} article{(o.items?.length||0)>1?'s':''}</span>{Number(o.customerDue||0)>0&&<span><WalletCards size={14}/> Dû {money(o.customerDue)}</span>}<span><Clock3 size={14}/> {dateTime(o.createdAt)}</span></div>
+      <SlideToConfirm label={onShift?'Glisser pour accepter':'Démarrez la journée d’abord'} disabled={busy===o.id||!onShift} onConfirm={()=>void accept(o)}/>
+     </article>)}</div>
+    </section>}
+
+    {current?<section className="dv-section">
+     <h2 className="dv-h2">Livraison en cours{route&&<small> · tournée optimisée ≈ {route.km} km</small>}</h2>
+     {(()=>{const o=current,step=stepOf(o),collected=Number(o.delivery?.cashCollected||0),toCollect=Math.max(0,Number(o.total||0)-collected);return <article className="dv-current" key={o.id}>
+      <ol className="dv-steps" aria-label="Étapes">{['Acceptée','En route','Arrivé','Remise'].map((l,i)=><li key={l} className={i<step?'done':i===step?'now':''}><i/><span>{l}</span></li>)}</ol>
+      <div className="dv-current-head"><div><span className="dv-ref">{o.reference}</span><h3>{o.shop?.name}</h3><p><MapPinned size={15}/> {addr(o)||'Adresse non renseignée'}</p></div>
+       <div className="dv-amount"><span>{toCollect>0?'À encaisser':'Payé'}</span><b>{money(toCollect>0?toCollect:o.total)}</b>{collected>0&&<small>déjà {money(collected)}</small>}</div></div>
+      <div className="dv-quick">
+       {addr(o)&&<a href={maps(addr(o))} target="_blank" rel="noreferrer"><Navigation size={20}/><span>Itinéraire</span></a>}
+       {o.shop?.phone&&<a href={'tel:'+o.shop.phone}><Phone size={20}/><span>Appeler</span></a>}
+       {o.status==='OUT_FOR_DELIVERY'&&<button type="button" onClick={()=>openEvent(o,'COD_COLLECTED')}><Banknote size={20}/><span>Encaisser</span></button>}
+       {o.status==='OUT_FOR_DELIVERY'&&Number(o.customerDue||0)>0&&<button type="button" onClick={()=>openDue(o)}><WalletCards size={20}/><span>Dû client</span></button>}
+       <Link href={'/delivery/orders/'+o.id+'/ticket'} target="_blank"><PackageCheck size={20}/><span>Bon</span></Link>
+       {o.status==='OUT_FOR_DELIVERY'&&<button type="button" onClick={()=>setMoreFor(o)}><AlertTriangle size={20}/><span>Problème</span></button>}
       </div>
-     </article>})}
-    {!active.length&&<div className="delivery-empty"><CheckCircle2/><h2>Aucune livraison acceptée</h2><p>{available.length?'Choisissez une mission disponible ci-dessus.':'Aucune nouvelle mission pour le moment.'}</p></div>}
-   </div>}
-   {view==='history'&&done.length===0&&<div className="fixi-driver-list-empty" role="status">
-     <History size={32}/><strong>Aucune livraison terminée</strong>
-     <p>Vos missions finalisées apparaîtront ici avec les détails de remise.</p>
-     <button className="btn btn-soft" type="button" onClick={()=>setView('orders')}>Retour aux missions</button>
-   </div>}
-   {view==='history'&&done.length>0&&<section id="driver-history" className="driver-history"><div className="supplier-section-head"><div><b>Historique récent</b><span>Preuves de remise et commandes terminées.</span></div></div>{done.map(o=><div key={o.id}><span><b>{o.reference}</b><small>{o.shop?.name} · {o.delivery?.recipientName?'Reçu par '+o.delivery.recipientName:'Livrée'}</small></span><strong>{money(o.total)}</strong><CheckCircle2/></div>)}</section>}
+      <details className="dv-parcel"><summary>Colis : {o.items?.length||0} ligne{(o.items?.length||0)>1?'s':''}</summary>{(o.items||[]).map((i:any)=><div key={i.id}><span>{i.product?.name} × {i.quantity}</span><b>{money(Number(i.unitPrice)*i.quantity)}</b></div>)}</details>
+      {o.status==='READY_FOR_DELIVERY'&&<SlideToConfirm label={onShift?'Glisser pour partir':'Démarrez la journée d’abord'} disabled={busy===o.id||!onShift} onConfirm={()=>void patch(o,{status:'OUT_FOR_DELIVERY'})}/>}
+      {o.status==='OUT_FOR_DELIVERY'&&!o.delivery?.arrivedAt&&<SlideToConfirm label="Glisser : je suis arrivé" disabled={busy===o.id} onConfirm={()=>void confirmArrival(o)}/>}
+      {o.status==='OUT_FOR_DELIVERY'&&o.delivery?.arrivedAt&&<SlideToConfirm label="Glisser pour confirmer la remise" tone="ok" disabled={busy===o.id} onConfirm={()=>{setProof({recipientName:'',recipientPhone:o.shop?.phone||'',proofCode:'',proofUrl:''});setProofModal({order:o})}}/>}
+      {o.status==='RETURNING'&&<div className="dv-alert"><PackageCheck size={18}/><span><b>Retour à remettre au fournisseur.</b> Le stock est réintégré après contrôle.</span></div>}
+      {events.filter((e:any)=>e.orderId===o.id).length>0&&<ul className="dv-log">{events.filter((e:any)=>e.orderId===o.id).slice(0,4).map((e:any)=><li key={e.id}><i/><span><b>{eventLabel(e.type)}</b>{e.amount!=null&&' · '+money(e.amount)}{e.note?' · '+e.note:''}</span><time>{new Date(e.createdAt).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</time></li>)}</ul>}
+     </article>})()}
+    </section>:available.length===0&&<section className="dv-empty"><div className="dv-empty-art"><Truck size={40}/></div><h2>{onShift?'Aucune mission pour le moment':'Prêt à rouler ?'}</h2><p>{onShift?'Restez disponible : une alerte sonne dès qu’une commande est prête.':'Démarrez votre journée pour recevoir les missions.'}</p></section>}
+
+    {others.length>0&&<section className="dv-section">
+     <div className="dv-h2-row"><h2 className="dv-h2">Prochains arrêts <em>{others.length}</em></h2>{active.length>1&&<button className="dv-chip" onClick={optimizeRoute}><Route size={15}/> {route?'Recalculer':'Optimiser'}</button>}{route?.url&&<a className="dv-chip" href={route.url} target="_blank" rel="noreferrer"><MapPinned size={15}/> Tout l’itinéraire</a>}</div>
+     <ol className="dv-stops">{others.map((o:any,i:number)=><li key={o.id}><span className="dv-stop-n">{i+2}</span><div><b>{o.shop?.name}</b><small>{addr(o)||'Adresse non renseignée'}</small></div><strong>{money(o.total)}</strong>
+      {o.status==='READY_FOR_DELIVERY'&&<button className="dv-chip" disabled={busy===o.id||!onShift} onClick={()=>void patch(o,{status:'OUT_FOR_DELIVERY'})}><PlayCircle size={15}/> Partir</button>}</li>)}</ol>
+    </section>}
+   </>}
+
+   {view==='dues'&&<section className="dv-section"><h2 className="dv-h2">Dus clients</h2>
+    {active.filter((o:any)=>Number(o.customerDue||0)>0).length===0?<div className="dv-empty small"><WalletCards size={30}/><p>Aucun dû à encaisser sur votre tournée.</p></div>:
+    <div className="dv-list">{active.filter((o:any)=>Number(o.customerDue||0)>0).map((o:any)=><article key={'d'+o.id} className="dv-row"><div><b>{o.shop?.name}</b><small>{o.shop?.phone||'Sans téléphone'} · {(o.dueDetails||[]).length} facture(s)</small></div><strong>{money(o.customerDue)}</strong><button className="dv-chip" disabled={o.status!=='OUT_FOR_DELIVERY'} onClick={()=>openDue(o)}>Encaisser</button></article>)}</div>}
+   </section>}
+
+   {view==='history'&&<section className="dv-section"><h2 className="dv-h2">Historique <em>{done.length}</em></h2>
+    {done.length===0?<div className="dv-empty small"><History size={30}/><p>Vos livraisons terminées apparaîtront ici.</p></div>:
+    <div className="dv-list">{done.map((o:any)=><article key={o.id} className="dv-row"><CheckCircle2 size={20} className="dv-ok"/><div><b>{o.shop?.name}</b><small>{o.reference} · {o.delivery?.recipientName?'reçu par '+o.delivery.recipientName:'livrée'} · {dateTime(o.delivery?.deliveredAt||o.updatedAt)}</small></div><strong>{money(o.total)}</strong></article>)}</div>}
+   </section>}
   </main>
+
+  <nav className="dv-tabs" aria-label="Navigation livreur">
+   <button className={view==='orders'?'active':''} onClick={()=>setView('orders')}><Truck size={22}/><span>Missions</span>{available.length+active.length>0&&<b>{available.length+active.length}</b>}</button>
+   <button className={view==='dues'?'active':''} onClick={()=>setView('dues')}><WalletCards size={22}/><span>Dus</span>{active.filter((o:any)=>Number(o.customerDue||0)>0).length>0&&<b>{active.filter((o:any)=>Number(o.customerDue||0)>0).length}</b>}</button>
+   <button className={view==='history'?'active':''} onClick={()=>setView('history')}><History size={22}/><span>Historique</span></button>
+   <Link href="/delivery/encaissements"><Banknote size={22}/><span>Ma caisse</span></Link>
+  </nav>
+
+  {(toast||msg)&&<div className={'dv-toast'+(toast?' is-new':'')} role="status" onClick={()=>{setToast('');setMsg('');setView('orders')}}>{toast?<Truck size={18}/>:<CheckCircle2 size={18}/>}<span>{toast||msg}</span></div>}
+
+  <FxSheet open={menu} onClose={()=>setMenu(false)} side="bottom" title={session.fullName} subtitle={session.companyName+' · Livreur'} label="Menu du livreur">
+   <div className="dv-menu">
+    <div className="dv-menu-row"><span>Langue</span><LangToggle/></div>
+    <div className="dv-menu-row"><span>Taille du texte</span><TextSizeToggle/></div>
+    <div className="dv-menu-row"><span>Widget Android</span><AndroidWidgetButton space="delivery"/></div>
+    <div className="dv-menu-row"><span>Un souci ?</span><ReportProblemButton space="delivery" className="btn btn-soft btn-sm" label/></div>
+    <Link className="btn btn-soft btn-block" href="/delivery/encaissements"><Banknote size={18}/> Ma caisse et mes remises</Link>
+    <button className="btn btn-ghost btn-block dv-logout" onClick={logout}><LogOut size={18}/> Se déconnecter</button>
+   </div>
+  </FxSheet>
+  <FxSheet open={!!moreFor} onClose={()=>setMoreFor(null)} side="bottom" title="Un problème ?" subtitle={moreFor?moreFor.reference+' · '+(moreFor.shop?.name||''):''} label="Problème de livraison">
+   <div className="dv-more">{([['CUSTOMER_ABSENT','Client absent',UserRound],['DELIVERY_REFUSED','Livraison refusée',RotateCcw],['RESCHEDULED','Reprogrammer',CalendarClock],['INCIDENT','Incident (accident, panne…)',AlertTriangle],['RETURN_TO_DEPOT','Retour au fournisseur',PackageCheck]] as const).map(([t,l,I])=><button key={t} type="button" onClick={()=>{const o=moreFor;setMoreFor(null);openEvent(o,t as DriverEventType)}}><I size={20}/><span>{l}</span></button>)}</div>
+  </FxSheet>
   {dueModal&&<div className="supplier-modal-backdrop"><div className="supplier-modal delivery-modal"><button className="supplier-modal-x" onClick={()=>setDueModal(null)}><X/></button><span className="smart-kicker"><WalletCards size={13}/> CRÉANCE ATELIER</span><h2>{dueModal.shop?.name}</h2><p>Solde ouvert chez ce fournisseur : <b>{money(dueData?.due||0)}</b></p>{(dueData?.sales||[]).length>0&&<div className="driver-due-lines detailed">{dueData.sales.slice(0,8).map((s:any)=><details key={s.id}><summary><span><b>{s.reference}</b><small>{dateTime(s.createdAt)}</small></span><strong>{money(s.due??Math.max(0,Number(s.total)-Number(s.paid)))}</strong></summary><div className="driver-due-invoice-detail"><div><h4>Produits</h4>{(s.items||[]).map((i:any)=><p key={i.id}><span>{i.name} <small>{i.sku||''}</small></span><b>{i.quantity} × {money(i.unitPrice)}</b></p>)}</div><div><h4>Paiements</h4>{(s.payments||[]).map((p:any)=><p key={p.id}><span>{dateTime(p.createdAt)} · {p.method}</span><b>{money(p.amount)}</b></p>)}{!(s.payments||[]).length&&<small>Aucun paiement précédent</small>}</div>{s.delivery&&<div className="driver-due-proof"><ShieldCheck/><span><b>{s.delivery.driverName||'Livraison Fixi'}</b><small>{s.delivery.deliveredAt?'Livrée '+dateTime(s.delivery.deliveredAt):'Livraison enregistrée'}{s.delivery.recipientName?' · reçu par '+s.delivery.recipientName:''}</small></span></div>}</div></details>)}</div>}<label className="label">Montant encaissé</label><div className="supplier-money-input"><input type="number" min=".001" max={dueData?.due||0} step=".001" value={dueAmount} onChange={e=>setDueAmount(e.target.value)}/><b>DT</b></div><button disabled={busy===dueModal.id||!(Number(dueAmount)>0)||Number(dueAmount)>Number(dueData?.due||0)} className="btn btn-primary btn-block" onClick={collectDue}><Banknote/> Enregistrer l’encaissement</button></div></div>}
   {eventModal&&<div className="supplier-modal-backdrop"><div className="supplier-modal delivery-modal"><button className="supplier-modal-x" onClick={()=>setEventModal(null)}><X/></button><span className="smart-kicker"><AlertTriangle size={13}/> ÉVÉNEMENT TERRAIN</span><h2>{eventLabel(eventModal.type)}</h2><p>{eventModal.order.reference} · {eventModal.order.shop?.name}</p>{['COD_COLLECTED','DUE_COLLECTED'].includes(eventModal.type)&&<><label className="label">Montant encaissé</label><div className="supplier-money-input"><input autoFocus type="number" min="0" step="0.001" value={eventAmount} onChange={e=>setEventAmount(e.target.value)}/><b>DT</b></div></>}<label className="label">Note / motif</label><textarea className="input" autoFocus={eventModal.type!=='COD_COLLECTED'} value={eventNote} onChange={e=>setEventNote(e.target.value)} placeholder="Ajoutez une information utile au responsable livraison…"/><button disabled={busy===eventModal.order.id} className="btn btn-primary btn-block" onClick={addEvent}>Enregistrer</button></div></div>}
   {proofModal&&<div className="supplier-modal-backdrop"><div className="supplier-modal delivery-modal proof-modal"><button className="supplier-modal-x" onClick={()=>setProofModal(null)}><X/></button><span className="smart-kicker"><ShieldCheck size={13}/> PREUVE DE LIVRAISON</span><h2>Confirmer la remise</h2><p>La confirmation est historisée et visible par le fournisseur.</p><label className="label">Nom du réceptionnaire *</label><div className="supplier-icon-input"><UserRound/><input className="input" autoFocus value={proof.recipientName} onChange={e=>setProof({...proof,recipientName:e.target.value})}/></div><label className="label">Téléphone</label><input className="input" value={proof.recipientPhone} onChange={e=>setProof({...proof,recipientPhone:e.target.value})}/><label className="label">Code unique affiché dans l’atelier *</label><div className="delivery-code-entry"><input className="input" inputMode="numeric" placeholder="6 chiffres" value={proof.proofCode} onChange={e=>setProof({...proof,proofCode:e.target.value.replace(/\D/g,'').slice(0,8)})}/><button type="button" className="btn btn-soft" onClick={()=>setProofScanner(true)}><Camera/> Scanner QR</button></div><label className="driver-photo-upload"><Camera/><span><b>{proof.proofUrl?'Photo ajoutée':'Ajouter une photo de preuve'}</b><small>Optionnel · image compressée</small></span><input type="file" accept="image/*" capture="environment" onChange={e=>photo(e.target.files?.[0])}/></label><button disabled={busy===proofModal.order.id||!proof.recipientName.trim()||proof.proofCode.length!==6} className="btn btn-primary btn-block" onClick={confirmDelivery}><CheckCircle2/> Livraison remise</button></div></div>}

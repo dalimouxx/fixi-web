@@ -72,12 +72,16 @@ export default function Dashboard() {
   ].filter(Boolean) as any[];
 
   return <div className="fx-page">
-    <div className="fx-hello">
-      <div><h1>Que voulez-vous faire ?</h1><p className="fx-hello-date">{today}</p></div>
-      {perm.finance && <Link href="/app/fin-de-journee" className="btn btn-ghost"><Moon size={18} /> Fin de journée</Link>}
-    </div>
-
-    <p className="fx-day-summary" aria-live="polite">{daySummary({ lang, ready, waiting, active, revenue: perm.finance ? money(data.todayRevenue) : null, pickups: (data.pickups || []).filter((x: any) => x.stage > 0).length })}</p>
+    <section className="fx17-hero" aria-label="Votre journée">
+      <div className="fx-hello">
+        <div><p className="fx-hello-date">{today}</p><h1>Que voulez-vous faire ?</h1></div>
+        {perm.finance && <Link href="/app/fin-de-journee" className="btn btn-ghost"><Moon size={18} /> Fin de journée</Link>}
+      </div>
+      <p className="fx-day-summary" aria-live="polite">{daySummary({ lang, ready, waiting, active, revenue: perm.finance ? money(data.todayRevenue) : null, pickups: (data.pickups || []).filter((x: any) => x.stage > 0).length })}</p>
+      <section className="fx-kpis" aria-label="Chiffres du jour">
+        {kpis.map(k => { const Icon = k.icon; return <div className="fx-kpi" key={k.label}><Icon /><div><span>{k.label}</span><strong>{k.value}</strong></div></div>; })}
+      </section>
+    </section>
 
     {perm.profit && new Date().getDate() <= 7 && <Link href="/app/rapport-mensuel" className="fx-row fx-row--ok fx-month-banner"><Sparkles /><span className="fx-row-main"><b>Le rapport du mois dernier est prêt</b><small>Encaissé, bénéfice, pannes et techniciens · PDF et fichier pour le comptable</small></span><ChevronRight size={18} /></Link>}
 
@@ -91,9 +95,6 @@ export default function Dashboard() {
       </Link>; })}
     </nav>
 
-    <section className="fx-kpis" aria-label="Chiffres du jour">
-      {kpis.map(k => { const Icon = k.icon; return <div className="fx-kpi" key={k.label}><Icon /><div><span>{k.label}</span><strong>{k.value}</strong></div></div>; })}
-    </section>
 
     <div className="fx-grid-2">
       <section className="fx-panel" aria-labelledby="todo-title">

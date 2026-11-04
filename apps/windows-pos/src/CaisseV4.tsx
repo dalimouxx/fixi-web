@@ -15,6 +15,8 @@ import {InvoiceDialog,InvoicePrint,PaymentSlip,type InvoiceData,type PaymentSlip
 import {InventoryPage} from './inventory';
 import {ReportDialog} from './report';
 import {Banknote,BookOpen,Boxes,Check,ChevronRight,CircleAlert,CircleCheck,CreditCard,Delete,HandCoins,Inbox,KeyRound,Landmark,Lock,LockOpen,LogIn,Minus,PackageOpen,PackageSearch,PanelLeftClose,PanelLeftOpen,Plus,Power,Printer,ReceiptText,RefreshCw,ScanBarcode,Search,ShieldCheck,ShoppingCart,Tags,Trash2,TriangleAlert,Truck,Undo2,UserPlus,UserRound,UserRoundCog,Users,Wallet,X,PencilLine,Percent,PauseCircle,PlayCircle,Settings2,WifiOff,CloudUpload,MessageCircle,Download,Flame,ClipboardList,FileText,type LucideIcon} from 'lucide-react';
+import '@fontsource-variable/manrope';
+import {FixiLogo,categoryLook,Clock} from './brand';
 import './style.css';
 import './v4.css';
 import './v5.css';
@@ -464,8 +466,9 @@ function App(){
  const change=method==='CASH'&&givenCash.trim()!==''&&Number.isFinite(given)?given-(Number.isFinite(amount)?amount:0):null;
  const quickCash=[...new Set([Math.ceil(total),Math.ceil(total/5)*5,Math.ceil(total/10)*10,Math.ceil(total/50)*50].filter(v=>v>0))].slice(0,4);
  const current=nav.find(n=>n.id===page);
+ if(!boot&&profile===null)return <div className="v7-splash"><FixiLogo size={96}/><b>FIXI Caisse</b><i/></div>;
  if(!boot)return <div className="v5-login">
-  <div className="v5-login-identity"><div className="v5-mark v5-mark--xl">F</div><h1>FIXI Caisse</h1><p>Le point de vente Windows de FIXI Supplier.</p>
+  <div className="v5-login-identity"><FixiLogo size={72} className="v7-logo--hero"/><h1>FIXI Caisse</h1><p>Le point de vente Windows de FIXI Supplier.</p>
    <ul><li><ScanBarcode size={18}/> Scanner rapide, panier gardé même après coupure</li><li><Wallet size={18}/> Ventes, dettes clients et retours au même endroit</li><li><Printer size={18}/> Tickets et étiquettes code-barres</li></ul></div>
   <div className="v5-login-panel">{profile?.configured&&!passwordMode?
    <form onSubmit={quickLogin} className="v5-card v5-login-form"><h2>Bonjour 👋</h2>
@@ -484,7 +487,7 @@ function App(){
    <button className="v5-link v5-link--muted" onClick={()=>{setBoot(demo);setPage('caisse')}}>Essayer sans connexion (démonstration)</button></div></div>;
  return <div className={'v4-app v5-app'+(page==='caisse'?' is-checkout':'')+(compact?' is-compact':'')}>
   <aside className="v5-side">
-   <div className="v5-brand"><div className="v5-mark">F</div><div className="v5-brand-text"><strong>FIXI</strong><small>Caisse</small></div>
+   <div className="v5-brand"><FixiLogo size={40}/><div className="v5-brand-text"><strong>FIXI</strong><small>Caisse</small></div>
     <button className="v5-icon-btn v5-side-toggle" title={compact?'Agrandir le menu':'Réduire le menu'} aria-label={compact?'Agrandir le menu':'Réduire le menu'} onClick={()=>setCompact(v=>!v)}>{compact?<PanelLeftOpen size={18}/>:<PanelLeftClose size={18}/>}</button></div>
    <nav className="v5-nav" aria-label="Menu">{navGroups.map(g=><div key={g.label} className="v5-nav-group"><span className="v5-nav-heading">{g.label}</span>
     {g.items.map(id=>{const item=nav.find(n=>n.id===id)!;const I=item.icon;return <button key={id} title={item.label} aria-current={page===id?'page':undefined} className="v5-nav-item" onClick={()=>navigate(id)}><I size={19}/><span>{item.label}</span>{id==='commandes'&&pendingOrders>0&&<b>{pendingOrders}</b>}</button>})}</div>)}</nav>
@@ -492,7 +495,7 @@ function App(){
     <div className="v5-account-actions"><button className="v5-icon-btn" title="Changer de caissier" aria-label="Changer de caissier" disabled={boot.role==='DEMO'} onClick={()=>void switchCashier()}><UserRoundCog size={17}/></button><button className="v5-icon-btn" title="Réglages" aria-label="Réglages" onClick={()=>setDialog('settings')}><Settings2 size={17}/></button><button className="v5-icon-btn" title="Fermer FIXI Caisse" aria-label="Fermer FIXI Caisse" onClick={()=>void getCurrentWindow().close()}><Power size={17}/></button></div></div>
   </aside>
   <main className="v5-main">
-   <header className="v5-header"><div><h1>{page==='caisse'?'Caisse':current?.label}</h1>{current?.hint&&<p>{current.hint}</p>}</div><div className="v5-toolbar">
+   <header className="v5-header"><Clock/><div className="v7-title"><h1>{page==='caisse'?'Caisse':current?.label}</h1>{current?.hint&&<p>{current.hint}</p>}</div><div className="v5-toolbar">
     {(offline||queue.length>0)&&<button className={'v5-btn v6-offline'+(queue.some(q=>q.error)?' is-error':'')} onClick={()=>setDialog('parked')} title="Ventes hors ligne">{offline?<WifiOff size={16}/>:<CloudUpload size={16}/>} {offline?'Hors ligne':'À envoyer'}{queue.length>0&&<b>{queue.length}</b>}</button>}
     <button className="v5-btn v5-btn--ghost" onClick={()=>void refresh()} disabled={busy||boot.role==='DEMO'} title="Recharger produits, prix et stock"><RefreshCw size={16} className={busy?'v5-spin':''}/> Synchroniser</button>
     <button className="v5-btn v5-btn--ghost" onClick={()=>setLabels(true)}><Tags size={16}/> Étiquettes</button>
@@ -509,9 +512,9 @@ function App(){
       <button aria-pressed={priceMode==='WHOLESALE'} disabled={busy||!!saleRef||entries.length>0} onClick={()=>setPriceMode('WHOLESALE')}>Gros</button></div></div>
     <div className="v5-chips">{hasTop&&<button aria-pressed={category==='Top'} onClick={()=>setCategory('Top')}><Flame size={14}/> Les plus vendus</button>}{categories.map(x=><button key={x} aria-pressed={x===category} onClick={()=>setCategory(x)}>{x}<small>{x==='Tous'?products.length:products.filter(p=>(p.category||'Autres')===x).length}</small></button>)}</div>
     {visible.length===0?<div className="v5-empty"><PackageSearch size={40}/><h3>Aucun produit</h3><p>Essayez un autre mot ou une autre catégorie.</p></div>:
-    <section className="v5-products">{visible.slice(0,gridLimit).map(p=>{const inCart=cart[p.id]||0;return <button key={p.id} disabled={p.stock<=0||busy||!!saleRef} className={'v5-product'+(inCart?' is-in-cart':'')} onClick={()=>add(p.id,1)}>
+    <section className="v5-products">{visible.slice(0,gridLimit).map(p=>{const inCart=cart[p.id]||0;return <button key={p.id} disabled={p.stock<=0||busy||!!saleRef} className={'v5-product'+(inCart?' is-in-cart':'')} style={{['--cat' as any]:categoryLook(p.category,p.name).color}} onClick={()=>add(p.id,1)}>
      {inCart>0&&<span className="v5-product-qty">{inCart}</span>}
-     <span className="v5-product-cat">{p.category||'Autres'}</span><strong>{p.name}</strong><small className="v5-mono">{p.sku}</small>
+     {(()=>{const {Icon,color}=categoryLook(p.category,p.name);return <span className="v7-cat" style={{['--cat' as any]:color}}><Icon size={15}/>{p.category||'Autres'}</span>})()}<strong>{p.name}</strong><small className="v5-mono">{p.sku}</small>
      <span className="v5-product-foot"><b>{money(priceFor(p))}</b><span className={'v5-stock '+(p.stock===0?'is-out':p.stock<=(p.minStock??5)?'is-low':'')}>{p.stock===0?'Rupture':p.stock}</span></span>
      {priceMode==='RETAIL'&&p.wholesalePrice!=null&&<small className="v5-product-alt">Gros {money(p.wholesalePrice)}</small>}{priceMode==='WHOLESALE'&&<small className="v5-product-alt">Détail {money(p.price)}</small>}
     </button>})}</section>}
@@ -628,7 +631,7 @@ function App(){
       {over&&<b>Plafond dépassé avec cette vente : encaissez au moins {money(after-limit)}.</b>}</div>})()}
     <MethodSeg value={method} onChange={v=>{setMethod(v);if(v!=='CASH')setGivenCash('')}} disabled={busy||!!saleRef}/>
     {discountValue>0&&<div className="v6-discount-row"><span>Sous-total {money(subtotal)}</span><span>Remise <b>-{money(discountValue)}</b></span></div>}
-    <div className="v5-total"><span>Total <small>{priceMode==='WHOLESALE'?'tarif gros':'tarif détail'}</small></span><strong>{money(total)}</strong></div>
+    <div className="v5-total"><span>Total <small>{priceMode==='WHOLESALE'?'tarif gros':'tarif détail'}</small></span><strong key={total}>{money(total)}</strong></div>
     <div className="v5-pay-grid"><label className="v5-field"><span>Payé maintenant</span><input disabled={busy||!!saleRef||!lineCount} min="0" max={total} step=".001" type="number" placeholder={total.toFixed(3)} value={paid} onChange={e=>setPaid(e.target.value)}/></label>
      {method==='CASH'&&<label className="v5-field"><span>Le client donne</span><input disabled={busy||!!saleRef||!lineCount} min="0" step=".5" type="number" placeholder="Espèces reçues" value={givenCash} onChange={e=>setGivenCash(e.target.value)}/></label>}</div>
     {method==='CASH'&&lineCount>0&&!saleRef&&<div className="v5-quick">{quickCash.map(v=><button key={v} onClick={()=>setGivenCash(String(v))}>{v} DT</button>)}</div>}

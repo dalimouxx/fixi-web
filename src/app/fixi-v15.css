@@ -647,3 +647,10 @@ body:has(.fx-counter) .global-lang-toggle,body:has(.fx-counter) .fx-install{disp
 .fx-denoms input{height:32px;border:1px solid var(--fx-line-strong);border-radius:8px;text-align:center;font-weight:700;background:var(--fx-surface);color:var(--fx-ink)}
 .fx-denoms b{grid-column:1/-1;font-size:11.5px;font-weight:500;color:var(--fx-muted);text-align:end}
 .supplier-alert-list strong.negative{color:var(--fx-danger)}
+
+/* ===== 17 : dictée ===== */
+.fx-dictate-wrap{position:relative;display:inline-flex}
+.fx-dictate-bubble{position:absolute;bottom:calc(100% + 8px);inset-inline-end:0;z-index:30;width:max-content;max-width:min(320px,80vw);padding:8px 12px;border-radius:12px;background:var(--fx-ink);color:#fff;font-size:13px;line-height:1.4;box-shadow:var(--fx-shadow-lg);animation:fx17-pop .18s var(--fx-ease-out)}
+.fx-dictate-bubble.is-error{background:var(--fx-danger)}
+.voice-transcript.is-error{color:var(--fx-danger)}
+@keyframes fx17-pop{from{opacity:0;transform:translateY(4px) scale(.98)}to{opacity:1;transform:none}}
