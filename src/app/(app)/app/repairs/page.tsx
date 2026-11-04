@@ -18,10 +18,15 @@ export default function Repairs(){
   useEffect(()=>{const v=new URLSearchParams(window.location.search).get('q');if(v)setQ(v);const saved=localStorage.getItem('fixi-repairs-view');if(saved==='table')setView('table')},[]);
   useEffect(()=>{localStorage.setItem('fixi-repairs-view',view)},[view]);
   const[refresh,setRefresh]=useState(0);
-  const[mstatus,setMstatus]=useState<string>('ACTIVE');
+  const[mstatus,setMstatus]=useState<string>('ACTIVE');const[quick,setQuick]=useState<''|'urgent'|'stale'|'due'>('');
   const{data,loading,error,reload}=useApi<any[]>(`/api/repairs?q=${encodeURIComponent(q)}`,refresh);
   useRealtimeRefresh(useCallback(()=>reload(),[]));
-  const grouped=useMemo(()=>Object.fromEntries(cols.map(([k])=>[k,(data||[]).filter(r=>r.status===k)])),[data]);
+  // 18.0 — filtres rapides : urgents, bloqués (≥ 3 jours sans changement), solde à encaisser.
+  const due=(r:any)=>{const paid=(r.payments||[]).reduce((a:number,p:any)=>a+(p.kind==='REFUND'?-1:1)*Number(p.amount||0),0);return Math.max(0,Number(r.finalPrice??r.estimatedPrice??0)-paid)};
+  const matchQuick=(r:any)=>!quick||(quick==='urgent'?r.priority==='URGENT':quick==='stale'?(repairAge(r)?.days||0)>=3&&!['DELIVERED','CANCELLED'].includes(r.status):due(r)>0&&!['CANCELLED'].includes(r.status));
+  const rows=useMemo(()=>(data||[]).filter(matchQuick),[data,quick]);
+  const counts=useMemo(()=>({urgent:(data||[]).filter((r:any)=>r.priority==='URGENT'&&!['DELIVERED','CANCELLED'].includes(r.status)).length,stale:(data||[]).filter((r:any)=>(repairAge(r)?.days||0)>=3&&!['DELIVERED','CANCELLED'].includes(r.status)).length,due:(data||[]).filter((r:any)=>due(r)>0&&r.status!=='CANCELLED').length}),[data]);
+  const grouped=useMemo(()=>Object.fromEntries(cols.map(([k])=>[k,rows.filter(r=>r.status===k)])),[rows]);
   async function move(code:string,status:string){try{await api(`/api/repairs/${code}/status`,{method:'PATCH',body:JSON.stringify({status})});setRefresh(x=>x+1)}catch(e:any){alert(e.message)}}
   return <div className="page" style={{maxWidth:'none'}}>
     <div className="page-head">
@@ -31,6 +36,7 @@ export default function Repairs(){
 
     <div className="card card-pad repairs-toolbar-v2" style={{marginBottom:16,padding:14}}>
       <div className="searchbox" style={{width:'min(650px,100%)'}}><Search/><input className="input" value={q} onChange={e=>setQ(e.target.value)} placeholder="Code, client, téléphone, appareil…"/></div>
+      <div className="rp-quick" role="group" aria-label="Filtres rapides">{([['','Tout',0],['urgent','Urgents',counts.urgent],['stale','Bloqués 3 j+',counts.stale],['due','Solde à encaisser',counts.due]] as const).map(([k,l,n])=><button type="button" key={k||'all'} aria-pressed={quick===k} onClick={()=>setQuick(k as any)}>{l}{k&&n>0?<em>{n}</em>:null}</button>)}</div>
       <div className="view-toggle">
         <button className={view==='kanban'?'active':''} onClick={()=>setView('kanban')}><Columns3 size={14}/> Kanban</button>
         <button className={view==='table'?'active':''} onClick={()=>setView('table')}><List size={14}/> Tableau</button>
@@ -46,7 +52,7 @@ export default function Repairs(){
       </nav>
       {loading&&!data?<div className="card card-pad fx-skeleton" role="status" aria-label="Chargement"><i/><i/><i/></div>:
       <div className="fx-repair-cards">
-        {(data||[]).filter((r:any)=>mstatus==='ACTIVE'?!['DELIVERED','CANCELLED'].includes(r.status):r.status===mstatus).map((r:any)=>{const ci=cols.findIndex(c=>c[0]===r.status);const next=ci>=0&&ci<cols.length-1?cols[ci+1]:null;const age=repairAge(r);return <SwipeCard key={r.id} className="fx-repair-card" data-status={r.status} data-age={age.level}
+        {rows.filter((r:any)=>mstatus==='ACTIVE'?!['DELIVERED','CANCELLED'].includes(r.status):r.status===mstatus).map((r:any)=>{const ci=cols.findIndex(c=>c[0]===r.status);const next=ci>=0&&ci<cols.length-1?cols[ci+1]:null;const age=repairAge(r);return <SwipeCard key={r.id} className="fx-repair-card" data-status={r.status} data-age={age.level}
           right={next&&r.status!=='DELIVERED'?{label:next[1],icon:<CheckCircle2/>,onSwipe:()=>move(r.code,next[0])}:undefined}
           left={r.client?.phone?{label:ar?'اتصال':'Appeler',icon:<Phone/>,onSwipe:()=>{window.location.href='tel:'+r.client.phone}}:undefined}>
           <Link href={`/app/repairs/${r.code}`} className="fx-repair-card-main">
@@ -57,7 +63,7 @@ export default function Repairs(){
           </Link>
           <div className="fx-repair-card-foot"><span>{r.finalPrice!==null?money(r.finalPrice):'Prix à fixer'}</span>{r.status==='WAITING_PART'&&<Link className="btn btn-soft btn-sm" href={`/app/suppliers?q=${encodeURIComponent(partQuery(r))}`}><PackageOpen size={15}/> Commander</Link>}{next&&r.status!=='DELIVERED'&&<button type="button" className="btn btn-ghost btn-sm" onClick={()=>move(r.code,next[0])}>{next[1]} →</button>}</div>
         </SwipeCard>})}
-        {!(data||[]).some((r:any)=>mstatus==='ACTIVE'?!['DELIVERED','CANCELLED'].includes(r.status):r.status===mstatus)&&<div className="fx-empty"><b>Aucun appareil ici</b><span>Les appareils de ce statut apparaîtront ici.</span><Link href="/app/repairs/new" className="btn btn-primary">Nouvelle réparation</Link></div>}
+        {!rows.some((r:any)=>mstatus==='ACTIVE'?!['DELIVERED','CANCELLED'].includes(r.status):r.status===mstatus)&&<div className="fx-empty"><b>Aucun appareil ici</b><span>Les appareils de ce statut apparaîtront ici.</span><Link href="/app/repairs/new" className="btn btn-primary">Nouvelle réparation</Link></div>}
       </div>}
     </div>
     <div className="fx-desktop-only">
@@ -73,7 +79,7 @@ export default function Repairs(){
       </div>})}
     </div>)}</div>:<div className="card"><div className="table-wrap"><table className="table">
       <thead><tr><th>Code</th><th>Client</th><th>Appareil</th><th>Panne</th><th>Technicien</th><th>Statut</th><th>Prix</th><th>Création</th><th></th></tr></thead>
-      <tbody>{(data||[]).map((r:any)=><tr key={r.id}>
+      <tbody>{rows.map((r:any)=><tr key={r.id}>
         <td><Link href={`/app/repairs/${r.code}`} className="mono table-primary-link">{r.code}</Link></td>
         <td>{r.client.fullName}</td><td>{[r.brand,r.model].filter(Boolean).join(' ')}</td><td className="muted">{r.reportedIssue}</td><td>{r.technician?.fullName||'Non assigné'}</td>
         <td><StatusBadge status={r.status}/></td><td>{r.finalPrice!==null?money(r.finalPrice):'—'}</td><td className="muted">{dateTime(r.createdAt)}</td>

@@ -338,3 +338,19 @@ html[data-theme=dark] .supplier-os main header .btn{background:var(--fx-surface-
 html[data-theme=dark] .supplier-os>main,html[data-theme=dark] .supplier-os main{background:var(--fx-bg)!important}
 html[data-theme=dark] .supplier-os main header .btn[disabled],html[data-theme=dark] .supplier-os main header .btn:disabled{opacity:.6}
 }
+
+/* ============ 18.0 — espace atelier : en-tête de réparation, filtres rapides, caisse ============ */
+.rd-head{display:grid!important;grid-template-columns:1fr;gap:12px;align-items:start}
+.rd-head .page-title{font-size:clamp(26px,3vw,36px)!important;line-height:1.1}
+.rd-actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-start}
+@media (min-width:1100px){.rd-head{grid-template-columns:minmax(0,1fr) auto}.rd-actions{justify-content:flex-end;max-width:640px}}
+.rp-quick{display:flex;gap:6px;flex-wrap:wrap}
+.rp-quick button{display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 14px;border-radius:99px;border:1.5px solid var(--fx-line);background:var(--fx-surface);font:inherit;font-size:13.5px;font-weight:700;color:var(--fx-ink-2);cursor:pointer;transition:background .15s,border-color .15s}
+.rp-quick button[aria-pressed=true]{background:var(--fx-ink);border-color:var(--fx-ink);color:var(--fx-surface)}
+.rp-quick em{font-style:normal;min-width:20px;height:20px;padding:0 6px;border-radius:99px;display:inline-grid;place-items:center;background:var(--fx-danger);color:#fff;font-size:11.5px}
+.repairs-toolbar-v2{display:flex!important;flex-wrap:wrap;gap:12px;align-items:center}
+.cash-simple-ready-title b{font-size:15px!important}.cash-simple-ready-title span{font-size:13px!important}
+.cash-simple-search input{border:0!important;box-shadow:none!important;outline:none;background:transparent!important;font-size:16px!important}
+.cash-simple-search{border:1.5px solid var(--fx-line)!important;border-radius:14px!important;background:var(--fx-surface-2)!important;min-height:48px}
+.cash-simple-search:focus-within{border-color:var(--fx-brand)!important;box-shadow:var(--fx-focus)}
+.cash-simple-list .fx-state{margin:8px 0;padding:22px 12px}
