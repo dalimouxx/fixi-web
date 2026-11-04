@@ -1,36 +1,205 @@
 'use client';
 import Link from 'next/link';
-import { useEffect,useState } from 'react';
-import { Activity,ArrowRight,BarChart3,Boxes,CheckCircle2,CreditCard,HeartHandshake,MapPin,Megaphone,MessageCircle,Network,PackageOpen,Play,ShieldCheck,Sparkles,Store,Users,Wrench,Zap,BrainCircuit,Workflow,ScanSearch,Calculator,UserCheck } from 'lucide-react';
+import { useEffect, useRef, useState, type ReactNode, type CSSProperties } from 'react';
+import { ArrowRight, BellRing, Boxes, Check, CheckCircle2, ChevronsRight, CreditCard, Download, MapPin, Menu, MessageCircle, Monitor, PackageCheck, Play, ScanLine, ShieldCheck, Smartphone, Sparkles, Star, Store, Truck, Users, Wrench, X, Zap, BarChart3, Mic, Wifi } from 'lucide-react';
 import { AdSlot } from '@/components/ad-slot';
 import { StoreLocator } from '@/components/store-locator';
 import { LandingDemo } from '@/components/landing-demo';
-import { LandingRoleShowcase } from '@/components/landing-role-showcase';
-import { LandingRoi } from '@/components/landing-roi';
 import { LandingFaq } from '@/components/landing-faq';
 import { LandingPlansV8 } from '@/components/landing-plans-v8';
+import './landing-v17.css';
 
-export default function Landing(){
- const[brand,setBrand]=useState<any>(null);useEffect(()=>{fetch('/api/public/branding').then(r=>r.json()).then(setBrand).catch(()=>{})},[]);const name=brand?.appName||'Fixi';
- const features=[['Atelier',Wrench,'Réception, diagnostic, Kanban, photos, checklist et timeline.'],['Cash Pro',CreditCard,'Scan, paiements combinés, remises contrôlées, reçus et clôture.'],['Stock',Boxes,'Inventaire réel, mouvements, prévisions et commandes Supplier.'],['CRM',Users,'Clients, appareils, historique, fidélité, avis et garanties.'],['SAV',HeartHandshake,'Retours sous garantie, résolution et traçabilité complète.'],['Pilotage',BarChart3,'CA, bénéfice, objectifs, anomalies et Business Score.']];
- return <div className="landing-v7"><nav className="landing-nav-v4"><a href="#top" className="landing-logo-v4">{brand?.logoDataUrl?<img src={brand.logoDataUrl} alt=""/>:<i>F</i>}<span>{name}</span></a><div className="landing-links-v4"><a href="#produit">Produit</a><a href="#demo">Démo</a><Link href="/stores">Boutiques</Link><a href="#ecosysteme">Écosystème</a><a href="#tarifs">Tarifs</a><a href="#faq">FAQ</a></div><div className="landing-nav-actions"><Link className="btn btn-ghost" href="/saas/login">Control</Link><Link className="btn btn-primary" href="/login">Connexion boutique <ArrowRight size={15}/></Link></div></nav>
- <section className="hero-v7" id="top"><div className="hero-glow one"/><div className="hero-glow two"/><div className="hero-grid-lines"/><div className="hero-copy-v7"><div className="hero-pill"><Sparkles/> FIXI V10 · SMART REPAIR BUSINESS OS</div><h1>{brand?.landingHeadline||<>L’OS complet pour<br/><span>les ateliers modernes.</span></>}</h1><p>{brand?.landingSubheadline||'Réparations, caisse, stock, clients, équipe, fournisseurs et pilotage réunis dans une expérience Web premium.'}</p><div className="hero-actions-v4"><Link className="btn btn-primary hero-main-btn" href="/login">Essayer Fixi <ArrowRight/></Link><a className="hero-video-btn" href="#demo"><i><Play/></i><span>Voir la démo<small>Une réparation en 60 secondes</small></span></a><Link className="hero-store-btn" href="/stores"><MapPin/> Trouver une boutique</Link></div><div className="hero-trust"><span><CheckCircle2/> 100% Web</span><span><CheckCircle2/> Multi-boutiques</span><span><CheckCircle2/> PWA installable</span><span><CheckCircle2/> Client sans compte</span></div></div>
- <div className="hero-product-v7"><div className="floating-chip chip1"><span className="live-dot"/> 23 réparations aujourd’hui</div><div className="floating-chip chip2">+ 2 840 DT <small>CA aujourd’hui · démo</small></div><div className="product-window-v4"><div className="window-bar"><div><i/><i/><i/></div><span>Fixi · Dashboard</span><b>🟢 Live</b></div><div className="product-body-v4"><aside><div className="mini-brand">F</div>{[1,2,3,4,5,6].map(x=><i key={x} className={x===1?'active':''}/>)}</aside><main><div className="product-welcome"><div><small>Bonjour Mohamed 👋</small><strong>Votre atelier aujourd’hui.</strong></div><span>Données de démonstration</span></div><div className="product-kpis">{[['1 850 DT','CA'],['23','Réparations'],['730 DT','Résultat'],['8','Prêts']].map(([v,l],i)=><div key={l}><i className={`pk${i}`}/><span>{l}</span><b>{v}</b><small>{i===0?'+12.4%':'Temps réel'}</small></div>)}</div><div className="product-chart-v4"><div className="fake-chart-lines"/><svg viewBox="0 0 600 160" preserveAspectRatio="none"><path d="M0 125 C70 118,70 95,130 103 S220 55,280 72 S360 35,430 48 S525 12,600 27" fill="none" stroke="#ff6b00" strokeWidth="5" strokeLinecap="round"/><path d="M0 125 C70 118,70 95,130 103 S220 55,280 72 S360 35,430 48 S525 12,600 27 L600 160 L0 160Z" fill="url(#g)" opacity=".28"/><defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop stopColor="#ff6b00"/><stop offset="1" stopColor="#ff6b00" stopOpacity="0"/></linearGradient></defs></svg></div><div className="product-bottom"><div><span>Réparations actives</span>{[['F-26052','iPhone 15 Pro','Diagnostic'],['F-26051','Samsung S24','En réparation'],['F-26049','MacBook Air','Prêt']].map((x,i)=><article key={x[0]}><i className={`repair-dot r${i}`}/><b>{x[0]}</b><span>{x[1]}</span><em>{x[2]}</em></article>)}</div><div className="product-alert"><Zap/><b>Fixi Insight</b><span>2 références bientôt en rupture</span></div></div></main></div></div></div></section>
- <section className="social-proof-v4"><span>Une plateforme pensée pour</span><div>{['Smartphones','Informatique','Microsoudure','Multi-sites','SAV','Fournisseurs'].map(x=><b key={x}>{x}</b>)}</div></section><section className="landing-sponsored-v4"><AdSlot placement="LANDING" className="landing-ad-v4"/></section>
- <LandingDemo/>
- <section className="landing-section-v4" id="produit"><div className="section-heading-v4"><span>UNE SEULE PLATEFORME</span><h2>Chaque module travaille<br/><em>avec les autres.</em></h2><p>Une pièce consommée modifie le stock. Un paiement modifie le solde. Une livraison démarre la garantie. L’historique reste traçable.</p></div><div className="feature-grid-v4">{features.map(([t,I,d]:any,i)=><article className={`feature-v4 f${i}`} key={t}><div className="feature-icon-v4"><I/></div><div><h3>{t}</h3><p>{d}</p></div><ArrowRight className="feature-arrow"/></article>)}</div></section>
- <LandingRoleShowcase/>
- <section className="smart-landing-v5"><div className="section-heading-v4"><span>FIXI SMART</span><h2>Fixi n’enregistre pas seulement.<br/><em>Il aide à décider.</em></h2><p>Les fonctions Smart restent explicables et utilisent d’abord les données réelles de la boutique.</p></div><div className="smart-landing-grid"><article><BrainCircuit/><span>FIXI BRAIN</span><h3>Interrogez vos données.</h3><p>CA, stock, appareils prêts, charge équipe et performance.</p></article><article><Workflow/><span>AUTOMATIONS</span><h3>Les tâches répétitives s’exécutent.</h3><p>Relances, stock faible, affectation, garanties et caisse.</p></article><article><ScanSearch/><span>SMART DIAGNOSTIC</span><h3>L’historique aide au diagnostic.</h3><p>Cas similaires, durée estimée et technicien conseillé.</p></article><article><Calculator/><span>SMART PRICING</span><h3>Prix conseillé, marge visible.</h3><p>Coût pièce, main-d’œuvre et objectif de marge.</p></article><article><Activity/><span>BUSINESS SCORE</span><h3>La santé de l’atelier en un score.</h3><p>Rentabilité, satisfaction, rapidité, stock et qualité.</p></article><article><UserCheck/><span>QUALITÉ</span><h3>Checklist avant livraison.</h3><p>Écran, caméra, charge, réseau, biométrie et nettoyage.</p></article></div></section>
- <section className="cashpro-story-v7"><div className="cashpro-copy-v7"><span>CASH PRO</span><h2>Une caisse pensée<br/><em>pour le comptoir.</em></h2><p>Recherche instantanée, scan, paiements combinés, remise contrôlée par PIN gérant, reçu, clôture et livraison sécurisée.</p><div>{['Espèces + D17 + carte dans le même paiement','Reste à payer et monnaie immédiatement visibles','Raccourcis clavier et grands boutons tactiles','Lien de paiement client depuis le suivi'].map(x=><b key={x}><CheckCircle2/>{x}</b>)}</div></div><div className="cashpro-ui-v7"><aside><span>PRÊTS À ENCAISSER</span>{['F-27102','F-27104','F-27108'].map((x,i)=><article className={i===1?'active':''} key={x}><i/><div><b>{x}</b><small>{['iPhone 13','Galaxy S24','Redmi Note 13'][i]}</small></div><em>{[120,210,85][i]} DT</em></article>)}</aside><main><span>DOSSIER CLIENT</span><h3>F-27104 · Galaxy S24</h3><div className="cashpro-money"><div><small>Total</small><b>210 DT</b></div><div><small>Déjà payé</small><b>50 DT</b></div><div><small>Reste</small><b>160 DT</b></div></div><div className="cashpro-payments"><span>Espèces <b>100 DT</b></span><span>D17 <b>60 DT</b></span></div></main><section><span>CHECKOUT</span><strong>160 DT</strong><div className="cashpro-methods"><i>Cash</i><i>Carte</i><i>D17</i><i>Flouci</i></div><button>Encaisser & livrer</button></section></div></section>
- <section className="store-discovery-v7"><StoreLocator compact/></section>
- <section className="v7-public-network"><div><MapPin/><span>ANNUAIRE PUBLIC</span><h2>Les boutiques Fixi deviennent<br/><em>faciles à trouver.</em></h2><p>Chaque boutique peut publier sa fiche avec adresse, services, horaires, contact, WhatsApp, carte et rendez-vous. La visibilité reste contrôlée depuis Fixi Control.</p><Link href="/stores" className="btn btn-primary">Explorer les boutiques <ArrowRight/></Link></div><aside><div className="network-map-visual"><i className="pin p1"/><i className="pin p2"/><i className="pin p3"/><i className="pin p4"/><i className="pin p5"/><span>Réseau Fixi</span></div></aside></section>
- <section className="community-landing-v9"><div><span>FIXI COMMUNITY</span><h2>Le savoir technique<br/><em>circule entre réparateurs.</em></h2><p>Groupes globaux, régionaux et par spécialité. Partagez une panne, une solution ou une compatibilité et faites-la confirmer par plusieurs ateliers.</p><div className="community-landing-badges"><b>Global</b><b>Par région</b><b>Compatibilités</b><b>Solutions vérifiées</b></div></div><div className="community-landing-chat"><article><i>AM</i><div><b>Ahmed · Sfax</b><p>Smart 5 : afficheur LCD-X123 testé, connecteur identique.</p><small>Compatibilité · proposition</small></div></article><article><i>MK</i><div><b>Mohamed · Gabès</b><p>Confirmé chez nous aussi sur 2 appareils.</p><small>✓ Confirmation boutique #2</small></div></article><article className="verified"><i>FX</i><div><b>Fixi Knowledge</b><p>3 boutiques distinctes ont confirmé cette compatibilité.</p><small>● Confirmée communauté</small></div></article></div></section>
-<section className="community-landing-v9" style={{background:'linear-gradient(135deg,#fff7f0,#fff)',color:'#171513'}}><div><span style={{color:'#d85b00'}}>FIXI NETWORK V10</span><h2 style={{color:'#171513'}}>Quand une boutique bloque,<br/><em>le réseau peut répondre.</em></h2><p style={{color:'#766d66'}}>Marché de pièces entre réparateurs, SOS Pièce régional, Expert Call, Academy, Client Wallet, Fixi Care et Réception Offline synchronisée.</p><div className="community-landing-badges"><b style={{color:'#8f450f',background:'#fff0e5',borderColor:'#ffd1ad'}}>Parts Market</b><b style={{color:'#8f450f',background:'#fff0e5',borderColor:'#ffd1ad'}}>SOS Pièce</b><b style={{color:'#8f450f',background:'#fff0e5',borderColor:'#ffd1ad'}}>Expert Call</b><b style={{color:'#8f450f',background:'#fff0e5',borderColor:'#ffd1ad'}}>Academy</b></div></div><div className="community-landing-chat"><article style={{background:'#fff',borderColor:'#f0e3d9',color:'#171513'}}><i>SO</i><div><b>SOS Pièce · Gabès</b><p style={{color:'#5f5751'}}>Cherche afficheur Smart 5 aujourd’hui.</p><small>3 boutiques proches alertées</small></div></article><article style={{background:'#fff',borderColor:'#f0e3d9',color:'#171513'}}><i>EX</i><div><b>Expert Call</b><p style={{color:'#5f5751'}}>Microsoudure · iPhone 13 · expert disponible.</p><small>Échange technique privé</small></div></article><article className="verified"><i>W</i><div><b>Client Wallet</b><p>Réparations, garanties, factures et Fixi Care.</p><small>Un seul lien privé</small></div></article></div></section><section className="ecosystem-v4" id="ecosysteme"><div className="section-heading-v4 light"><span>PLUS QU’UN LOGICIEL</span><h2>Un écosystème pour<br/><em>le monde de la réparation.</em></h2></div><div className="ecosystem-grid"><article className="eco-card orange"><Store/><span>FIXI SHOP</span><h3>Le cockpit de l’atelier.</h3><p>Réparations, caisse, stock, clients et équipe.</p><Link href="/login">Ouvrir Shop <ArrowRight/></Link></article><article className="eco-card dark"><Network/><span>FIXI CONTROL</span><h3>Le réseau sous contrôle.</h3><p>Boutiques, abonnements, annuaire, activité, support et marketing.</p><Link href="/saas/login">Ouvrir Control <ArrowRight/></Link></article><article className="eco-card cream"><PackageOpen/><span>FIXI SUPPLIER</span><h3>L’approvisionnement connecté.</h3><p>Marketplace B2B, catalogues, commandes, livraison et réception directe en stock.</p><b>MARKETPLACE</b></article><article className="eco-card ad"><Megaphone/><span>FIXI ADS</span><h3>Un nouveau média local.</h3><p>Campagnes ciblées sur Queue, suivi client et Landing Page.</p><b>INTÉGRÉ À CONTROL</b></article></div></section>
- <section className="ads-story-v4"><div className="ads-visual"><div className="screen-ad-demo"><div className="screen-bar"><i>F</i><span>File d’attente</span><b>● En direct</b></div><div className="screen-content"><div className="screen-cards">{['F-27041','F-27045','F-27049'].map((x,i)=><article key={x}><small>{i===2?'PRÊT':'EN TRAITEMENT'}</small><b>{x}</b><span>{['iPhone 13','Samsung A55','iPhone 14 Pro'][i]}</span></article>)}</div><div className="screen-sponsored"><span>SPONSORISÉ</span><div>Votre campagne<br/><b>dans l’atelier.</b></div></div></div></div></div><div className="ads-copy"><span className="section-label-v4">FIXI ADS</span><h2>La file d’attente devient<br/><em>un média.</em></h2><p>Image, WebP animé ou courte vidéo, avec ciblage, budget, CPM/CPC, impressions, clics et QR scans.</p><div className="ads-metrics"><div><b>Queue</b><span>Écrans boutiques</span></div><div><b>Track</b><span>Suivi client</span></div><div><b>Landing</b><span>Audience publique</span></div></div></div></section>
- <LandingPlansV8/>
- <LandingRoi/>
- <section className="security-v4" id="securite"><div><ShieldCheck/><span>SÉCURITÉ PAR CONCEPTION</span><h2>Simple devant.<br/>Sérieux derrière.</h2></div><div className="security-list">{['Permissions vérifiées côté serveur','PIN hashés + blocage anti-bruteforce','Sessions sécurisées HttpOnly','Données boutique isolées','Codes appareil chiffrés AES-256-GCM','Journal d’audit + sauvegardes'].map(x=><div key={x}><CheckCircle2/>{x}</div>)}</div></section>
- <LandingFaq/>
- <section className="final-cta-v4"><div className="cta-glow"/><div><span>PRÊT POUR LE COMPTOIR</span><h2>Faites entrer votre atelier<br/><em>dans une nouvelle génération.</em></h2><p>Centralisez l’opérationnel, améliorez l’expérience client et gardez vos chiffres sous contrôle.</p><div className="final-actions-v7"><Link className="btn btn-primary hero-main-btn" href="/login">Accéder à Fixi <ArrowRight/></Link><Link className="btn btn-soft hero-main-btn" href="/stores"><MapPin/> Trouver une boutique</Link></div></div></section>
- <footer className="footer-v4"><div className="landing-logo-v4"><i>F</i><span>{name}</span></div><p>Smart Repair Business OS · V10</p><div><a href="#produit">Produit</a><Link href="/stores">Boutiques</Link><Link href="/login">Connexion</Link><Link href="/saas/login">Control</Link></div><small>© {new Date().getFullYear()} {name}. Tous droits réservés.</small></footer></div>
+const WINDOWS_URL = 'https://github.com/dalimouxx/fixi-web/releases/download/windows-latest/FIXI-Caisse-Setup.exe';
+
+/** Fait apparaître un bloc quand il entre à l'écran (une seule fois). */
+function useReveal<T extends HTMLElement>() {
+  const ref = useRef<T>(null);
+  useEffect(() => {
+    const el = ref.current; if (!el) return;
+    if (!('IntersectionObserver' in window)) { el.classList.add('is-in'); return; }
+    const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { el.classList.add('is-in'); io.disconnect(); } }, { threshold: .18, rootMargin: '0px 0px -40px 0px' });
+    io.observe(el); return () => io.disconnect();
+  }, []);
+  return ref;
+}
+function Reveal({ children, className = '', as: Tag = 'div', delay = 0, id }: { children: ReactNode; className?: string; as?: any; delay?: number; id?: string }) {
+  const ref = useReveal<HTMLDivElement>();
+  return <Tag ref={ref} id={id} className={'lp-reveal ' + className} style={{ '--d': delay + 'ms' } as CSSProperties}>{children}</Tag>;
+}
+/** Compteur qui monte jusqu'à sa valeur quand il devient visible. */
+function Counter({ to, suffix = '', prefix = '' }: { to: number; suffix?: string; prefix?: string }) {
+  const ref = useRef<HTMLSpanElement>(null); const [v, setV] = useState(0);
+  useEffect(() => {
+    const el = ref.current; if (!el) return;
+    const io = new IntersectionObserver(([e]) => {
+      if (!e.isIntersecting) return; io.disconnect();
+      if (matchMedia('(prefers-reduced-motion: reduce)').matches) { setV(to); return; }
+      const t0 = performance.now(), dur = 1400;
+      const tick = (t: number) => { const p = Math.min(1, (t - t0) / dur); setV(Math.round(to * (1 - Math.pow(1 - p, 3)))); if (p < 1) requestAnimationFrame(tick); };
+      requestAnimationFrame(tick);
+    }, { threshold: .5 });
+    io.observe(el); return () => io.disconnect();
+  }, [to]);
+  return <span ref={ref}>{prefix}{v.toLocaleString('fr-FR')}{suffix}</span>;
+}
+/** Mot qui change dans le titre. */
+function Rotator({ words }: { words: string[] }) {
+  const [i, setI] = useState(0);
+  useEffect(() => { const t = setInterval(() => setI(x => (x + 1) % words.length), 2600); return () => clearInterval(t); }, [words.length]);
+  return <span className="lp-rotator" aria-live="polite">{words.map((w, k) => <b key={w} className={k === i ? 'is-on' : ''} aria-hidden={k !== i}>{w}</b>)}</span>;
+}
+/** Carte qui s'incline légèrement sous la souris. */
+function Tilt({ children, className = '' }: { children: ReactNode; className?: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  function move(e: React.PointerEvent) { const el = ref.current; if (!el || e.pointerType !== 'mouse') return; const r = el.getBoundingClientRect(); const x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5; el.style.setProperty('--rx', (-y * 8).toFixed(2) + 'deg'); el.style.setProperty('--ry', (x * 10).toFixed(2) + 'deg'); el.style.setProperty('--mx', (x * 100 + 50) + '%'); el.style.setProperty('--my', (y * 100 + 50) + '%'); }
+  function leave() { const el = ref.current; if (!el) return; el.style.setProperty('--rx', '0deg'); el.style.setProperty('--ry', '0deg'); }
+  return <div ref={ref} className={'lp-tilt ' + className} onPointerMove={move} onPointerLeave={leave}>{children}</div>;
+}
+function Logo({ size = 34 }: { size?: number }) {
+  return <svg width={size} height={size} viewBox="0 0 512 512" aria-hidden="true" className="lp-logo-svg"><defs><linearGradient id="lpg" x1="0" y1="0" x2="1" y2="1"><stop stopColor="#F0782B" /><stop offset="1" stopColor="#B9470A" /></linearGradient></defs><rect x="16" y="16" width="480" height="480" rx="112" fill="url(#lpg)" /><g transform="translate(256 256) scale(.86) translate(-262 -250)" fill="none" stroke="#fff" strokeLinecap="round" strokeLinejoin="round"><path d="M167 374V151a25 25 0 0 1 25-25h156" strokeWidth="65" /><path d="M167 244h140" strokeWidth="65" /><path d="m296 375 76-76m0 76-76-76" strokeWidth="43" /></g></svg>;
+}
+
+const apps = [
+  { k: 'atelier', icon: '/icons/atelier.svg', title: 'Fixi Atelier', tag: 'Pour le réparateur', text: 'Réception en 4 étapes, photos, dictée vocale, suivi client par WhatsApp, caisse et rapport du mois.', points: ['Réception express', 'Suivi client en direct', 'Caisse et garanties'], href: '/login', cta: 'Ouvrir l’atelier', color: '#f0782b' },
+  { k: 'supplier', icon: '/icons/supplier.svg', title: 'Fixi Fournisseur', tag: 'Pour le grossiste', text: 'Catalogue partagé, commandes des ateliers, préparation, factures, dettes clients et statistiques de marge.', points: ['Commandes en colonnes', 'Catalogue WhatsApp', 'Factures numérotées'], href: '/supplier/login', cta: 'Espace fournisseur', color: '#a8a29e' },
+  { k: 'delivery', icon: '/icons/delivery.svg', title: 'Fixi Livreur', tag: 'Pour le livreur', text: 'Missions en temps réel, glisser pour accepter, tournée optimisée, preuve de remise et caisse du jour.', points: ['Alerte nouvelle mission', 'Itinéraire optimisé', 'Preuve de remise'], href: '/delivery/login', cta: 'Espace livreur', color: '#16a34a' },
+  { k: 'windows', icon: '', title: 'FIXI Caisse Windows', tag: 'Pour le comptoir', text: 'Point de vente PC : scanner, tiroir-caisse, écran client, ventes même sans Internet et mise à jour automatique.', points: ['Ventes hors ligne', 'Plusieurs caissiers', 'Rapport Z'], href: WINDOWS_URL, cta: 'Télécharger pour Windows', color: '#2563eb' },
+];
+const steps = [
+  { t: 'Reçu', d: 'Le client dépose son téléphone : photo, panne, prix en 30 secondes.', icon: Smartphone },
+  { t: 'Diagnostic', d: 'Le technicien voit les cas similaires et le prix habituel du réseau.', icon: Wrench },
+  { t: 'Pièce commandée', d: 'Un toucher envoie la commande au fournisseur, le livreur l’apporte.', icon: Truck },
+  { t: 'Prêt', d: 'Le client reçoit un WhatsApp avec le lien de suivi et le prix.', icon: MessageCircle },
+  { t: 'Rendu', d: 'Encaissement, garantie et avis client, tout est tracé.', icon: CheckCircle2 },
+];
+const brands = ['Samsung', 'Apple', 'Xiaomi', 'Oppo', 'Infinix', 'Tecno', 'Huawei', 'Realme', 'Itel', 'Honor', 'Nokia', 'Vivo'];
+
+export default function Landing() {
+  const [brand, setBrand] = useState<any>(null);
+  const [scrolled, setScrolled] = useState(false);
+  const [menu, setMenu] = useState(false);
+  const hero = useRef<HTMLElement>(null);
+  useEffect(() => { fetch('/api/public/branding').then(r => r.json()).then(setBrand).catch(() => { }); }, []);
+  useEffect(() => { const f = () => setScrolled(scrollY > 12); f(); addEventListener('scroll', f, { passive: true }); return () => removeEventListener('scroll', f); }, []);
+  // Les téléphones du héros suivent doucement la souris.
+  function parallax(e: React.PointerEvent) { const el = hero.current; if (!el || e.pointerType !== 'mouse') return; const r = el.getBoundingClientRect(); el.style.setProperty('--px', ((e.clientX - r.left) / r.width - .5).toFixed(3)); el.style.setProperty('--py', ((e.clientY - r.top) / r.height - .5).toFixed(3)); }
+  const name = brand?.appName || 'Fixi';
+
+  return <div className="lp">
+    <nav className={'lp-nav' + (scrolled ? ' is-solid' : '')}>
+      <a href="#top" className="lp-brand">{brand?.logoDataUrl ? <img src={brand.logoDataUrl} alt="" /> : <Logo />}<span>{name}</span></a>
+      <div className={'lp-links' + (menu ? ' is-open' : '')} onClick={() => setMenu(false)}>
+        <a href="#apps">Applications</a><a href="#comment">Comment ça marche</a><a href="#demo">Démo</a><a href="#tarifs">Tarifs</a><Link href="/stores">Boutiques</Link><a href="#faq">FAQ</a>
+        <Link className="lp-btn lp-btn--ghost lp-only-mobile" href="/login">Connexion</Link>
+      </div>
+      <div className="lp-nav-cta"><Link className="lp-btn lp-btn--ghost lp-hide-mobile" href="/login">Connexion</Link><Link className="lp-btn lp-btn--primary" href="/onboarding">Commencer <ArrowRight size={16} /></Link>
+        <button className="lp-burger" aria-label={menu ? 'Fermer le menu' : 'Ouvrir le menu'} aria-expanded={menu} onClick={() => setMenu(v => !v)}>{menu ? <X size={22} /> : <Menu size={22} />}</button></div>
+    </nav>
+
+    {/* ---------- Héros ---------- */}
+    <header className="lp-hero" id="top" ref={hero} onPointerMove={parallax}>
+      <div className="lp-aurora"><i /><i /><i /></div><div className="lp-grid" />
+      <div className="lp-hero-copy">
+        <span className="lp-pill"><span className="lp-live" /> Nouveau · application livreur et caisse Windows</span>
+        <h1>{brand?.landingHeadline || <>Le réseau qui fait tourner<br /><Rotator words={['les ateliers', 'les fournisseurs', 'les livreurs', 'le comptoir']} /></>}</h1>
+        <p>{brand?.landingSubheadline || 'Réparations, pièces, livraisons et caisse : tout le monde de la réparation de téléphones connecté dans une seule application, en français et en arabe.'}</p>
+        <div className="lp-hero-actions">
+          <Link className="lp-btn lp-btn--primary lp-btn--lg lp-shine" href="/onboarding">Essayer gratuitement <ArrowRight size={18} /></Link>
+          <a className="lp-play" href="#demo"><i><Play size={18} /></i><span>Voir la démo<small>Une réparation en 60 secondes</small></span></a>
+        </div>
+        <ul className="lp-trust"><li><Check size={16} /> 30 jours d’essai</li><li><Check size={16} /> Sans installation</li><li><Check size={16} /> Android &amp; Windows</li></ul>
+      </div>
+
+      <div className="lp-stage" aria-hidden="true">
+        <div className="lp-phone lp-phone--a">
+          <div className="lp-screen lp-s-atelier">
+            <div className="lp-s-hero"><small>Mercredi</small><b>Que voulez-vous faire ?</b><div className="lp-s-kpis"><span><b>485 DT</b>Caisse</span><span><b>6</b>En cours</span><span><b>3</b>À rendre</span></div></div>
+            {[['Galaxy A54', 'Écran cassé', 'Prêt', 'ok'], ['iPhone 12', 'Batterie', 'Attente pièce', 'warn'], ['Redmi Note 12', 'Charge', 'En réparation', 'info']].map(([m, p, s, t], i) => <div className="lp-s-card" key={m} style={{ '--i': i } as CSSProperties}><div><b>{m}</b><small>{p}</small></div><em className={'t-' + t}>{s}</em></div>)}
+          </div>
+        </div>
+        <div className="lp-phone lp-phone--b">
+          <div className="lp-screen lp-s-driver">
+            <div className="lp-s-dark"><small><i /> EN SERVICE</small><b>2 livraisons en cours</b></div>
+            <div className="lp-s-offer"><span>CMD-1052</span><b>Atelier Smart Fix</b><small><MapPin size={11} /> Gabès</small><div className="lp-s-slide"><i><ChevronsRight size={14} /></i>Glisser pour accepter</div></div>
+            <div className="lp-s-steps">{[0, 1, 2, 3].map(x => <i key={x} className={x < 2 ? 'done' : x === 2 ? 'now' : ''} />)}</div>
+          </div>
+        </div>
+        <div className="lp-float lp-float--1"><BellRing size={16} /><span><b>Nouvelle mission</b><small>Atelier Smart Fix · 420 DT</small></span></div>
+        <div className="lp-float lp-float--2"><MessageCircle size={16} /><span><b>WhatsApp envoyé</b><small>« Votre Galaxy A54 est prêt »</small></span></div>
+        <div className="lp-float lp-float--3"><Zap size={16} /><span><b>+ 2 840 DT</b><small>aujourd’hui</small></span></div>
+      </div>
+      <a href="#apps" className="lp-scroll" aria-label="Défiler"><span /></a>
+    </header>
+
+    {/* ---------- Bande de marques ---------- */}
+    <section className="lp-marquee" aria-label="Marques réparées"><div className="lp-marquee-track">{[...brands, ...brands].map((b, i) => <span key={i}>{b}</span>)}</div></section>
+
+    {/* ---------- Chiffres ---------- */}
+    <section className="lp-stats">
+      {[[4, '', 'applications connectées'], [30, ' s', 'pour recevoir un appareil'], [2, '', 'langues : français et arabe'], [24, '/7', 'suivi client en ligne']].map(([n, s, l], i) => <Reveal key={String(l)} className="lp-stat" delay={i * 90}><b><Counter to={Number(n)} suffix={String(s)} /></b><span>{l}</span></Reveal>)}
+    </section>
+
+    {/* ---------- Les applications ---------- */}
+    <section className="lp-section" id="apps">
+      <Reveal className="lp-head"><span className="lp-eyebrow">UNE APPLICATION PAR MÉTIER</span><h2>Chacun son écran.<br /><em>Tout le monde connecté.</em></h2><p>L’atelier commande, le fournisseur prépare, le livreur livre, la caisse encaisse. Chaque geste met à jour les autres en temps réel.</p></Reveal>
+      <div className="lp-apps">{apps.map((a, i) => <Reveal key={a.k} delay={i * 100}><Tilt className="lp-app">
+        <div className="lp-app-glow" style={{ background: a.color }} />
+        <div className="lp-app-top">{a.icon ? <img src={a.icon} alt="" width={56} height={56} /> : <span className="lp-app-win"><Monitor size={28} /></span>}<span className="lp-tag">{a.tag}</span></div>
+        <h3>{a.title}</h3><p>{a.text}</p>
+        <ul>{a.points.map(p => <li key={p}><CheckCircle2 size={16} /> {p}</li>)}</ul>
+        {a.k === 'windows' ? <a className="lp-app-cta" href={a.href}><Download size={16} /> {a.cta}</a> : <Link className="lp-app-cta" href={a.href}>{a.cta} <ArrowRight size={16} /></Link>}
+      </Tilt></Reveal>)}</div>
+    </section>
+
+    {/* ---------- Comment ça marche ---------- */}
+    <section className="lp-section lp-dark" id="comment">
+      <Reveal className="lp-head light"><span className="lp-eyebrow">COMMENT ÇA MARCHE</span><h2>Du dépôt au retrait,<br /><em>sans un papier.</em></h2></Reveal>
+      <Reveal className="lp-flow">{steps.map((s, i) => { const I = s.icon; return <div className="lp-step" key={s.t} style={{ '--i': i } as CSSProperties}><i><I size={22} /></i><b>{s.t}</b><p>{s.d}</p></div>; })}<span className="lp-flow-line" /></Reveal>
+    </section>
+
+    {/* ---------- Grille de fonctions ---------- */}
+    <section className="lp-section">
+      <Reveal className="lp-head"><span className="lp-eyebrow">PENSÉ POUR LE TERRAIN</span><h2>Rapide au comptoir.<br /><em>Sérieux dans les chiffres.</em></h2></Reveal>
+      <div className="lp-bento">
+        <Reveal className="lp-b lp-b--wide" delay={0}><div className="lp-b-text"><span><BarChart3 size={18} /> Rapport du mois</span><h3>Vos chiffres, sans Excel.</h3><p>Encaissé, bénéfice, pannes fréquentes et performance de chaque technicien, en PDF et en fichier pour le comptable.</p></div>
+          <svg className="lp-chart" viewBox="0 0 300 120" preserveAspectRatio="none"><defs><linearGradient id="lpc" x1="0" y1="0" x2="0" y2="1"><stop stopColor="#f0782b" stopOpacity=".35" /><stop offset="1" stopColor="#f0782b" stopOpacity="0" /></linearGradient></defs><path className="lp-chart-area" d="M0 100 C40 95 50 70 90 76 S150 40 190 48 S250 18 300 22 L300 120 L0 120Z" fill="url(#lpc)" /><path className="lp-chart-line" d="M0 100 C40 95 50 70 90 76 S150 40 190 48 S250 18 300 22" fill="none" stroke="#f0782b" strokeWidth="4" strokeLinecap="round" /></svg></Reveal>
+        <Reveal className="lp-b" delay={80}><span><Mic size={18} /> Dictée vocale</span><h3>Parlez, Fixi écrit.</h3><p>« Client Sami, Samsung A15, écran cassé » remplit la fiche.</p><div className="lp-wave">{Array.from({ length: 18 }).map((_, i) => <i key={i} style={{ '--i': i } as CSSProperties} />)}</div></Reveal>
+        <Reveal className="lp-b" delay={160}><span><ScanLine size={18} /> Scanner &amp; IMEI</span><h3>Un scan, c’est fait.</h3><p>Code-barres des pièces et IMEI vérifié contre les appareils signalés volés.</p><div className="lp-scanbox"><i /></div></Reveal>
+        <Reveal className="lp-b" delay={0}><span><CreditCard size={18} /> Caisse</span><h3>Espèces, carte, D17.</h3><p>Paiement en plusieurs fois, monnaie à rendre et facture numérotée.</p><div className="lp-pay"><b>239,500 DT</b><small>Monnaie : 60,500 DT</small></div></Reveal>
+        <Reveal className="lp-b" delay={80}><span><Wifi size={18} /> Hors ligne</span><h3>Internet coupe ? La vente continue.</h3><p>La caisse garde les ventes et les envoie au retour du réseau, sans doublon.</p></Reveal>
+        <Reveal className="lp-b lp-b--accent" delay={160}><span><ShieldCheck size={18} /> Sécurité</span><h3>Simple devant, sérieux derrière.</h3><p>Codes PIN chiffrés, données isolées par boutique, journal de toutes les actions.</p></Reveal>
+      </div>
+    </section>
+
+    <LandingDemo />
+
+    {/* ---------- Ce qui change ---------- */}
+    <section className="lp-section lp-soft">
+      <Reveal className="lp-head"><span className="lp-eyebrow">AU QUOTIDIEN</span><h2>Fait en Tunisie,<br /><em>pour les ateliers d’ici.</em></h2></Reveal>
+      <div className="lp-quotes">{[[MessageCircle, 'Fini les appels « c’est prêt ? »', 'Le client reçoit son WhatsApp et suit sa réparation avec un lien, sans compte.'], [Truck, 'Les pièces arrivent plus vite', 'L’atelier commande en un toucher, le fournisseur prépare, le livreur est alerté.'], [Users, 'Chacun voit son travail', 'Gérant, réception, technicien, caissier, livreur : un écran adapté à chaque rôle.']].map(([I, t, d]: any, i) => <Reveal key={t} className="lp-quote" delay={i * 100}><i className="lp-quote-ico"><I size={22} /></i><h3>{t}</h3><p>{d}</p></Reveal>)}</div>
+    </section>
+
+    <section className="lp-sponsored"><AdSlot placement="LANDING" className="landing-ad-v4" /></section>
+    <div className="lp-plans"><LandingPlansV8 /></div>
+
+    <section className="lp-section lp-stores-section"><div className="lp-stores"><StoreLocator compact /></div></section>
+
+    <div className="lp-faq" id="faq"><LandingFaq /></div>
+
+    {/* ---------- Appel final ---------- */}
+    <section className="lp-final">
+      <Reveal className="lp-final-card"><div className="lp-aurora small"><i /><i /></div>
+        <Logo size={64} />
+        <h2>Prêt à passer à <em>{name}</em> ?</h2>
+        <p>Créez votre atelier en 2 minutes. 30 jours pour essayer, sans engagement.</p>
+        <div className="lp-hero-actions center"><Link className="lp-btn lp-btn--primary lp-btn--lg lp-shine" href="/onboarding">Créer mon atelier <ArrowRight size={18} /></Link><Link className="lp-btn lp-btn--glass lp-btn--lg" href="/android"><Smartphone size={18} /> Application Android</Link><a className="lp-btn lp-btn--glass lp-btn--lg" href={WINDOWS_URL}><Monitor size={18} /> Caisse Windows</a></div>
+      </Reveal>
+    </section>
+
+    <footer className="lp-footer">
+      <div className="lp-brand"><Logo size={30} /><span>{name}</span></div>
+      <nav><a href="#apps">Applications</a><Link href="/stores">Boutiques</Link><Link href="/login">Atelier</Link><Link href="/supplier/login">Fournisseur</Link><Link href="/delivery/login">Livreur</Link><Link href="/saas/login">Control</Link></nav>
+      <small>© {new Date().getFullYear()} {name} · Fait à Gabès, Tunisie</small>
+    </footer>
+  </div>;
 }
