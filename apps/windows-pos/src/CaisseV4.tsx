@@ -91,6 +91,7 @@ function App(){
  const [givenCash,setGivenCash]=useState('');
  const [compact,setCompact]=useState(()=>{try{return localStorage.getItem('fixi:v5:compact')==='1'}catch{return false}});
  const [custom,setCustom]=useState<CustomLine[]>([]),[linePrice,setLinePrice]=useState<Record<string,number>>({}),[cartDiscount,setCartDiscount]=useState(0);
+ const [totp,setTotp]=useState('');const [needTotp,setNeedTotp]=useState(false);
  const [dialog,setDialog]=useState<''|'free'|'discount'|'settings'|'parked'|'product'>('');const [newCode,setNewCode]=useState('');
  const [parked,setParked]=useState<Parked[]>([]),[queue,setQueue]=useState<QueuedSale[]>([]),[offline,setOffline]=useState(false),[syncing,setSyncing]=useState(false);
  const [settings,setSettingsState]=useState<Settings>(()=>({...defaultSettings,...readJson<Partial<Settings>>(SETTINGS_KEY,{})}));
@@ -175,14 +176,16 @@ function App(){
    setPaid(draft?.amount||'');setPriceMode(draft?.priceMode==='WHOLESALE'?'WHOLESALE':'RETAIL');setMethod(['CASH','CARD','TRANSFER'].includes(draft?.method||'')?draft!.method:'CASH');
    setSaleRef(draft?.reference||'');setDraftKey(key);setBoot(data);setPage('caisse');setPinConfigured(Boolean(data.pinConfigured));setPassword('');setError('');setMessage(draft?.reference?'Vente interrompue à vérifier avant de continuer.':'');
  }
+ // Double vérification (17.5) : le serveur demande un code à 6 chiffres sur un nouvel appareil.
+ const twoFa=(e:unknown)=>{const t=String(e);if(t.startsWith('CODE_2FA_REQUIS')){setNeedTotp(true);return t.replace(/^CODE_2FA_REQUIS:\s*/,'')+' — ouvrez votre application d’authentification.'}return t};
  async function connect(e:React.FormEvent){e.preventDefault();setBusy(true);setError('');
-  try{const data=await invoke<Boot>('supplier_login',{server,login,password});connectData(data,server,login);void invoke<SavedProfile>('supplier_saved_profile').then(setProfile).catch(()=>{})}
-  catch(e){setError(String(e))}finally{setBusy(false)}
+  try{const data=await invoke<Boot>('supplier_login',{server,login,password,totp:totp||null});connectData(data,server,login);setTotp('');setNeedTotp(false);void invoke<SavedProfile>('supplier_saved_profile').then(setProfile).catch(()=>{})}
+  catch(e){setError(twoFa(e));setTotp('')}finally{setBusy(false)}
  }
  async function quickLogin(e:React.FormEvent){e.preventDefault();setBusy(true);setError('');
   const who=profile?.profiles?.find(x=>x.login===pickLogin)||profile?.profiles?.[0];
-  try{const data=await invoke<Boot>('supplier_pin_login',{pin,login:who?.login||null});connectData({...data,pinConfigured:true},who?.server||profile?.server||server,who?.login||profile?.login||login);setPin('');void invoke<SavedProfile>('supplier_saved_profile').then(setProfile).catch(()=>{})}
-  catch(e){setError(String(e));setPin('')}finally{setBusy(false)}
+  try{const data=await invoke<Boot>('supplier_pin_login',{pin,login:who?.login||null,totp:totp||null});connectData({...data,pinConfigured:true},who?.server||profile?.server||server,who?.login||profile?.login||login);setPin('');setTotp('');setNeedTotp(false);void invoke<SavedProfile>('supplier_saved_profile').then(setProfile).catch(()=>{})}
+  catch(e){const t=String(e);setError(twoFa(e));setTotp('');if(!t.startsWith('CODE_2FA_REQUIS'))setPin('')}finally{setBusy(false)}
  }
  async function refresh(){if(!boot||boot.role==='DEMO')return;setBusy(true);setError('');
   try{const data=await invoke<Boot>('supplier_refresh');setBoot({...data,pinConfigured});setMessage('Catalogue synchronisé. Panier conservé.')}
@@ -471,7 +474,7 @@ function App(){
  }
  async function unlockAs(e:React.FormEvent){e.preventDefault();if(!lockSwitch||lockSwitch===me)return unlock(e);
   const who=profile?.profiles?.find(x=>x.login===lockSwitch);setBusy(true);setError('');
-  try{const data=await invoke<Boot>('supplier_pin_login',{pin:lockPin,login:lockSwitch});connectData({...data,pinConfigured:true},who?.server||serverOrigin,lockSwitch);setLocked(false);setLockPin('');setLockSwitch('')}
+  try{const data=await invoke<Boot>('supplier_pin_login',{pin:lockPin,login:lockSwitch,totp:null});connectData({...data,pinConfigured:true},who?.server||serverOrigin,lockSwitch);setLocked(false);setLockPin('');setLockSwitch('')}
   catch(err){setError(String(err));setLockPin('')}finally{setBusy(false)}
  }
  const pendingOrders=orders.filter(o=>o.status==='PENDING').length;
@@ -489,11 +492,13 @@ function App(){
     {(profile.profiles?.length||0)>1?<><p>Qui ouvre la caisse ?</p><div className="v6-cashiers" role="radiogroup" aria-label="Caissier">{profile.profiles!.map(x=><button type="button" role="radio" key={x.login} aria-checked={(pickLogin||profile.profiles![0].login)===x.login} onClick={()=>{setPickLogin(x.login);setPin('')}}><span className="v6-avatar">{(x.name||x.login).slice(0,1).toUpperCase()}</span><b>{x.name||x.login}</b></button>)}</div></>
     :<p>Ouvrir la caisse de <strong>{profile.profiles?.[0]?.name||profile.login}</strong></p>}
     <PinPad value={pin} onChange={setPin} autoFocus/>
-    <button disabled={busy||pin.length!==4} className="v5-btn v5-btn--primary v5-btn--lg">{busy?'Ouverture…':'Ouvrir la caisse'}</button>
+    {needTotp&&<label className="v5-field"><span>Code de vérification</span><input className="v6-totp" autoFocus inputMode="numeric" autoComplete="one-time-code" placeholder="123 456" value={totp} onChange={e=>setTotp(e.target.value.replace(/\D/g,'').slice(0,6))}/></label>}
+    <button disabled={busy||pin.length!==4||(needTotp&&totp.length!==6)} className="v5-btn v5-btn--primary v5-btn--lg">{busy?'Ouverture…':'Ouvrir la caisse'}</button>
     <div className="v6-login-links"><button type="button" className="v5-link" onClick={()=>{setPasswordMode(true);setLogin('');setPassword('')}}><UserPlus size={15}/> Ajouter un caissier</button><button type="button" className="v5-link v5-link--muted" onClick={()=>{setPasswordMode(true);setLogin(pickLogin||profile.login||'')}}>Mot de passe</button></div></form>:
    <form onSubmit={connect} className="v5-card v5-login-form"><h2>{profile?.configured?'Ajouter un caissier':'Connexion'}</h2><p>{profile?.configured?'Avec son propre compte FIXI Supplier (créé par le gérant dans Équipe).':'Avec votre compte FIXI Supplier.'}</p>
     <label className="v5-field"><span>Identifiant</span><input autoFocus required value={login} onChange={e=>setLogin(e.target.value)} autoComplete="username"/></label>
     <label className="v5-field"><span>Mot de passe</span><input required type="password" value={password} onChange={e=>setPassword(e.target.value)} autoComplete="current-password"/></label>
+    {needTotp&&<label className="v5-field"><span>Code de vérification</span><input className="v6-totp" autoFocus inputMode="numeric" autoComplete="one-time-code" placeholder="123 456" value={totp} onChange={e=>setTotp(e.target.value.replace(/\D/g,'').slice(0,6))}/></label>}
     <details className="v5-advanced"><summary>Serveur</summary><label className="v5-field"><span>Adresse du serveur FIXI</span><input type="url" required value={server} onChange={e=>setServer(e.target.value)}/></label></details>
     <button disabled={busy} className="v5-btn v5-btn--primary v5-btn--lg"><LogIn size={18}/> {busy?'Connexion…':'Se connecter'}</button>
     {profile?.configured&&<button type="button" className="v5-link" onClick={()=>setPasswordMode(false)}>Revenir au code PIN</button>}</form>}

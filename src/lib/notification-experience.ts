@@ -8,6 +8,7 @@ export const notificationExperiences = {
   SUPPLIER_NEW_ORDER:{channel:'supplier',sound:'SUPPLIER_ORDER',duration:8200,tagPrefix:'fixi-supplier-order'},
   SUPPLIER_UPDATE:{channel:'supplier',sound:'SUPPLIER_UPDATE',duration:6200,tagPrefix:'fixi-supplier-update'},
   SHOP_ORDER_PROGRESS:{channel:'shop',sound:'SHOP_PROGRESS',duration:7000,tagPrefix:'fixi-shop-order'},
+  SHOP_SUPPLIER_PROMO:{channel:'shop',sound:'CHIME',duration:6000,tagPrefix:'fixi-shop-promo'},
   SHOP_ORDER_DELIVERED:{channel:'shop',sound:'SHOP_DELIVERED',duration:8500,tagPrefix:'fixi-shop-delivered'},
   DRIVER_NEW_MISSION:{channel:'driver',sound:'DRIVER_MISSION',duration:10000,tagPrefix:'fixi-driver-mission'},
   DRIVER_ARRIVED:{channel:'driver',sound:'DRIVER_ARRIVAL',duration:7000,tagPrefix:'fixi-driver-arrival'},

@@ -6,7 +6,7 @@ use tauri::State;
 use tokio::sync::Mutex;
 use std::time::{SystemTime, UNIX_EPOCH};
 mod device_auth;
-use device_auth::{SavedDevice, list_profiles, find_profile, read_profile, write_profile, save_attempts, remove_profile};
+use device_auth::{SavedDevice, list_profiles, find_profile, read_profile, write_profile, save_attempts, remove_profile, read_trust, write_trust, forget_trust};
 mod hardware;
 mod updater;
 
@@ -72,7 +72,7 @@ async fn supplier_saved_profile() -> Result<serde_json::Value,String> {
 
 /// Ouvre la caisse avec le code PIN d'un caissier enregistré (le dernier utilisé si aucun n'est choisi).
 #[tauri::command]
-async fn supplier_pin_login(state: State<'_, Arc<DesktopState>>, pin: String, login: Option<String>) -> Result<serde_json::Value,String> {
+async fn supplier_pin_login(state: State<'_, Arc<DesktopState>>, pin: String, login: Option<String>, totp: Option<String>) -> Result<serde_json::Value,String> {
  if pin.len()!=4 || !pin.bytes().all(|c|c.is_ascii_digit()){return Err("Saisissez les 4 chiffres du PIN".into());}
  let mut device=find_profile(login.as_deref())?.ok_or("Aucun caissier enregistré sur ce PC")?;
  if device.blocked_until>now_epoch(){return Err("PIN temporairement bloqué. Réessayez après une minute.".into());}
@@ -86,7 +86,7 @@ async fn supplier_pin_login(state: State<'_, Arc<DesktopState>>, pin: String, lo
  device.failed=0;device.blocked_until=0;write_profile(&device)?;
  let shared=state.inner().clone();
  let pin_hash=device.pin_hash.clone();
- let data=supplier_login(state,device.origin,device.login,device.password).await?;
+ let data=supplier_login(state,device.origin,device.login,device.password,totp).await?;
  *shared.pin.lock().await=Some(PinLock{hash:pin_hash,locked:false,failed:0,blocked_until:None});
  if let Some(connection)=shared.connection.lock().await.as_mut(){connection.authenticated_with_password=false;}
  Ok(data)
@@ -120,8 +120,10 @@ async fn supplier_login(
     server: String,
     login: String,
     password: String,
+    totp: Option<String>,
 ) -> Result<serde_json::Value, String> {
     let origin = validate_origin(&server)?;
+    let login_key = login.trim().to_lowercase();
     if login.trim().is_empty() || password.is_empty() {
         return Err("Identifiant et mot de passe requis".into());
     }
@@ -132,11 +134,23 @@ async fn supplier_login(
         .timeout(std::time::Duration::from_secs(90))
         .build()
         .map_err(|_| "Impossible de préparer la connexion".to_string())?;
+    let mut body = serde_json::json!({"login":login,"password":password});
+    if let Some(t) = totp.as_ref().map(|t| t.trim().to_string()).filter(|t| t.len()==6 && t.bytes().all(|c|c.is_ascii_digit())) { body["totp"] = serde_json::json!(t); }
+    if let Some(trust) = read_trust(&origin, &login_key) { body["trust"] = serde_json::json!(trust); }
     let response = client.post(format!("{origin}/api/supplier/auth/login"))
-        .json(&serde_json::json!({"login":login,"password":password}))
+        .json(&body)
         .send().await.map_err(connection_error)?;
-    if !response.status().is_success() {
-        return Err(match response.status().as_u16() {
+    let status = response.status();
+    let reply: serde_json::Value = response.json().await.unwrap_or(serde_json::Value::Null);
+    // Double vérification : le préfixe CODE_2FA_REQUIS permet à l'écran d'afficher la case du code.
+    if reply.get("needsTotp").and_then(|v| v.as_bool()) == Some(true) {
+        forget_trust(&origin, &login_key);
+        let reason = reply.get("error").and_then(|v| v.as_str()).unwrap_or("Code de vérification requis");
+        return Err(format!("CODE_2FA_REQUIS: {reason}"));
+    }
+    if let Some(token) = reply.get("trustToken").and_then(|v| v.as_str()) { write_trust(&origin, &login_key, token); }
+    if !status.is_success() {
+        return Err(match status.as_u16() {
             401 | 403 => "Identifiants fournisseur refusés ou compte sans autorisation.".into(),
             502 | 503 | 504 => "Serveur FIXI temporairement indisponible : attendez son redémarrage.".into(),
             n => format!("Connexion refusée par FIXI (HTTP {n})."),

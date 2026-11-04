@@ -8,6 +8,7 @@ import { audit } from '@/lib/audit';
 import { ensureConnectPlan } from '@/lib/freemium';
 import { clientIp, TOO_MANY } from '@/lib/login-guard';
 import { slugify, validateSignup } from '@/lib/signup';
+import { whatsappWelcome } from '@/lib/platform-whatsapp';
 
 const MAX_PER_IP = 3;          // créations réussies par adresse…
 const WINDOW_H = 24;           // …sur 24 heures
@@ -54,6 +55,7 @@ export async function POST(req: Request) {
     });
     await createSession({ id: user.id, shopId: shop.id, tenantId: shop.tenantId, role: user.role, fullName: user.fullName, shopName: shop.name, shopSlug: shop.slug });
     await audit(shop.id, user.id, 'SIGNUP', 'SHOP', shop.id, { plan: 'CONNECT', region }).catch(() => {});
+    void whatsappWelcome(phone, shop.name); // jamais bloquant
     return ok({ shopSlug: shop.slug, userId: user.id, accessTier: 'CONNECT', next: '/app/suppliers' }, { status: 201 });
   } catch (e: any) {
     if (e?.code === 'P2002') return bad('Cette boutique existe déjà, réessayez avec un autre nom.', 409);

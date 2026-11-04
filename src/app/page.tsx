@@ -197,6 +197,7 @@ export default function Landing() {
     <footer className="lp-footer">
       <div className="lp-brand"><Logo size={30} /><span>{name}</span></div>
       <nav><a href="#apps">Applications</a><Link href="/stores">Boutiques</Link><Link href="/login">Atelier</Link><Link href="/supplier/login">Fournisseur</Link><Link href="/delivery/login">Livreur</Link><Link href="/saas/login">Control</Link></nav>
+      <div className="lp-legal"><Link href="/conditions">Conditions</Link><Link href="/confidentialite">Confidentialité</Link><Link href="/mentions-legales">Mentions légales</Link></div>
       <small>© {new Date().getFullYear()} {name} · Fait à Gabès, Tunisie</small>
     </footer>
   </div>;

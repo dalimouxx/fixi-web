@@ -65,7 +65,7 @@ export function SignupForm() {
     </fieldset>
 
     <input className="su-trap" tabIndex={-1} autoComplete="off" value={f.website} onChange={set('website')} aria-hidden="true" />
-    <label className="su-accept"><input type="checkbox" checked={f.accept} onChange={set('accept')} /><span>J’accepte que Fixi enregistre les informations de ma boutique pour fournir le service.</span></label>
+    <label className="su-accept"><input type="checkbox" checked={f.accept} onChange={set('accept')} /><span>J’accepte les <Link href="/conditions" target="_blank">conditions d’utilisation</Link> et la <Link href="/confidentialite" target="_blank">politique de confidentialité</Link>.</span></label>
     {error && <div className="su-error" role="alert">{error}</div>}
     <button className="su-submit" disabled={busy}>{busy ? <><Loader2 size={18} className="su-spin" /> Création…</> : <>Créer mon compte gratuit <ArrowRight size={18} /></>}</button>
     <p className="su-login">Déjà un compte ? <Link href="/login">Se connecter</Link></p>

@@ -55,3 +55,21 @@ export async function whatsappNewOrderAlert(companyId: string, o: { shopName: st
   await sendNewOrderTemplate(to, { shop: o.shopName, reference: o.reference, total });
   return { sent: true as const };
 }
+
+/**
+ * 17.5 — Bienvenue après inscription libre. Nécessite un modèle approuvé par Meta à 1 variable {{1}} (nom de la boutique),
+ * déclaré dans WHATSAPP_WELCOME_TEMPLATE. Sans configuration : rien n'est envoyé (l'admin relance depuis « Croissance »).
+ */
+export async function whatsappWelcome(phone: string, shopName: string) {
+  const c = cfg(), template = process.env.WHATSAPP_WELCOME_TEMPLATE || '';
+  const to = validAlertPhone(phone);
+  if (!platformWhatsAppReady() || !template || !to) return { sent: false as const };
+  try {
+    const r = await fetch(`https://graph.facebook.com/${c.version}/${c.phoneNumberId}/messages`, {
+      method: 'POST', headers: { Authorization: `Bearer ${c.token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messaging_product: 'whatsapp', to, type: 'template', template: { name: template, language: { code: c.lang }, components: [{ type: 'body', parameters: [{ type: 'text', text: shopName.slice(0, 60) }] }] } }),
+      signal: AbortSignal.timeout(8000),
+    });
+    return { sent: r.ok };
+  } catch { return { sent: false as const }; }
+}

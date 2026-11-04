@@ -958,6 +958,9 @@ model PlatformAdmin {
   supportMessages SupportMessage[]
   rewards         ShopReward[]
   changelogEntries ChangelogEntry[]
+  totpSecret     String?
+  totpEnabled    Boolean  @default(false)
+  sessionVersion Int      @default(0)
 }
 
 model Plan {
@@ -1605,6 +1608,7 @@ model SupplierCompany {
   settlements SupplierSettlement[]
   saasSubscriptions SupplierSaasSubscription[]
   saasPayments SupplierSaasPayment[]
+  promos                SupplierPromo[]
 }
 
 model SupplierAccount {
@@ -1619,6 +1623,9 @@ model SupplierAccount {
   driverAvailable Boolean      @default(true)
   deliverySessionVersion Int   @default(0)
   isActive     Boolean         @default(true)
+  totpSecret   String?
+  totpEnabled  Boolean         @default(false)
+  sessionVersion Int           @default(0)
   createdAt    DateTime        @default(now())
 }
 
@@ -1656,6 +1663,7 @@ model SupplierProduct {
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @default(now()) @updatedAt
   orderItems  SupplierOrderItem[]
+  promos      SupplierPromo[]
 
   @@unique([companyId, sku])
   @@index([companyId, active, name])
@@ -2696,4 +2704,23 @@ model ProblemReport {
   resolvedAt DateTime?
 
   @@index([status, createdAt])
+}
+
+/// 17.5 — Promotion d'un fournisseur sur un produit : prix appliqué aux commandes des ateliers jusqu'à la date de fin.
+model SupplierPromo {
+  id         String          @id @default(cuid())
+  companyId  String
+  company    SupplierCompany @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  productId  String
+  product    SupplierProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+  promoPrice Decimal         @db.Decimal(12,3)
+  message    String?
+  startsAt   DateTime        @default(now())
+  endsAt     DateTime
+  active     Boolean         @default(true)
+  notified   Int             @default(0)
+  createdAt  DateTime        @default(now())
+
+  @@index([productId, active, endsAt])
+  @@index([companyId, createdAt])
 }
