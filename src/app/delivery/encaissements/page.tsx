@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Banknote, CheckCircle2, Clock3, RefreshCw, ReceiptText, WalletCards } from 'lucide-react';
+import { DriverTabs } from '@/components/driver-tabs';
 import { FinanceSelectionSummary } from '@/components/finance-selection-summary';
 import st from '@/components/finance-ledger.module.css';
 
@@ -100,8 +101,8 @@ export default function DriverCollectionsPage() {
     } finally { setSubmitting(false); }
   }
 
-  return <main className={st.paymentPage}>
-    <Link href="/delivery" className={st.action}><ArrowLeft size={16}/> Retour aux livraisons</Link>
+  return <div className="driver-v3 dv-cash"><header className="dv-top"><Link href="/delivery" className="dv-back" aria-label="Retour aux missions"><ArrowLeft size={20}/></Link><div className="dv-top-title"><b>Ma caisse</b><small>Encaissements et remises au fournisseur</small></div></header>
+  <main className={st.paymentPage}>
     <div className={st.paymentHeader}>
       <span className={st.eyebrow}>FIXI LIVREUR · CAISSE</span>
       <h1>Encaisser une commande</h1>
@@ -175,5 +176,6 @@ export default function DriverCollectionsPage() {
         </article>;
       })}
     </div>
-  </main>;
+  </main>
+  <DriverTabs active="cash"/></div>;
 }

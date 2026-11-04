@@ -1,6 +1,7 @@
 import React,{useEffect,useState} from 'react';
 import {Check,Lock,Printer} from 'lucide-react';
 import {dt} from './dialogs';
+import {FixiLogo} from './brand';
 
 // ---------- Écran client (2ᵉ moniteur) ----------
 export type DisplayState={company:string;logo?:string;lines:{name:string;quantity:number;price:number}[];discount:number;total:number;given:number|null;change:number|null;thanks?:string};
@@ -22,7 +23,7 @@ export function CustomerDisplay(){
  },[]);
  const empty=!s||!s.lines.length;
  return <div className="v6-display">
-  <header>{s?.logo?<img src={s.logo} alt=""/>:<div className="v5-mark v5-mark--xl">F</div>}<strong>{s?.company||'FIXI'}</strong></header>
+  <header>{s?.logo?<img src={s.logo} alt=""/>:<FixiLogo size={64}/>}<strong>{s?.company||'FIXI'}</strong></header>
   {empty?<div className="v6-display-idle"><h1>{s?.thanks||'Bienvenue'}</h1><p>{s?.thanks?'À bientôt !':'Vos articles s’afficheront ici.'}</p></div>:
   <main><ul>{s!.lines.map((l,i)=><li key={i}><span><b>{l.name}</b><small>{l.quantity} × {dt(l.price)}</small></span><b>{dt(l.price*l.quantity)}</b></li>)}</ul>
    <footer>{s!.discount>0&&<p><span>Remise</span><b>-{dt(s!.discount)}</b></p>}<p className="v6-display-total"><span>Total</span><strong>{dt(s!.total)}</strong></p>

@@ -9,6 +9,7 @@
     "tauri": "tauri"
   },
   "dependencies": {
+    "@fontsource-variable/manrope": "5.3.0",
     "@tauri-apps/api": "^2.0.0",
     "jsbarcode": "^3.11.6",
     "lucide-react": "^0.468.0",
