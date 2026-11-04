@@ -22,7 +22,7 @@ export function ConnectGettingStarted({ onShop }: { onShop?: () => void }) {
   const [hidden, setHidden] = useState(true);
   const [addr, setAddr] = useState<{ address: string; city: string; phone: string; latitude?: number; longitude?: number }>({ address: '', city: '', phone: '' });const [gps, setGps] = useState('');
   const [err, setErr] = useState(''); const [busy, setBusy] = useState(false);
-  const load = () => fetch('/api/connect/getting-started', { cache: 'no-store' }).then(r => r.ok ? r.json() : null).then(x => { if (!x) return; setD(x); setAddr(x.shop); setOpen(o => o || x.steps.find((s: any) => !s.done)?.key || ''); });
+  const load = () => fetch('/api/connect/getting-started', { cache: 'no-store' }).then(r => r.ok ? r.json() : null).then(x => { if (!x || !Array.isArray(x.steps)) return; setD(x); setAddr(x.shop); setOpen(o => o || x.steps.find((s: any) => !s.done)?.key || ''); });
   useEffect(() => { try { setHidden(localStorage.getItem(HIDE) === '1'); } catch { setHidden(false); } void load(); }, []);
   if (!d || hidden || d.done === d.total) return null;
 

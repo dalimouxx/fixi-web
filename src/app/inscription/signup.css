@@ -52,7 +52,7 @@
 .su-pin-ok{position:absolute;right:14px;color:#16a34a;animation:su-pop .3s var(--spring)}
 @keyframes su-pop{from{transform:scale(.4);opacity:0}}
 .su-hint{margin:-2px 0 0;font-size:12.5px;color:var(--mut)}
-.su-trap{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
+.su-trap{position:absolute;inset-inline-start:0;width:1px;height:1px;opacity:0;overflow:hidden;clip-path:inset(50%);pointer-events:none}
 .su-accept{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;color:#44403c;margin:4px 0 16px;cursor:pointer;line-height:1.45}
 .su-accept input{width:18px;height:18px;margin:1px 0 0;accent-color:var(--o);flex:none}
 .su-error{padding:11px 14px;border-radius:12px;background:#fef2f2;color:#b91c1c;font-size:14px;font-weight:600;margin-bottom:14px;animation:su-shake .35s}
