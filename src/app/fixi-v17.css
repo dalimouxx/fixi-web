@@ -478,3 +478,31 @@ h1,h2,h3,.page-title{letter-spacing:-.02em}
 .ei-steps ol{margin:8px 0;padding-left:18px;display:grid;gap:5px}.ei-steps a{display:inline-flex;gap:4px;align-items:center;color:#c2500a;font-weight:700}
 .ei-steps small{display:block;margin-top:8px;color:#a8a29e}
 @media (max-width:760px){.ei-body{grid-template-columns:1fr}}
+
+/* ============ 17.6 — livreur : motifs rapides et photo ============ */
+.dv-reasons{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 10px}
+.dv-reasons button{min-height:38px;padding:0 12px;border-radius:99px;border:1.5px solid #e7e0d9;background:#fff;font:inherit;font-size:14px;font-weight:600;cursor:pointer}
+.dv-reasons button[aria-pressed=true]{border-color:#f0782b;background:#fff1e6;color:#9a3412}
+.dv-photo{position:relative;display:flex;align-items:center;gap:12px;padding:10px;margin-bottom:10px;border:1.5px dashed #e7cdb8;border-radius:14px;background:#fffaf5;color:#c2500a;cursor:pointer}
+.dv-photo img{width:56px;height:56px;object-fit:cover;border-radius:10px}.dv-photo b{display:block;color:#1c1917;font-size:14px}.dv-photo small{font-size:12px;color:#78716c}
+.dv-photo input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.mk-eta{display:inline-flex;align-items:center;gap:4px;margin-left:8px;padding:2px 8px;border-radius:99px;background:#dcfce7;color:#166534;font-style:normal;font-size:12px;font-weight:800;animation:gs-in .3s ease-out}
+
+/* ============ 17.6 — relances de paiement, attentes de stock ============ */
+.rm{margin:0 0 12px;padding:16px!important}
+.rm-head{display:flex;gap:14px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
+.rm h3{display:flex;align-items:center;gap:7px;margin:0;font-size:16px}.rm-head p{margin:3px 0 0;font-size:13px;color:#78716c}
+.rm-auto{display:flex;gap:10px;align-items:center;padding:8px 12px;border-radius:12px;background:#faf8f6;cursor:pointer}.rm-auto input{width:20px;height:20px;accent-color:#f0782b}
+.rm-auto b{display:block;font-size:13.5px}.rm-auto small{font-size:12px;color:#78716c}
+.rm-info{display:flex;gap:6px;align-items:center;margin:10px 0 0;color:#166534;font-weight:600;font-size:13.5px}
+.rm-err{margin:10px 0 0;color:#b91c1c;font-weight:600;font-size:13.5px}
+.rm-list{list-style:none;margin:12px 0 0;padding:0;display:grid;gap:2px}
+.rm-list li{display:flex;align-items:center;gap:8px;padding:8px 6px;border-radius:12px}.rm-list li:hover{background:#faf6f2}
+.rm-list li>div{flex:1;min-width:0}.rm-list b{display:flex;align-items:center;gap:6px;font-size:14px}.rm-list small{font-size:12.5px;color:#78716c}
+.rm-list em{display:inline-flex;align-items:center;gap:3px;font-style:normal;font-size:11px;font-weight:800;padding:1px 7px;border-radius:99px;background:#fee2e2;color:#b91c1c}
+.rm-age{flex:none;min-width:46px;text-align:center;padding:4px 0;border-radius:10px;font-size:12.5px;font-weight:800;font-variant-numeric:tabular-nums;background:#f1ece7;color:#57534e}
+.rm-age.l7{background:#fef9c3;color:#854d0e}.rm-age.l15{background:#ffedd5;color:#9a3412}.rm-age.l30{background:#fee2e2;color:#b91c1c}
+.rm-sent{display:inline-flex;gap:4px;align-items:center;font-size:12.5px;color:#16a34a;font-weight:700}
+.rm-empty{margin:12px 0 0;color:#78716c;font-size:14px}
+.ps-waiting{display:inline-block;margin:2px 0;padding:2px 8px;border-radius:99px;background:#fff1e6;color:#9a3412;font-style:normal;font-size:11.5px;font-weight:800}
+.gs-gps{justify-self:start}

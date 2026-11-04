@@ -6,6 +6,7 @@ import {Prisma,UserRole} from '@prisma/client';
 import {plain} from '@/lib/serializers';
 import {audit} from '@/lib/audit';
 import {activePromos} from '@/lib/promos';
+import {aging,creditOverflow} from '@/lib/field-ops';
 import {notifySupplier,notifySupplierLowStock} from '@/lib/supplier-notifications';
 
 function ref(){
@@ -44,6 +45,18 @@ export async function POST(req:Request){
     const ids=[...grouped.keys()];
     if(!ids.length)return bad('Panier vide');
 
+    // 17.6 — plafond de crédit fixé par le fournisseur : on refuse une commande qui le dépasserait.
+    const pre=await prisma.supplierProduct.findMany({where:{id:{in:ids}},select:{id:true,companyId:true,price:true,minOrderQty:true,company:{select:{name:true}}}});
+    if(pre.length&&pre.every(p=>p.companyId===pre[0].companyId)){
+      const cust=await prisma.supplierErpCustomer.findFirst({where:{companyId:pre[0].companyId,shopId:s.shopId,active:true},select:{id:true,creditLimit:true}});
+      if(cust&&Number(cust.creditLimit)>0){
+        const [sales,promosPre]=await Promise.all([prisma.supplierErpSale.findMany({where:{companyId:pre[0].companyId,customerId:cust.id,status:{not:'CANCELLED'}},select:{id:true,total:true,paid:true,createdAt:true,dueAt:true}}),activePromos(ids)]);
+        const current=aging(sales.map(x=>({id:x.id,total:Number(x.total),paid:Number(x.paid),createdAt:x.createdAt,dueAt:x.dueAt}))).due;
+        const est=pre.reduce((a,p)=>a+(promosPre.get(p.id)?.price??Number(p.price))*Math.max(p.minOrderQty,grouped.get(p.id)||0),0);
+        const over=creditOverflow(Number(cust.creditLimit),current,est);
+        if(over>0)return bad(`Plafond de crédit atteint chez ${pre[0].company.name} : solde actuel ${current.toFixed(3)} DT pour un plafond de ${Number(cust.creditLimit).toFixed(3)} DT. Réglez au moins ${over.toFixed(3)} DT ou réduisez la commande.`,409);
+      }
+    }
     const result=await prisma.$transaction(async tx=>{
       const products=await tx.supplierProduct.findMany({where:{id:{in:ids},active:true,company:{active:true}}});
       if(products.length!==ids.length)throw Object.assign(new Error('Produit indisponible'),{status:409});

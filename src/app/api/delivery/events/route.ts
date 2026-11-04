@@ -5,6 +5,7 @@ import {plain} from '@/lib/serializers';
 import {NotificationType,SupplierDeliveryStatus,SupplierOrderStatus} from '@prisma/client';
 import {notifySupplier} from '@/lib/supplier-notifications';
 import {notifyShop} from '@/lib/notifications';
+import {MAX_ATTEMPTS,RETRY_FAILURES} from '@/lib/field-ops';
 
 export async function POST(req:Request){
  try{
@@ -28,6 +29,9 @@ export async function POST(req:Request){
    if(n>due+0.001)return bad('Le règlement dépasse le dû client ('+due.toFixed(3)+' DT)',409);amount=n;
   }
   const x=await prisma.$transaction(async tx=>{
+   // 17.6 — à la première arrivée, la position GPS du livreur devient l'adresse GPS de l'atelier (pour les prochaines estimations).
+   if(type==='ARRIVED_AT_SHOP'&&Number.isFinite(Number(b.latitude))&&Number.isFinite(Number(b.longitude))&&(!b.accuracy||Number(b.accuracy)<=80))
+     await tx.shop.updateMany({where:{id:o.shopId,latitude:null},data:{latitude:Number(b.latitude),longitude:Number(b.longitude)}});
    if(type==='ARRIVED_AT_SHOP'){
      const arrived=await tx.supplierDelivery.updateMany({
        where:{orderId,driverAccountId:s.id,arrivedAt:null},
@@ -38,7 +42,15 @@ export async function POST(req:Request){
    const event=await tx.supplierDeliveryEvent.create({data:{companyId:s.companyId,orderId,accountId:s.id,type,note:b.note||null,amount:amount===null?null:Number(amount),latitude:Number.isFinite(Number(b.latitude))?Number(b.latitude):null,longitude:Number.isFinite(Number(b.longitude))?Number(b.longitude):null,proofUrl:b.proofUrl||null}});
    if(type==='COD_COLLECTED')await tx.supplierDelivery.update({where:{orderId},data:{cashCollected:{increment:Number(amount)}}});
    if(type==='DUE_COLLECTED'&&dueCustomer){let remaining=Number(amount||0);for(const sale of dueSales){if(remaining<=0.0001)break;const due=Math.max(0,Number(sale.total)-Number(sale.paid));const take=Math.min(remaining,due);if(take<=0)continue;const paid=Number(sale.paid)+take;await tx.supplierErpSale.update({where:{id:sale.id},data:{paid,status:paid+0.0001>=Number(sale.total)?'PAID':'PARTIALLY_PAID'}});await tx.supplierErpPayment.create({data:{companyId:s.companyId,customerId:dueCustomer.id,saleId:sale.id,kind:'IN',method:'CASH',amount:take,reference:sale.reference,note:'Ancien dû encaissé par livreur',accountId:s.id}});remaining-=take}}
-   if(['CUSTOMER_ABSENT','DELIVERY_REFUSED','INCIDENT'].includes(type))await tx.supplierDelivery.update({where:{orderId},data:{attemptCount:{increment:1}}});
+   if(['CUSTOMER_ABSENT','SHOP_CLOSED','DELIVERY_REFUSED','INCIDENT'].includes(type))await tx.supplierDelivery.update({where:{orderId},data:{attemptCount:{increment:1}}});
+   // 17.6 — client absent / atelier fermé : nouvelle tentative programmée automatiquement (jusqu'à 3 passages).
+   if((RETRY_FAILURES as readonly string[]).includes(type)&&o.status===SupplierOrderStatus.OUT_FOR_DELIVERY){
+    const attempts=(o.delivery?.attemptCount||0)+1;
+    if(attempts<MAX_ATTEMPTS){
+     await tx.supplierOrder.update({where:{id:orderId},data:{status:SupplierOrderStatus.READY_FOR_DELIVERY}});
+     await tx.supplierDelivery.update({where:{orderId},data:{status:SupplierDeliveryStatus.ASSIGNED,exceptionStatus:'RESCHEDULED',arrivedAt:null}});
+    }else await tx.supplierDelivery.update({where:{orderId},data:{exceptionStatus:'ATTEMPTS_EXCEEDED'}});
+   }
    if(type==='RETURN_TO_DEPOT'){
     await tx.supplierDelivery.update({where:{orderId},data:{status:SupplierDeliveryStatus.RETURNING,exceptionStatus:'RETURN_PENDING',returnNote:b.note||null}});
     await tx.supplierOrder.update({where:{id:orderId},data:{status:SupplierOrderStatus.RETURNING}});
@@ -82,12 +94,22 @@ export async function POST(req:Request){
   }
   const incidentLabels:Record<string,string>={
    CUSTOMER_ABSENT:'Client absent',
+   SHOP_CLOSED:'Atelier fermé',
    DELIVERY_REFUSED:'Livraison refusée',
    INCIDENT:'Incident de livraison',
    RETURN_TO_DEPOT:'Retour vers fournisseur',
    RETURNED_TO_SUPPLIER:'Retour remis au fournisseur',
    RESCHEDULED:'Livraison reprogrammée'
   };
+  if((RETRY_FAILURES as readonly string[]).includes(type)&&o.status===SupplierOrderStatus.OUT_FOR_DELIVERY){
+   const attempts=(o.delivery?.attemptCount||0)+1;
+   const retry=attempts<MAX_ATTEMPTS;
+   await Promise.allSettled([
+    notifyShop(o.shopId,retry?'Nous sommes passés, nouvelle livraison prévue':'Livraison impossible après 3 passages',retry?`${s.fullName} est passé pour la commande ${o.reference} (${incidentLabels[type].toLowerCase()}). Une nouvelle tentative est programmée : gardez votre téléphone allumé.`:`La commande ${o.reference} n’a pas pu être livrée après ${attempts} passages. Le fournisseur va vous contacter.`,'/app/suppliers?tab=orders',NotificationType.WARNING,undefined,{experienceKey:'SHOP_ORDER_PROGRESS',eventId:orderId+'-FAIL-'+attempts}),
+    notifySupplier(s.companyId,retry?`${incidentLabels[type]} · nouvelle tentative`:'3 passages sans livraison',`${o.reference} · ${o.shop.name} · passage ${attempts}/${MAX_ATTEMPTS}${b.note?' · '+String(b.note):''}`,{href:'/supplier?tab=delivery',kind:'WARNING',priority:retry?'HIGH':'URGENT',soundKey:'WARNING',roles:managers,metadata:{orderId,attempts,proofUrl:b.proofUrl||null}}),
+   ]);
+   return ok({...plain(x),rescheduled:retry,attempts},{status:201});
+  }
   if(incidentLabels[type]){
    const urgent=['DELIVERY_REFUSED','INCIDENT','RETURN_TO_DEPOT'].includes(type);
    await Promise.allSettled([
