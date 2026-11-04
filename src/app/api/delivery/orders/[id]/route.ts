@@ -38,9 +38,11 @@ export async function PATCH(req:Request,{params}:{params:Promise<{id:string}>}){
     recipientName:status===SupplierOrderStatus.DELIVERED?String(b.recipientName).trim():undefined,
     recipientPhone:status===SupplierOrderStatus.DELIVERED?(String(b.recipientPhone||'').trim()||null):undefined,
     proofCode:status===SupplierOrderStatus.DELIVERED?(String(b.proofCode||'').trim()||null):undefined,
-    proofUrl:status===SupplierOrderStatus.DELIVERED?(b.proofUrl||undefined):undefined
+    proofUrl:status===SupplierOrderStatus.DELIVERED?(b.proofUrl||undefined):undefined,
+    // 17.8 — signature au doigt du réceptionnaire (PNG, 200 Ko max).
+    signatureUrl:status===SupplierOrderStatus.DELIVERED&&typeof b.signatureUrl==='string'&&/^data:image\/png;base64,/.test(b.signatureUrl)&&b.signatureUrl.length<=270000?b.signatureUrl:undefined
    }});
-   if(status===SupplierOrderStatus.DELIVERED)await tx.supplierDeliveryEvent.create({data:{companyId:s.companyId,orderId:id,accountId:s.id,type:'DELIVERY_PROOF',note:'Reçu par '+String(b.recipientName).trim()+' · Code de remise vérifié',proofUrl:b.proofUrl||null}});
+   if(status===SupplierOrderStatus.DELIVERED)await tx.supplierDeliveryEvent.create({data:{companyId:s.companyId,orderId:id,accountId:s.id,type:'DELIVERY_PROOF',note:'Reçu par '+String(b.recipientName).trim()+' · Code de remise vérifié'+(b.signatureUrl?' · signé':''),proofUrl:b.proofUrl||null}});
    if(Number.isFinite(Number(b.latitude))&&Number.isFinite(Number(b.longitude)))await tx.supplierDriverLocation.create({data:{companyId:s.companyId,orderId:id,accountId:s.id,latitude:Number(b.latitude),longitude:Number(b.longitude),accuracy:Number.isFinite(Number(b.accuracy))?Number(b.accuracy):null}});
    return order;
   });

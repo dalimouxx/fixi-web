@@ -27,6 +27,7 @@ import {EinvoiceReadiness} from './einvoice-readiness';
 import {SupplierReminders} from './supplier-reminders';
 import {SupplierPartRequests} from './supplier-part-requests';
 import {SupplierChurn,SupplierCashForecast,PickingDialog} from './supplier-growth-panels';
+import {SupplierReturnPickups,SupplierDriverBoard} from './supplier-field-panels';
 import {SupplierMasterData} from './supplier-master-data';
 import {SupplierDeliveryCenter} from './supplier-delivery-center';
 import {SupplierActionModal} from './supplier-action-modal';
@@ -265,7 +266,7 @@ export function SupplierDashboard({session}:{session:any}){
 
       {tab==='vendors'&&<section className="supplier-panel"><div className="supplier-section-head"><div><b>Fournisseurs amont</b><span>Grossistes/importateurs auprès desquels vous achetez.</span></div><button className="btn btn-primary btn-sm" onClick={newVendor}><Plus/> Ajouter</button></div><div className="supplier-card-grid">{(advanced.vendors||[]).map((v:any)=><article key={v.id}><Users/><div><b>{v.name}</b><span>{v.phone||'—'} · {v.address||'—'}</span></div><strong>{money(v.openingDue||0)}</strong></article>)}</div></section>}
 
-      {tab==='returns'&&<SupplierReturns sales={erp.sales||[]} saleItems={erp.saleItems||[]} returns={advanced.returns||[]} returnItems={advanced.returnItems||[]} warehouses={advanced.warehouses||[]} methods={master.paymentMethods||[]} onChanged={()=>setRefresh(x=>x+1)}/>} 
+      {tab==='returns'&&<SupplierReturnPickups onChanged={()=>setRefresh(x=>x+1)}/>}{tab==='returns'&&<SupplierReturns sales={erp.sales||[]} saleItems={erp.saleItems||[]} returns={advanced.returns||[]} returnItems={advanced.returnItems||[]} warehouses={advanced.warehouses||[]} methods={master.paymentMethods||[]} onChanged={()=>setRefresh(x=>x+1)}/>} 
 
       {tab==='warehouses'&&<SupplierWarehouses products={products} warehouses={advanced.warehouses||[]} warehouseStock={advanced.warehouseStock||[]} onNewWarehouse={newWarehouse} onChanged={()=>setRefresh(x=>x+1)}/>} 
 
@@ -277,7 +278,7 @@ export function SupplierDashboard({session}:{session:any}){
 
       {tab==='reports'&&<SupplierReports/>}
 
-{tab==='delivery'&&<SupplierDeliveryCenter orders={orders} drivers={drivers} onChanged={()=>setRefresh(x=>x+1)}/>}
+{tab==='delivery'&&<SupplierDriverBoard/>}{tab==='delivery'&&<SupplierDeliveryCenter orders={orders} drivers={drivers} onChanged={()=>setRefresh(x=>x+1)}/>}
       {tab==='team'&&<SecurityPanel endpoint="/api/supplier/security" loginHref="/supplier/login"/>}{tab==='team'&&<SupplierTeam session={session}/>} 
     </main>
     <nav className="fixi-supplier-bottom-nav" aria-label="Accès rapides Supplier">

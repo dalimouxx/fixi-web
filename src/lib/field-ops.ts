@@ -61,3 +61,24 @@ export const ETA_ALERT_MIN = 6;
 /** Échecs de livraison qui relancent automatiquement une nouvelle tentative. */
 export const RETRY_FAILURES = ['CUSTOMER_ABSENT', 'SHOP_CLOSED'] as const;
 export const MAX_ATTEMPTS = 3;
+
+/** Kilomètres parcourus à partir des points GPS (sauts aberrants > 3 km ou points trop proches ignorés). */
+export function trackKm(points: { lat: number; lng: number; at: Date | string }[]) {
+  const p = [...points].sort((a, b) => +new Date(a.at) - +new Date(b.at));
+  let km = 0;
+  for (let i = 1; i < p.length; i++) { const d = haversineKm(p[i - 1], p[i]); if (d >= 0.02 && d <= 3) km += d; }
+  return Math.round(km * 10) / 10;
+}
+
+export type DriverStat = { driverId: string; name: string; delivered: number; failed: number; successPct: number; avgMinutes: number | null; km: number; bonus: number };
+
+/** Indicateurs par livreur : livraisons, échecs, réussite, temps moyen prise en charge → remise, km, prime. */
+export function driverStats(input: { drivers: { id: string; name: string }[]; deliveries: { driverId: string | null; pickedUpAt: Date | string | null; deliveredAt: Date | string | null }[]; failures: { driverId: string | null }[]; km: Record<string, number>; bonusPerDelivery: number }): DriverStat[] {
+  return input.drivers.map(d => {
+    const mine = input.deliveries.filter(x => x.driverId === d.id && x.deliveredAt);
+    const times = mine.filter(x => x.pickedUpAt).map(x => (+new Date(x.deliveredAt!) - +new Date(x.pickedUpAt!)) / 60000).filter(m => m > 0 && m < 600);
+    const failed = input.failures.filter(f => f.driverId === d.id).length;
+    const total = mine.length + failed;
+    return { driverId: d.id, name: d.name, delivered: mine.length, failed, successPct: total ? Math.round(mine.length / total * 100) : 0, avgMinutes: times.length ? Math.round(times.reduce((a, b) => a + b, 0) / times.length) : null, km: input.km[d.id] || 0, bonus: Math.round(mine.length * input.bonusPerDelivery * 1000) / 1000 };
+  }).sort((a, b) => b.delivered - a.delivered || b.successPct - a.successPct);
+}
