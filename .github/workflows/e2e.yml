@@ -1,0 +1,43 @@
+name: Fixi E2E (parcours)
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env: { POSTGRES_USER: fixi, POSTGRES_PASSWORD: fixi, POSTGRES_DB: fixi }
+        ports: ['5432:5432']
+        options: --health-cmd "pg_isready -U fixi" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://fixi:fixi@localhost:5432/fixi?schema=public
+      SESSION_SECRET: e2e-session-secret-at-least-32-characters
+      AUTH_SECRET: e2e-auth-secret-at-least-32-characters-long
+      PLATFORM_AUTH_SECRET: e2e-platform-secret-at-least-32-characters
+      SUPPLIER_AUTH_SECRET: e2e-supplier-secret-at-least-32-characters
+      DELIVERY_AUTH_SECRET: e2e-delivery-secret-at-least-32-characters
+      DATA_ENCRYPTION_KEY: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - run: npm install --no-audit --no-fund
+      - run: npx prisma db push --skip-generate && npx prisma generate
+      - run: npm run db:seed
+      - run: npm run build
+      - name: Démarrer Fixi
+        run: |
+          npx next start -p 3000 > next.log 2>&1 &
+          for i in $(seq 1 60); do curl -sf http://localhost:3000/api/public/login-options >/dev/null && break; sleep 2; done
+      - run: npm install --no-save --no-audit --no-fund @playwright/test@1.56.1 && npx playwright install --with-deps chromium
+      - run: npx playwright test -c e2e/playwright.config.ts
+      - if: failure()
+        run: tail -n 200 next.log
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with: { name: playwright-report, path: playwright-report, retention-days: 7 }

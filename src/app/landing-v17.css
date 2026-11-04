@@ -474,3 +474,4 @@
  .lps-row,.lps-photo,.lps-bubble,.lps-read,.lps-checks span,.lps-new,.lps-done,.lps-data dl div,.lps-shop,.lps-pin i,.lps-plans .lps-plan{opacity:1!important;transform:none!important}
  .lps-type{width:auto}.lps-bar i{width:100%}.lps-split span{transform:none}.lps-tn path{stroke-dashoffset:0}
 }
+.lp-legal{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;opacity:.8}.lp-legal a:hover{text-decoration:underline}

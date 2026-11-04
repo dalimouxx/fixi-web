@@ -12,7 +12,7 @@ export default async function Layout({children}:{children:React.ReactNode}) {
   // Enforce entitlements server-side, not just by hiding menu entries.
   const pathname=(await headers()).get('x-fixi-path')||'';
   if(s.accessTier==='CONNECT'&&(!pathname||!isConnectAppPath(pathname))){
-    redirect('/app/upgrade');
+    redirect('/app/upgrade'+(pathname&&pathname!=='/app/upgrade'?'?from='+encodeURIComponent(pathname):''));
   }
   const [shop,user]=await Promise.all([
     prisma.shop.findUnique({where:{id:s.shopId},select:{setupCompletedAt:true}}),

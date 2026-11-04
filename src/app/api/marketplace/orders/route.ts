@@ -5,6 +5,7 @@ import {bad,ok} from '@/lib/http';
 import {Prisma,UserRole} from '@prisma/client';
 import {plain} from '@/lib/serializers';
 import {audit} from '@/lib/audit';
+import {activePromos} from '@/lib/promos';
 import {notifySupplier,notifySupplierLowStock} from '@/lib/supplier-notifications';
 
 function ref(){
@@ -49,6 +50,7 @@ export async function POST(req:Request){
       const companyId=products[0].companyId;
       if(products.some(p=>p.companyId!==companyId))throw Object.assign(new Error('Une commande doit contenir les produits d’un seul fournisseur'),{status:409});
 
+      const promos=await activePromos(ids); // prix promo en cours, vérifié côté serveur
       const warehouseRows=await tx.supplierWarehouseStock.findMany({where:{companyId,productId:{in:ids}},orderBy:{updatedAt:'asc'}});
       let total=0;const rows:any[]=[],allocations:any[]=[];
 
@@ -64,8 +66,9 @@ export async function POST(req:Request){
         const warehouseAvailable=stockRows.reduce((a,x)=>a+Math.max(0,Number(x.quantity||0)-Number(x.reserved||0)),0);
         if(warehouseAvailable<fromWarehouses)throw Object.assign(new Error(`Répartition dépôt incohérente pour ${p.name}`),{status:409});
 
-        total+=Number(p.price)*qty;
-        rows.push({productId:p.id,quantity:qty,unitPrice:p.price});
+        const promo=promos.get(p.id),unit=promo&&promo.price<Number(p.price)?promo.price:Number(p.price);
+        total+=unit*qty;
+        rows.push({productId:p.id,quantity:qty,unitPrice:unit});
         await tx.supplierProduct.update({where:{id:p.id},data:{stock:{decrement:qty}}});
 
         for(const stock of stockRows){

@@ -683,3 +683,4 @@ html,body,#root{font-family:var(--fx-font);font-feature-settings:"cv11","ss01"}
 .v6-check{display:flex;align-items:center;gap:9px;font-size:14px;color:var(--fx-ink-2,#44403c);cursor:pointer}
 .v6-check input{width:18px;height:18px;accent-color:var(--fx-brand,#f0782b)}
 .v5-hint svg{vertical-align:-2px;color:var(--fx-brand,#f0782b)}
+.v6-totp{font-size:22px!important;letter-spacing:.35em;text-align:center;font-weight:700}

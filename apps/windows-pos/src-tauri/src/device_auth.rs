@@ -110,3 +110,13 @@ pub fn remove_profile(origin: &str, login: &str) -> Result<(), String> {
     list.retain(|p| !(p.origin == origin && p.login == login));
     write_index(&list)
 }
+
+/// 17.5 — jeton « appareil de confiance » de la double vérification (30 jours), un par compte.
+fn trust_account(origin: &str, login: &str) -> String { format!("supplier-trust-v1:{}|{}", origin, login) }
+pub fn read_trust(origin: &str, login: &str) -> Option<String> {
+    read_json::<String>(&trust_account(origin, login)).ok().flatten()
+}
+pub fn write_trust(origin: &str, login: &str, token: &str) {
+    let _ = write_json(&trust_account(origin, login), &token.to_string());
+}
+pub fn forget_trust(origin: &str, login: &str) { let _ = delete(&trust_account(origin, login)); }

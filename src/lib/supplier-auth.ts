@@ -7,7 +7,7 @@ const secret=()=>new TextEncoder().encode(process.env.SUPPLIER_AUTH_SECRET||proc
 
 export const supplierRoles=['OWNER','ADMIN','MANAGER','STOCK','SALES','CASHIER','ACCOUNTANT','DELIVERY_MANAGER','DRIVER'] as const;
 export type SupplierRole=(typeof supplierRoles)[number];
-export type SupplierSession={id:string;companyId:string;fullName:string;companyName:string;role:SupplierRole};
+export type SupplierSession={id:string;companyId:string;fullName:string;companyName:string;role:SupplierRole;sv?:number};
 
 export async function createSupplierSession(v:SupplierSession){
  const t=await new SignJWT(v).setProtectedHeader({alg:'HS256'}).setIssuedAt().setExpirationTime('12h').sign(secret());
@@ -22,6 +22,8 @@ export async function requireSupplierSession(){
  const s=await getSupplierSession();if(!s)throw Object.assign(new Error('UNAUTHENTICATED'),{status:401});
  const a=await prisma.supplierAccount.findFirst({where:{id:s.id,companyId:s.companyId,isActive:true},include:{company:true}});
  if(!a||!a.company.active)throw Object.assign(new Error('UNAUTHENTICATED'),{status:401});
+ // « Déconnecter tous les appareils » incrémente sessionVersion : les anciennes sessions sont refusées.
+ if((s.sv||0)!==(a.sessionVersion||0))throw Object.assign(new Error('UNAUTHENTICATED'),{status:401});
  return {...s,role:(a.role||'ADMIN') as SupplierRole,companyName:a.company.name};
 }
 export async function requireSupplierRole(allowed:readonly SupplierRole[]){

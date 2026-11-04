@@ -83,3 +83,4 @@
 }
 @media (max-width:520px){.su-row{grid-template-columns:1fr}.su-free li span{width:32px;height:32px}}
 @media (prefers-reduced-motion:reduce){.su *,.su{animation:none!important;transition:none!important}.su-free li{opacity:1}}
+.su-accept a{color:var(--o2);font-weight:700}
