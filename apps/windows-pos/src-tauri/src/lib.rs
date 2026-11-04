@@ -9,6 +9,7 @@ mod device_auth;
 use device_auth::{SavedDevice, list_profiles, find_profile, read_profile, write_profile, save_attempts, remove_profile, read_trust, write_trust, forget_trust};
 mod hardware;
 mod updater;
+mod atelier;
 
 struct Connection {
     origin: String,
@@ -550,7 +551,8 @@ fn open_external(url: String) -> Result<(),String> {
 pub fn run() {
     tauri::Builder::default()
         .manage(Arc::new(DesktopState{connection:Mutex::new(None),pin:Mutex::new(None)}))
-        .invoke_handler(tauri::generate_handler![supplier_login,supplier_refresh,supplier_logout,supplier_checkout,supplier_history,supplier_cash_action,supplier_orders,supplier_order_transition,supplier_debts,supplier_debt_payment,supplier_returns,supplier_return_create,pin_setup,pin_lock,pin_unlock,supplier_saved_profile,supplier_pin_login,supplier_operation_status,supplier_find_tickets,supplier_return_source,supplier_customer_debts,supplier_customer_payment,supplier_create_customer,supplier_delivery_shifts,supplier_delivery_close,supplier_switch_user,supplier_cash_summary,app_version,open_external,hardware::list_printers,hardware::cash_drawer_open,hardware::open_customer_display,hardware::close_customer_display,updater::check_update,updater::install_update,supplier_invoice,supplier_update_customer,supplier_stock_count,supplier_open_stock_counts,supplier_report_problem,supplier_create_product,supplier_lookup_barcode])
+        .manage(Arc::new(atelier::AtelierState::new()))
+        .invoke_handler(tauri::generate_handler![supplier_login,supplier_refresh,supplier_logout,supplier_checkout,supplier_history,supplier_cash_action,supplier_orders,supplier_order_transition,supplier_debts,supplier_debt_payment,supplier_returns,supplier_return_create,pin_setup,pin_lock,pin_unlock,supplier_saved_profile,supplier_pin_login,supplier_operation_status,supplier_find_tickets,supplier_return_source,supplier_customer_debts,supplier_customer_payment,supplier_create_customer,supplier_delivery_shifts,supplier_delivery_close,supplier_switch_user,supplier_cash_summary,app_version,open_external,hardware::list_printers,hardware::cash_drawer_open,hardware::open_customer_display,hardware::close_customer_display,updater::check_update,updater::install_update,supplier_invoice,supplier_update_customer,supplier_stock_count,supplier_open_stock_counts,supplier_report_problem,supplier_create_product,supplier_lookup_barcode,atelier::atelier_options,atelier::atelier_login,atelier::atelier_request,atelier::atelier_logout])
         .run(tauri::generate_context!())
         .expect("error while running FIXI Caisse Windows");
 }

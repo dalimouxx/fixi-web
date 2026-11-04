@@ -6,6 +6,7 @@ import {WindowsLabelStudio} from './labels';
 import {TicketPrint,type ReceiptData} from './TicketV4';
 import {TicketSearchV4} from './TicketSearchV4';
 import {CustomerDisplay,publishDisplay,CashCounter,ZReport,ZButton,methodLabel,type CashSummary} from './counter';
+import {AtelierApp,switchSpace} from './atelier';
 import {FreeItemDialog,DiscountDialog,SettingsDialog,NewProductDialog,type DiscountLine,type NewProduct} from './dialogs';
 import {matchScore} from './search';
 import {readJson,writeJson,defaultSettings,SETTINGS_KEY,type Settings} from './storage';
@@ -14,7 +15,7 @@ import {useArabic} from './i18n';
 import {InvoiceDialog,InvoicePrint,PaymentSlip,type InvoiceData,type PaymentSlipData} from './invoice';
 import {InventoryPage} from './inventory';
 import {ReportDialog} from './report';
-import {Banknote,BookOpen,Boxes,Check,ChevronRight,CircleAlert,CircleCheck,CreditCard,Delete,HandCoins,Inbox,KeyRound,Landmark,Lock,LockOpen,LogIn,Minus,PackageOpen,PackageSearch,PanelLeftClose,PanelLeftOpen,Plus,Power,Printer,ReceiptText,RefreshCw,ScanBarcode,Search,ShieldCheck,ShoppingCart,Tags,Trash2,TriangleAlert,Truck,Undo2,UserPlus,UserRound,UserRoundCog,Users,Wallet,X,PencilLine,Percent,PauseCircle,PlayCircle,Settings2,WifiOff,CloudUpload,MessageCircle,Download,Flame,ClipboardList,FileText,type LucideIcon,PackagePlus} from 'lucide-react';
+import {Banknote,BookOpen,Boxes,Check,ChevronRight,CircleAlert,CircleCheck,CreditCard,Delete,HandCoins,Inbox,KeyRound,Landmark,Lock,LockOpen,LogIn,Minus,PackageOpen,PackageSearch,PanelLeftClose,PanelLeftOpen,Plus,Power,Printer,ReceiptText,RefreshCw,ScanBarcode,Search,ShieldCheck,ShoppingCart,Tags,Trash2,TriangleAlert,Truck,Undo2,UserPlus,UserRound,UserRoundCog,Users,Wallet,X,PencilLine,Percent,PauseCircle,PlayCircle,Settings2,WifiOff,CloudUpload,MessageCircle,Download,Flame,ClipboardList,FileText,type LucideIcon,PackagePlus,Wrench} from 'lucide-react';
 import '@fontsource-variable/manrope';
 import {FixiLogo,categoryLook,Clock} from './brand';
 import './style.css';
@@ -503,7 +504,7 @@ function App(){
     <button disabled={busy} className="v5-btn v5-btn--primary v5-btn--lg"><LogIn size={18}/> {busy?'Connexion…':'Se connecter'}</button>
     {profile?.configured&&<button type="button" className="v5-link" onClick={()=>setPasswordMode(false)}>Revenir au code PIN</button>}</form>}
    {error&&<p role="alert" className="v5-alert v5-alert--danger">{error}</p>}
-   <button className="v5-link v5-link--muted" onClick={()=>{setBoot(demo);setPage('caisse')}}>Essayer sans connexion (démonstration)</button></div></div>;
+   <button className="v5-link v5-link--muted" onClick={()=>{setBoot(demo);setPage('caisse')}}>Essayer sans connexion (démonstration)</button><button className="v5-link" onClick={()=>switchSpace('atelier')}><Wrench size={15}/> Je suis un atelier de réparation</button></div></div>;
  return <div className={'v4-app v5-app'+(page==='caisse'?' is-checkout':'')+(compact?' is-compact':'')}>
   <aside className="v5-side">
    <div className="v5-brand"><FixiLogo size={40}/><div className="v5-brand-text"><strong>FIXI</strong><small>Caisse</small></div>
@@ -705,4 +706,6 @@ function PinPad({value,onChange,autoFocus}:{value:string;onChange:(v:string)=>vo
   <div className="v5-pin-dots" aria-hidden>{[0,1,2,3].map(i=><i key={i} className={i<value.length?'is-on':''}/>)}</div>
   <div className="v5-keys">{['1','2','3','4','5','6','7','8','9'].map(d=><button type="button" key={d} onClick={()=>press(d)}>{d}</button>)}<button type="button" aria-label="Effacer" onClick={()=>onChange(value.slice(0,-1))}><Delete size={20}/></button><button type="button" onClick={()=>press('0')}>0</button><button type="button" aria-label="Tout effacer" onClick={()=>onChange('')}><X size={20}/></button></div></div>}
 const isCustomerWindow=(()=>{try{return getCurrentWindow().label==='client'}catch{return false}})();
-createRoot(document.getElementById('root')!).render(isCustomerWindow?<CustomerDisplay/>:<App/>);
+// Un seul installateur : mode fournisseur (par défaut) ou mode atelier (Fixi Pro).
+const space=(()=>{try{return localStorage.getItem('fixi-space')}catch{return null}})();
+createRoot(document.getElementById('root')!).render(isCustomerWindow?<CustomerDisplay/>:space==='atelier'?<AtelierApp/>:<App/>);
