@@ -102,6 +102,22 @@ test('5b · retour en stock : l’atelier qui attend une pièce est prévenu', a
   expect(Array.isArray((await rem.json()).rows)).toBe(true);
 });
 
+test('5c · pièce introuvable : demande, offre du fournisseur, choix de l’atelier', async () => {
+  const ask = await atelier.request.post('/api/marketplace/part-requests', { data: { partName: `Nappe test ${RUN}`, deviceModel: 'Redmi Note 13', quantity: 2, scope: 'ALL' } });
+  expect(ask.status(), await ask.text()).toBe(201);
+  const req = await ask.json();
+  const list = await (await supplier.request.get('/api/supplier/part-requests')).json();
+  expect(list.some((r: any) => r.id === req.id)).toBe(true);
+  const quote = await supplier.request.post('/api/supplier/part-requests', { data: { requestId: req.id, price: 55, quantity: 2, delay: 'H24' } });
+  expect(quote.status(), await quote.text()).toBe(201);
+  const mine = await (await atelier.request.get('/api/marketplace/part-requests')).json();
+  const q = mine.find((r: any) => r.id === req.id).quotes[0];
+  expect(Number(q.price)).toBe(55);
+  const acc = await atelier.request.patch('/api/marketplace/part-requests', { data: { id: req.id, quoteId: q.id } });
+  expect((await acc.json()).productId).toBe(q.productId);
+  for (const path of ['/api/supplier/churn', '/api/supplier/cash-forecast']) { const r = await supplier.request.get(path); expect(r.ok(), path + ' ' + await r.text()).toBeTruthy(); }
+});
+
 test('6 · le module Réparations propose l’essai Pro, qui s’active en un clic', async () => {
   await atelier.goto('/app/repairs');
   await expect(atelier).toHaveURL(/\/app\/upgrade\?from=%2Fapp%2Frepairs/);

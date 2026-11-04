@@ -521,6 +521,7 @@ model Shop {
   @@index([publicVisible, region])
   @@index([lastSeenAt])
   stockAlerts           StockAlertRequest[]
+  partRequests          SupplierPartRequest[]
 }
 
 model User {
@@ -1613,6 +1614,7 @@ model SupplierCompany {
   autoReminders         Boolean  @default(false)
   remindersRunAt        DateTime?
   stockAlerts           StockAlertRequest[]
+  partQuotes            SupplierPartQuote[]
 }
 
 model SupplierAccount {
@@ -2759,4 +2761,43 @@ model StockAlertRequest {
   @@unique([shopId, productId])
   @@index([notifiedAt, productId])
   @@index([companyId, notifiedAt])
+}
+
+/// 17.7 — Demande de pièce introuvable envoyée par un atelier aux fournisseurs (sa région ou toute la Tunisie).
+model SupplierPartRequest {
+  id          String              @id @default(cuid())
+  shopId      String
+  shop        Shop                @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  partName    String
+  deviceModel String?
+  quantity    Int                 @default(1)
+  note        String?
+  scope       String              @default("REGION")
+  region      String?
+  status      String              @default("OPEN")
+  expiresAt   DateTime
+  createdAt   DateTime            @default(now())
+  quotes      SupplierPartQuote[]
+
+  @@index([status, expiresAt])
+  @@index([shopId, createdAt])
+}
+
+/// 17.7 — Réponse d'un fournisseur : prix, quantité, délai, liée à une fiche produit (commande normale ensuite).
+model SupplierPartQuote {
+  id         String              @id @default(cuid())
+  requestId  String
+  request    SupplierPartRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  companyId  String
+  company    SupplierCompany     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  productId  String
+  price      Decimal             @db.Decimal(12,3)
+  quantity   Int
+  delay      String              @default("TODAY")
+  message    String?
+  status     String              @default("OFFERED")
+  createdAt  DateTime            @default(now())
+
+  @@unique([requestId, companyId])
+  @@index([companyId, createdAt])
 }
