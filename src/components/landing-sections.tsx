@@ -87,7 +87,7 @@ export function LandingPricing() {
               {feats.slice(0, 4).map(f => <li key={f}><Check size={16} /> {f}</li>)}
               <li><Check size={16} /> Application Android et suivi client</li>
             </ul>
-            <Link className={'lps-cta' + (k === featured ? '' : ' is-ghost')} href="/onboarding">Choisir {p.name} <ArrowRight size={18} /></Link>
+            <Link className={'lps-cta' + (k === featured ? '' : ' is-ghost')} href="/inscription">Choisir {p.name} <ArrowRight size={18} /></Link>
           </article>;
         })}</div>}
     <div className="lps-custom"><ShieldCheck size={20} /><span><b>Besoin d’une durée ou d’un prix différent ?</b> Plusieurs boutiques, 45 jours, 3 mois… Fixi crée une offre sur mesure pour votre atelier.</span><a href="#faq">En savoir plus</a></div>
