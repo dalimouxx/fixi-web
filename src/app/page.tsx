@@ -3,10 +3,8 @@ import Link from 'next/link';
 import { useEffect, useRef, useState, type ReactNode, type CSSProperties } from 'react';
 import { ArrowRight, BellRing, Boxes, Check, CheckCircle2, ChevronsRight, CreditCard, Download, MapPin, Menu, MessageCircle, Monitor, PackageCheck, Play, ScanLine, ShieldCheck, Smartphone, Sparkles, Star, Store, Truck, Users, Wrench, X, Zap, BarChart3, Mic, Wifi } from 'lucide-react';
 import { AdSlot } from '@/components/ad-slot';
-import { StoreLocator } from '@/components/store-locator';
-import { LandingDemo } from '@/components/landing-demo';
 import { LandingFaq } from '@/components/landing-faq';
-import { LandingPlansV8 } from '@/components/landing-plans-v8';
+import { LandingFlowDemo, LandingPricing, LandingStores } from '@/components/landing-sections';
 import './landing-v17.css';
 
 const WINDOWS_URL = 'https://github.com/dalimouxx/fixi-web/releases/download/windows-latest/FIXI-Caisse-Setup.exe';
@@ -171,7 +169,7 @@ export default function Landing() {
       </div>
     </section>
 
-    <LandingDemo />
+    <LandingFlowDemo />
 
     {/* ---------- Ce qui change ---------- */}
     <section className="lp-section lp-soft">
@@ -180,9 +178,9 @@ export default function Landing() {
     </section>
 
     <section className="lp-sponsored"><AdSlot placement="LANDING" className="landing-ad-v4" /></section>
-    <div className="lp-plans"><LandingPlansV8 /></div>
+    <LandingPricing />
 
-    <section className="lp-section lp-stores-section"><div className="lp-stores"><StoreLocator compact /></div></section>
+    <LandingStores />
 
     <div className="lp-faq" id="faq"><LandingFaq /></div>
 
