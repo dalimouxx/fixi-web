@@ -2,6 +2,7 @@
 import {ReportProblemButton} from './report-problem';
 import {TextSizeToggle} from './text-size-toggle';
 import {LangToggle} from './lang-toggle';
+import {ThemeToggle} from './theme-toggle';
 import {orderStops,mapsRouteUrl} from '@/lib/route-order';
 import {AndroidWidgetButton} from './android-widget-button';
 import {SignaturePad} from './signature-pad';
@@ -220,7 +221,7 @@ export function DriverApp({session}:{session:any}){
 
   <FxSheet open={menu} onClose={()=>setMenu(false)} side="bottom" title={session.fullName} subtitle={session.companyName+' · Livreur'} label="Menu du livreur">
    <div className="dv-menu">
-    <div className="dv-menu-row"><span>Langue</span><LangToggle/></div>
+    <div className="dv-menu-row"><span>Langue</span><LangToggle/><ThemeToggle/></div>
     <div className="dv-menu-row"><span>Taille du texte</span><TextSizeToggle/></div>
     <div className="dv-menu-row"><span>Widget Android</span><AndroidWidgetButton space="delivery"/></div>
     <div className="dv-menu-row"><span>Un souci ?</span><ReportProblemButton space="delivery" className="btn btn-soft btn-sm" label/></div>

@@ -14,6 +14,7 @@ import {haptic} from '@/lib/haptics';
 import {useUiMode} from '@/lib/ui-mode';
 import {TextSizeToggle} from './text-size-toggle';
 import {LangToggle} from './lang-toggle';
+import {ThemeToggle} from './theme-toggle';
 import {AndroidWidgetButton} from './android-widget-button';
 import {SupplierSearch} from './supplier-search';
 import {api} from './ui';
@@ -173,7 +174,7 @@ export function SupplierDashboard({session}:{session:any}){
         <Link href="/supplier/subscription" onClick={()=>setMobileNavOpen(false)} className="supplier-delivery-link"><ReceiptText/><span>Mon abonnement</span></Link><Link href="/supplier/daily-report" onClick={()=>setMobileNavOpen(false)} className="supplier-delivery-link"><Moon/><span>Fin de journée</span></Link>
                 <Link href="/delivery/login" target="_blank" className="supplier-delivery-link"><MapPinned/><span>App livreur</span></Link>
       </div>
-      <div className="fx-sup-tools"><LangToggle/><TextSizeToggle/><AndroidWidgetButton space="supplier"/></div><div className="supplier-side-foot"><div><strong>{session.fullName}</strong><small>{session.role||'ADMIN'} · Compte fournisseur</small></div><button onClick={logout}><LogOut/></button></div>
+      <div className="fx-sup-tools"><LangToggle/><TextSizeToggle/><ThemeToggle/><AndroidWidgetButton space="supplier"/></div><div className="supplier-side-foot"><div><strong>{session.fullName}</strong><small>{session.role||'ADMIN'} · Compte fournisseur</small></div><button onClick={logout}><LogOut/></button></div>
     </aside>
 
     <main>
