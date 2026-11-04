@@ -429,8 +429,8 @@ kbd{font:600 11px/1 var(--fx-font);padding:4px 6px;border-radius:6px;border:1px 
 .v6-danger{color:var(--fx-danger)!important}
 
 /* Panier : outils, paniers en attente, remise */
-.v6-basket-tools{display:flex;gap:5px;padding:10px 20px 0}
-.v6-basket-tools .v5-btn{flex:1;padding:0 5px}
+.v6-basket-tools{display:flex;flex-wrap:wrap;gap:5px;padding:10px 20px 0}
+.v6-basket-tools .v5-btn{flex:1 1 calc(50% - 5px);min-width:0;padding:0 5px}
 .v6-parked{display:flex;gap:5px;overflow-x:auto;scrollbar-width:none;padding:10px 20px 0}
 .v6-parked button{flex:none;display:inline-flex;align-items:center;gap:5px;height:30px;padding:0 10px;border:1px dashed var(--fx-brand);border-radius:999px;background:var(--fx-brand-soft);color:var(--fx-brand-ink);font:600 12px var(--fx-font)}
 .v6-parked button small{min-width:18px;height:18px;display:grid;place-items:center;border-radius:999px;background:var(--fx-brand);color:#fff;font-size:11px}
@@ -678,3 +678,8 @@ html,body,#root{font-family:var(--fx-font);font-feature-settings:"cv11","ss01"}
 .v6-display-total strong{font-weight:800;letter-spacing:-.03em}
 @media (prefers-reduced-motion:reduce){.v7-splash svg,.v7-splash i::after,.v5-total strong{animation:none}}
 .v5-basket-foot{margin-top:10px}.v5-basket-items{padding-bottom:6px}
+
+/* 0.9 — création de pièce par le gérant */
+.v6-check{display:flex;align-items:center;gap:9px;font-size:14px;color:var(--fx-ink-2,#44403c);cursor:pointer}
+.v6-check input{width:18px;height:18px;accent-color:var(--fx-brand,#f0782b)}
+.v5-hint svg{vertical-align:-2px;color:var(--fx-brand,#f0782b)}

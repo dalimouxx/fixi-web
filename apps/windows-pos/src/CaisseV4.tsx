@@ -6,7 +6,7 @@ import {WindowsLabelStudio} from './labels';
 import {TicketPrint,type ReceiptData} from './TicketV4';
 import {TicketSearchV4} from './TicketSearchV4';
 import {CustomerDisplay,publishDisplay,CashCounter,ZReport,ZButton,methodLabel,type CashSummary} from './counter';
-import {FreeItemDialog,DiscountDialog,SettingsDialog,type DiscountLine} from './dialogs';
+import {FreeItemDialog,DiscountDialog,SettingsDialog,NewProductDialog,type DiscountLine,type NewProduct} from './dialogs';
 import {matchScore} from './search';
 import {readJson,writeJson,defaultSettings,SETTINGS_KEY,type Settings} from './storage';
 import {waPhone,ticketMessage,waUrl} from './whatsapp';
@@ -14,7 +14,7 @@ import {useArabic} from './i18n';
 import {InvoiceDialog,InvoicePrint,PaymentSlip,type InvoiceData,type PaymentSlipData} from './invoice';
 import {InventoryPage} from './inventory';
 import {ReportDialog} from './report';
-import {Banknote,BookOpen,Boxes,Check,ChevronRight,CircleAlert,CircleCheck,CreditCard,Delete,HandCoins,Inbox,KeyRound,Landmark,Lock,LockOpen,LogIn,Minus,PackageOpen,PackageSearch,PanelLeftClose,PanelLeftOpen,Plus,Power,Printer,ReceiptText,RefreshCw,ScanBarcode,Search,ShieldCheck,ShoppingCart,Tags,Trash2,TriangleAlert,Truck,Undo2,UserPlus,UserRound,UserRoundCog,Users,Wallet,X,PencilLine,Percent,PauseCircle,PlayCircle,Settings2,WifiOff,CloudUpload,MessageCircle,Download,Flame,ClipboardList,FileText,type LucideIcon} from 'lucide-react';
+import {Banknote,BookOpen,Boxes,Check,ChevronRight,CircleAlert,CircleCheck,CreditCard,Delete,HandCoins,Inbox,KeyRound,Landmark,Lock,LockOpen,LogIn,Minus,PackageOpen,PackageSearch,PanelLeftClose,PanelLeftOpen,Plus,Power,Printer,ReceiptText,RefreshCw,ScanBarcode,Search,ShieldCheck,ShoppingCart,Tags,Trash2,TriangleAlert,Truck,Undo2,UserPlus,UserRound,UserRoundCog,Users,Wallet,X,PencilLine,Percent,PauseCircle,PlayCircle,Settings2,WifiOff,CloudUpload,MessageCircle,Download,Flame,ClipboardList,FileText,type LucideIcon,PackagePlus} from 'lucide-react';
 import '@fontsource-variable/manrope';
 import {FixiLogo,categoryLook,Clock} from './brand';
 import './style.css';
@@ -91,7 +91,7 @@ function App(){
  const [givenCash,setGivenCash]=useState('');
  const [compact,setCompact]=useState(()=>{try{return localStorage.getItem('fixi:v5:compact')==='1'}catch{return false}});
  const [custom,setCustom]=useState<CustomLine[]>([]),[linePrice,setLinePrice]=useState<Record<string,number>>({}),[cartDiscount,setCartDiscount]=useState(0);
- const [dialog,setDialog]=useState<''|'free'|'discount'|'settings'|'parked'>('');
+ const [dialog,setDialog]=useState<''|'free'|'discount'|'settings'|'parked'|'product'>('');const [newCode,setNewCode]=useState('');
  const [parked,setParked]=useState<Parked[]>([]),[queue,setQueue]=useState<QueuedSale[]>([]),[offline,setOffline]=useState(false),[syncing,setSyncing]=useState(false);
  const [settings,setSettingsState]=useState<Settings>(()=>({...defaultSettings,...readJson<Partial<Settings>>(SETTINGS_KEY,{})}));
  const [version,setVersion]=useState(''),[update,setUpdate]=useState<{version:string;url:string;sha256:string;notes?:string}|null>(null),[updating,setUpdating]=useState(false);
@@ -119,6 +119,8 @@ function App(){
  const total=Math.round((subtotal-discountValue)*1000)/1000;
  const lineCount=entries.length+custom.length;
  const canDiscount=['OWNER','ADMIN','MANAGER','DEMO'].includes(boot?.role||'');
+ // Gérant et responsable stock : création de pièces depuis la caisse (le serveur revérifie le rôle).
+ const canCreateProduct=['OWNER','ADMIN','MANAGER','STOCK','DEMO'].includes(boot?.role||'');const canCreateRef=useRef(false);canCreateRef.current=canCreateProduct;
  const serverOrigin=profile?.server||server;
  const logo=useMemo(()=>{const u=boot?.receiptProfile?.logoUrl;if(!u)return undefined;try{const x=new URL(u,serverOrigin);return x.protocol==='https:'||x.protocol==='data:'?x.href:undefined}catch{return undefined}},[boot?.receiptProfile?.logoUrl,serverOrigin]);
  const setSettings=(x:Settings)=>{setSettingsState(x);writeJson(SETTINGS_KEY,x)};
@@ -148,7 +150,8 @@ function App(){
  useEffect(()=>{focusScan()},[page,locked,labels,boot]);
  useEffect(()=>{const handler=(e:KeyboardEvent)=>{if(e.key==='F2'&&boot&&!locked){e.preventDefault();setPage('caisse');requestAnimationFrame(()=>scanRef.current?.focus())}
    if(e.key==='F9'&&boot&&!locked){e.preventDefault();saleRefFn.current()}
-   if(e.key==='F4'&&boot&&!locked){e.preventDefault();setPage('caisse');setDialog('free')}};
+   if(e.key==='F4'&&boot&&!locked){e.preventDefault();setPage('caisse');setDialog('free')}
+   if(e.key==='F6'&&boot&&!locked&&canCreateRef.current){e.preventDefault();setPage('caisse');setNewCode('');setDialog('product')}};
   window.addEventListener('keydown',handler);return()=>window.removeEventListener('keydown',handler)
  },[boot,locked]);
  function connectData(data:Boot,origin:string,user:string){
@@ -214,8 +217,19 @@ function App(){
  }
  function barcode(){const value=scan.trim().toLowerCase();if(!value)return;
   const p=products.find(x=>[x.barcode,x.sku].some(c=>c?.trim().toLowerCase()===value));
-  if(p){add(p.id,1);setSearch('');setMessage(p.name+' ajouté au panier')}else setError('Code-barres introuvable : '+scan);
+  if(p){add(p.id,1);setSearch('');setMessage(p.name+' ajouté au panier')}
+  else if(canCreateProduct&&!saleRef){setNewCode(scan.trim());setDialog('product');setScan('');return}
+  else setError('Code-barres introuvable : '+scan+(canCreateProduct?'':' — demandez au gérant de créer la pièce.'));
   setScan('');focusScan()
+ }
+ async function createProduct(x:NewProduct,addToCart:boolean){
+  let created:Product;
+  if(boot?.role==='DEMO')created={id:'demo-'+Date.now(),name:x.name,sku:'NEW-'+String(Date.now()).slice(-4),barcode:x.barcode||null,category:null,price:x.price,stock:x.stock,onHand:x.stock,sold30:0};
+  else{const r=await invoke<any>('supplier_create_product',{product:x});
+   created={id:r.id,name:r.name,sku:r.sku,barcode:r.barcode,category:r.category,price:Number(r.retailPrice??r.price),wholesalePrice:r.wholesalePrice==null?null:Number(r.wholesalePrice),minStock:r.minStock||0,stock:Math.max(0,Number(r.stock)-Number(r.reservedStock||0)),onHand:Number(r.stock),sold30:0,tiers:[]}}
+  setBoot(b=>b?{...b,products:[created,...b.products.filter(p=>p.id!==created.id)]}:b);
+  if(addToCart&&created.stock>0)setCart(c=>({...c,[created.id]:(c[created.id]||0)+1}));
+  setMessage(created.name+' créé'+(addToCart&&created.stock>0?' et ajouté au panier':'')+' · '+created.sku);focusScan();
  }
  function localClearSale(){setGivenCash('');setCart({});setCustom([]);setLinePrice({});setCartDiscount(0);setCustomerId('');setPaid('');setSaleRef('');setSearch('')}
  const isOffline=(msg:string)=>/Connexion interrompue|HTTP 50[234]|Délai dépassé|Serveur inaccessible|Connexion HTTPS impossible|Erreur réseau/i.test(msg);
@@ -613,7 +627,7 @@ function App(){
   </main>
   {page==='caisse'&&<aside className="v5-basket" aria-label="Panier">
    <div className="v5-basket-head"><h2><ShoppingCart size={20}/> Panier</h2><span className="v5-count">{cartCount+custom.reduce((n,c)=>n+c.quantity,0)} article{cartCount+custom.length>1?'s':''}</span>{lineCount>0&&!saleRef&&<button className="v5-icon-btn" title="Vider le panier" aria-label="Vider le panier" disabled={busy} onClick={()=>{if(window.confirm('Supprimer ce panier non payé ?')){localClearSale();setGivenCash('');setMessage('Panier vidé.');if(boot)publishDisplay({company:boot.companyName,logo,lines:[],discount:0,total:0,given:null,change:null})}}}><Trash2 size={17}/></button>}</div>
-   <div className="v6-basket-tools"><button className="v5-btn v5-btn--ghost v5-btn--sm" disabled={busy||!!saleRef} onClick={()=>setDialog('free')} title="F4"><PencilLine size={15}/> Article libre</button>
+   <div className="v6-basket-tools"><button className="v5-btn v5-btn--ghost v5-btn--sm" disabled={busy||!!saleRef} onClick={()=>setDialog('free')} title="F4"><PencilLine size={15}/> Article libre</button>{canCreateProduct&&<button className="v5-btn v5-btn--ghost v5-btn--sm" disabled={busy||!!saleRef} onClick={()=>{setNewCode('');setDialog('product')}} title="F6 · réservé au gérant"><PackagePlus size={15}/> Nouvelle pièce</button>}
     {canDiscount&&<button className={'v5-btn v5-btn--sm '+(discountValue>0||Object.keys(linePrice).length?'v5-btn--soft':'v5-btn--ghost')} disabled={busy||!!saleRef||!lineCount} onClick={()=>setDialog('discount')}><Percent size={15}/> Remise</button>}
     <button className="v5-btn v5-btn--ghost v5-btn--sm" disabled={busy||!!saleRef||!lineCount} onClick={park}><PauseCircle size={15}/> En attente</button></div>
    {parked.length>0&&<div className="v6-parked" aria-label="Paniers en attente">{parked.map(x=><button key={x.id} disabled={busy||!!saleRef} onClick={()=>resume(x.id)} title={'Reprendre · '+new Date(x.at).toLocaleTimeString('fr-FR',{timeStyle:'short'})}><PlayCircle size={14}/> {x.label}<small>{Object.values(x.cart).reduce((a,b)=>a+b,0)+(x.custom||[]).reduce((a,c)=>a+c.quantity,0)}</small></button>)}</div>}
@@ -651,6 +665,7 @@ function App(){
   <InvoicePrint data={invoiceData} logo={logo}/>
   {invoiceFor&&<InvoiceDialog reference={invoiceFor.reference} customer={invoiceFor.customer} onClose={()=>setInvoiceFor(null)} onDone={printInvoice}/>}
   {reportOpen&&<ReportDialog page={page} onClose={()=>setReportOpen(false)} onSent={()=>setMessage('Merci, le problème est envoyé à l’équipe Fixi.')}/>}
+  {dialog==='product'&&<NewProductDialog barcode={newCode} onClose={()=>{setDialog('');focusScan()}} onCreate={createProduct}/>}
   {dialog==='free'&&<FreeItemDialog onClose={()=>{setDialog('');focusScan()}} onAdd={x=>setCustom(list=>[...list,{id:crypto.randomUUID(),...x}])}/>}
   {dialog==='discount'&&<DiscountDialog subtotal={subtotal} discount={cartDiscount} onClose={()=>setDialog('')}
    lines={entries.map(e=>({key:e.product.id,name:e.product.name,quantity:e.quantity,base:basePrice(e.product),price:priceFor(e.product)} as DiscountLine))}

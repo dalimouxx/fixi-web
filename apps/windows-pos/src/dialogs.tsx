@@ -1,6 +1,6 @@
 import React,{useEffect,useState} from 'react';
 import {invoke} from '@tauri-apps/api/core';
-import {Banknote,Check,Monitor,Moon,Percent,Printer,RefreshCw,Sun,SunMoon,X} from 'lucide-react';
+import {Banknote,Check,Monitor,Moon,PackagePlus,Percent,Printer,RefreshCw,Sparkles,Sun,SunMoon,X} from 'lucide-react';
 import type {Settings} from './storage';
 
 export const dt=(n:number)=>'\u2066'+new Intl.NumberFormat('fr-TN',{minimumFractionDigits:3,maximumFractionDigits:3}).format(n)+' DT\u2069';
@@ -27,6 +27,32 @@ export function FreeItemDialog({onAdd,onClose}:{onAdd:(x:{name:string;price:numb
    <div className="v6-form-2"><label className="v5-field"><span>Prix unitaire (DT)</span><input type="number" min="0.001" step="0.001" value={price} onChange={e=>setPrice(e.target.value)} placeholder="0,000"/></label>
     <label className="v5-field"><span>Quantité</span><input type="number" min="1" max="1000" step="1" value={qty} onChange={e=>setQty(e.target.value)}/></label></div>
    <button className="v5-btn v5-btn--primary v5-btn--lg" disabled={!ok}><Check size={18}/> Ajouter {ok?dt(p*q):''}</button>
+  </form></Modal>;
+}
+
+export type NewProduct={name:string;barcode:string;price:number;stock:number;purchasePrice:number};
+/** Création d'une pièce depuis la caisse (gérant / stock). Le serveur ajoute SKU, catégorie et marque. */
+export function NewProductDialog({barcode:initial,onCreate,onClose}:{barcode:string;onCreate:(p:NewProduct,addToCart:boolean)=>Promise<void>;onClose:()=>void}){
+ const [barcode,setBarcode]=useState(initial),[name,setName]=useState(''),[price,setPrice]=useState(''),[stock,setStock]=useState('1'),[cost,setCost]=useState('');
+ const [cart,setCart]=useState(true),[busy,setBusy]=useState(false),[err,setErr]=useState(''),[hint,setHint]=useState('');
+ useEffect(()=>{const b=initial.trim();if(!/^[A-Za-z0-9._-]{3,64}$/.test(b))return;let live=true;
+  invoke<any>('supplier_lookup_barcode',{barcode:b}).then(r=>{if(!live)return;if(r?.suggestion?.name){setName(n=>n||r.suggestion.name);setHint('Reconnu sur le réseau Fixi : nom pré-rempli.')}}).catch(()=>{});
+  return()=>{live=false}},[initial]);
+ const p=Number(price.replace(',','.')),q=Math.trunc(Number(stock||0)),c=cost.trim()?Number(cost.replace(',','.')):0;
+ const ok=name.trim().length>=2&&Number.isFinite(p)&&p>=0&&price.trim()!==''&&Number.isFinite(q)&&q>=0&&q<=100000&&Number.isFinite(c)&&c>=0;
+ async function submit(e:React.FormEvent){e.preventDefault();if(!ok||busy)return;setBusy(true);setErr('');
+  try{await onCreate({name:name.trim(),barcode:barcode.trim(),price:Math.round(p*1000)/1000,stock:q,purchasePrice:Math.round(c*1000)/1000},cart&&q>0);onClose()}catch(x){setErr(String(x));setBusy(false)}}
+ return <Modal title="Nouvelle pièce" icon={<PackagePlus size={19}/>} onClose={onClose}>
+  <p className="v5-hint">{hint?<><Sparkles size={14}/> {hint}</>:'La pièce est ajoutée à votre catalogue FIXI. SKU, catégorie et marque sont remplis automatiquement.'}</p>
+  <form className="v6-form" onSubmit={submit}>
+   <label className="v5-field"><span>Code-barres</span><input value={barcode} maxLength={64} onChange={e=>setBarcode(e.target.value)} placeholder="Facultatif"/></label>
+   <label className="v5-field"><span>Nom</span><input autoFocus value={name} maxLength={160} onChange={e=>setName(e.target.value)} placeholder="Ex. Écran iPhone 13 OLED"/></label>
+   <div className="v6-form-2"><label className="v5-field"><span>Prix de vente (DT)</span><input inputMode="decimal" value={price} onChange={e=>setPrice(e.target.value)} placeholder="0,000"/></label>
+    <label className="v5-field"><span>Stock</span><input type="number" min="0" step="1" value={stock} onChange={e=>setStock(e.target.value)}/></label></div>
+   <label className="v5-field"><span>Coût d’achat (DT, facultatif)</span><input inputMode="decimal" value={cost} onChange={e=>setCost(e.target.value)} placeholder="0,000"/></label>
+   <label className="v6-check"><input type="checkbox" checked={cart} onChange={e=>setCart(e.target.checked)}/> Ajouter 1 au panier après création</label>
+   {err&&<div className="v5-alert v5-alert--danger" role="alert">{err}</div>}
+   <button className="v5-btn v5-btn--primary v5-btn--lg" disabled={!ok||busy}><Check size={18}/> {busy?'Création…':'Créer la pièce'}{ok&&!busy?' · '+dt(p):''}</button>
   </form></Modal>;
 }
 
