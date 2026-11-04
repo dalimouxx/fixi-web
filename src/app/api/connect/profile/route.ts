@@ -14,7 +14,9 @@ export async function PATCH(req: Request) {
     const phone = normalizePhone(String(b.phone || ''));
     if (address.length < 5 || address.length > 200) return bad('Adresse : 5 à 200 caractères');
     if (!phone) return bad('Téléphone invalide (8 chiffres)');
-    const shop = await prisma.shop.update({ where: { id: s.shopId }, data: { address, city, phone }, select: { address: true, city: true, phone: true } });
+    const lat = Number(b.latitude), lng = Number(b.longitude);
+    const gps = Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180 ? { latitude: lat, longitude: lng } : {};
+    const shop = await prisma.shop.update({ where: { id: s.shopId }, data: { address, city, phone, ...gps }, select: { address: true, city: true, phone: true } });
     return ok(shop);
   } catch (e: any) { return bad(e.message, e.status || 500); }
 }

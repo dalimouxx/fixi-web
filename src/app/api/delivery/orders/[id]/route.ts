@@ -6,6 +6,7 @@ import {plain} from '@/lib/serializers';
 import {NotificationType,SupplierDeliveryStatus,SupplierOrderStatus} from '@prisma/client';
 import {notifySupplier} from '@/lib/supplier-notifications';
 import {notifyShop} from '@/lib/notifications';
+import {ETA_ALERT_MIN,etaMinutes,haversineKm} from '@/lib/field-ops';
 
 export async function PATCH(req:Request,{params}:{params:Promise<{id:string}>}){
  try{
@@ -44,6 +45,19 @@ export async function PATCH(req:Request,{params}:{params:Promise<{id:string}>}){
    return order;
   });
   if(status===SupplierOrderStatus.DELIVERED)await ensureMarketplaceAccounting(id,s.id);
+  // 17.6 — « Votre livreur arrive dans ~N min » : une seule fois par livraison, calculé sur le GPS.
+  if(status===SupplierOrderStatus.OUT_FOR_DELIVERY&&Number.isFinite(Number(b.latitude))&&Number.isFinite(Number(b.longitude))){
+   try{
+    const shop=await prisma.shop.findUnique({where:{id:o.shopId},select:{latitude:true,longitude:true}});
+    if(shop?.latitude!=null&&shop.longitude!=null){
+     const eta=etaMinutes(haversineKm({lat:Number(b.latitude),lng:Number(b.longitude)},{lat:Number(shop.latitude),lng:Number(shop.longitude)}));
+     if(eta<=ETA_ALERT_MIN&&!await prisma.supplierDeliveryEvent.findFirst({where:{orderId:id,type:'ETA_SOON'},select:{id:true}})){
+      await prisma.supplierDeliveryEvent.create({data:{companyId:s.companyId,orderId:id,accountId:s.id,type:'ETA_SOON',note:`Arrivée estimée dans ${eta} min`}});
+      await notifyShop(o.shopId,`Votre livreur arrive dans ~${eta} min`,`${s.fullName} apporte la commande ${o.reference}. Préparez le code de remise.`,'/app/suppliers?tab=orders',NotificationType.INFO,undefined,{experienceKey:'SHOP_ORDER_PROGRESS',eventId:id+'-ETA',priority:'HIGH',metadata:{orderId:id,eta}});
+     }
+    }
+   }catch{/* l'estimation ne bloque jamais la mise à jour */}
+  }
   if(status!==o.status){
    if(status===SupplierOrderStatus.OUT_FOR_DELIVERY){
     await Promise.allSettled([

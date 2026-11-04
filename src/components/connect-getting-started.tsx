@@ -20,7 +20,7 @@ export function ConnectGettingStarted({ onShop }: { onShop?: () => void }) {
   const [d, setD] = useState<Data | null>(null);
   const [open, setOpen] = useState<string>('');
   const [hidden, setHidden] = useState(true);
-  const [addr, setAddr] = useState({ address: '', city: '', phone: '' });
+  const [addr, setAddr] = useState<{ address: string; city: string; phone: string; latitude?: number; longitude?: number }>({ address: '', city: '', phone: '' });const [gps, setGps] = useState('');
   const [err, setErr] = useState(''); const [busy, setBusy] = useState(false);
   const load = () => fetch('/api/connect/getting-started', { cache: 'no-store' }).then(r => r.ok ? r.json() : null).then(x => { if (!x) return; setD(x); setAddr(x.shop); setOpen(o => o || x.steps.find((s: any) => !s.done)?.key || ''); });
   useEffect(() => { try { setHidden(localStorage.getItem(HIDE) === '1'); } catch { setHidden(false); } void load(); }, []);
@@ -49,6 +49,8 @@ export function ConnectGettingStarted({ onShop }: { onShop?: () => void }) {
         {s.key === 'address' && <form className="gs-form" onSubmit={saveAddress}>
           <input value={addr.address} onChange={e => setAddr({ ...addr, address: e.target.value })} placeholder="Rue, numéro, repère (ex. à côté de la pharmacie)" maxLength={200} />
           <div><input value={addr.city} onChange={e => setAddr({ ...addr, city: e.target.value })} placeholder="Ville" maxLength={80} /><input value={addr.phone} onChange={e => setAddr({ ...addr, phone: e.target.value })} placeholder="Téléphone" inputMode="tel" /></div>
+          <button type="button" className="btn btn-ghost btn-sm gs-gps" onClick={() => { if (!navigator.geolocation) { setGps('Position indisponible sur cet appareil'); return; } setGps('Localisation…'); navigator.geolocation.getCurrentPosition(p => { setAddr(a => ({ ...a, latitude: p.coords.latitude, longitude: p.coords.longitude })); setGps('Position de la boutique enregistrée : le livreur vous trouvera et vous serez prévenu de son arrivée.'); }, () => setGps('Autorisez la localisation, ou laissez seulement l’adresse.'), { enableHighAccuracy: true, timeout: 10000 }); }}><MapPin size={15} /> Je suis à la boutique : utiliser ma position</button>
+          {gps && <p className="gs-note">{gps}</p>}
           {err && <p className="gs-err">{err}</p>}
           <button className="btn btn-primary btn-sm" disabled={busy}><Check size={15} /> Enregistrer</button>
         </form>}

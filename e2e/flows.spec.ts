@@ -87,6 +87,21 @@ test('5 · le fournisseur reçoit la commande', async () => {
   expect(orders.some((o: any) => o.items.some((i: any) => i.product.name === PRODUCT) && o.status === 'PENDING')).toBeTruthy();
 });
 
+test('5b · retour en stock : l’atelier qui attend une pièce est prévenu', async () => {
+  const name = `Écran Oppo A16 test ${RUN}`;
+  const created = await supplier.request.post('/api/supplier/products', { data: { name, price: 70, stock: 0 } });
+  expect(created.status(), await created.text()).toBe(201);
+  const p = await created.json();
+  expect((await atelier.request.post('/api/marketplace/stock-alerts', { data: { productId: p.id } })).status()).toBe(201);
+  expect(await (await atelier.request.get('/api/marketplace/stock-alerts')).json()).toContain(p.id);
+  const restock = await supplier.request.post('/api/supplier/products/bulk', { data: { rows: [{ sku: p.sku, name, price: 70, stock: 5 }] } });
+  expect((await restock.json()).updated).toBe(1);
+  await expect.poll(async () => { await atelier.request.get('/api/marketplace/products?q=' + encodeURIComponent(name)); return (await (await atelier.request.get('/api/marketplace/stock-alerts')).json()).includes(p.id); }, { timeout: 60_000, intervals: [5_000] }).toBe(false);
+  const rem = await supplier.request.get('/api/supplier/reminders');
+  expect(rem.ok(), await rem.text()).toBeTruthy();
+  expect(Array.isArray((await rem.json()).rows)).toBe(true);
+});
+
 test('6 · le module Réparations propose l’essai Pro, qui s’active en un clic', async () => {
   await atelier.goto('/app/repairs');
   await expect(atelier).toHaveURL(/\/app\/upgrade\?from=%2Fapp%2Frepairs/);
