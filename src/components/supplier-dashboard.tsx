@@ -29,6 +29,7 @@ import {SupplierReminders} from './supplier-reminders';
 import {SupplierPartRequests} from './supplier-part-requests';
 import {SupplierChurn,SupplierCashForecast,PickingDialog} from './supplier-growth-panels';
 import {SupplierReturnPickups,SupplierDriverBoard} from './supplier-field-panels';
+import {SupplierPartnerCouriers} from './supplier-partner-couriers';
 import {SupplierMasterData} from './supplier-master-data';
 import {SupplierDeliveryCenter} from './supplier-delivery-center';
 import {SupplierActionModal} from './supplier-action-modal';
@@ -279,7 +280,7 @@ export function SupplierDashboard({session}:{session:any}){
 
       {tab==='reports'&&<SupplierReports/>}
 
-{tab==='delivery'&&<SupplierDriverBoard/>}{tab==='delivery'&&<SupplierDeliveryCenter orders={orders} drivers={drivers} onChanged={()=>setRefresh(x=>x+1)}/>}
+{tab==='delivery'&&<SupplierDriverBoard/>}{tab==='delivery'&&<SupplierPartnerCouriers orders={orders} onChanged={()=>setRefresh(x=>x+1)}/>}{tab==='delivery'&&<SupplierDeliveryCenter orders={orders} drivers={drivers} onChanged={()=>setRefresh(x=>x+1)}/>}
       {tab==='team'&&<SecurityPanel endpoint="/api/supplier/security" loginHref="/supplier/login"/>}{tab==='team'&&<SupplierTeam session={session}/>} 
     </main>
     <nav className="fixi-supplier-bottom-nav" aria-label="Accès rapides Supplier">

@@ -1635,6 +1635,8 @@ model SupplierAccount {
   totpSecret   String?
   totpEnabled  Boolean         @default(false)
   sessionVersion Int           @default(0)
+  sharedCourier Boolean        @default(false)
+  courierFee   Decimal         @default(0) @db.Decimal(12,3)
   createdAt    DateTime        @default(now())
 }
 
@@ -1756,6 +1758,8 @@ model SupplierDelivery {
   pickedUpAt      DateTime?
   arrivedAt       DateTime?
   deliveredAt     DateTime?
+  partnerCompanyId String?
+  courierFee      Decimal?               @db.Decimal(12,3)
   signatureUrl    String?
   updatedAt       DateTime               @default(now()) @updatedAt
   @@index([driverAccountId, status])

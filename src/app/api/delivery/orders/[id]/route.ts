@@ -11,7 +11,8 @@ import {ETA_ALERT_MIN,etaMinutes,haversineKm} from '@/lib/field-ops';
 export async function PATCH(req:Request,{params}:{params:Promise<{id:string}>}){
  try{
   const s=await requireDeliverySession();const{id}=await params;const b=await req.json();
-  const o=await prisma.supplierOrder.findFirst({where:{id,companyId:s.companyId,delivery:{is:{driverAccountId:s.id}}},include:{delivery:true}});
+  // 18.2 — livreur partenaire : la commande peut appartenir à un autre fournisseur qui lui a confié la course.
+  const o=await prisma.supplierOrder.findFirst({where:{id,delivery:{is:{driverAccountId:s.id}},OR:[{companyId:s.companyId},{delivery:{is:{partnerCompanyId:s.companyId}}}]},include:{delivery:true}});
   if(!o)return bad('Livraison introuvable',404);
   const status=String(b.status||o.status) as SupplierOrderStatus;
   const allowed:SupplierOrderStatus[]=[SupplierOrderStatus.READY_FOR_DELIVERY,SupplierOrderStatus.OUT_FOR_DELIVERY,SupplierOrderStatus.DELIVERED];
@@ -42,8 +43,8 @@ export async function PATCH(req:Request,{params}:{params:Promise<{id:string}>}){
     // 17.8 — signature au doigt du réceptionnaire (PNG, 200 Ko max).
     signatureUrl:status===SupplierOrderStatus.DELIVERED&&typeof b.signatureUrl==='string'&&/^data:image\/png;base64,/.test(b.signatureUrl)&&b.signatureUrl.length<=270000?b.signatureUrl:undefined
    }});
-   if(status===SupplierOrderStatus.DELIVERED)await tx.supplierDeliveryEvent.create({data:{companyId:s.companyId,orderId:id,accountId:s.id,type:'DELIVERY_PROOF',note:'Reçu par '+String(b.recipientName).trim()+' · Code de remise vérifié'+(b.signatureUrl?' · signé':''),proofUrl:b.proofUrl||null}});
-   if(Number.isFinite(Number(b.latitude))&&Number.isFinite(Number(b.longitude)))await tx.supplierDriverLocation.create({data:{companyId:s.companyId,orderId:id,accountId:s.id,latitude:Number(b.latitude),longitude:Number(b.longitude),accuracy:Number.isFinite(Number(b.accuracy))?Number(b.accuracy):null}});
+   if(status===SupplierOrderStatus.DELIVERED)await tx.supplierDeliveryEvent.create({data:{companyId:o.companyId,orderId:id,accountId:s.id,type:'DELIVERY_PROOF',note:'Reçu par '+String(b.recipientName).trim()+' · Code de remise vérifié'+(b.signatureUrl?' · signé':''),proofUrl:b.proofUrl||null}});
+   if(Number.isFinite(Number(b.latitude))&&Number.isFinite(Number(b.longitude)))await tx.supplierDriverLocation.create({data:{companyId:o.companyId,orderId:id,accountId:s.id,latitude:Number(b.latitude),longitude:Number(b.longitude),accuracy:Number.isFinite(Number(b.accuracy))?Number(b.accuracy):null}});
    return order;
   });
   if(status===SupplierOrderStatus.DELIVERED)await ensureMarketplaceAccounting(id,s.id);
@@ -54,7 +55,7 @@ export async function PATCH(req:Request,{params}:{params:Promise<{id:string}>}){
     if(shop?.latitude!=null&&shop.longitude!=null){
      const eta=etaMinutes(haversineKm({lat:Number(b.latitude),lng:Number(b.longitude)},{lat:Number(shop.latitude),lng:Number(shop.longitude)}));
      if(eta<=ETA_ALERT_MIN&&!await prisma.supplierDeliveryEvent.findFirst({where:{orderId:id,type:'ETA_SOON'},select:{id:true}})){
-      await prisma.supplierDeliveryEvent.create({data:{companyId:s.companyId,orderId:id,accountId:s.id,type:'ETA_SOON',note:`Arrivée estimée dans ${eta} min`}});
+      await prisma.supplierDeliveryEvent.create({data:{companyId:o.companyId,orderId:id,accountId:s.id,type:'ETA_SOON',note:`Arrivée estimée dans ${eta} min`}});
       await notifyShop(o.shopId,`Votre livreur arrive dans ~${eta} min`,`${s.fullName} apporte la commande ${o.reference}. Préparez le code de remise.`,'/app/suppliers?tab=orders',NotificationType.INFO,undefined,{experienceKey:'SHOP_ORDER_PROGRESS',eventId:id+'-ETA',priority:'HIGH',metadata:{orderId:id,eta}});
      }
     }
@@ -63,13 +64,13 @@ export async function PATCH(req:Request,{params}:{params:Promise<{id:string}>}){
   if(status!==o.status){
    if(status===SupplierOrderStatus.OUT_FOR_DELIVERY){
     await Promise.allSettled([
-     notifySupplier(s.companyId,'🚚 Livraison en route',`La commande ${o.reference} est maintenant en route.`,{href:'/supplier?tab=delivery',kind:'DELIVERY',experienceKey:'SUPPLIER_UPDATE',eventId:o.id+'-OUT',roles:['OWNER','ADMIN','MANAGER','DELIVERY_MANAGER'],metadata:{orderId:o.id,reference:o.reference}}),
+     notifySupplier(o.companyId,'🚚 Livraison en route',`La commande ${o.reference} est maintenant en route.`,{href:'/supplier?tab=delivery',kind:'DELIVERY',experienceKey:'SUPPLIER_UPDATE',eventId:o.id+'-OUT',roles:['OWNER','ADMIN','MANAGER','DELIVERY_MANAGER'],metadata:{orderId:o.id,reference:o.reference}}),
      notifyShop(o.shopId,'Votre commande est en route',`La commande ${o.reference} est partie en livraison. Vous pouvez suivre son avancement dans Fixi Supplier.`,'/app/suppliers?tab=orders',NotificationType.INFO,undefined,{experienceKey:'SHOP_ORDER_PROGRESS',eventId:o.id+'-OUT',metadata:{orderId:o.id,reference:o.reference,status:'OUT_FOR_DELIVERY'}})
     ]);
    }
    if(status===SupplierOrderStatus.DELIVERED){
     await Promise.allSettled([
-     notifySupplier(s.companyId,'✅ Livraison remise avec preuve',`Commande ${o.reference} remise à ${String(b.recipientName).trim()}.`,{href:'/supplier?tab=delivery',kind:'SUCCESS',priority:'NORMAL',experienceKey:'SUPPLIER_UPDATE',eventId:o.id+'-DELIVERED',roles:['OWNER','ADMIN','MANAGER','DELIVERY_MANAGER','ACCOUNTANT'],metadata:{orderId:o.id,reference:o.reference,recipientName:String(b.recipientName).trim()}}),
+     notifySupplier(o.companyId,'✅ Livraison remise avec preuve',`Commande ${o.reference} remise à ${String(b.recipientName).trim()}.`,{href:'/supplier?tab=delivery',kind:'SUCCESS',priority:'NORMAL',experienceKey:'SUPPLIER_UPDATE',eventId:o.id+'-DELIVERED',roles:['OWNER','ADMIN','MANAGER','DELIVERY_MANAGER','ACCOUNTANT'],metadata:{orderId:o.id,reference:o.reference,recipientName:String(b.recipientName).trim()}}),
      notifyShop(o.shopId,'🎉 Votre commande est livrée',`La commande ${o.reference} a été remise à ${String(b.recipientName).trim()}. Vérifiez votre réception et les articles.`,'/app/suppliers?tab=orders',NotificationType.SUCCESS,undefined,{
        experienceKey:'SHOP_ORDER_DELIVERED',eventId:o.id+'-DELIVERED',
        metadata:{orderId:o.id,reference:o.reference,status:'DELIVERED'}

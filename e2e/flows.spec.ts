@@ -126,6 +126,12 @@ test('5d · performance livreurs et prime', async () => {
   const p = await supplier.request.get('/api/supplier/return-pickups'); expect(p.ok(), await p.text()).toBeTruthy();
 });
 
+test('5e · livreurs partenaires : réservé à l’abonnement actif (pas pendant l’essai)', async () => {
+  const g = await supplier.request.get('/api/supplier/partner-couriers');
+  expect(g.ok(), await g.text()).toBeTruthy(); expect((await g.json()).allowed).toBe(false);
+  expect((await supplier.request.post('/api/supplier/partner-couriers', { data: { orderId: 'x', driverId: 'y' } })).status()).toBe(403);
+});
+
 test('6 · le module Réparations propose l’essai Pro, qui s’active en un clic', async () => {
   await atelier.goto('/app/repairs');
   await expect(atelier).toHaveURL(/\/app\/upgrade\?from=%2Fapp%2Frepairs/);
