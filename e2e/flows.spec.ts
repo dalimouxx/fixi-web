@@ -118,6 +118,14 @@ test('5c · pièce introuvable : demande, offre du fournisseur, choix de l’ate
   for (const path of ['/api/supplier/churn', '/api/supplier/cash-forecast']) { const r = await supplier.request.get(path); expect(r.ok(), path + ' ' + await r.text()).toBeTruthy(); }
 });
 
+test('5d · performance livreurs et prime', async () => {
+  const set = await supplier.request.patch('/api/supplier/driver-stats', { data: { bonusPerDelivery: 1.5 } });
+  expect(set.ok(), await set.text()).toBeTruthy();
+  const r = await supplier.request.get('/api/supplier/driver-stats?days=7');
+  expect(r.ok()).toBeTruthy(); expect((await r.json()).bonusPerDelivery).toBe(1.5);
+  const p = await supplier.request.get('/api/supplier/return-pickups'); expect(p.ok(), await p.text()).toBeTruthy();
+});
+
 test('6 · le module Réparations propose l’essai Pro, qui s’active en un clic', async () => {
   await atelier.goto('/app/repairs');
   await expect(atelier).toHaveURL(/\/app\/upgrade\?from=%2Fapp%2Frepairs/);

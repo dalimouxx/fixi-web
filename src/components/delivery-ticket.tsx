@@ -35,6 +35,10 @@ export function DeliveryTicket({order,qr,viewer}:{order:any;qr:string;viewer:'su
    {order.company.deliveryInstructions&&<section className="fixi-invoice-terms">
       <div><strong>Consignes de livraison</strong><p>{order.company.deliveryInstructions}</p></div>
     </section>}
+   {order.delivery?.deliveredAt&&<section className="delivery-ticket-signed">
+    <div><span>REMIS LE</span><b>{dateTime(order.delivery.deliveredAt)}</b><small>Reçu par {order.delivery.recipientName||'—'}{order.delivery.recipientPhone?' · '+order.delivery.recipientPhone:''}</small><small>Code de remise vérifié</small></div>
+    {order.delivery.signatureUrl&&<figure><img src={order.delivery.signatureUrl} alt="Signature du réceptionnaire"/><figcaption>Signature du réceptionnaire</figcaption></figure>}
+   </section>}
    <section className="delivery-ticket-chain">
     <div><span>1 · FOURNISSEUR</span><b>Commande contrôlée et remise</b><small>Nom / signature : ____________________</small><small>Date/heure : ____________________</small></div>
     <div><span>2 · LIVREUR</span><b>Produits pris en charge</b><small>Nom / signature : ____________________</small><small>Date/heure : ____________________</small></div>

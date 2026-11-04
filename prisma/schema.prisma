@@ -522,6 +522,7 @@ model Shop {
   @@index([lastSeenAt])
   stockAlerts           StockAlertRequest[]
   partRequests          SupplierPartRequest[]
+  returnPickups         SupplierReturnPickup[]
 }
 
 model User {
@@ -1615,6 +1616,8 @@ model SupplierCompany {
   remindersRunAt        DateTime?
   stockAlerts           StockAlertRequest[]
   partQuotes            SupplierPartQuote[]
+  driverBonusPerDelivery Decimal @default(0) @db.Decimal(12,3)
+  returnPickups         SupplierReturnPickup[]
 }
 
 model SupplierAccount {
@@ -1753,6 +1756,7 @@ model SupplierDelivery {
   pickedUpAt      DateTime?
   arrivedAt       DateTime?
   deliveredAt     DateTime?
+  signatureUrl    String?
   updatedAt       DateTime               @default(now()) @updatedAt
   @@index([driverAccountId, status])
 }
@@ -2800,4 +2804,29 @@ model SupplierPartQuote {
 
   @@unique([requestId, companyId])
   @@index([companyId, createdAt])
+}
+
+/// 17.8 — Pièce à reprendre chez l'atelier pendant une tournée (défectueuse, mauvaise pièce, échange).
+model SupplierReturnPickup {
+  id          String          @id @default(cuid())
+  companyId   String
+  company     SupplierCompany @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  shopId      String
+  shop        Shop            @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  orderId     String
+  saleId      String?
+  items       Json
+  reason      String
+  status      String          @default("REQUESTED")
+  driverAccountId String?
+  proofUrl    String?
+  returnId    String?
+  note        String?
+  createdAt   DateTime        @default(now())
+  collectedAt DateTime?
+  completedAt DateTime?
+
+  @@index([companyId, status])
+  @@index([shopId, status])
+  @@index([driverAccountId, status])
 }
