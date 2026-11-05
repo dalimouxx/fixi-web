@@ -196,3 +196,99 @@ html[data-splash='1'] body { overflow: hidden; }
   }
   .fxm-logo-f { stroke-dasharray: none; }
 }
+
+/* =====================================================================
+ * Étape 2 — Barre latérale, en-tête et barre d'onglets (espace atelier)
+ * Portée : .fxm-shell (ajouté sur .fx-shell), sans toucher aux pages.
+ * ===================================================================== */
+@keyframes fxm-drift1 { 0% { transform: translate(0, 0) scale(1); } 50% { transform: translate(120px, 80px) scale(1.15); } 100% { transform: translate(-60px, 140px) scale(0.95); } }
+@keyframes fxm-drift2 { 0% { transform: translate(0, 0) scale(1); } 50% { transform: translate(-140px, -60px) scale(1.2); } 100% { transform: translate(80px, 60px) scale(1); } }
+@keyframes fxm-glow { 0%, 100% { box-shadow: 0 0 0 0 rgba(255, 61, 119, 0.45), 0 10px 26px rgba(255, 61, 119, 0.35); } 50% { box-shadow: 0 0 0 12px rgba(255, 61, 119, 0), 0 10px 26px rgba(255, 122, 24, 0.45); } }
+@keyframes fxm-nav-in { from { opacity: 0; transform: translateX(-12px); } to { opacity: 1; transform: none; } }
+
+.fxm-shell { position: relative; background: var(--fxm-bg) !important; color: var(--fxm-tx); }
+.fxm-aurora { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+.fxm-aurora .fxm-blob.b1 { width: 560px; height: 560px; top: -220px; inset-inline-start: 160px; animation: fxm-drift1 18s ease-in-out infinite alternate; }
+.fxm-aurora .fxm-blob.b2 { width: 520px; height: 520px; bottom: -200px; inset-inline-end: -140px; animation: fxm-drift2 22s ease-in-out infinite alternate; }
+.fxm-shell .fx-side { z-index: 2; gap: 6px; padding: 18px 14px; background: rgba(255, 255, 255, 0.78); border-inline-end: 1px solid var(--fxm-line); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); box-shadow: 4px 0 30px rgba(60, 30, 90, 0.05); }
+html[data-theme='dark'] .fxm-shell .fx-side { background: rgba(255, 255, 255, 0.025); box-shadow: none; }
+.fxm-shell .fx-main { position: relative; z-index: 1; }
+.fxm-shell .fx-content { background: transparent; }
+
+/* Marque */
+.fxm-shell .fx-side-brand { padding: 0 6px 14px; min-height: 0; }
+.fxm-brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.fxm-brand-img { width: 42px; height: 42px; border-radius: 13px; object-fit: cover; flex: none; }
+.fxm-brand-text { min-width: 0; }
+.fxm-brand-text b { display: block; font: 700 20px/1.1 var(--fxm-font-display); letter-spacing: -0.02em; color: var(--fxm-tx); }
+.fxm-brand-text b em { font-style: normal; color: var(--fxm-a1); }
+.fxm-brand-text small { display: block; font-size: 12px; font-weight: 600; color: var(--fxm-tx3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Bouton principal (Nouvelle réparation) */
+.fxm-shell .fx-side-cta { position: relative; overflow: hidden; min-height: 46px; border: 0 !important; border-radius: 14px !important; background: var(--fxm-grad) !important; color: #fff !important; font-weight: 800; box-shadow: 0 10px 28px rgba(255, 61, 119, 0.35); margin-bottom: 8px; transition: transform 0.2s, box-shadow 0.2s; }
+.fxm-shell .fx-side-cta::after { content: ''; position: absolute; top: 0; bottom: 0; width: 40%; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.45), transparent); transform: translateX(-120%) skewX(-20deg); }
+.fxm-shell .fx-side-cta:hover { transform: translateY(-2px); box-shadow: 0 14px 36px rgba(255, 61, 119, 0.5); }
+.fxm-shell .fx-side-cta:hover::after { animation: fxm-sweep 0.8s ease; }
+.fxm-shell .fx-side-cta svg { color: #fff; }
+
+/* Groupes et sections */
+.fxm-nav-block { animation: fxm-nav-in 0.5s var(--fxm-ease) backwards; }
+.fxm-nav-block:nth-child(2) { animation-delay: 0.05s; } .fxm-nav-block:nth-child(3) { animation-delay: 0.1s; }
+.fxm-nav-block:nth-child(4) { animation-delay: 0.15s; } .fxm-nav-block:nth-child(5) { animation-delay: 0.2s; }
+.fxm-nav-block:nth-child(6) { animation-delay: 0.25s; }
+.fxm-nav-head { font-size: 11px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fxm-tx3); padding: 12px 14px 4px; }
+.fxm-shell .fx-nav-section { min-height: 42px; border-radius: 12px; padding: 0 14px; gap: 12px; font-weight: 700; color: var(--fxm-tx2); transition: transform 0.25s var(--fxm-ease), background 0.25s, color 0.25s; }
+.fxm-shell .fx-nav-section:hover { background: var(--fxm-line); color: var(--fxm-tx); transform: translateX(4px); }
+.fxm-shell .fx-nav-section.is-current { color: var(--fxm-tx); }
+.fxm-shell .fx-nav-section.is-current:not([aria-expanded]),
+.fxm-shell .fx-nav-link.active { color: #c2410c; background: linear-gradient(90deg, rgba(255, 122, 24, 0.16), rgba(255, 61, 119, 0.07)); box-shadow: inset 0 0 0 1px rgba(255, 122, 24, 0.32); }
+html[data-theme='dark'] .fxm-shell .fx-nav-section.is-current:not([aria-expanded]),
+html[data-theme='dark'] .fxm-shell .fx-nav-link.active { color: #fff; background: linear-gradient(90deg, rgba(255, 122, 24, 0.32), rgba(255, 61, 119, 0.16)); box-shadow: inset 0 0 0 1px rgba(255, 122, 24, 0.4), 0 0 28px rgba(255, 61, 119, 0.18); }
+.fxm-shell .fx-nav-link.active svg { color: currentColor; }
+.fxm-shell .fx-nav-items { border-inline-start-color: var(--fxm-line2); }
+.fxm-shell .fx-nav-link { border-radius: 10px; color: var(--fxm-tx2); transition: transform 0.25s var(--fxm-ease), background 0.25s; }
+.fxm-shell .fx-nav-link:hover:not(.active) { background: var(--fxm-line); color: var(--fxm-tx); transform: translateX(3px); }
+
+/* Carte d'abonnement (bordure animée) */
+.fxm-plan { position: relative; display: block; border-radius: 18px; padding: 1.5px; overflow: hidden; text-decoration: none; color: var(--fxm-tx); margin-top: 6px; }
+.fxm-plan::before { content: ''; position: absolute; inset: -60%; background: conic-gradient(from 0deg, transparent 0 60%, #ff7a18 70%, #ff3d77 80%, #8b5cf6 90%, transparent 100%); animation: fxm-spin 6s linear infinite; }
+.fxm-plan-in { position: relative; z-index: 1; display: block; border-radius: 16.5px; padding: 12px 14px; background: linear-gradient(160deg, #ffffff 0%, #fff6f0 100%); }
+html[data-theme='dark'] .fxm-plan-in { background: linear-gradient(160deg, #1a1222 0%, #0f0c15 60%); }
+.fxm-plan-top { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.fxm-plan-top svg { color: var(--fxm-a1); fill: currentColor; }
+.fxm-plan-top em { margin-inline-start: auto; font-style: normal; font-size: 11px; font-weight: 800; color: #fff; background: var(--fxm-grad); border-radius: 999px; padding: 2px 8px; }
+.fxm-plan small { display: block; font-size: 12px; color: var(--fxm-tx3); margin-top: 3px; }
+
+/* Pied de barre (boutique, mode, outils) */
+.fxm-shell .fx-side-foot { background: var(--fxm-card); border-color: var(--fxm-line); border-radius: 18px; }
+.fxm-shell .fx-avatar { background: linear-gradient(135deg, #ff7a18, #8b5cf6); color: #fff; }
+.fxm-shell .fx-side-shop b { color: var(--fxm-tx); }
+.fxm-shell .fx-side-shop small { color: var(--fxm-tx3); }
+.fxm-shell .fx-mode { background: var(--fxm-line); border-radius: 12px; }
+.fxm-shell .fx-mode button[aria-pressed='true'] { background: var(--fxm-grad); color: #fff; box-shadow: 0 6px 18px rgba(255, 61, 119, 0.3); }
+
+/* En-tête */
+.fxm-shell .fx-top { background: rgba(255, 255, 255, 0.7); border-bottom: 1px solid var(--fxm-line); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
+html[data-theme='dark'] .fxm-shell .fx-top { background: rgba(255, 255, 255, 0.04); }
+.fxm-shell .fx-search { border-radius: 12px; border-color: var(--fxm-line2); background: var(--fxm-card2); color: var(--fxm-tx3); transition: border-color 0.2s, box-shadow 0.2s; }
+.fxm-shell .fx-search:hover { border-color: var(--fxm-a1); box-shadow: 0 0 0 4px rgba(255, 122, 24, 0.14); }
+.fxm-shell .fx-search kbd { background: var(--fxm-line); color: var(--fxm-tx3); }
+.fxm-shell .fx-top .fx-icon-btn { border-radius: 12px; transition: transform 0.2s; }
+.fxm-shell .fx-top .fx-icon-btn:hover { transform: translateY(-2px); }
+
+/* Barre d'onglets mobile */
+.fxm-shell .fx-tabbar { background: rgba(255, 255, 255, 0.86) !important; backdrop-filter: blur(18px) !important; -webkit-backdrop-filter: blur(18px) !important; border-top: 1px solid var(--fxm-line); }
+html[data-theme='dark'] .fxm-shell .fx-tabbar { background: rgba(20, 16, 28, 0.86) !important; }
+.fxm-shell .fx-tabbar a.active, .fxm-shell .fx-tabbar button.active { color: var(--fxm-acc); }
+.fxm-shell .fx-tab-fab > span { background: var(--fxm-grad); box-shadow: 0 0 0 5px var(--fxm-bg); animation: fxm-glow 2.4s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .fxm-aurora .fxm-blob, .fxm-nav-block, .fxm-plan::before, .fxm-shell .fx-side-cta::after, .fxm-shell .fx-tab-fab > span { animation: none !important; }
+  .fxm-shell .fx-nav-section:hover, .fxm-shell .fx-nav-link:hover:not(.active), .fxm-shell .fx-side-cta:hover { transform: none; }
+}
+
+/* Corrections : carte d'abonnement dans la zone qui défile, outils du pied sur deux lignes */
+.fxm-shell .fxm-plan { flex: none; margin: 12px 2px 4px; }
+.fxm-shell .fx-side-foot { gap: 8px; padding: 10px; }
+.fxm-shell .fx-side-tools { flex-wrap: wrap; justify-content: flex-start; }
+.fxm-shell .fx-side-tools .btn { flex: 1 1 100%; }

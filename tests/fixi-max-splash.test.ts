@@ -29,3 +29,13 @@ test('Chargement animé sur les espaces atelier, fournisseur et livreur', () => 
     assert.ok(readFileSync(p, 'utf8').includes('<FixiLoader'), p);
   }
 });
+
+test('Barre latérale Fixi Max : logo animé, groupes, abonnement, thème dans l’en-tête', () => {
+  const shell = readFileSync('src/components/app-shell.tsx', 'utf8');
+  assert.ok(shell.includes('fx-shell fxm-shell'));
+  assert.ok(shell.includes('<FixiBrand'));
+  assert.ok(shell.includes("home: 'Atelier'") && shell.includes("cash: 'Commerce'"));
+  assert.ok(shell.includes('className="fxm-plan"'));
+  assert.ok(shell.includes('<span className="fxm-top-theme"><ThemeToggle /></span>'));
+  assert.match(css, /html\[data-theme='dark'\] \.fxm-shell \.fx-side\s*{/);
+});
