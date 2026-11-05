@@ -59,3 +59,16 @@ test('Réparations Fixi Max : liste + aperçu latéral, kanban, filtres et fonct
   assert.ok(page.includes('SwipeCard'), 'cartes à glisser sur mobile conservées');
   assert.ok(page.includes('/app/cashier?repair='));
 });
+
+test('Réception Fixi Max : étapes, aperçu du ticket, fonctions conservées', () => {
+  const page = readFileSync('src/app/(app)/app/repairs/new/page.tsx', 'utf8');
+  assert.ok(page.includes('fxm-rx-steps') && page.includes('Aperçu du ticket'));
+  for (const k of ['VoiceReceptionCopilot', 'queueOfflineRepair', 'uploadIntakePhotos', 'BarcodeCamera', '/api/imei/check', '/api/network/price-hint']) assert.ok(page.includes(k), k);
+});
+
+test('Caisse Fixi Max : encaissement, livraison, monnaie à rendre et écran de succès', () => {
+  const page = readFileSync('src/app/(app)/app/cashier/page.tsx', 'utf8');
+  assert.ok(page.includes("api('/api/cashier/checkout'") && page.includes("status: 'DELIVERED'"));
+  assert.ok(page.includes('Monnaie à rendre') && page.includes('fxm-cash-success'));
+  assert.ok(page.includes("get('repair')"), 'ouverture directe depuis une réparation');
+});
