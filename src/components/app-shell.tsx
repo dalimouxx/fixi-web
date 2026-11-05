@@ -3,10 +3,10 @@ import { ReportProblemButton } from './report-problem';
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { Search, LogOut, HelpCircle, ChevronRight, WifiOff, PlusCircle, PackageOpen, Sparkles, MonitorPlay, MonitorSmartphone } from 'lucide-react';
+import { Search, LogOut, HelpCircle, ChevronRight, WifiOff, PlusCircle, PackageOpen, Sparkles, MonitorPlay, MonitorSmartphone, Star } from 'lucide-react';
 import { NotificationBell } from './notification-bell';
 import { PwaRegister } from './pwa-register';
-import { BrandLogo } from './brand-logo';
+import { FixiBrand } from './fixi-brand';
 import { OfflineSyncBadge } from './offline-sync-badge';
 import { InstallAppButton } from './install-app-button';
 import { ThemeToggle } from './theme-toggle';
@@ -98,12 +98,21 @@ export function AppShell({ children, user }: { children?: React.ReactNode; user:
     <button type="button" aria-pressed={advanced} onClick={() => setMode('advanced')}>Avancé</button>
   </div>;
 
-  return <div className="fx-shell">
+  return <div className="fx-shell fxm-shell">
     <PwaRegister />
+    <div className="fxm-aurora" aria-hidden="true"><span className="fxm-blob b1" /><span className="fxm-blob b2" /></div>
     <aside className="fx-side" aria-label="Menu principal">
-      <div className="fx-side-brand"><BrandLogo /></div>
+      <div className="fx-side-brand"><FixiBrand subtitle={user.shopName} /></div>
       {primary && <Link href={primary.href} className="btn btn-primary fx-side-cta"><primary.icon size={19} />{primary.label}</Link>}
-      <nav className="fx-side-nav">{sections.map(renderSection)}</nav>
+      <nav className="fx-side-nav">{sections.map((s, i) => {
+        const g = NAV_GROUPS[s.id];
+        const showHead = g && (i === 0 || NAV_GROUPS[sections[i - 1].id] !== g);
+        return <div key={s.id} className="fxm-nav-block">{showHead && <div className="fxm-nav-head">{g}</div>}{renderSection(s)}</div>;
+      })}
+        {!connect && user.role === 'ADMIN' && <Link href="/app/subscription" className="fxm-plan">
+          <span className="fxm-plan-in"><span className="fxm-plan-top"><Star size={15} aria-hidden="true" /><b>{user.planName || 'Fixi Pro'}</b><em>Actif</em></span><small>Gérer mon abonnement</small></span>
+        </Link>}
+      </nav>
       {connect && <Link href="/app/upgrade" className="btn btn-soft"><Sparkles size={16} /> Passer à Fixi Pro</Link>}
       <div className="fx-side-foot">
         <div className="fx-side-shop"><span className="fx-avatar" aria-hidden="true">{initials}</span><div style={{ minWidth: 0 }}><b>{user.shopName}</b><small>{user.fullName} · {user.roleLabel}</small></div></div>
@@ -128,6 +137,7 @@ export function AppShell({ children, user }: { children?: React.ReactNode; user:
         <div className="fx-top-actions">
           {!online && <span className="fx-offline"><WifiOff size={14} /> Hors ligne</span>}
           <OfflineSyncBadge />
+          <span className="fxm-top-theme"><ThemeToggle /></span>
           <button type="button" className="fx-icon-btn" onClick={() => setHelp(true)} aria-label="Aide pour cet écran" title="Aide"><HelpCircle size={20} /></button>
           <NotificationBell />
         </div>
@@ -166,6 +176,9 @@ export function AppShell({ children, user }: { children?: React.ReactNode; user:
     {!connect && <UniversalSearch open={search} onClose={closeSearch} sections={allSections} role={user.role} />}
   </div>;
 }
+
+/** Groupes affichés au-dessus des sections de la barre latérale. */
+const NAV_GROUPS: Record<string, string> = { home: 'Atelier', repairs: 'Atelier', clients: 'Atelier', cash: 'Commerce', parts: 'Commerce', more: 'Plus' };
 
 function MoreIcon() {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" /></svg>;

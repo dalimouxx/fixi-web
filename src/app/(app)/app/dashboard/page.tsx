@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { useCallback } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import {
   PlusCircle, Banknote, PackageCheck, PackageOpen, Wrench, Boxes, Link2, AlertTriangle, Clock3, ShieldCheck,
@@ -15,6 +15,7 @@ import { useI18n } from '@/components/language-provider';
 import { api } from '@/components/ui';
 import { waLink } from '@/lib/whatsapp-link';
 import { daySummary } from '@/lib/day-summary';
+import { FixiLoader } from '@/components/fixi-loader';
 
 type Tile = { href: string; icon: any; title: string; sub: string; count?: number; variant?: 'primary' | 'ready' };
 
@@ -25,10 +26,7 @@ export default function Dashboard() {
   const { lang } = useI18n();
   const today = new Intl.DateTimeFormat(lang === 'ar' ? 'ar-TN' : 'fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date());
 
-  if (loading && !data) return <div className="fx-page" role="status" aria-live="polite">
-    <div className="fx-hello"><div><h1>Que voulez-vous faire ?</h1><p>Chargement de votre atelier…</p></div></div>
-    <div className="fx-tiles">{[1, 2, 3, 4].map(x => <div className="fx-tile" key={x} aria-hidden="true" style={{ opacity: .5 }} />)}</div>
-  </div>;
+  if (loading && !data) return <FixiLoader label="Chargement de votre atelier…" />;
   if (error || !data) return <div className="fx-page"><div className="fx-panel" role="alert" style={{ display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap' }}>
     <AlertTriangle size={26} color="var(--fx-danger)" /><div style={{ flex: 1 }}><b>Accueil indisponible</b><div className="page-sub">{String(error || 'Impossible de charger votre atelier.')}</div></div>
     <button type="button" className="btn btn-primary" onClick={() => reload()}>Réessayer</button></div></div>;
@@ -71,61 +69,92 @@ export default function Dashboard() {
     perm.cash && !data.cashOpen && { href: '/app/cash-sessions', icon: CreditCard, tone: 'warning', title: 'La caisse est fermée', sub: 'Ouvrez-la avant d’encaisser' },
   ].filter(Boolean) as any[];
 
-  return <div className="fx-page">
-    <section className="fx17-hero" aria-label="Votre journée">
-      <div className="fx-hello">
-        <div><p className="fx-hello-date">{today}</p><h1>Que voulez-vous faire ?</h1></div>
-        {perm.finance && <Link href="/app/fin-de-journee" className="btn btn-ghost"><Moon size={18} /> Fin de journée</Link>}
+  const tone: Record<string, string> = { ok: 'g', warning: 'y', danger: 'p' };
+  const kpiCards = [
+    { icon: Wrench, label: 'En cours', value: active, sub: waiting ? `${waiting} en attente de pièce` : 'Atelier à jour', subTone: waiting ? 'warn' : 'muted', ico: 'v', href: '/app/repairs' },
+    { icon: PackageCheck, label: 'Prêts à rendre', value: ready, sub: ready ? 'Prévenir sur WhatsApp' : 'Aucun en attente', subTone: 'muted', ico: 'g', href: perm.cash ? '/app/cashier' : '/app/repairs' },
+    perm.stock ? { icon: Boxes, label: 'Stock bas', value: data.lowStock ?? 0, sub: data.lowStock ? 'À racheter' : 'Stock suffisant', subTone: data.lowStock ? 'bad' : 'muted', ico: 'y', href: '/app/stock' }
+      : { icon: Hourglass, label: 'Attente pièce', value: waiting, sub: 'Chez vos fournisseurs', subTone: 'muted', ico: 'y', href: '/app/suppliers' },
+    perm.warranty ? { icon: ShieldCheck, label: 'Retours garantie', value: data.openWarranty ?? 0, sub: data.openWarranty ? 'À examiner' : 'Aucun retour', subTone: data.openWarranty ? 'warn' : 'muted', ico: 'p', href: '/app/warranties' }
+      : { icon: Clock3, label: 'Échéances', value: data.installmentsDue ?? 0, sub: 'Paiements en plusieurs fois', subTone: 'muted', ico: 'p', href: '/app/cashier' },
+  ];
+  const series: { date: string; value: number }[] = (data.series || []).slice(-14);
+  const margin = perm.profit && Number(data.monthRevenue) > 0 ? Math.max(0, Math.min(100, Math.round(Number(data.grossProfit) / Number(data.monthRevenue) * 100))) : null;
+
+  return <div className="fx-page fxm-dash">
+    <header className="fxm-dash-head fxm-up">
+      <div>
+        <span className="fxm-live-pill"><span className="fxm-live" aria-hidden="true" />En direct · {today}</span>
+        <h1 className="fxm-gt">Que voulez-vous faire ?</h1>
+        <p className="fxm-dash-sub" aria-live="polite">{daySummary({ lang, ready, waiting, active, revenue: perm.finance ? money(data.todayRevenue) : null, pickups: (data.pickups || []).filter((x: any) => x.stage > 0).length })}</p>
       </div>
-      <p className="fx-day-summary" aria-live="polite">{daySummary({ lang, ready, waiting, active, revenue: perm.finance ? money(data.todayRevenue) : null, pickups: (data.pickups || []).filter((x: any) => x.stage > 0).length })}</p>
-      <section className="fx-kpis" aria-label="Chiffres du jour">
-        {kpis.map(k => { const Icon = k.icon; return <div className="fx-kpi" key={k.label}><Icon /><div><span>{k.label}</span><strong>{k.value}</strong></div></div>; })}
+      {perm.finance && <Link href="/app/fin-de-journee" className="btn fxm-btn-o"><Moon size={18} /> Fin de journée</Link>}
+    </header>
+
+    {perm.finance && <div className="fxm-dash-row">
+      <section className="fxm-ba fxm-up" style={{ '--d': '.06s', flex: '2 1 460px' } as any} aria-label="Encaissé aujourd'hui">
+        <div className="fxm-ba-in fxm-hero-cash">
+          <div>
+            <div className="fxm-kick">Encaissé aujourd’hui</div>
+            <div className="fxm-big"><CountUp value={Number(data.todayRevenue) || 0} format={money} /></div>
+            <div className="fxm-chips"><span className="fxm-chip">Ce mois : {money(data.monthRevenue)}</span>{data.cashOpen === false && <Link href="/app/cash-sessions" className="fxm-chip fxm-chip--warn">Caisse fermée</Link>}</div>
+          </div>
+          <Sparkline points={series.map(x => Number(x.value) || 0)} />
+        </div>
       </section>
+      {margin !== null && <section className="fxm-card fxm-hov fxm-up fxm-ring-card" style={{ '--d': '.12s' } as any} aria-label="Marge du mois">
+        <Ring pct={margin} />
+        <div><div className="fxm-kick fxm-kick--muted">Résultat du mois</div><div className="fxm-mid">{money(data.grossProfit)}</div><div className="fxm-small">Encaissé − pièces − dépenses · {margin} % de marge</div></div>
+      </section>}
+    </div>}
+
+    <section className="fxm-dash-row" aria-label="Chiffres du jour">
+      {kpiCards.map((k, i) => { const Icon = k.icon; return <Link key={k.label} href={k.href} className="fxm-card fxm-hov fxm-kpi fxm-up" style={{ '--d': `${0.18 + i * 0.06}s` } as any}>
+        <span className={`fxm-ico fxm-ico--${k.ico}`} style={{ animationDelay: `${i * 0.5}s` }}><Icon /></span>
+        <span><span className="fxm-kpi-l">{k.label}</span><span className="fxm-kpi-v"><CountUp value={Number(k.value) || 0} /></span><span className={`fxm-kpi-d fxm-tone-${k.subTone}`}>{k.sub}</span></span>
+      </Link>; })}
     </section>
 
-    {perm.profit && new Date().getDate() <= 7 && <Link href="/app/rapport-mensuel" className="fx-row fx-row--ok fx-month-banner"><Sparkles /><span className="fx-row-main"><b>Le rapport du mois dernier est prêt</b><small>Encaissé, bénéfice, pannes et techniciens · PDF et fichier pour le comptable</small></span><ChevronRight size={18} /></Link>}
+    {perm.profit && new Date().getDate() <= 7 && <Link href="/app/rapport-mensuel" className="fxm-card fxm-hov fxm-banner fxm-up"><span className="fxm-ico fxm-ico--p fxm-ico--s"><Sparkles /></span><span className="fxm-grow"><b>Le rapport du mois dernier est prêt</b><small>Encaissé, bénéfice, pannes et techniciens · PDF et fichier pour le comptable</small></span><ChevronRight size={18} /></Link>}
 
     {perm.profit && <GettingStarted repairCount={Object.values(counts).reduce((a: number, v: any) => a + Number(v), 0)} />}
 
-    <nav className="fx-tiles" aria-label="Actions principales">
-      {tiles.map(t => { const Icon = t.icon; return <Link key={t.title} href={t.href} className={`fx-tile ${t.variant ? 'fx-tile--' + t.variant : ''}`}>
-        <span className="fx-tile-icon"><Icon /></span>
-        {typeof t.count === 'number' && t.count > 0 && <span className="fx-tile-count" aria-label={`${t.count} en attente`}>{t.count}</span>}
+    <nav className="fxm-dash-row" aria-label="Actions principales">
+      {tiles.map((t, i) => { const Icon = t.icon; return <Link key={t.title} href={t.href} className={`fxm-card fxm-hov fxm-qa fxm-up ${t.variant === 'primary' ? 'fxm-qa--primary' : ''}`} style={{ '--d': `${0.3 + i * 0.05}s` } as any}>
+        <span className={`fxm-ico ${t.variant === 'primary' ? 'fxm-ico--w' : t.variant === 'ready' ? 'fxm-ico--g' : 'fxm-ico--o'}`}><Icon /></span>
+        {typeof t.count === 'number' && t.count > 0 && <span className="fxm-qa-count" aria-label={`${t.count} en attente`}>{t.count}</span>}
         <span><b>{t.title}</b><small>{t.sub}</small></span>
       </Link>; })}
     </nav>
 
-
-    <div className="fx-grid-2">
-      <section className="fx-panel" aria-labelledby="todo-title">
-        <div className="fx-panel-head"><h2 id="todo-title">À faire maintenant</h2></div>
-        <div className="fx-list">
-          {todo.length ? todo.map((t, i) => { const Icon = t.icon; return <Link key={i} href={t.href} className={`fx-row fx-row--${t.tone}`}><Icon /><span className="fx-row-main"><b>{t.count != null && <>{t.count} </>}{t.title}</b><small>{t.sub}</small></span><ChevronRight size={18} /></Link>; })
-            : <div className="fx-row fx-row--ok"><CheckCircle2 /><span className="fx-row-main"><b>Rien d’urgent</b><small>Tout est à jour dans l’atelier.</small></span></div>}
-        </div>
+    <div className="fxm-dash-row fxm-top">
+      <section className="fxm-card fxm-up fxm-panel" style={{ '--d': '.4s', flex: '1 1 340px' } as any} aria-labelledby="todo-title">
+        <div className="fxm-panel-head"><h2 id="todo-title">À faire maintenant</h2>{todo.length > 0 && <span className="fxm-badge-hot">{todo.length}</span>}</div>
+        {todo.length ? todo.map((t, i) => { const Icon = t.icon; return <Link key={i} href={t.href} className="fxm-todo fxm-in" style={{ '--d': `${0.5 + i * 0.08}s` } as any}>
+          <span className={`fxm-ico fxm-ico--s fxm-ico--${tone[t.tone] || 'o'}`}><Icon /></span>
+          <span className="fxm-grow"><b>{t.count != null && <>{t.count} </>}{t.title}</b><small>{t.sub}</small></span><ChevronRight size={18} />
+        </Link>; })
+          : <div className="fxm-todo"><span className="fxm-ico fxm-ico--s fxm-ico--g"><CheckCircle2 /></span><span className="fxm-grow"><b>Rien d’urgent</b><small>Tout est à jour dans l’atelier.</small></span></div>}
       </section>
-      <section className="fx-panel" aria-labelledby="recent-title">
-        <div className="fx-panel-head"><h2 id="recent-title">Derniers appareils</h2><Link href="/app/repairs" className="btn btn-ghost btn-sm">Tout voir</Link></div>
-        <div className="fx-list">
-          {(data.recent || []).slice(0, 6).map((r: any) => <Link key={r.id} href={`/app/repairs/${r.code}`} className="fx-row">
-            <Smartphone /><span className="fx-row-main"><b>{[r.brand, r.model].filter(Boolean).join(' ')}</b><small>{r.client?.fullName} · {dateTime(r.updatedAt)}</small></span><StatusBadge status={r.status} />
-          </Link>)}
-          {!data.recent?.length && <div className="fx-row"><Smartphone /><span className="fx-row-main"><b>Aucun appareil pour l’instant</b><small>Commencez par « Nouvelle réparation ».</small></span></div>}
-        </div>
+      <section className="fxm-card fxm-up fxm-panel" style={{ '--d': '.46s', flex: '2 1 420px' } as any} aria-labelledby="recent-title">
+        <div className="fxm-panel-head"><h2 id="recent-title">Derniers appareils</h2><Link href="/app/repairs" className="fxm-link">Tout voir</Link></div>
+        {(data.recent || []).slice(0, 6).map((r: any, i: number) => <Link key={r.id} href={`/app/repairs/${r.code}`} className="fxm-todo fxm-in" style={{ '--d': `${0.55 + i * 0.06}s` } as any}>
+          <span className="fxm-av" aria-hidden="true"><span>{initialsOf(r.client?.fullName)}</span></span>
+          <span className="fxm-grow"><b>{[r.brand, r.model].filter(Boolean).join(' ') || r.code}</b><small>{r.client?.fullName} · {dateTime(r.updatedAt)}</small></span><StatusBadge status={r.status} />
+        </Link>)}
+        {!data.recent?.length && <div className="fxm-todo"><span className="fxm-ico fxm-ico--s fxm-ico--b"><Smartphone /></span><span className="fxm-grow"><b>Aucun appareil pour l’instant</b><small>Commencez par « Nouvelle réparation ».</small></span></div>}
       </section>
     </div>
 
-    {(data.pickups || []).length > 0 && <section className="fx-panel fx-pickups" aria-labelledby="pickup-title" style={{ marginTop: 12 }}>
-      <div className="fx-panel-head"><h2 id="pickup-title"><BellRing size={18} /> Appareils prêts à relancer</h2>{data.autoPickup && <span className="fx-chip">Relance WhatsApp automatique</span>}</div>
-      <p className="fx-panel-sub">Prêts depuis 3 jours ou plus. 1re relance à 3 jours, 2e à 7 jours.</p>
-      <div className="fx-list">
-        {data.pickups.map((x: any) => <div key={x.code} className={`fx-row ${x.days >= 7 ? 'fx-row--danger' : 'fx-row--warning'}`}>
-          <PackageCheck />
-          <Link href={`/app/repairs/${x.code}`} className="fx-row-main"><b>{x.client} · {x.device}</b><small>Prêt depuis {x.days} j · {x.sent ? `${x.sent} relance(s) faite(s)` : 'jamais relancé'}{x.balance > 0 ? ` · reste ${money(x.balance)}` : ''}</small></Link>
-          {x.stage > 0 ? <a className="btn btn-success btn-sm" href={waLink(x.phone, x.message)} target="_blank" rel="noreferrer" onClick={() => { api(`/api/repairs/${encodeURIComponent(x.code)}/pickup-reminder`, { method: 'POST' }).then(() => reload()).catch(() => {}); }}><MessageCircle size={16} /> Relancer</a>
-            : <span className="fx-chip fx-chip--ok"><CheckCircle2 size={14} /> Relancé</span>}
-        </div>)}
-      </div>
+    {(data.pickups || []).length > 0 && <section className="fxm-card fxm-panel fxm-up fx-pickups" style={{ '--d': '.5s' } as any} aria-labelledby="pickup-title">
+      <div className="fxm-panel-head"><h2 id="pickup-title"><BellRing size={18} /> Appareils prêts à relancer</h2>{data.autoPickup && <span className="fxm-chip">Relance WhatsApp automatique</span>}</div>
+      <p className="fxm-small" style={{ margin: '0 0 8px' }}>Prêts depuis 3 jours ou plus. 1re relance à 3 jours, 2e à 7 jours.</p>
+      {data.pickups.map((x: any) => <div key={x.code} className="fxm-todo">
+        <span className={`fxm-ico fxm-ico--s ${x.days >= 7 ? 'fxm-ico--p' : 'fxm-ico--y'}`}><PackageCheck /></span>
+        <Link href={`/app/repairs/${x.code}`} className="fxm-grow"><b>{x.client} · {x.device}</b><small>Prêt depuis {x.days} j · {x.sent ? `${x.sent} relance(s) faite(s)` : 'jamais relancé'}{x.balance > 0 ? ` · reste ${money(x.balance)}` : ''}</small></Link>
+        {x.stage > 0 ? <a className="btn btn-success btn-sm" href={waLink(x.phone, x.message)} target="_blank" rel="noreferrer" onClick={() => { api(`/api/repairs/${encodeURIComponent(x.code)}/pickup-reminder`, { method: 'POST' }).then(() => reload()).catch(() => {}); }}><MessageCircle size={16} /> Relancer</a>
+          : <span className="fxm-chip fxm-chip--ok"><CheckCircle2 size={14} /> Relancé</span>}
+      </div>)}
     </section>}
 
     {advanced ? <>
@@ -149,4 +178,51 @@ export default function Dashboard() {
     </> : perm.profit && <div className="fx-advanced-note"><SlidersHorizontal size={18} /><span>Graphiques, bénéfice du mois et analyses sont disponibles en Mode Avancé.</span>
       <button type="button" className="btn btn-ghost btn-sm" onClick={() => setMode('advanced')}>Afficher</button></div>}
   </div>;
+}
+
+function initialsOf(name?: string) {
+  return String(name || '?').split(' ').filter(Boolean).map(x => x[0]).slice(0, 2).join('').toUpperCase() || '?';
+}
+
+/** Chiffre qui défile jusqu'à sa valeur (une seule fois par changement ; immédiat si « réduire les animations »). */
+function CountUp({ value, format }: { value: number; format?: (n: number) => string }) {
+  const [shown, setShown] = useState(value);
+  const from = useRef(0);
+  useEffect(() => {
+    const calm = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    if (calm) { setShown(value); from.current = value; return; }
+    const start = from.current, t0 = performance.now(); let raf = 0;
+    const tick = (t: number) => { const x = Math.min(1, (t - t0) / 1200); const v = start + (value - start) * (1 - Math.pow(1 - x, 3)); setShown(v); if (x < 1) raf = requestAnimationFrame(tick); else from.current = value; };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [value]);
+  const isInt = Number.isInteger(value);
+  return <span className="fxm-num">{format ? format(shown) : (isInt ? Math.round(shown) : shown).toLocaleString('fr-FR')}</span>;
+}
+
+/** Courbe des encaissements des derniers jours, qui se dessine à l'affichage. */
+function Sparkline({ points }: { points: number[] }) {
+  if (points.length < 2) return <div className="fxm-spark fxm-spark--empty" aria-hidden="true" />;
+  const w = 300, h = 110, max = Math.max(...points, 1), step = w / (points.length - 1);
+  const xy = points.map((v, i) => [i * step, h - 8 - (v / max) * (h - 20)]);
+  const line = xy.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+  const last = xy[xy.length - 1];
+  return <svg className="fxm-spark" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" aria-hidden="true">
+    <defs><linearGradient id="fxm-sp1" x1="0" x2="1"><stop offset="0" stopColor="#FF7A18" /><stop offset=".5" stopColor="#FF3D77" /><stop offset="1" stopColor="#A78BFA" /></linearGradient>
+      <linearGradient id="fxm-sp2" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor="#FF3D77" stopOpacity=".28" /><stop offset="1" stopColor="#FF3D77" stopOpacity="0" /></linearGradient></defs>
+    <path className="fxm-up" style={{ '--d': '.6s' } as any} d={`${line} L${w},${h} L0,${h} Z`} fill="url(#fxm-sp2)" />
+    <path className="fxm-draw" d={line} fill="none" stroke="url(#fxm-sp1)" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+    <circle cx={last[0]} cy={last[1]} r="5.5" fill="#fff" stroke="#FF3D77" strokeWidth="3" />
+  </svg>;
+}
+
+/** Anneau de pourcentage qui se remplit. */
+function Ring({ pct }: { pct: number }) {
+  const c = 2 * Math.PI * 52;
+  return <svg className="fxm-ring" width="120" height="120" viewBox="0 0 132 132" aria-hidden="true">
+    <defs><linearGradient id="fxm-rg" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stopColor="#FF7A18" /><stop offset="1" stopColor="#8B5CF6" /></linearGradient></defs>
+    <circle cx="66" cy="66" r="52" fill="none" stroke="var(--fxm-line)" strokeWidth="12" />
+    <circle className="fxm-ring-p" cx="66" cy="66" r="52" fill="none" stroke="url(#fxm-rg)" strokeWidth="12" strokeLinecap="round" strokeDasharray={c} strokeDashoffset={c * (1 - pct / 100)} transform="rotate(-90 66 66)" style={{ '--c': c } as any} />
+    <text x="66" y="74" textAnchor="middle" fill="currentColor" className="fxm-ring-t">{pct}%</text>
+  </svg>;
 }
