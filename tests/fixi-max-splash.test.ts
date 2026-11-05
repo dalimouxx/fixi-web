@@ -83,3 +83,11 @@ test('Accueil fournisseur Fixi Max : ventes du jour, recouvrement, commandes en 
   assert.ok(dash.includes('<SupplierHome') && dash.includes('{advancedMode&&<div style={{marginTop:24}}>'));
   assert.ok(dash.includes('<FixiSmartWidgets area="supplier"'));
 });
+
+test('Commandes fournisseur Fixi Max : colonnes par défaut, logique conservée', () => {
+  const dash = readFileSync('src/components/supplier-dashboard.tsx', 'utf8');
+  assert.ok(dash.includes("setBoard(localStorage.getItem('fixi-supplier-board')!=='0')"), 'colonnes par défaut, choix « Liste » respecté');
+  assert.ok(dash.includes('className="supplier-panel fxm-so"'));
+  for (const k of ['onDrop=', 'setPickFor(o)', "status(o.id,'CANCELLED')", 'Affecter un livreur']) assert.ok(dash.includes(k), k);
+  assert.match(css, /\.fxm-so \.fx-order-col\[data-drop\]/);
+});
