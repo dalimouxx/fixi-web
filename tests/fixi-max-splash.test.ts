@@ -91,3 +91,12 @@ test('Commandes fournisseur Fixi Max : colonnes par défaut, logique conservée'
   for (const k of ['onDrop=', 'setPickFor(o)', "status(o.id,'CANCELLED')", 'Affecter un livreur']) assert.ok(dash.includes(k), k);
   assert.match(css, /\.fxm-so \.fx-order-col\[data-drop\]/);
 });
+
+test('Habillage commun Fixi Max : variables --fx-* rebranchées, barre fournisseur animée', () => {
+  assert.match(css, /:is\(\.fxm-shell, \.supplier-os\) \{\s*--fx-bg: var\(--fxm-bg\);/);
+  assert.match(css, /html\[data-theme='dark'\] :is\(\.fxm-shell, \.supplier-os\) \{/);
+  const dash = readFileSync('src/components/supplier-dashboard.tsx', 'utf8');
+  assert.ok(dash.includes('<FixiAnimatedLogo size={42}/>') && dash.includes('supplier-os supplier-erp fxm-sup'));
+  const globals = readFileSync('src/app/globals.css', 'utf8');
+  assert.ok(globals.includes('@layer fxm-force, fx-force, legacy;'));
+});
