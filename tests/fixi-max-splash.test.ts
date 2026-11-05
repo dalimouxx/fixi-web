@@ -43,11 +43,13 @@ test('Barre latérale Fixi Max : logo animé, groupes, abonnement, thème dans l
 test('Tableau de bord Fixi Max : chiffres animés, courbe, anneau, données et permissions conservées', () => {
   const page = readFileSync('src/app/(app)/app/dashboard/page.tsx', 'utf8');
   assert.ok(page.includes('className="fx-page fxm-dash"'));
-  assert.ok(page.includes('function CountUp') && page.includes('function Sparkline') && page.includes('function Ring'));
+  const charts = readFileSync('src/components/fixi-max-charts.tsx', 'utf8');
+  assert.ok(charts.includes('export function CountUp') && charts.includes('export function Sparkline') && charts.includes('export function Ring'));
+  assert.ok(page.includes("from '@/components/fixi-max-charts'"));
   assert.ok(page.includes("useApi<any>('/api/dashboard')"));
   assert.ok(page.includes('perm.finance &&') && page.includes('perm.profit'));
   assert.ok(page.includes('<FixiLoader'));
-  assert.ok(page.includes('prefers-reduced-motion: reduce'));
+  assert.ok(charts.includes('prefers-reduced-motion: reduce'));
 });
 
 test('Réparations Fixi Max : liste + aperçu latéral, kanban, filtres et fonctions conservées', () => {
@@ -71,4 +73,13 @@ test('Caisse Fixi Max : encaissement, livraison, monnaie à rendre et écran de 
   assert.ok(page.includes("api('/api/cashier/checkout'") && page.includes("status: 'DELIVERED'"));
   assert.ok(page.includes('Monnaie à rendre') && page.includes('fxm-cash-success'));
   assert.ok(page.includes("get('repair')"), 'ouverture directe depuis une réparation');
+});
+
+test('Accueil fournisseur Fixi Max : ventes du jour, recouvrement, commandes en direct, mode Avancé conservé', () => {
+  const home = readFileSync('src/components/supplier-home.tsx', 'utf8');
+  for (const k of ['Ventes du jour', 'À recouvrer', 'Commandes en direct', 'Produits stars', 'À traiter maintenant']) assert.ok(home.includes(k), k);
+  assert.ok(home.includes('Number(x.total || 0) - Number(x.paid || 0)'), 'reste dû = total − payé');
+  const dash = readFileSync('src/components/supplier-dashboard.tsx', 'utf8');
+  assert.ok(dash.includes('<SupplierHome') && dash.includes('{advancedMode&&<div style={{marginTop:24}}>'));
+  assert.ok(dash.includes('<FixiSmartWidgets area="supplier"'));
 });

@@ -22,6 +22,7 @@ import {compressProductImage} from '@/lib/image-compress';
 import {dateTime,money} from '@/lib/format';
 import {SupplierPos} from './supplier-pos';
 import {SupplierProductStudio} from './supplier-product-studio';
+import {SupplierHome} from './supplier-home';
 import {SupplierPromoDialog,SupplierPromoList} from './supplier-promos';
 import {SecurityPanel} from './security-panel';
 import {EinvoiceReadiness} from './einvoice-readiness';
@@ -184,19 +185,8 @@ export function SupplierDashboard({session}:{session:any}){
         {currentGroup.items.map(([key,label])=><button type="button" key={key} aria-current={tab===key?'page':undefined} onClick={()=>setTab(key as Tab)}>{label}</button>)}
       </nav>}
       {tab==='dashboard'&&<>
-        <section className="fixi-supplier-quick-workflow" aria-label="Actions rapides du fournisseur">
-          <div className="fixi-workflow-heading"><div><h2>Que voulez-vous faire ?</h2><p>Vos 4 actions du quotidien.</p></div><Link href="/supplier/daily-report" className="btn btn-ghost btn-sm"><Moon size={16}/> Fin de journée</Link></div>
-          <div className="fixi-workflow-actions">
-            {nav.some(([key])=>key==='orders')&&<button type="button" onClick={()=>setTab('orders')}>
-              <ClipboardList size={21}/><strong>Commandes</strong><small>{activeOrders.length} à suivre</small></button>}
-            {nav.some(([key])=>key==='cashier')&&<button type="button" onClick={()=>setTab('cashier')}>
-              <WalletCards size={21}/><strong>Vendre</strong><small>Caisse avec scan code-barres</small></button>}
-            {nav.some(([key])=>key==='products')&&<button type="button" onClick={()=>setTab('products')}>
-              <Warehouse size={21}/><strong>Stock</strong><small>{lowStock} alertes stock</small></button>}
-            {nav.some(([key])=>key==='dues')&&<button type="button" onClick={()=>setTab('dues')}>
-              <Banknote size={21}/><strong>Qui me doit</strong><small>Encaisser une dette</small></button>}
-          </div>
-        </section>
+        <SupplierHome session={session} orders={orders} products={products} sales={erp.sales||[]} lowStock={lowStock} canTab={(t:string)=>nav.some(([key])=>key===t)} onTab={(t:string)=>setTab(t as Tab)}/>
+        {advancedMode&&<div style={{marginTop:24}}>
         <FixiSmartWidgets area="supplier" onAction={target=>setTab(target as Tab)}
           subtitle="Commandes, ventes, stock et clients de votre société, actualisés automatiquement."
           widgets={(advancedMode?(x:any[])=>x:(x:any[])=>x.filter(w=>['supplier-orders','supplier-revenue','supplier-warning'].includes(w.id)))([
@@ -228,6 +218,7 @@ export function SupplierDashboard({session}:{session:any}){
           </section>
         </div>
         <section className="supplier-panel" style={{marginTop:12}}><div className="supplier-section-head"><div><b>Dernières commandes</b><span>Flux boutiques Fixi</span></div><button className="btn btn-soft btn-sm" onClick={()=>setTab('orders')}>Tout voir</button></div><OrderTable orders={orders.slice(0,8)}/></section>
+        </div>}
       </>}
 
       {tab==='orders'&&<SupplierPartRequests products={products}/>}{pickFor&&<PickingDialog order={pickFor} onClose={()=>setPickFor(null)} onReady={()=>status(pickFor.id,'READY_FOR_DELIVERY')}/>}{tab==='orders'&&<section className="supplier-panel">
