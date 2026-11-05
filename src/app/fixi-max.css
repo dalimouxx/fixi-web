@@ -1,0 +1,198 @@
+/*
+ * Fixi Max — design system (étape 1 : fondations).
+ * Clair par défaut ; sombre via html[data-theme="dark"] (géré par ThemeToggle).
+ * Préfixe « fxm- » pour ne pas entrer en conflit avec les anciennes feuilles,
+ * qui seront retirées écran par écran.
+ */
+
+:root {
+  --fxm-a1: #ff7a18;
+  --fxm-a2: #ff3d77;
+  --fxm-a3: #8b5cf6;
+  --fxm-a4: #22d3ee;
+  --fxm-grad: linear-gradient(135deg, #ff7a18, #ff3d77);
+  --fxm-grad3: linear-gradient(135deg, #ff7a18, #ff3d77, #8b5cf6);
+
+  --fxm-bg: #f6f3f9;
+  --fxm-card: rgba(255, 255, 255, 0.78);
+  --fxm-card2: #ffffff;
+  --fxm-line: rgba(24, 16, 40, 0.08);
+  --fxm-line2: rgba(24, 16, 40, 0.16);
+  --fxm-tx: #15111c;
+  --fxm-tx2: #4f4a5a;
+  --fxm-tx3: #6e6878;
+  --fxm-acc: #d9480f;
+  --fxm-shadow: 0 20px 40px rgba(60, 30, 90, 0.12);
+  --fxm-blob: 0.28;
+
+  --fxm-ok: #0f8a5f;
+  --fxm-ok-s: #dff7ec;
+  --fxm-warn: #b45309;
+  --fxm-warn-s: #fef3d7;
+  --fxm-bad: #d61f45;
+  --fxm-bad-s: #ffe4ea;
+  --fxm-info: #0b6fb8;
+  --fxm-info-s: #e0f1fd;
+  --fxm-vio: #6d3fd9;
+  --fxm-vio-s: #eee7ff;
+
+  --fxm-r-sm: 10px;
+  --fxm-r: 14px;
+  --fxm-r-lg: 22px;
+  --fxm-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --fxm-font-display: 'Space Grotesk', 'Manrope Variable', Manrope, system-ui, sans-serif;
+}
+
+html[data-theme='dark'] {
+  --fxm-bg: #08070c;
+  --fxm-card: rgba(255, 255, 255, 0.04);
+  --fxm-card2: rgba(255, 255, 255, 0.07);
+  --fxm-line: rgba(255, 255, 255, 0.08);
+  --fxm-line2: rgba(255, 255, 255, 0.16);
+  --fxm-tx: #f4f4f5;
+  --fxm-tx2: #b4b4bc;
+  --fxm-tx3: #8e8e98;
+  --fxm-acc: #ffb37a;
+  --fxm-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+  --fxm-blob: 0.5;
+
+  --fxm-ok: #34d399;
+  --fxm-ok-s: rgba(52, 211, 153, 0.13);
+  --fxm-warn: #fbbf24;
+  --fxm-warn-s: rgba(251, 191, 36, 0.14);
+  --fxm-bad: #fb7185;
+  --fxm-bad-s: rgba(251, 113, 133, 0.14);
+  --fxm-info: #7dd3fc;
+  --fxm-info-s: rgba(125, 211, 252, 0.13);
+  --fxm-vio: #c4b5fd;
+  --fxm-vio-s: rgba(167, 139, 250, 0.16);
+}
+
+/* ---------- Animations ---------- */
+@keyframes fxm-spin { to { transform: rotate(360deg); } }
+@keyframes fxm-up { from { opacity: 0; transform: translateY(18px); filter: blur(6px); } to { opacity: 1; transform: none; filter: none; } }
+@keyframes fxm-logo-in { 0% { transform: scale(0.3) rotate(-25deg); opacity: 0; } 60% { transform: scale(1.12) rotate(4deg); opacity: 1; } 100% { transform: none; } }
+@keyframes fxm-draw { from { stroke-dashoffset: 120; } to { stroke-dashoffset: 0; } }
+@keyframes fxm-letter { from { opacity: 0; transform: translateY(14px); filter: blur(6px); } to { opacity: 1; transform: none; filter: none; } }
+@keyframes fxm-bar { from { width: 0; } to { width: 100%; } }
+@keyframes fxm-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+@keyframes fxm-halo { 0% { transform: scale(0.8); opacity: 0.7; } 100% { transform: scale(1.9); opacity: 0; } }
+@keyframes fxm-sweep { from { transform: translateX(-120%); } to { transform: translateX(320%); } }
+@keyframes fxm-fade-out { to { opacity: 0; visibility: hidden; } }
+@keyframes fxm-shimmer { from { background-position: -200% 0; } to { background-position: 200% 0; } }
+
+/* ---------- Logo animé ---------- */
+.fxm-logo {
+  position: relative;
+  width: var(--fxm-logo-size, 128px);
+  height: var(--fxm-logo-size, 128px);
+  border-radius: calc(var(--fxm-logo-size, 128px) * 0.3);
+  overflow: hidden;
+  flex: none;
+  box-shadow: 0 24px 60px rgba(255, 61, 119, 0.32);
+}
+.fxm-logo::before {
+  content: '';
+  position: absolute;
+  inset: -50%;
+  background: conic-gradient(#ff7a18, #ff3d77, #8b5cf6, #22d3ee, #ff7a18);
+  animation: fxm-spin 3s linear infinite;
+}
+.fxm-logo-core {
+  position: absolute;
+  inset: calc(var(--fxm-logo-size, 128px) * 0.032);
+  border-radius: inherit;
+  background: #110e18;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.fxm-logo-core svg { width: 52%; height: 52%; }
+.fxm-logo-f { stroke-dasharray: 120; }
+
+/* ---------- Écran d'ouverture ---------- */
+.fxm-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 26px;
+  background: var(--fxm-bg);
+  color: var(--fxm-tx);
+  overflow: hidden;
+  font-family: var(--fxm-font-display);
+}
+html:not([data-splash='1']) .fxm-splash { display: none; }
+html[data-splash='1'] body { overflow: hidden; }
+.fxm-splash.is-leaving { animation: fxm-fade-out 0.45s ease forwards; }
+.fxm-splash .fxm-logo { animation: fxm-logo-in 0.9s var(--fxm-ease) both; }
+.fxm-splash .fxm-logo-f { animation: fxm-draw 0.9s 0.5s cubic-bezier(0.6, 0, 0.2, 1) both; }
+.fxm-splash-halo {
+  position: absolute;
+  width: var(--fxm-logo-size, 128px);
+  height: var(--fxm-logo-size, 128px);
+  border-radius: 40px;
+  border: 2px solid var(--fxm-a2);
+  animation: fxm-halo 1.8s 0.9s ease-out infinite;
+}
+.fxm-splash-mark { position: relative; display: flex; align-items: center; justify-content: center; }
+.fxm-splash-word { font-weight: 700; font-size: 46px; letter-spacing: -0.04em; }
+.fxm-splash-word span { display: inline-block; animation: fxm-letter 0.6s var(--fxm-ease) both; }
+.fxm-splash-word span:nth-child(1) { animation-delay: 1s; }
+.fxm-splash-word span:nth-child(2) { animation-delay: 1.07s; }
+.fxm-splash-word span:nth-child(3) { animation-delay: 1.14s; }
+.fxm-splash-word span:nth-child(4) { animation-delay: 1.21s; }
+.fxm-splash-word span:nth-child(5) { animation-delay: 1.28s; color: var(--fxm-a1); }
+.fxm-splash-bar { width: 180px; height: 6px; border-radius: 999px; background: var(--fxm-line); overflow: hidden; }
+.fxm-splash-bar i { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, #ff7a18, #ff3d77, #8b5cf6); animation: fxm-bar 1.4s 0.9s cubic-bezier(0.6, 0, 0.2, 1) both; }
+.fxm-splash-text { font: 700 13px 'Manrope Variable', Manrope, system-ui, sans-serif; color: var(--fxm-tx3); animation: fxm-letter 0.6s 1.3s both; }
+
+/* Fond aurora (réutilisable) */
+.fxm-blob { position: absolute; border-radius: 999px; filter: blur(90px); pointer-events: none; opacity: var(--fxm-blob); }
+.fxm-blob.b1 { width: 420px; height: 420px; background: #ff7a18; top: -160px; inset-inline-start: -80px; }
+.fxm-blob.b2 { width: 380px; height: 380px; background: #8b5cf6; bottom: -160px; inset-inline-end: -120px; }
+
+/* ---------- Chargement ---------- */
+.fxm-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  min-height: 50vh;
+  padding: 40px 16px;
+  color: var(--fxm-tx);
+}
+.fxm-loader-mark { position: relative; width: 150px; height: 150px; display: flex; align-items: center; justify-content: center; }
+.fxm-loader .fxm-logo { --fxm-logo-size: 76px; animation: fxm-pulse 1.4s ease-in-out infinite; }
+.fxm-orbit { position: absolute; inset: 0; animation: fxm-spin 1.4s linear infinite; }
+.fxm-orbit::before {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: 50%;
+  margin-left: -5px;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--fxm-a2);
+  box-shadow: 0 0 14px var(--fxm-a2);
+}
+.fxm-loader-label { font: 700 15px 'Manrope Variable', Manrope, system-ui, sans-serif; color: var(--fxm-tx2); }
+.fxm-topbar { position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 2147482000; overflow: hidden; background: transparent; }
+.fxm-topbar i { display: block; width: 30%; height: 100%; border-radius: 3px; background: var(--fxm-grad); animation: fxm-sweep 1.2s ease-in-out infinite; }
+.fxm-spinner { display: inline-block; width: 18px; height: 18px; border-radius: 999px; border: 3px solid rgba(255, 255, 255, 0.35); border-top-color: #fff; animation: fxm-spin 0.8s linear infinite; }
+.fxm-skeleton { border-radius: 10px; background: linear-gradient(90deg, var(--fxm-line) 25%, var(--fxm-line2) 50%, var(--fxm-line) 75%); background-size: 200% 100%; animation: fxm-shimmer 1.6s linear infinite; }
+
+/* Respect de « réduire les animations » */
+@media (prefers-reduced-motion: reduce) {
+  .fxm-logo::before, .fxm-logo, .fxm-logo-f, .fxm-splash-halo, .fxm-splash-word span, .fxm-splash-bar i,
+  .fxm-splash-text, .fxm-orbit, .fxm-topbar i, .fxm-spinner, .fxm-skeleton, .fxm-splash.is-leaving {
+    animation: none !important;
+  }
+  .fxm-logo-f { stroke-dasharray: none; }
+}
