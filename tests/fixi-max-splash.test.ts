@@ -49,3 +49,13 @@ test('Tableau de bord Fixi Max : chiffres animés, courbe, anneau, données et p
   assert.ok(page.includes('<FixiLoader'));
   assert.ok(page.includes('prefers-reduced-motion: reduce'));
 });
+
+test('Réparations Fixi Max : liste + aperçu latéral, kanban, filtres et fonctions conservées', () => {
+  const page = readFileSync('src/app/(app)/app/repairs/page.tsx', 'utf8');
+  assert.ok(page.includes('className="page fxm-rp"'));
+  assert.ok(page.includes('fxm-drawer') && page.includes('Ouvrir la fiche complète'));
+  assert.ok(page.includes('fxm-kanban') && page.includes("move(r.code,cols[ci+1][0])"));
+  assert.ok(page.includes("['stale','Bloqués 3 j+'") && page.includes("['due','Solde à encaisser'"));
+  assert.ok(page.includes('SwipeCard'), 'cartes à glisser sur mobile conservées');
+  assert.ok(page.includes('/app/cashier?repair='));
+});
