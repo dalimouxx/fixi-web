@@ -39,3 +39,13 @@ test('Barre latérale Fixi Max : logo animé, groupes, abonnement, thème dans l
   assert.ok(shell.includes('<span className="fxm-top-theme"><ThemeToggle /></span>'));
   assert.match(css, /html\[data-theme='dark'\] \.fxm-shell \.fx-side\s*{/);
 });
+
+test('Tableau de bord Fixi Max : chiffres animés, courbe, anneau, données et permissions conservées', () => {
+  const page = readFileSync('src/app/(app)/app/dashboard/page.tsx', 'utf8');
+  assert.ok(page.includes('className="fx-page fxm-dash"'));
+  assert.ok(page.includes('function CountUp') && page.includes('function Sparkline') && page.includes('function Ring'));
+  assert.ok(page.includes("useApi<any>('/api/dashboard')"));
+  assert.ok(page.includes('perm.finance &&') && page.includes('perm.profit'));
+  assert.ok(page.includes('<FixiLoader'));
+  assert.ok(page.includes('prefers-reduced-motion: reduce'));
+});
