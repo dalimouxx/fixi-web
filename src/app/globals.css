@@ -1,6 +1,6 @@
 /* Ancienne feuille conservée dans la couche "legacy" : le système de design Fixi (fixi-design-system.css, hors couche) est prioritaire. */
 /* Ordre des couches : « fx-force » (corrections importantes du système de design) passe avant « legacy » pour les règles !important. */
-@layer fx-force, legacy;
+@layer fxm-force, fx-force, legacy;
 @layer legacy{
 :root{
   --bg:#f5f7fb;--panel:#fff;--panel2:#f8fafc;--text:#101828;--muted:#667085;--line:#e6eaf0;
