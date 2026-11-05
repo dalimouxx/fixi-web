@@ -56,6 +56,17 @@ test('3 · le fournisseur ajoute un produit avec 3 champs et lance une promo', a
   await supplier.getByRole('button', { name: /Se connecter/ }).click();
   await expect(supplier).toHaveURL(/\/supplier(\?|$)/);
   await supplier.goto('/supplier?tab=products');
+  // Mode « Guidé » par défaut (Fixi Max) : création de 2 variantes en un clic.
+  await expect(supplier.locator('.fxm-gp')).toBeVisible();
+  const rowsGp = supplier.locator('.fxm-gp-row:not(.fxm-gp-row--head)');
+  await expect(rowsGp).toHaveCount(2);
+  await rowsGp.nth(0).locator('input').nth(0).fill('110');
+  await expect(rowsGp.nth(0).locator('input').nth(1)).toHaveValue('143');
+  await rowsGp.nth(1).locator('input').nth(0).fill('60');
+  await supplier.getByRole('button', { name: /Créer 2 variantes/ }).click();
+  await expect(supplier.locator('.fxm-gp-result.ok')).toContainText('Écran iPhone 13 OLED créé', { timeout: 15_000 });
+  // Mode « Rapide » toujours disponible.
+  await supplier.getByRole('tab', { name: /Rapide/ }).click();
   await supplier.locator('.ps-field--big input').fill(PRODUCT);
   await expect(supplier.locator('.ps-chips')).toContainText('Batteries');
   await supplier.locator('.ps-money input').fill('40');

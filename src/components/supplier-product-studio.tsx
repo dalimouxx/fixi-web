@@ -5,15 +5,16 @@ import { BarcodeCamera } from './barcode-camera';
 import { api } from './ui';
 import { money } from '@/lib/format';
 import { compressProductImage } from '@/lib/image-compress';
+import { SupplierGuidedProduct } from './supplier-guided-product';
 import { CATEGORY_NAMES, checkRow, guessProduct, parseAmount, parsePasted, type QuickRow } from '@/lib/product-quick';
 
-type Mode = 'quick' | 'series' | 'import';
+type Mode = 'guided' | 'quick' | 'series' | 'import';
 const blank = { barcode: '', name: '', price: '', stock: '', purchasePrice: '', wholesalePrice: '', minStock: '', location: '', warrantyDays: '', category: '', brand: '', qualityGrade: '', sku: '', imageUrl: '' };
 type Form = typeof blank;
 const emptyRows = (n = 5): QuickRow[] => Array.from({ length: n }, () => ({ barcode: '', name: '', price: '', stock: '', purchasePrice: '' }));
 
 export function SupplierProductStudio({ products, seed, onSaved, onRestock }: { products: any[]; seed?: { key: number; product: any } | null; onSaved: () => void; onRestock: (p: any) => void }) {
-  const [mode, setMode] = useState<Mode>('quick');
+  const [mode, setMode] = useState<Mode>('guided');
   const [f, setF] = useState<Form>(blank);
   const [more, setMore] = useState(false);
   const [cam, setCam] = useState(false);
@@ -126,16 +127,18 @@ export function SupplierProductStudio({ products, seed, onSaved, onRestock }: { 
       </tr>; })}</tbody></table>
   </div>;
 
-  return <section className="supplier-panel ps">
+  return <section className="supplier-panel ps fxm-ps">
     <div className="ps-head"><div className="smart-kicker"><PackagePlus size={13} /> AJOUTER DES PRODUITS</div>
       <div className="ps-tabs" role="tablist">
-        {([['quick', Zap, 'Rapide'], ['series', Rows3, 'En série'], ['import', FileSpreadsheet, 'Excel']] as const).map(([k, I, l]) => <button key={k} role="tab" aria-selected={mode === k} className={mode === k ? 'on' : ''} onClick={() => { setMode(k); setErr(''); setReport(null); if (k !== 'quick') setNote(null); }}><I size={15} /> {l}</button>)}
+        {([['guided', Sparkles, 'Guidé'], ['quick', Zap, 'Rapide'], ['series', Rows3, 'En série'], ['import', FileSpreadsheet, 'Excel']] as const).map(([k, I, l]) => <button key={k} role="tab" aria-selected={mode === k} className={mode === k ? 'on' : ''} onClick={() => { setMode(k); setErr(''); setReport(null); if (k !== 'quick') setNote(null); }}><I size={15} /> {l}</button>)}
       </div>
     </div>
 
     {note && <div className={'ps-note ps-note--' + note.kind}>{note.kind === 'ok' ? <Check size={16} /> : <Sparkles size={16} />}<span>{note.text}</span>
       {note.product && <button className="btn btn-soft btn-sm" onClick={() => { onRestock(note.product); setNote(null); }}>+ Réapprovisionner</button>}
       {mode === 'quick' && last && note.kind === 'ok' && !note.product && <button className="btn btn-soft btn-sm" onClick={variant}><Copy size={14} /> Créer une variante</button>}</div>}
+
+    {mode === 'guided' && <SupplierGuidedProduct products={products} onSaved={onSaved} />}
 
     {mode === 'quick' && <form onSubmit={save} className="ps-quick">
       <div className="ps-scan">
@@ -192,7 +195,7 @@ export function SupplierProductStudio({ products, seed, onSaved, onRestock }: { 
       {filled.length > 0 && grid}
     </div>}
 
-    {mode !== 'quick' && <>
+    {(mode === 'series' || mode === 'import') && <>
       {report && <div className="ps-report"><Check size={16} /> {report.created} créé(s) · {report.updated} mis à jour{report.errors.length ? ` · ${report.errors.length} à corriger ci-dessous` : ''}</div>}
       {err && <div className="ps-err" role="alert">{err}</div>}
       <div className="ps-foot"><span>{filled.length} ligne(s){invalid ? ` · ${invalid} à corriger` : ''}</span>
