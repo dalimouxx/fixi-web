@@ -1,13 +1,15 @@
 'use client';
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
-import { Banknote, CheckCircle2, CreditCard, Minus, PackageSearch, Plus, Receipt, RotateCcw, Search, ShoppingBag, Smartphone, Trash2, UserRound, WalletCards } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Banknote, CheckCircle2, CreditCard, Minus, PackageSearch, Plus, Receipt, RotateCcw, ScanBarcode, Search, ShoppingBag, Smartphone, Trash2, UserRound, WalletCards } from 'lucide-react';
 import { api, useApi } from './ui';
 import { EmptyState } from './ui-states';
 import { CashSuccess } from './cash-success';
 import { money } from '@/lib/format';
 import { refundState, round3, saleNumber } from '@/lib/counter-sale';
 import { CounterRefund } from './counter-refund';
+import { BarcodeCamera } from './barcode-camera';
+import { matchScan } from '@/lib/barcode';
 
 const methods = [['CASH', 'Espèces', Banknote], ['D17', 'D17', Smartphone], ['FLOUCI', 'Flouci', Smartphone], ['CARD', 'Carte', CreditCard], ['BANK_TRANSFER', 'Virement', WalletCards]] as const;
 type Item = { id: string; sku: string; name: string; category: string | null; quantity: number; minQuantity: number; salePrice: number };
@@ -19,7 +21,10 @@ type Item = { id: string; sku: string; name: string; category: string | null; qu
 export function CounterSalePanel() {
   const [q, setQ] = useState('');
   const [refresh, setRefresh] = useState(0);
-  const { data } = useApi<any>(`/api/counter-sales?q=${encodeURIComponent(q)}`, refresh);
+  // Petite attente : la douchette tape 13 chiffres d'un coup, une seule requête suffit.
+  const [dq, setDq] = useState('');
+  useEffect(() => { const t = setTimeout(() => setDq(q), 220); return () => clearTimeout(t); }, [q]);
+  const { data } = useApi<any>(`/api/counter-sales?q=${encodeURIComponent(dq)}`, refresh);
   const [cat, setCat] = useState('');
   const [cart, setCart] = useState<Record<string, { item: Item; qty: number }>>({});
   const [discount, setDiscount] = useState('');
@@ -32,6 +37,7 @@ export function CounterSalePanel() {
   const [done, setDone] = useState<any>(null);
   const [refundFor, setRefundFor] = useState<string | null>(null);
   const [find, setFind] = useState('');
+  const [camera, setCamera] = useState(false);
   const [showCart, setShowCart] = useState(false);
   const cur = data?.shop?.currency;
 
@@ -56,6 +62,14 @@ export function CounterSalePanel() {
       const copy = { ...c }; if (next) copy[it.id] = { item: it, qty: next }; else delete copy[it.id]; return copy;
     });
   }
+  /** Douchette ou caméra : code-barres ou référence exacte → article ajouté, sinon la recherche reste affichée. */
+  async function scanned(raw: string) {
+    let hit = matchScan(items, raw);
+    if (!hit) { try { const r = await api<any>(`/api/counter-sales?q=${encodeURIComponent(raw)}`); hit = matchScan((r.items || []).map((x: any) => ({ ...x, salePrice: Number(x.salePrice) })), raw); } catch {} }
+    if (hit && hit.quantity > 0) { add(hit); setQ(''); setMsg(''); }
+    else if (hit) setMsg(`${hit.name} : rupture de stock`);
+    else { setQ(raw); setMsg(`Aucun article avec le code ${raw}`); }
+  }
   function reset() { setCart({}); setDiscount(''); setReceived(''); setClient({ phone: '', fullName: '' }); setShowClient(false); setMsg(''); setShowCart(false); }
 
   async function sell() {
@@ -73,7 +87,7 @@ export function CounterSalePanel() {
 
   return <div className={`fxm-cash-grid fxm-cs ${showCart || refundFor ? 'has-selection' : ''}`}>
     <section className="fxm-card fxm-up fxm-cash-list" style={{ '--d': '.06s' } as any} aria-label="Articles">
-      <label className="fxm-search"><Search size={17} aria-hidden="true" /><span className="fxm-sr">Rechercher un article</span><input value={q} onChange={e => setQ(e.target.value)} placeholder="Coque, chargeur, verre trempé, référence…" autoFocus /></label>
+      <label className="fxm-search"><Search size={17} aria-hidden="true" /><span className="fxm-sr">Rechercher un article</span><input value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && q.trim()) { e.preventDefault(); void scanned(q.trim()); } }} placeholder="Scannez ou cherchez : coque, chargeur, code-barres…" autoFocus /><button type="button" className="fx-searchbar-scan" onClick={() => setCamera(true)} aria-label="Scanner avec la caméra"><ScanBarcode size={18} /></button></label>
       {!count && <button type="button" className="btn fxm-btn-o btn-sm fx-mobile-only fxm-cs-returns" onClick={() => setShowCart(true)}><RotateCcw size={15} /> Ventes du jour et retours</button>}
       {cats.length > 1 && <div className="fxm-cs-cats" role="group" aria-label="Catégories">
         <button type="button" className={!cat ? 'on' : ''} aria-pressed={!cat} onClick={() => setCat('')}>Tout <small>{items.length}</small></button>
@@ -168,5 +182,6 @@ export function CounterSalePanel() {
         <button type="button" className="btn fxm-btn-g" onClick={() => setDone(null)}>Nouvelle vente</button>
       </CashSuccess>}
     </section>
+    {camera && <BarcodeCamera kicker="VENTE COMPTOIR" title="Scanner un accessoire" text="Présentez le code-barres de l’emballage : l’article est ajouté au panier." submitLabel="Ajouter" onDetected={(c: string) => { setCamera(false); void scanned(c); }} onClose={() => setCamera(false)} />}
   </div>;
 }

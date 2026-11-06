@@ -93,3 +93,11 @@ html[data-theme='dark'] .fxm-cs-item.on { background: linear-gradient(#17131d, #
 .fxm-rf-badge.full { background: var(--fxm-vio-s); color: var(--fxm-vio); }
 @media (prefers-reduced-motion: reduce) { .fxm-rf-skel, .fxm-rf-keep { animation: none !important; } }
 .fxm-cs-returns { align-self: flex-start; }
+
+/* ---------- Codes-barres (stock et vente comptoir) ---------- */
+.fx-input-scan { display: flex; gap: 6px; align-items: center; }
+.fx-input-scan .input { flex: 1; min-width: 0; }
+.fx-input-scan .btn { height: 44px; width: 44px; padding: 0; justify-content: center; flex: none; }
+.fx-form-hint.warn { color: var(--fxm-warn); font-weight: 600; }
+.fx-searchbar-scan { flex: none; display: grid; place-items: center; width: 36px; height: 36px; margin-inline-start: 4px; border: 0; border-radius: 10px; background: var(--fxm-vio-s); color: var(--fxm-vio); cursor: pointer; }
+.fx-searchbar-scan:hover { filter: brightness(0.97); }
