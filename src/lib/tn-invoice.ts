@@ -20,7 +20,7 @@ export function tnTotals(lines: { quantity: number; unitPrice: number }[], disco
 }
 
 /** Numéro suivant (dans une transaction) : jamais de trou, jamais de doublon. */
-export async function nextShopNumber(tx: { shopSequence: { upsert: (a: any) => Promise<{ value: number }> } }, shopId: string, type: 'INVOICE' | 'QUOTE' | 'CREDIT_NOTE', prefix: string, date = new Date()) {
+export async function nextShopNumber(tx: { shopSequence: { upsert: (a: any) => Promise<{ value: number }> } }, shopId: string, type: 'INVOICE' | 'QUOTE' | 'CREDIT_NOTE' | 'USED', prefix: string, date = new Date()) {
   const year = date.getFullYear();
   const seq = await tx.shopSequence.upsert({ where: { shopId_key: { shopId, key: `${type}-${year}` } }, update: { value: { increment: 1 } }, create: { shopId, key: `${type}-${year}`, value: 1 } });
   return formatNumber(prefix, year, seq.value);

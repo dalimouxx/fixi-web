@@ -481,6 +481,7 @@ model Shop {
   payments                     Payment[]
   counterSales                 CounterSale[]
   documentSequences            ShopSequence[]
+  usedDevices                  UsedDevice[]
   inventory                    InventoryItem[]
   suppliers                    Supplier[]
   purchases                    Purchase[]
@@ -572,6 +573,7 @@ model User {
   pushSubscriptions      PushSubscription[]
   documentPayments       DocumentPayment[]
   counterSales           CounterSale[]           @relation("CounterSaleUser")
+  usedDevicesBought      UsedDevice[]            @relation("UsedDeviceBuyerUser")
   communityPosts         CommunityPost[]
   communityVotes         CommunityVote[]
   marketListings         PartMarketListing[]
@@ -605,6 +607,7 @@ model Client {
   repairs           Repair[]
   salesDocuments    SalesDocument[]
   counterSales      CounterSale[]
+  usedDevicesBought UsedDevice[]             @relation("UsedDeviceBuyer")
   feedbacks         ClientFeedback[]
   appointments      Appointment[]
   messageLogs       MessageLog[]
@@ -746,6 +749,7 @@ model CounterSale {
   createdAt     DateTime          @default(now())
   lines         CounterSaleLine[]
   payments      Payment[]
+  usedDevice    UsedDevice?
 
   @@unique([shopId, number])
   @@index([shopId, createdAt])
@@ -2966,4 +2970,74 @@ model SystemEvent {
   resolvedAt  DateTime?
 
   @@index([kind, lastAt])
+}
+
+/// Téléphone d'occasion acheté par l'atelier puis revendu (registre des objets d'occasion).
+model UsedDevice {
+  id                String              @id @default(cuid())
+  shopId            String
+  shop              Shop                @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  number            String
+  status            UsedDeviceStatus    @default(IN_STOCK)
+  // Appareil
+  brand             String
+  model             String
+  storageGb         Int?
+  color             String?
+  imei              String?
+  imei2             String?
+  serialNumber      String?
+  condition         UsedDeviceCondition @default(TRES_BON)
+  batteryHealth     Int?
+  accountUnlocked   Boolean             @default(true)
+  accessories       String?
+  defects           String?
+  notes             String?
+  // Achat (vendeur : pièce d'identité chiffrée, seuls les 3 derniers chiffres en clair)
+  purchasedAt       DateTime            @default(now())
+  purchasePrice     Decimal             @db.Decimal(12, 3)
+  purchaseMethod    PaymentMethod       @default(CASH)
+  sellerName        String
+  sellerPhone       String?
+  sellerAddress     String?
+  sellerIdType      String              @default("CIN")
+  sellerIdEncrypted String
+  sellerIdLast3     String
+  sellerIdIssuedAt  DateTime?
+  imeiCheckedAt     DateTime?
+  imeiFlagged       Boolean             @default(false)
+  boughtById        String?
+  boughtBy          User?               @relation("UsedDeviceBuyerUser", fields: [boughtById], references: [id], onDelete: SetNull)
+  // Revente
+  askingPrice       Decimal?            @db.Decimal(12, 3)
+  soldAt            DateTime?
+  soldPrice         Decimal?            @db.Decimal(12, 3)
+  warrantyDays      Int                 @default(0)
+  buyerId           String?
+  buyer             Client?             @relation("UsedDeviceBuyer", fields: [buyerId], references: [id], onDelete: SetNull)
+  counterSaleId     String?             @unique
+  counterSale       CounterSale?        @relation(fields: [counterSaleId], references: [id], onDelete: SetNull)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @default(now()) @updatedAt
+
+  @@unique([shopId, number])
+  @@index([shopId, status, createdAt])
+  @@index([imei])
+}
+
+enum UsedDeviceStatus {
+  IN_STOCK
+  RESERVED
+  SOLD
+  RETURNED
+}
+
+enum UsedDeviceCondition {
+  NEUF
+  COMME_NEUF
+  EXCELLENT
+  TRES_BON
+  BON
+  CORRECT
+  POUR_PIECES
 }
