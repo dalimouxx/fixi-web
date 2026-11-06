@@ -21,6 +21,7 @@ import {FixiLogo,categoryLook,Clock} from './brand';
 import './style.css';
 import './v4.css';
 import './v5.css';
+import './fixi-max.css';
 
 type Product={id:string;name:string;sku:string;barcode?:string|null;category:string|null;price:number;wholesalePrice?:number|null;minStock?:number;stock:number;sold30?:number;onHand?:number;tiers?:{minQty:number;unitPrice:number}[]};
 type Customer={id:string;name:string;phone?:string|null;taxId?:string|null;address?:string|null;creditLimit?:number;priceMode?:string;discountPct?:number;due?:number};
@@ -708,4 +709,6 @@ function PinPad({value,onChange,autoFocus}:{value:string;onChange:(v:string)=>vo
 const isCustomerWindow=(()=>{try{return getCurrentWindow().label==='client'}catch{return false}})();
 // Un seul installateur : mode fournisseur (par défaut) ou mode atelier (Fixi Pro).
 const space=(()=>{try{return localStorage.getItem('fixi-space')}catch{return null}})();
+// Thème choisi dans les réglages, appliqué avant le premier rendu (caisse, atelier et écran client).
+{const t=readJson<Partial<Settings>>(SETTINGS_KEY,{}).theme||defaultSettings.theme;document.documentElement.dataset.theme=t==='dark'||(t==='auto'&&window.matchMedia?.('(prefers-color-scheme: dark)').matches)?'dark':'light'}
 createRoot(document.getElementById('root')!).render(isCustomerWindow?<CustomerDisplay/>:space==='atelier'?<AtelierApp/>:<App/>);

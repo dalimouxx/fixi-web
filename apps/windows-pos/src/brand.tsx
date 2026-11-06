@@ -1,14 +1,16 @@
-import React,{useEffect,useState} from 'react';
+import React,{useEffect,useId,useState} from 'react';
 import {BatteryFull,Cable,Camera,Cpu,Headphones,Package,Plug,Shield,Smartphone,Wrench,type LucideIcon} from 'lucide-react';
 
-/** Logo FIXI (même dessin que l'icône de l'application). */
+/** Logo FIXI animé (Fixi Max) : anneau dégradé qui tourne et « F » qui se dessine, comme sur le web. */
 export function FixiLogo({size=40,className=''}:{size?:number;className?:string}){
- return <svg className={'v7-logo '+className} width={size} height={size} viewBox="0 0 512 512" aria-hidden="true">
-  <defs><linearGradient id="fxg" x1="0" y1="0" x2="1" y2="1"><stop stopColor="#F0782B"/><stop offset="1" stopColor="#B9470A"/></linearGradient></defs>
-  <rect x="16" y="16" width="480" height="480" rx="112" fill="url(#fxg)"/>
-  <g transform="translate(256 256) scale(.86) translate(-262 -250)" fill="none" stroke="#fff" strokeLinecap="round" strokeLinejoin="round">
-   <path d="M167 374V151a25 25 0 0 1 25-25h156" strokeWidth="65"/><path d="M167 244h140" strokeWidth="65"/><path d="m296 375 76-76m0 76-76-76" strokeWidth="43"/></g>
- </svg>;
+ const id='fxm-g'+useId().replace(/:/g,'');
+ return <span className={'fxm-logo v7-logo '+className} style={{['--fxm-logo-size' as any]:size+'px'}} aria-hidden="true"><span className="fxm-logo-core">
+  <svg viewBox="0 0 38 38" fill="none" strokeLinecap="round" strokeLinejoin="round" focusable="false">
+   <defs><linearGradient id={id} x1="0" x2="1" y1="0" y2="1"><stop offset="0" stopColor="#FF9A4D"/><stop offset="1" stopColor="#FF3D77"/></linearGradient></defs>
+   <path className="fxm-logo-f" d="M11 30V9.5a2 2 0 0 1 2-2h15" stroke={`url(#${id})`} strokeWidth="5.2"/>
+   <path className="fxm-logo-f" d="M11 18.5h13.2" stroke={`url(#${id})`} strokeWidth="5.2"/>
+   <path className="fxm-logo-f" d="m23 29.5 6.5-6.5m0 6.5L23 23" stroke="#FFFFFF" strokeWidth="3.8"/>
+  </svg></span></span>;
 }
 
 const RULES:[RegExp,LucideIcon,string][]=[
