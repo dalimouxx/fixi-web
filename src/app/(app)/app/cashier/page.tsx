@@ -4,10 +4,11 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { api, useApi } from '@/components/ui';
 import { money } from '@/lib/format';
-import { Banknote, CheckCircle2, CreditCard, Search, Settings2, Smartphone, WalletCards, Wrench, Receipt, FolderOpen, Clock4 } from 'lucide-react';
+import { CashSuccess } from '@/components/cash-success';
+import { CounterSalePanel } from '@/components/counter-sale';
+import { Banknote, CheckCircle2, CreditCard, Search, Settings2, Smartphone, WalletCards, Wrench, Receipt, FolderOpen, Clock4, ShoppingBag } from 'lucide-react';
 
 const methods = [['CASH', 'Espèces', Banknote], ['D17', 'D17', Smartphone], ['FLOUCI', 'Flouci', Smartphone], ['CARD', 'Carte', CreditCard], ['BANK_TRANSFER', 'Virement', WalletCards]] as const;
-const CONFETTI = ['#FF7A18', '#FF3D77', '#8B5CF6', '#22D3EE', '#34D399', '#FCD34D'];
 
 /** Caisse atelier (Fixi Max) : choisir l'appareil, le mode de paiement, encaisser ou livrer. */
 export default function CashierSimple() {
@@ -22,9 +23,11 @@ export default function CashierSimple() {
   const [msg, setMsg] = useState('');
   const [preset, setPreset] = useState('');
   const [success, setSuccess] = useState<{ title: string; amount: string } | null>(null);
+  const [mode, setMode] = useState<'repairs' | 'counter'>('repairs');
   const cur = data?.shop?.currency;
 
-  useEffect(() => { const c = new URLSearchParams(window.location.search).get('repair'); if (c) { setPreset(c); setQ(c); } }, []);
+  useEffect(() => { const sp = new URLSearchParams(window.location.search); const c = sp.get('repair'); if (c) { setPreset(c); setQ(c); } else if (sp.get('mode') === 'comptoir') setMode('counter'); }, []);
+  function switchMode(m: 'repairs' | 'counter') { setMode(m); try { const u = new URL(window.location.href); if (m === 'counter') u.searchParams.set('mode', 'comptoir'); else u.searchParams.delete('mode'); u.searchParams.delete('repair'); history.replaceState(null, '', u); } catch {} }
   useEffect(() => {
     if (selected) { const fresh = (data?.repairs || []).find((x: any) => x.id === selected.id); if (fresh) setSelected(fresh); }
     else if (preset) { const hit = (data?.repairs || []).find((x: any) => x.code === preset); if (hit) { pick(hit); setPreset(''); } }
@@ -54,14 +57,18 @@ export default function CashierSimple() {
 
   return <div className="page cashier-simple-page fxm-cash">
     <div className="fxm-rp-head fxm-up">
-      <div><div className="fxm-kick">Caisse</div><h1 className="fxm-h1">Encaisser et rendre</h1><div className="fxm-dash-sub">{ready.length} appareil(s) à encaisser · {money(totalDue, cur)} au total</div></div>
+      <div><div className="fxm-kick">Caisse</div><h1 className="fxm-h1">{mode === 'counter' ? 'Vente comptoir' : 'Encaisser et rendre'}</h1><div className="fxm-dash-sub">{mode === 'counter' ? 'Accessoires, câbles, coques, verres trempés… vendus sans réparation' : <>{ready.length} appareil(s) à encaisser · {money(totalDue, cur)} au total</>}</div></div>
       <div className="fxm-rp-actions">
+        <div className="fxm-seg fxm-cash-mode" role="tablist" aria-label="Type d’encaissement">
+          <button type="button" role="tab" aria-selected={mode === 'repairs'} className={mode === 'repairs' ? 'on' : ''} onClick={() => switchMode('repairs')}><Wrench size={15} /> Réparations</button>
+          <button type="button" role="tab" aria-selected={mode === 'counter'} className={mode === 'counter' ? 'on' : ''} onClick={() => switchMode('counter')}><ShoppingBag size={15} /> Vente comptoir</button>
+        </div>
         <Link href="/app/cash-sessions" className="btn fxm-btn-o"><Clock4 size={16} /> Session &amp; clôture</Link>
         <Link href="/app/cashier/pro" className="btn fxm-btn-o"><Settings2 size={16} /> Caisse avancée</Link>
       </div>
     </div>
 
-    <div className={`fxm-cash-grid ${selected ? 'has-selection' : ''}`}>
+    {mode === 'counter' ? <CounterSalePanel /> : <div className={`fxm-cash-grid ${selected ? 'has-selection' : ''}`}>
       <section className="fxm-card fxm-up fxm-cash-list" style={{ '--d': '.06s' } as any} aria-label="Appareils à encaisser">
         <label className="fxm-search"><Search size={17} aria-hidden="true" /><span className="fxm-sr">Rechercher</span><input value={q} onChange={e => setQ(e.target.value)} placeholder="Code, téléphone, client, IMEI…" autoFocus /></label>
         <div className="fxm-panel-head"><h2>Appareils à encaisser</h2><span className="fxm-badge-hot">{ready.length}</span></div>
@@ -122,28 +129,17 @@ export default function CashierSimple() {
             <Link href="/app/cash-sessions"><Clock4 size={15} /> Session caisse</Link>
           </div>
 
-          {success && <div className="fxm-cash-success" role="status" aria-live="polite">
-            <div className="fxm-cash-burst" aria-hidden="true">
-              {Array.from({ length: 14 }, (_, i) => { const a = i / 14 * Math.PI * 2, r = 90 + (i % 3) * 25; return <span key={i} style={{ '--dx': `${Math.round(Math.cos(a) * r)}px`, '--dy': `${Math.round(Math.sin(a) * r)}px`, background: CONFETTI[i % 6], animationDelay: `${0.35 + (i % 4) * 0.05}s` } as any} />; })}
-              <svg width="112" height="112" viewBox="0 0 84 84"><defs><linearGradient id="fxm-okg" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stopColor="#34D399" /><stop offset="1" stopColor="#22D3EE" /></linearGradient></defs>
-                <circle className="fxm-draw" cx="42" cy="42" r="38" fill="none" stroke="url(#fxm-okg)" strokeWidth="5" />
-                <path className="fxm-draw fxm-draw--late" d="M26 43l11 11 21-23" fill="none" stroke="#34D399" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" /></svg>
-            </div>
-            <div className="fxm-num fxm-gt fxm-cash-success-amount">{success.amount}</div>
-            <b>{success.title}</b>
-            <small>{selected.client?.fullName} · {[selected.brand, selected.model].filter(Boolean).join(' ')}</small>
-            <div className="fxm-cash-success-actions">
-              <Link className="btn fxm-btn-o" href={`/receipt/${selected.code}`} target="_blank"><Receipt size={16} /> Imprimer le reçu</Link>
-              <button type="button" className="btn fxm-btn-g" onClick={() => { setSuccess(null); setSelected(null); setMsg(''); }}>Appareil suivant</button>
-            </div>
-          </div>}
+          {success && <CashSuccess amount={success.amount} title={success.title} subtitle={<>{selected.client?.fullName} · {[selected.brand, selected.model].filter(Boolean).join(' ')}</>}>
+            <Link className="btn fxm-btn-o" href={`/receipt/${selected.code}`} target="_blank"><Receipt size={16} /> Imprimer le reçu</Link>
+            <button type="button" className="btn fxm-btn-g" onClick={() => { setSuccess(null); setSelected(null); setMsg(''); }}>Appareil suivant</button>
+          </CashSuccess>}
         </> : <div className="fxm-cash-empty">
           <span className="fxm-ico fxm-ico--o" style={{ width: 72, height: 72, borderRadius: 24 }}><CreditCard size={32} /></span>
           <h2>Sélectionnez un appareil</h2>
           <p>Choisissez un dossier à gauche ou recherchez par téléphone, code ou nom.</p>
         </div>}
       </section>
-    </div>
+    </div>}
   </div>;
 }
 

@@ -71,7 +71,7 @@ test('Réception Fixi Max : étapes, aperçu du ticket, fonctions conservées', 
 test('Caisse Fixi Max : encaissement, livraison, monnaie à rendre et écran de succès', () => {
   const page = readFileSync('src/app/(app)/app/cashier/page.tsx', 'utf8');
   assert.ok(page.includes("api('/api/cashier/checkout'") && page.includes("status: 'DELIVERED'"));
-  assert.ok(page.includes('Monnaie à rendre') && page.includes('fxm-cash-success'));
+  assert.ok(page.includes('Monnaie à rendre') && page.includes('<CashSuccess') && readFileSync('src/components/cash-success.tsx', 'utf8').includes('fxm-cash-success'));
   assert.ok(page.includes("get('repair')"), 'ouverture directe depuis une réparation');
 });
 

@@ -72,6 +72,7 @@ enum CashSessionStatus {
 enum StockMovementType {
   PURCHASE
   CONSUMPTION
+  SALE
   ADJUSTMENT
   RETURN
   TRANSFER_IN
@@ -328,7 +329,6 @@ enum CommunityVoteType {
   CONFIRM
 }
 
-
 enum MarketListingStatus {
   ACTIVE
   RESERVED
@@ -386,208 +386,211 @@ enum DigitalWarrantyStatus {
 }
 
 model Tenant {
-  id            String         @id @default(cuid())
-  name          String
-  createdAt     DateTime       @default(now())
-  shops         Shop[]
-  subscriptions Subscription[]
-  saasPayments  SaasPayment[]
-  saasInvoices  SaasInvoice[]
+  id                   String                @id @default(cuid())
+  name                 String
+  createdAt            DateTime              @default(now())
+  shops                Shop[]
+  subscriptions        Subscription[]
+  saasPayments         SaasPayment[]
+  saasInvoices         SaasInvoice[]
   subscriptionRequests SubscriptionRequest[]
 }
 
 model Shop {
-  supplierSettlements SupplierSettlement[]
-  id                    String   @id @default(cuid())
-  tenantId              String
-  tenant                Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  name                  String
-  slug                  String   @unique
-  region                String   @default("Non classée")
-  city                  String?
-  address               String?
-  phone                 String?
-  whatsappPhone         String?
-  email                 String?
-  website               String?
-  latitude              Decimal? @db.Decimal(10,7)
-  longitude             Decimal? @db.Decimal(10,7)
-  publicVisible         Boolean  @default(false)
-  publicFeatured        Boolean  @default(false)
-  publicDescription     String?
-  publicServices        String[] @default([])
-  coverDataUrl          String?
-  openingHours          Json?
-  taxId                 String?
-  countryCode           String   @default("216")
-  currency              String   @default("DT")
-  locale                String   @default("fr-TN")
-  logoDataUrl           String?
-  brandColor            String?
-  counterRepairCode     String?
-  counterUpdatedAt      DateTime?
-  lastMonthlyReport     String?
-  footerText            String   @default("Merci pour votre confiance")
-  whatsappReceived      String   @default("Bonjour {client}, votre appareil {device} a bien été reçu. Code : {code}.")
-  whatsappReady         String   @default("Bonjour {client}, votre appareil {device} est prêt. Montant restant : {balance} {currency}.")
-  queueShowClient       Boolean  @default(false)
-  invoicePrefix         String   @default("FAC")
-  quotePrefix           String   @default("DEV")
-  defaultTaxRate        Decimal  @default(0) @db.Decimal(5,2)
-  warrantyReminderDays  Int      @default(7)
-  lowStockNotifications Boolean  @default(true)
-  cashRequireSession    Boolean  @default(false)
-  smartMarginTarget     Decimal  @default(30) @db.Decimal(5,2)
-  readyReminderHours    Int      @default(72)
-  googleReviewUrl       String?
-  loyaltyEnabled        Boolean  @default(true)
-  qualityRequiredBeforeReady Boolean @default(true)
-  automationsEnabled    Boolean  @default(true)
-  cashierMaxDiscount    Decimal  @default(100) @db.Decimal(12,3)
-  cashierManagerApprovalAbove Decimal @default(10) @db.Decimal(12,3)
-  deliveryRequiresFullPayment Boolean @default(true)
-  whatsappCloudEnabled  Boolean  @default(false)
-  whatsappPhoneNumberId String?
-  whatsappBusinessAccountId String?
+  supplierSettlements          SupplierSettlement[]
+  id                           String                   @id @default(cuid())
+  tenantId                     String
+  tenant                       Tenant                   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name                         String
+  slug                         String                   @unique
+  region                       String                   @default("Non classée")
+  city                         String?
+  address                      String?
+  phone                        String?
+  whatsappPhone                String?
+  email                        String?
+  website                      String?
+  latitude                     Decimal?                 @db.Decimal(10, 7)
+  longitude                    Decimal?                 @db.Decimal(10, 7)
+  publicVisible                Boolean                  @default(false)
+  publicFeatured               Boolean                  @default(false)
+  publicDescription            String?
+  publicServices               String[]                 @default([])
+  coverDataUrl                 String?
+  openingHours                 Json?
+  taxId                        String?
+  countryCode                  String                   @default("216")
+  currency                     String                   @default("DT")
+  locale                       String                   @default("fr-TN")
+  logoDataUrl                  String?
+  brandColor                   String?
+  counterRepairCode            String?
+  counterUpdatedAt             DateTime?
+  lastMonthlyReport            String?
+  footerText                   String                   @default("Merci pour votre confiance")
+  whatsappReceived             String                   @default("Bonjour {client}, votre appareil {device} a bien été reçu. Code : {code}.")
+  whatsappReady                String                   @default("Bonjour {client}, votre appareil {device} est prêt. Montant restant : {balance} {currency}.")
+  queueShowClient              Boolean                  @default(false)
+  invoicePrefix                String                   @default("FAC")
+  quotePrefix                  String                   @default("DEV")
+  defaultTaxRate               Decimal                  @default(0) @db.Decimal(5, 2)
+  warrantyReminderDays         Int                      @default(7)
+  lowStockNotifications        Boolean                  @default(true)
+  cashRequireSession           Boolean                  @default(false)
+  smartMarginTarget            Decimal                  @default(30) @db.Decimal(5, 2)
+  readyReminderHours           Int                      @default(72)
+  googleReviewUrl              String?
+  loyaltyEnabled               Boolean                  @default(true)
+  qualityRequiredBeforeReady   Boolean                  @default(true)
+  automationsEnabled           Boolean                  @default(true)
+  cashierMaxDiscount           Decimal                  @default(100) @db.Decimal(12, 3)
+  cashierManagerApprovalAbove  Decimal                  @default(10) @db.Decimal(12, 3)
+  deliveryRequiresFullPayment  Boolean                  @default(true)
+  whatsappCloudEnabled         Boolean                  @default(false)
+  whatsappPhoneNumberId        String?
+  whatsappBusinessAccountId    String?
   whatsappAccessTokenEncrypted String?
-  konnectEnabled        Boolean  @default(false)
-  konnectWalletId       String?
-  konnectApiKeyEncrypted String?
-  konnectSandbox        Boolean  @default(true)
-  pushEnabled           Boolean  @default(true)
-  aiExternalEnabled     Boolean  @default(false)
-  aiBaseUrl             String?
-  aiModel               String?
-  aiApiKeyEncrypted     String?
-  setupCompletedAt      DateTime?
-  isActive               Boolean  @default(true)
-  lastSeenAt             DateTime?
-  lastLoginAt            DateTime?
-  platformNotes          String?
-  createdAt              DateTime @default(now())
-  users                 User[]
-  clients               Client[]
-  repairs               Repair[]
-  payments              Payment[]
-  inventory             InventoryItem[]
-  suppliers             Supplier[]
-  purchases             Purchase[]
-  expenses              Expense[]
-  repairTypes           RepairType[]
-  auditLogs             AuditLog[]
-  usageEvents           UsageEvent[]
-  warrantyClaims        WarrantyClaim[]
-  cashSessions          CashSession[]
-  stockMovements        StockMovement[]
-  attachments           RepairAttachment[]
-  supplierInvites       SupplierInvite[]
-  widgetTokens          WidgetToken[]
-  installments          RepairInstallment[]
-  imeiReports           ImeiReport[]
-  notifications         Notification[]
-  salesDocuments        SalesDocument[]
-  platformMessages      PlatformMessage[]
-  supportTickets        SupportTicket[]
-  rewards               ShopReward[]
-  adImpressions         AdImpression[]
-  automationRules       AutomationRule[]
-  automationRuns        AutomationRun[]
-  qualityChecks         RepairQualityCheck[]
-  feedbacks             ClientFeedback[]
-  goals                 ShopGoal[]
-  appointments          Appointment[]
-  paymentLinks          PaymentLink[]
-  pushSubscriptions     PushSubscription[]
-  messageLogs           MessageLog[]
-  supplierMarketplaceOrders SupplierOrder[]
-  subscriptionRequests SubscriptionRequest[]
-  communityPosts       CommunityPost[]
-  communityVotes       CommunityVote[]
-  marketListings       PartMarketListing[] @relation("ListingSellerShop")
-  marketPurchaseRequests PartMarketRequest[] @relation("MarketBuyerShop")
-  sosPartRequests       SosPartRequest[] @relation("SosRequesterShop")
-  sosPartResponses      SosPartResponse[] @relation("SosResponderShop")
-  expertRequests        ExpertCallRequest[] @relation("ExpertRequesterShop")
-  expertAcceptedCalls   ExpertCallRequest[] @relation("ExpertAcceptedShop")
-  expertMessages        ExpertCallMessage[]
-  academyCourses        AcademyCourse[]
-  carePlans             CarePlan[]
-  careSubscriptions     ClientCareSubscription[]
-  digitalWarranties     DigitalWarranty[]
+  konnectEnabled               Boolean                  @default(false)
+  konnectWalletId              String?
+  konnectApiKeyEncrypted       String?
+  konnectSandbox               Boolean                  @default(true)
+  pushEnabled                  Boolean                  @default(true)
+  aiExternalEnabled            Boolean                  @default(false)
+  aiBaseUrl                    String?
+  aiModel                      String?
+  aiApiKeyEncrypted            String?
+  setupCompletedAt             DateTime?
+  isActive                     Boolean                  @default(true)
+  lastSeenAt                   DateTime?
+  lastLoginAt                  DateTime?
+  platformNotes                String?
+  createdAt                    DateTime                 @default(now())
+  users                        User[]
+  clients                      Client[]
+  repairs                      Repair[]
+  payments                     Payment[]
+  counterSales                 CounterSale[]
+  inventory                    InventoryItem[]
+  suppliers                    Supplier[]
+  purchases                    Purchase[]
+  expenses                     Expense[]
+  repairTypes                  RepairType[]
+  auditLogs                    AuditLog[]
+  usageEvents                  UsageEvent[]
+  warrantyClaims               WarrantyClaim[]
+  cashSessions                 CashSession[]
+  stockMovements               StockMovement[]
+  attachments                  RepairAttachment[]
+  supplierInvites              SupplierInvite[]
+  widgetTokens                 WidgetToken[]
+  installments                 RepairInstallment[]
+  imeiReports                  ImeiReport[]
+  notifications                Notification[]
+  salesDocuments               SalesDocument[]
+  platformMessages             PlatformMessage[]
+  supportTickets               SupportTicket[]
+  rewards                      ShopReward[]
+  adImpressions                AdImpression[]
+  automationRules              AutomationRule[]
+  automationRuns               AutomationRun[]
+  qualityChecks                RepairQualityCheck[]
+  feedbacks                    ClientFeedback[]
+  goals                        ShopGoal[]
+  appointments                 Appointment[]
+  paymentLinks                 PaymentLink[]
+  pushSubscriptions            PushSubscription[]
+  messageLogs                  MessageLog[]
+  supplierMarketplaceOrders    SupplierOrder[]
+  subscriptionRequests         SubscriptionRequest[]
+  communityPosts               CommunityPost[]
+  communityVotes               CommunityVote[]
+  marketListings               PartMarketListing[]      @relation("ListingSellerShop")
+  marketPurchaseRequests       PartMarketRequest[]      @relation("MarketBuyerShop")
+  sosPartRequests              SosPartRequest[]         @relation("SosRequesterShop")
+  sosPartResponses             SosPartResponse[]        @relation("SosResponderShop")
+  expertRequests               ExpertCallRequest[]      @relation("ExpertRequesterShop")
+  expertAcceptedCalls          ExpertCallRequest[]      @relation("ExpertAcceptedShop")
+  expertMessages               ExpertCallMessage[]
+  academyCourses               AcademyCourse[]
+  carePlans                    CarePlan[]
+  careSubscriptions            ClientCareSubscription[]
+  digitalWarranties            DigitalWarranty[]
+  stockAlerts                  StockAlertRequest[]
+  partRequests                 SupplierPartRequest[]
+  returnPickups                SupplierReturnPickup[]
 
   @@index([tenantId])
   @@index([region])
   @@index([city])
   @@index([publicVisible, region])
   @@index([lastSeenAt])
-  stockAlerts           StockAlertRequest[]
-  partRequests          SupplierPartRequest[]
-  returnPickups         SupplierReturnPickup[]
 }
 
 model User {
-  id                 String   @id @default(cuid())
-  shopId             String
-  shop               Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  fullName           String
-  loginCode          String
-  phone              String?
-  email              String?
-  role               UserRole
-  pinHash            String
-  isActive           Boolean  @default(true)
-  mustChangePin      Boolean  @default(false)
-  technicianSpecialties String[] @default([])
-  lastSeenAt         DateTime?
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @default(now()) @updatedAt
-  assignedRepairs    Repair[] @relation("TechnicianRepairs")
-  statusEvents       RepairStatusEvent[]
-  payments           Payment[] @relation("PaymentUser")
-  auditLogs          AuditLog[]
-  claimsCreated      WarrantyClaim[] @relation("ClaimCreator")
-  claimsResolved     WarrantyClaim[] @relation("ClaimResolver")
-  cashSessionsOpened CashSession[] @relation("CashOpenedBy")
-  cashSessionsClosed CashSession[] @relation("CashClosedBy")
-  stockMovements     StockMovement[]
-  attachments        RepairAttachment[]
-  notifications      Notification[]
-  supportMessages    SupportMessage[]
-  qualityChecks      RepairQualityCheck[]
-  pushSubscriptions  PushSubscription[]
-  documentPayments    DocumentPayment[]
-  communityPosts      CommunityPost[]
-  communityVotes      CommunityVote[]
-  marketListings       PartMarketListing[]
+  id                     String                  @id @default(cuid())
+  shopId                 String
+  shop                   Shop                    @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  fullName               String
+  loginCode              String
+  phone                  String?
+  email                  String?
+  role                   UserRole
+  pinHash                String
+  isActive               Boolean                 @default(true)
+  mustChangePin          Boolean                 @default(false)
+  technicianSpecialties  String[]                @default([])
+  lastSeenAt             DateTime?
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @default(now()) @updatedAt
+  assignedRepairs        Repair[]                @relation("TechnicianRepairs")
+  statusEvents           RepairStatusEvent[]
+  payments               Payment[]               @relation("PaymentUser")
+  auditLogs              AuditLog[]
+  claimsCreated          WarrantyClaim[]         @relation("ClaimCreator")
+  claimsResolved         WarrantyClaim[]         @relation("ClaimResolver")
+  cashSessionsOpened     CashSession[]           @relation("CashOpenedBy")
+  cashSessionsClosed     CashSession[]           @relation("CashClosedBy")
+  stockMovements         StockMovement[]
+  attachments            RepairAttachment[]
+  notifications          Notification[]
+  supportMessages        SupportMessage[]
+  qualityChecks          RepairQualityCheck[]
+  pushSubscriptions      PushSubscription[]
+  documentPayments       DocumentPayment[]
+  counterSales           CounterSale[]           @relation("CounterSaleUser")
+  communityPosts         CommunityPost[]
+  communityVotes         CommunityVote[]
+  marketListings         PartMarketListing[]
   marketPurchaseRequests PartMarketRequest[]
-  sosPartRequests       SosPartRequest[]
-  sosPartResponses      SosPartResponse[]
-  expertRequests        ExpertCallRequest[] @relation("ExpertRequesterUser")
-  expertAcceptedCalls   ExpertCallRequest[] @relation("ExpertAcceptedUser")
-  expertMessages        ExpertCallMessage[]
-  academyProgress       AcademyLessonProgress[]
+  sosPartRequests        SosPartRequest[]
+  sosPartResponses       SosPartResponse[]
+  expertRequests         ExpertCallRequest[]     @relation("ExpertRequesterUser")
+  expertAcceptedCalls    ExpertCallRequest[]     @relation("ExpertAcceptedUser")
+  expertMessages         ExpertCallMessage[]
+  academyProgress        AcademyLessonProgress[]
 
   @@unique([shopId, loginCode])
   @@index([shopId, role])
 }
 
 model Client {
-  id             String   @id @default(cuid())
-  shopId         String
-  shop           Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  fullName       String
-  phone          String
-  email          String?
-  notes          String?
-  loyaltyPoints  Int      @default(0)
-  walletToken    String?  @unique @default(cuid())
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @default(now()) @updatedAt
-  repairs        Repair[]
-  salesDocuments SalesDocument[]
-  feedbacks      ClientFeedback[]
-  appointments   Appointment[]
-  messageLogs     MessageLog[]
+  id                String                   @id @default(cuid())
+  shopId            String
+  shop              Shop                     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  fullName          String
+  phone             String
+  email             String?
+  notes             String?
+  loyaltyPoints     Int                      @default(0)
+  walletToken       String?                  @unique @default(cuid())
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @default(now()) @updatedAt
+  repairs           Repair[]
+  salesDocuments    SalesDocument[]
+  counterSales      CounterSale[]
+  feedbacks         ClientFeedback[]
+  appointments      Appointment[]
+  messageLogs       MessageLog[]
   careSubscriptions ClientCareSubscription[]
   digitalWarranties DigitalWarranty[]
 
@@ -596,53 +599,53 @@ model Client {
 }
 
 model Repair {
-  id                String         @id @default(cuid())
-  shopId            String
-  shop              Shop           @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  code              String
-  publicToken       String         @unique @default(cuid())
-  offlineRequestId  String?        @unique
-  clientId          String
-  client            Client         @relation(fields: [clientId], references: [id], onDelete: Restrict)
-  category          DeviceCategory
-  brand             String?
-  model             String
-  serialNumber      String?
-  color             String?
-  lockCodeEncrypted String?
-  reportedIssue     String
-  diagnosis         String?
-  internalNotes     String?
-  priority          RepairPriority @default(NORMAL)
-  status            RepairStatus   @default(RECEIVED)
-  technicianId      String?
-  technician        User?          @relation("TechnicianRepairs", fields: [technicianId], references: [id], onDelete: SetNull)
-  estimatedPrice    Decimal?       @db.Decimal(12,3)
-  finalPrice        Decimal?       @db.Decimal(12,3)
-  discountAmount    Decimal        @default(0) @db.Decimal(12,3)
-  discountReason    String?
-  discountApprovedBy String?
-  warrantyDays      Int            @default(30)
-  promisedAt        DateTime?
-  pickupReminderCount Int       @default(0)
-  pickupRemindedAt  DateTime?
-  installments      RepairInstallment[]
-  estimatedMinutes  Int?
-  deliveredAt       DateTime?
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @default(now()) @updatedAt
-  parts             RepairPart[]
-  payments          Payment[]
-  statusEvents      RepairStatusEvent[]
-  warrantyClaims    WarrantyClaim[]
-  attachments       RepairAttachment[]
-  salesDocuments    SalesDocument[]
-  qualityChecks     RepairQualityCheck[]
-  feedback          ClientFeedback?
-  automationRuns    AutomationRun[]
-  paymentLinks      PaymentLink[]
-  messageLogs       MessageLog[]
-  digitalWarranty  DigitalWarranty?
+  id                  String               @id @default(cuid())
+  shopId              String
+  shop                Shop                 @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  code                String
+  publicToken         String               @unique @default(cuid())
+  offlineRequestId    String?              @unique
+  clientId            String
+  client              Client               @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  category            DeviceCategory
+  brand               String?
+  model               String
+  serialNumber        String?
+  color               String?
+  lockCodeEncrypted   String?
+  reportedIssue       String
+  diagnosis           String?
+  internalNotes       String?
+  priority            RepairPriority       @default(NORMAL)
+  status              RepairStatus         @default(RECEIVED)
+  technicianId        String?
+  technician          User?                @relation("TechnicianRepairs", fields: [technicianId], references: [id], onDelete: SetNull)
+  estimatedPrice      Decimal?             @db.Decimal(12, 3)
+  finalPrice          Decimal?             @db.Decimal(12, 3)
+  discountAmount      Decimal              @default(0) @db.Decimal(12, 3)
+  discountReason      String?
+  discountApprovedBy  String?
+  warrantyDays        Int                  @default(30)
+  promisedAt          DateTime?
+  pickupReminderCount Int                  @default(0)
+  pickupRemindedAt    DateTime?
+  installments        RepairInstallment[]
+  estimatedMinutes    Int?
+  deliveredAt         DateTime?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @default(now()) @updatedAt
+  parts               RepairPart[]
+  payments            Payment[]
+  statusEvents        RepairStatusEvent[]
+  warrantyClaims      WarrantyClaim[]
+  attachments         RepairAttachment[]
+  salesDocuments      SalesDocument[]
+  qualityChecks       RepairQualityCheck[]
+  feedback            ClientFeedback?
+  automationRuns      AutomationRun[]
+  paymentLinks        PaymentLink[]
+  messageLogs         MessageLog[]
+  digitalWarranty     DigitalWarranty?
 
   @@unique([shopId, code])
   @@index([shopId, status])
@@ -652,39 +655,42 @@ model Repair {
 }
 
 model RepairStatusEvent {
-  id         String       @id @default(cuid())
+  id         String        @id @default(cuid())
   repairId   String
-  repair     Repair       @relation(fields: [repairId], references: [id], onDelete: Cascade)
+  repair     Repair        @relation(fields: [repairId], references: [id], onDelete: Cascade)
   fromStatus RepairStatus?
   toStatus   RepairStatus
   note       String?
   userId     String?
-  user       User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
-  createdAt  DateTime     @default(now())
+  user       User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  createdAt  DateTime      @default(now())
+
   @@index([repairId, createdAt])
 }
 
 model InventoryItem {
-  id              String   @id @default(cuid())
-  shopId          String
-  shop            Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  sku             String
-  name            String
-  category        String?
-  quantity        Int      @default(0)
-  minQuantity     Int      @default(0)
-  purchasePrice   Decimal  @default(0) @db.Decimal(12,3)
-  salePrice       Decimal  @default(0) @db.Decimal(12,3)
-  supplierId      String?
-  supplier        Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull)
-  active          Boolean  @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @default(now()) @updatedAt
-  repairParts     RepairPart[]
-  purchaseItems   PurchaseItem[]
-  stockMovements  StockMovement[]
-  compatibilities PartCompatibility[]
-  marketListings  PartMarketListing[]
+  id               String              @id @default(cuid())
+  shopId           String
+  shop             Shop                @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  sku              String
+  name             String
+  category         String?
+  quantity         Int                 @default(0)
+  minQuantity      Int                 @default(0)
+  purchasePrice    Decimal             @default(0) @db.Decimal(12, 3)
+  salePrice        Decimal             @default(0) @db.Decimal(12, 3)
+  supplierId       String?
+  supplier         Supplier?           @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  active           Boolean             @default(true)
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @default(now()) @updatedAt
+  repairParts      RepairPart[]
+  purchaseItems    PurchaseItem[]
+  stockMovements   StockMovement[]
+  counterSaleLines CounterSaleLine[]
+  compatibilities  PartCompatibility[]
+  marketListings   PartMarketListing[]
+
   @@unique([shopId, sku])
   @@index([shopId, name])
 }
@@ -697,49 +703,93 @@ model RepairPart {
   inventoryItem   InventoryItem? @relation(fields: [inventoryItemId], references: [id], onDelete: SetNull)
   name            String
   quantity        Int            @default(1)
-  unitCost        Decimal        @db.Decimal(12,3)
-  unitPrice       Decimal        @db.Decimal(12,3)
+  unitCost        Decimal        @db.Decimal(12, 3)
+  unitPrice       Decimal        @db.Decimal(12, 3)
   createdAt       DateTime       @default(now())
+
   @@index([repairId])
 }
 
+/// Vente au comptoir (accessoires, câbles, coques…) sans réparation.
+model CounterSale {
+  id        String            @id @default(cuid())
+  shopId    String
+  shop      Shop              @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  number    String
+  clientId  String?
+  client    Client?           @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  userId    String?
+  user      User?             @relation("CounterSaleUser", fields: [userId], references: [id], onDelete: SetNull)
+  subtotal  Decimal           @db.Decimal(12, 3)
+  discount  Decimal           @default(0) @db.Decimal(12, 3)
+  total     Decimal           @db.Decimal(12, 3)
+  note      String?
+  createdAt DateTime          @default(now())
+  lines     CounterSaleLine[]
+  payments  Payment[]
+
+  @@unique([shopId, number])
+  @@index([shopId, createdAt])
+}
+
+model CounterSaleLine {
+  id              String         @id @default(cuid())
+  saleId          String
+  sale            CounterSale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  inventoryItemId String?
+  inventoryItem   InventoryItem? @relation(fields: [inventoryItemId], references: [id], onDelete: SetNull)
+  name            String
+  quantity        Int
+  unitCost        Decimal        @default(0) @db.Decimal(12, 3)
+  unitPrice       Decimal        @db.Decimal(12, 3)
+  total           Decimal        @db.Decimal(12, 3)
+
+  @@index([saleId])
+}
+
 model Payment {
-  id             String        @id @default(cuid())
-  shopId         String
-  shop           Shop          @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  repairId       String
-  repair         Repair        @relation(fields: [repairId], references: [id], onDelete: Restrict)
-  userId         String?
-  user           User?         @relation("PaymentUser", fields: [userId], references: [id], onDelete: SetNull)
-  cashSessionId  String?
-  cashSession    CashSession?  @relation(fields: [cashSessionId], references: [id], onDelete: SetNull)
-  kind           PaymentKind   @default(PAYMENT)
-  method         PaymentMethod
-  amount         Decimal       @db.Decimal(12,3)
-  receivedAmount Decimal?      @db.Decimal(12,3)
-  changeAmount   Decimal?      @db.Decimal(12,3)
+  id                String        @id @default(cuid())
+  shopId            String
+  shop              Shop          @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  repairId          String?
+  repair            Repair?       @relation(fields: [repairId], references: [id], onDelete: Restrict)
+  /// Vente comptoir (accessoires) : un paiement est lié soit à une réparation, soit à une vente.
+  counterSaleId     String?
+  counterSale       CounterSale?  @relation(fields: [counterSaleId], references: [id], onDelete: Restrict)
+  userId            String?
+  user              User?         @relation("PaymentUser", fields: [userId], references: [id], onDelete: SetNull)
+  cashSessionId     String?
+  cashSession       CashSession?  @relation(fields: [cashSessionId], references: [id], onDelete: SetNull)
+  kind              PaymentKind   @default(PAYMENT)
+  method            PaymentMethod
+  amount            Decimal       @db.Decimal(12, 3)
+  receivedAmount    Decimal?      @db.Decimal(12, 3)
+  changeAmount      Decimal?      @db.Decimal(12, 3)
   externalReference String?
-  paymentLinkId  String?
-  paymentLink    PaymentLink?  @relation(fields: [paymentLinkId], references: [id], onDelete: SetNull)
-  note           String?
-  createdAt      DateTime      @default(now())
+  paymentLinkId     String?
+  paymentLink       PaymentLink?  @relation(fields: [paymentLinkId], references: [id], onDelete: SetNull)
+  note              String?
+  createdAt         DateTime      @default(now())
+
   @@index([shopId, createdAt])
   @@index([repairId])
+  @@index([counterSaleId])
   @@index([cashSessionId])
 }
 
 model Supplier {
-  id        String   @id @default(cuid())
+  id        String          @id @default(cuid())
   shopId    String
-  shop      Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  shop      Shop            @relation(fields: [shopId], references: [id], onDelete: Cascade)
   name      String
   phone     String?
   email     String?
   address   String?
   notes     String?
-  createdAt DateTime @default(now())
+  createdAt DateTime        @default(now())
   items     InventoryItem[]
   purchases Purchase[]
+
   @@index([shopId, name])
 }
 
@@ -751,11 +801,12 @@ model Purchase {
   supplier   Supplier?      @relation(fields: [supplierId], references: [id], onDelete: SetNull)
   reference  String
   status     PurchaseStatus @default(DRAFT)
-  total      Decimal        @default(0) @db.Decimal(12,3)
+  total      Decimal        @default(0) @db.Decimal(12, 3)
   notes      String?
   createdAt  DateTime       @default(now())
   receivedAt DateTime?
   items      PurchaseItem[]
+
   @@unique([shopId, reference])
   @@index([shopId, createdAt])
 }
@@ -767,7 +818,7 @@ model PurchaseItem {
   inventoryItemId String
   inventoryItem   InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
   quantity        Int
-  unitCost        Decimal       @db.Decimal(12,3)
+  unitCost        Decimal       @db.Decimal(12, 3)
 }
 
 model Expense {
@@ -778,10 +829,11 @@ model Expense {
   cashSession   CashSession? @relation(fields: [cashSessionId], references: [id], onDelete: SetNull)
   category      String
   label         String
-  amount        Decimal      @db.Decimal(12,3)
+  amount        Decimal      @db.Decimal(12, 3)
   note          String?
   expenseDate   DateTime     @default(now())
   createdAt     DateTime     @default(now())
+
   @@index([shopId, expenseDate])
   @@index([cashSessionId])
 }
@@ -792,9 +844,10 @@ model RepairType {
   shop         Shop           @relation(fields: [shopId], references: [id], onDelete: Cascade)
   name         String
   category     DeviceCategory
-  fixedPrice   Decimal?       @db.Decimal(12,3)
+  fixedPrice   Decimal?       @db.Decimal(12, 3)
   isFixedPrice Boolean        @default(false)
   active       Boolean        @default(true)
+
   @@index([shopId, category])
 }
 
@@ -809,6 +862,7 @@ model AuditLog {
   entityId  String?
   metadata  Json?
   createdAt DateTime @default(now())
+
   @@index([shopId, createdAt])
 }
 
@@ -827,28 +881,30 @@ model WarrantyClaim {
   resolvedBy   User?               @relation("ClaimResolver", fields: [resolvedById], references: [id], onDelete: SetNull)
   createdAt    DateTime            @default(now())
   resolvedAt   DateTime?
+
   @@index([shopId, status])
   @@index([repairId])
 }
 
 model CashSession {
-  id             String            @id @default(cuid())
-  shopId         String
-  shop           Shop              @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  openedById     String
-  openedBy       User              @relation("CashOpenedBy", fields: [openedById], references: [id], onDelete: Restrict)
-  closedById     String?
-  closedBy       User?             @relation("CashClosedBy", fields: [closedById], references: [id], onDelete: SetNull)
-  status         CashSessionStatus @default(OPEN)
-  openingAmount  Decimal           @default(0) @db.Decimal(12,3)
-  expectedCash   Decimal?          @db.Decimal(12,3)
-  closingActual  Decimal?          @db.Decimal(12,3)
-  difference     Decimal?          @db.Decimal(12,3)
-  note           String?
-  openedAt       DateTime          @default(now())
-  closedAt       DateTime?
-  payments       Payment[]
-  expenses       Expense[]
+  id            String            @id @default(cuid())
+  shopId        String
+  shop          Shop              @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  openedById    String
+  openedBy      User              @relation("CashOpenedBy", fields: [openedById], references: [id], onDelete: Restrict)
+  closedById    String?
+  closedBy      User?             @relation("CashClosedBy", fields: [closedById], references: [id], onDelete: SetNull)
+  status        CashSessionStatus @default(OPEN)
+  openingAmount Decimal           @default(0) @db.Decimal(12, 3)
+  expectedCash  Decimal?          @db.Decimal(12, 3)
+  closingActual Decimal?          @db.Decimal(12, 3)
+  difference    Decimal?          @db.Decimal(12, 3)
+  note          String?
+  openedAt      DateTime          @default(now())
+  closedAt      DateTime?
+  payments      Payment[]
+  expenses      Expense[]
+
   @@index([shopId, status])
   @@index([shopId, openedAt])
 }
@@ -864,10 +920,11 @@ model StockMovement {
   type            StockMovementType
   quantityChange  Int
   quantityAfter   Int
-  unitCost        Decimal?          @db.Decimal(12,3)
+  unitCost        Decimal?          @db.Decimal(12, 3)
   reference       String?
   note            String?
   createdAt       DateTime          @default(now())
+
   @@index([shopId, createdAt])
   @@index([inventoryItemId, createdAt])
 }
@@ -886,55 +943,58 @@ model RepairAttachment {
   url          String
   sizeBytes    Int?
   createdAt    DateTime       @default(now())
+
   @@index([repairId, createdAt])
 }
 
 model Notification {
-  id        String           @id @default(cuid())
-  shopId    String
-  shop      Shop             @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  userId    String?
-  user      User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type      NotificationType @default(INFO)
-  title     String
-  message   String
-  href      String?
-  experienceKey String @default("GENERAL")
-  soundKey  String @default("CHIME")
-  priority  String @default("NORMAL")
-  readAt    DateTime?
-  createdAt DateTime         @default(now())
+  id            String           @id @default(cuid())
+  shopId        String
+  shop          Shop             @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  userId        String?
+  user          User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type          NotificationType @default(INFO)
+  title         String
+  message       String
+  href          String?
+  experienceKey String           @default("GENERAL")
+  soundKey      String           @default("CHIME")
+  priority      String           @default("NORMAL")
+  readAt        DateTime?
+  createdAt     DateTime         @default(now())
+
   @@index([shopId, createdAt])
   @@index([userId, readAt])
 }
 
 model SalesDocument {
-  id            String         @id @default(cuid())
-  shopId        String
-  shop          Shop           @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  clientId      String
-  client        Client         @relation(fields: [clientId], references: [id], onDelete: Restrict)
-  repairId      String?
-  repair        Repair?        @relation(fields: [repairId], references: [id], onDelete: SetNull)
-  type          DocumentType
-  status        DocumentStatus @default(DRAFT)
-  number        String
-  sourceQuoteId String?
-  publicToken   String?        @unique
-  clientDecisionAt DateTime?
+  id                 String              @id @default(cuid())
+  shopId             String
+  shop               Shop                @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  clientId           String
+  client             Client              @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  repairId           String?
+  repair             Repair?             @relation(fields: [repairId], references: [id], onDelete: SetNull)
+  type               DocumentType
+  status             DocumentStatus      @default(DRAFT)
+  number             String
+  sourceQuoteId      String?
+  publicToken        String?             @unique
+  clientDecisionAt   DateTime?
   clientDecisionNote String?
-  subtotal      Decimal        @default(0) @db.Decimal(12,3)
-  discount      Decimal        @default(0) @db.Decimal(12,3)
-  taxRate       Decimal        @default(0) @db.Decimal(5,2)
-  taxAmount     Decimal        @default(0) @db.Decimal(12,3)
-  total         Decimal        @default(0) @db.Decimal(12,3)
-  notes         String?
-  validUntil    DateTime?
-  issuedAt      DateTime       @default(now())
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @default(now()) @updatedAt
-  lines         SalesDocumentLine[]
-  payments      DocumentPayment[]
+  subtotal           Decimal             @default(0) @db.Decimal(12, 3)
+  discount           Decimal             @default(0) @db.Decimal(12, 3)
+  taxRate            Decimal             @default(0) @db.Decimal(5, 2)
+  taxAmount          Decimal             @default(0) @db.Decimal(12, 3)
+  total              Decimal             @default(0) @db.Decimal(12, 3)
+  notes              String?
+  validUntil         DateTime?
+  issuedAt           DateTime            @default(now())
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @default(now()) @updatedAt
+  lines              SalesDocumentLine[]
+  payments           DocumentPayment[]
+
   @@unique([shopId, number])
   @@index([shopId, type, createdAt])
   @@index([clientId])
@@ -945,83 +1005,84 @@ model SalesDocumentLine {
   documentId  String
   document    SalesDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
   description String
-  quantity    Decimal       @default(1) @db.Decimal(10,3)
-  unitPrice   Decimal       @default(0) @db.Decimal(12,3)
-  total       Decimal       @default(0) @db.Decimal(12,3)
+  quantity    Decimal       @default(1) @db.Decimal(10, 3)
+  unitPrice   Decimal       @default(0) @db.Decimal(12, 3)
+  total       Decimal       @default(0) @db.Decimal(12, 3)
 }
 
 model PlatformAdmin {
-  id           String   @id @default(cuid())
-  login        String   @unique
-  fullName     String
-  passwordHash String
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
+  id               String            @id @default(cuid())
+  login            String            @unique
+  fullName         String
+  passwordHash     String
+  isActive         Boolean           @default(true)
+  createdAt        DateTime          @default(now())
   platformMessages PlatformMessage[]
-  supportMessages SupportMessage[]
-  rewards         ShopReward[]
+  supportMessages  SupportMessage[]
+  rewards          ShopReward[]
   changelogEntries ChangelogEntry[]
-  totpSecret     String?
-  totpEnabled    Boolean  @default(false)
-  sessionVersion Int      @default(0)
+  totpSecret       String?
+  totpEnabled      Boolean           @default(false)
+  sessionVersion   Int               @default(0)
 }
 
 model Plan {
-  id              String       @id @default(cuid())
-  code            String       @unique
+  id              String                @id @default(cuid())
+  code            String                @unique
   name            String
   description     String?
-  priceMonthly    Decimal      @default(0) @db.Decimal(12,3) // legacy
-  price           Decimal      @default(0) @db.Decimal(12,3)
-  durationValue   Int          @default(1)
-  durationUnit    DurationUnit @default(MONTH)
-  trialDays       Int          @default(0)
-  publicVisible   Boolean      @default(true)
-  maxShops        Int          @default(1)
-  maxUsersPerShop Int          @default(5)
+  priceMonthly    Decimal               @default(0) @db.Decimal(12, 3) // legacy
+  price           Decimal               @default(0) @db.Decimal(12, 3)
+  durationValue   Int                   @default(1)
+  durationUnit    DurationUnit          @default(MONTH)
+  trialDays       Int                   @default(0)
+  publicVisible   Boolean               @default(true)
+  maxShops        Int                   @default(1)
+  maxUsersPerShop Int                   @default(5)
   features        Json?
-  active          Boolean      @default(true)
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @default(now()) @updatedAt
+  active          Boolean               @default(true)
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @default(now()) @updatedAt
   subscriptions   Subscription[]
   requests        SubscriptionRequest[]
 }
 
 model Subscription {
-  id        String             @id @default(cuid())
-  tenantId  String
-  tenant    Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  planId    String
-  plan      Plan               @relation(fields: [planId], references: [id], onDelete: Restrict)
-  agreedPrice Decimal?          @db.Decimal(12,3) // fixed agreed price; plan edits do not overwrite past agreements
-  status    SubscriptionStatus @default(TRIAL)
-  startsAt  DateTime           @default(now())
-  endsAt    DateTime?
-  notes     String?
-  createdAt DateTime           @default(now())
-  updatedAt DateTime           @default(now()) @updatedAt
+  id          String             @id @default(cuid())
+  tenantId    String
+  tenant      Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  planId      String
+  plan        Plan               @relation(fields: [planId], references: [id], onDelete: Restrict)
+  agreedPrice Decimal?           @db.Decimal(12, 3) // fixed agreed price; plan edits do not overwrite past agreements
+  status      SubscriptionStatus @default(TRIAL)
+  startsAt    DateTime           @default(now())
+  endsAt      DateTime?
+  notes       String?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @default(now()) @updatedAt
+
   @@index([tenantId, status])
 }
 
 model SubscriptionRequest {
-  id            String                    @id @default(cuid())
-  tenantId      String
-  tenant        Tenant                    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  shopId        String
-  shop          Shop                      @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  planId        String?
-  plan          Plan?                     @relation(fields: [planId], references: [id], onDelete: SetNull)
-  requestedPrice Decimal?                 @db.Decimal(12,3)
-  durationValue Int?
-  durationUnit  DurationUnit?
-  status        SubscriptionRequestStatus @default(PENDING)
-  paymentMethod String?
+  id                String                    @id @default(cuid())
+  tenantId          String
+  tenant            Tenant                    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  shopId            String
+  shop              Shop                      @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  planId            String?
+  plan              Plan?                     @relation(fields: [planId], references: [id], onDelete: SetNull)
+  requestedPrice    Decimal?                  @db.Decimal(12, 3)
+  durationValue     Int?
+  durationUnit      DurationUnit?
+  status            SubscriptionRequestStatus @default(PENDING)
+  paymentMethod     String?
   transferReference String?
-  proofDataUrl  String?
-  note          String?
-  adminNote     String?
-  createdAt     DateTime                  @default(now())
-  reviewedAt    DateTime?
+  proofDataUrl      String?
+  note              String?
+  adminNote         String?
+  createdAt         DateTime                  @default(now())
+  reviewedAt        DateTime?
 
   @@index([tenantId, status])
   @@index([shopId, status])
@@ -1037,17 +1098,17 @@ model DeviceBrand {
 }
 
 model DeviceModel {
-  id          String         @id @default(cuid())
-  brandId     String
-  brand       DeviceBrand    @relation(fields: [brandId], references: [id], onDelete: Cascade)
-  name        String
-  category    DeviceCategory @default(PHONE)
-  aliases     String[]       @default([])
-  releaseYear Int?
-  active      Boolean        @default(true)
-  createdAt   DateTime       @default(now())
+  id              String              @id @default(cuid())
+  brandId         String
+  brand           DeviceBrand         @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  name            String
+  category        DeviceCategory      @default(PHONE)
+  aliases         String[]            @default([])
+  releaseYear     Int?
+  active          Boolean             @default(true)
+  createdAt       DateTime            @default(now())
   compatibilities PartCompatibility[]
-  communityPosts   CommunityPost[]
+  communityPosts  CommunityPost[]
 
   @@unique([brandId, name])
   @@index([name])
@@ -1078,17 +1139,17 @@ model PartCompatibility {
 }
 
 model DocumentPayment {
-  id          String        @id @default(cuid())
-  documentId  String
-  document    SalesDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  userId      String?
-  user        User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
-  kind        PaymentKind   @default(PAYMENT)
-  method      PaymentMethod
-  amount      Decimal       @db.Decimal(12,3)
-  reference   String?
-  note        String?
-  createdAt   DateTime      @default(now())
+  id         String        @id @default(cuid())
+  documentId String
+  document   SalesDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  userId     String?
+  user       User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  kind       PaymentKind   @default(PAYMENT)
+  method     PaymentMethod
+  amount     Decimal       @db.Decimal(12, 3)
+  reference  String?
+  note       String?
+  createdAt  DateTime      @default(now())
 
   @@index([documentId, createdAt])
 }
@@ -1118,46 +1179,45 @@ model LoginGuard {
   updatedAt DateTime @default(now()) @updatedAt
 }
 
-
 model PlatformSettings {
-  id                 String   @id @default("platform")
-  appName            String   @default("Fixi")
-  logoDataUrl        String?
-  primaryColor       String   @default("#FF6B00")
-  supportEmail       String?
-  supportPhone       String?
-  landingHeadline    String   @default("Votre atelier. Enfin sous contrôle.")
-  landingSubheadline String   @default("Réparations, caisse, stock, clients et pilotage dans une seule plateforme.")
-  queueAdsEnabled    Boolean  @default(true)
-  trackingAdsEnabled Boolean  @default(true)
-  adsDefaultCpm      Decimal  @default(12) @db.Decimal(12,3)
-  adsDefaultCpc      Decimal  @default(0.5) @db.Decimal(12,3)
-  supplierMarketplaceEnabled Boolean @default(true)
+  id                         String   @id @default("platform")
+  appName                    String   @default("Fixi")
+  logoDataUrl                String?
+  primaryColor               String   @default("#FF6B00")
+  supportEmail               String?
+  supportPhone               String?
+  landingHeadline            String   @default("Votre atelier. Enfin sous contrôle.")
+  landingSubheadline         String   @default("Réparations, caisse, stock, clients et pilotage dans une seule plateforme.")
+  queueAdsEnabled            Boolean  @default(true)
+  trackingAdsEnabled         Boolean  @default(true)
+  adsDefaultCpm              Decimal  @default(12) @db.Decimal(12, 3)
+  adsDefaultCpc              Decimal  @default(0.5) @db.Decimal(12, 3)
+  supplierMarketplaceEnabled Boolean  @default(true)
   // Configurable payee instructions, never fabricated and never auto-charge.
-  paymentD17Phone    String?
-  paymentBankName    String?
-  paymentBankRib     String?
-  paymentInstructions String?
-  updatedAt          DateTime @default(now()) @updatedAt
+  paymentD17Phone            String?
+  paymentBankName            String?
+  paymentBankRib             String?
+  paymentInstructions        String?
+  updatedAt                  DateTime @default(now()) @updatedAt
 }
 
 model PlatformMessage {
-  id          String             @id @default(cuid())
-  audience    BroadcastAudience  @default(ALL)
+  id          String            @id @default(cuid())
+  audience    BroadcastAudience @default(ALL)
   shopId      String?
-  shop        Shop?              @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  shop        Shop?             @relation(fields: [shopId], references: [id], onDelete: Cascade)
   region      String?
   planCode    String?
-  type        NotificationType   @default(INFO)
+  type        NotificationType  @default(INFO)
   title       String
   message     String
   href        String?
-  pinned      Boolean            @default(false)
-  startsAt    DateTime           @default(now())
+  pinned      Boolean           @default(false)
+  startsAt    DateTime          @default(now())
   expiresAt   DateTime?
   createdById String?
-  createdBy   PlatformAdmin?     @relation(fields: [createdById], references: [id], onDelete: SetNull)
-  createdAt   DateTime           @default(now())
+  createdBy   PlatformAdmin?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime          @default(now())
 
   @@index([shopId, createdAt])
   @@index([region, createdAt])
@@ -1178,13 +1238,13 @@ model AdCampaign {
   targetRegions     String[]
   targetShopIds     String[]
   status            AdCampaignStatus @default(DRAFT)
-  reviewStatus      AdReviewStatus @default(PENDING)
-  billingModel      AdBillingModel @default(FLAT)
-  budget            Decimal? @db.Decimal(12,3)
-  cpm               Decimal? @db.Decimal(12,3)
-  cpc               Decimal? @db.Decimal(12,3)
-  spent             Decimal @default(0) @db.Decimal(12,3)
-  qrScans           Int @default(0)
+  reviewStatus      AdReviewStatus   @default(PENDING)
+  billingModel      AdBillingModel   @default(FLAT)
+  budget            Decimal?         @db.Decimal(12, 3)
+  cpm               Decimal?         @db.Decimal(12, 3)
+  cpc               Decimal?         @db.Decimal(12, 3)
+  spent             Decimal          @default(0) @db.Decimal(12, 3)
+  qrScans           Int              @default(0)
   contactName       String?
   contactPhone      String?
   contactEmail      String?
@@ -1272,14 +1332,14 @@ model FeatureFlag {
 }
 
 model ChangelogEntry {
-  id          String               @id @default(cuid())
+  id          String              @id @default(cuid())
   version     String
   title       String
   body        String
-  visibility  ChangelogVisibility  @default(ALL)
-  publishedAt DateTime             @default(now())
+  visibility  ChangelogVisibility @default(ALL)
+  publishedAt DateTime            @default(now())
   createdById String?
-  createdBy   PlatformAdmin?       @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdBy   PlatformAdmin?      @relation(fields: [createdById], references: [id], onDelete: SetNull)
 
   @@index([publishedAt])
 }
@@ -1296,84 +1356,83 @@ model Referral {
   @@index([referrerShopId, status])
 }
 
-
 model SaasPayment {
-  id        String   @id @default(cuid())
-  tenantId  String
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  amount    Decimal  @db.Decimal(12,3)
-  method    String
-  reference String?
-  note      String?
-  invoiceId String?
-  invoice   SaasInvoice? @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
-  status    SaasPaymentStatus @default(CONFIRMED)
+  id           String            @id @default(cuid())
+  tenantId     String
+  tenant       Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  amount       Decimal           @db.Decimal(12, 3)
+  method       String
+  reference    String?
+  note         String?
+  invoiceId    String?
+  invoice      SaasInvoice?      @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+  status       SaasPaymentStatus @default(CONFIRMED)
   proofDataUrl String?
-  paidAt    DateTime @default(now())
-  createdAt DateTime @default(now())
+  paidAt       DateTime          @default(now())
+  createdAt    DateTime          @default(now())
 
   @@index([tenantId, paidAt])
 }
 
 model SaasInvoice {
-  id        String   @id @default(cuid())
+  id        String        @id @default(cuid())
   tenantId  String
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  number    String   @unique
-  amount    Decimal  @db.Decimal(12,3)
-  status    String   @default("OPEN")
-  issuedAt  DateTime @default(now())
+  tenant    Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  number    String        @unique
+  amount    Decimal       @db.Decimal(12, 3)
+  status    String        @default("OPEN")
+  issuedAt  DateTime      @default(now())
   dueAt     DateTime?
   paidAt    DateTime?
   note      String?
-  createdAt DateTime @default(now())
+  createdAt DateTime      @default(now())
   payments  SaasPayment[]
 
   @@index([tenantId, issuedAt])
 }
 
 model PromoCode {
-  id              String   @id @default(cuid())
-  code            String   @unique
-  bonusDays       Int      @default(0)
-  discountPercent Decimal  @default(0) @db.Decimal(5,2)
-  active          Boolean  @default(true)
+  id              String    @id @default(cuid())
+  code            String    @unique
+  bonusDays       Int       @default(0)
+  discountPercent Decimal   @default(0) @db.Decimal(5, 2)
+  active          Boolean   @default(true)
   maxUses         Int?
-  usedCount       Int      @default(0)
+  usedCount       Int       @default(0)
   expiresAt       DateTime?
-  createdAt       DateTime @default(now())
+  createdAt       DateTime  @default(now())
 }
 
 model AutomationRule {
-  id            String            @id @default(cuid())
-  shopId        String
-  shop          Shop              @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  name          String
-  trigger       AutomationTrigger
-  action        AutomationAction
-  enabled       Boolean           @default(true)
-  delayMinutes  Int               @default(0)
-  conditions    Json?
-  actionConfig  Json?
-  createdAt     DateTime          @default(now())
-  updatedAt     DateTime          @default(now()) @updatedAt
-  runs          AutomationRun[]
+  id           String            @id @default(cuid())
+  shopId       String
+  shop         Shop              @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  name         String
+  trigger      AutomationTrigger
+  action       AutomationAction
+  enabled      Boolean           @default(true)
+  delayMinutes Int               @default(0)
+  conditions   Json?
+  actionConfig Json?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @default(now()) @updatedAt
+  runs         AutomationRun[]
 
   @@index([shopId, enabled, trigger])
 }
 
 model AutomationRun {
-  id         String          @id @default(cuid())
-  shopId     String
-  shop       Shop            @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  ruleId     String
-  rule       AutomationRule  @relation(fields: [ruleId], references: [id], onDelete: Cascade)
-  repairId   String?
-  repair     Repair?         @relation(fields: [repairId], references: [id], onDelete: Cascade)
-  status     String          @default("DONE")
-  result     String?
-  metadata   Json?
-  createdAt  DateTime        @default(now())
+  id        String         @id @default(cuid())
+  shopId    String
+  shop      Shop           @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  ruleId    String
+  rule      AutomationRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  repairId  String?
+  repair    Repair?        @relation(fields: [repairId], references: [id], onDelete: Cascade)
+  status    String         @default("DONE")
+  result    String?
+  metadata  Json?
+  createdAt DateTime       @default(now())
 
   @@index([shopId, createdAt])
   @@index([ruleId, createdAt])
@@ -1425,7 +1484,7 @@ model ShopGoal {
   shop      Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
   type      GoalType
   label     String
-  target    Decimal  @db.Decimal(14,3)
+  target    Decimal  @db.Decimal(14, 3)
   startsAt  DateTime
   endsAt    DateTime
   active    Boolean  @default(true)
@@ -1466,7 +1525,7 @@ model PaymentLink {
   provider    PaymentProvider   @default(KONNECT)
   providerRef String?
   payUrl      String?
-  amount      Decimal           @db.Decimal(12,3)
+  amount      Decimal           @db.Decimal(12, 3)
   status      PaymentLinkStatus @default(PENDING)
   expiresAt   DateTime?
   paidAt      DateTime?
@@ -1517,7 +1576,6 @@ model MessageLog {
   @@index([repairId, createdAt])
 }
 
-
 enum SupplierSettlementStatus {
   PENDING
   CONFIRMED
@@ -1530,27 +1588,27 @@ enum SupplierSettlementCollector {
 }
 
 model SupplierSettlement {
-  id               String                      @id @default(cuid())
-  companyId        String
-  shopId           String
-  orderId          String?
-  driverAccountId  String?
-  collector        SupplierSettlementCollector
-  status           SupplierSettlementStatus    @default(PENDING)
-  amount           Decimal                     @db.Decimal(12,3)
-  method           PaymentMethod
-  reference        String
-  idempotencyKey   String                      @unique
-  proofUrl         String?
-  note             String?
-  collectedAt      DateTime                    @default(now())
-  confirmedAt      DateTime?
-  reversedAt       DateTime?
-  createdAt        DateTime                    @default(now())
-  company          SupplierCompany             @relation(fields: [companyId], references: [id], onDelete: Restrict)
-  shop             Shop                        @relation(fields: [shopId], references: [id], onDelete: Restrict)
-  order            SupplierOrder?              @relation(fields: [orderId], references: [id], onDelete: Restrict)
-  remittances      SupplierSettlementRemittance[]
+  id              String                         @id @default(cuid())
+  companyId       String
+  shopId          String
+  orderId         String?
+  driverAccountId String?
+  collector       SupplierSettlementCollector
+  status          SupplierSettlementStatus       @default(PENDING)
+  amount          Decimal                        @db.Decimal(12, 3)
+  method          PaymentMethod
+  reference       String
+  idempotencyKey  String                         @unique
+  proofUrl        String?
+  note            String?
+  collectedAt     DateTime                       @default(now())
+  confirmedAt     DateTime?
+  reversedAt      DateTime?
+  createdAt       DateTime                       @default(now())
+  company         SupplierCompany                @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  shop            Shop                           @relation(fields: [shopId], references: [id], onDelete: Restrict)
+  order           SupplierOrder?                 @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  remittances     SupplierSettlementRemittance[]
 
   @@unique([companyId, reference])
   @@index([companyId, shopId, status, createdAt])
@@ -1558,124 +1616,124 @@ model SupplierSettlement {
 }
 
 model SupplierSettlementRemittance {
-  id             String             @id @default(cuid())
-  settlementId   String
-  settlement     SupplierSettlement @relation(fields: [settlementId], references: [id], onDelete: Restrict)
-  amount         Decimal            @db.Decimal(12,3)
-  reference      String             @unique
-  confirmedAt    DateTime?
-  createdAt      DateTime           @default(now())
+  id           String             @id @default(cuid())
+  settlementId String
+  settlement   SupplierSettlement @relation(fields: [settlementId], references: [id], onDelete: Restrict)
+  amount       Decimal            @db.Decimal(12, 3)
+  reference    String             @unique
+  confirmedAt  DateTime?
+  createdAt    DateTime           @default(now())
 
   @@index([settlementId, confirmedAt])
 }
 
 model SupplierCompany {
-  id          String   @id @default(cuid())
-  name        String
-  slug        String   @unique
-  logoUrl     String?
-  phone       String?
-  publicCatalog Boolean @default(false)
-  email       String?
-  address     String?
-  region      String?
-  taxId       String?
-  description String?
+  id                     String                     @id @default(cuid())
+  name                   String
+  slug                   String                     @unique
+  logoUrl                String?
+  phone                  String?
+  publicCatalog          Boolean                    @default(false)
+  email                  String?
+  address                String?
+  region                 String?
+  taxId                  String?
+  description            String?
   // Optional legal/contact and print details, configured by the supplier owner.
-  legalName   String?
-  tradeRegister String?
-  secondaryPhone String?
-  website     String?
-  bankName    String?
-  bankRib     String?
-  documentFooter String?
-  invoiceTerms String?
-  deliveryInstructions String?
-  receiptMessage String?
+  legalName              String?
+  tradeRegister          String?
+  secondaryPhone         String?
+  website                String?
+  bankName               String?
+  bankRib                String?
+  documentFooter         String?
+  invoiceTerms           String?
+  deliveryInstructions   String?
+  receiptMessage         String?
   // Alerte WhatsApp à chaque nouvelle commande (envoyée par le compte WhatsApp de la plateforme Fixi).
-  whatsappAlertsEnabled Boolean @default(false)
-  whatsappAlertPhone    String?
-  currency    String   @default("DT")
-  defaultTaxRate Decimal @default(0) @db.Decimal(5,2)
-  invoicePrefix String @default("FAC")
-  receiptPrefix String @default("TCK")
-  purchasePrefix String @default("ACH")
-  allowNegativeStock Boolean @default(false)
-  active      Boolean  @default(true)
-  verified    Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @default(now()) @updatedAt
-  accounts    SupplierAccount[]
-  products    SupplierProduct[]
-  orders      SupplierOrder[]
-  settlements SupplierSettlement[]
-  saasSubscriptions SupplierSaasSubscription[]
-  saasPayments SupplierSaasPayment[]
-  promos                SupplierPromo[]
-  autoReminders         Boolean  @default(false)
-  remindersRunAt        DateTime?
-  stockAlerts           StockAlertRequest[]
-  partQuotes            SupplierPartQuote[]
-  driverBonusPerDelivery Decimal @default(0) @db.Decimal(12,3)
-  returnPickups         SupplierReturnPickup[]
+  whatsappAlertsEnabled  Boolean                    @default(false)
+  whatsappAlertPhone     String?
+  currency               String                     @default("DT")
+  defaultTaxRate         Decimal                    @default(0) @db.Decimal(5, 2)
+  invoicePrefix          String                     @default("FAC")
+  receiptPrefix          String                     @default("TCK")
+  purchasePrefix         String                     @default("ACH")
+  allowNegativeStock     Boolean                    @default(false)
+  active                 Boolean                    @default(true)
+  verified               Boolean                    @default(false)
+  createdAt              DateTime                   @default(now())
+  updatedAt              DateTime                   @default(now()) @updatedAt
+  accounts               SupplierAccount[]
+  products               SupplierProduct[]
+  orders                 SupplierOrder[]
+  settlements            SupplierSettlement[]
+  saasSubscriptions      SupplierSaasSubscription[]
+  saasPayments           SupplierSaasPayment[]
+  promos                 SupplierPromo[]
+  autoReminders          Boolean                    @default(false)
+  remindersRunAt         DateTime?
+  stockAlerts            StockAlertRequest[]
+  partQuotes             SupplierPartQuote[]
+  driverBonusPerDelivery Decimal                    @default(0) @db.Decimal(12, 3)
+  returnPickups          SupplierReturnPickup[]
 }
 
 model SupplierAccount {
-  id           String          @id @default(cuid())
-  companyId    String
-  company      SupplierCompany @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  fullName     String
-  login        String          @unique
-  passwordHash String
-  role         String          @default("ADMIN")
-  phone        String?
-  driverAvailable Boolean      @default(true)
-  deliverySessionVersion Int   @default(0)
-  isActive     Boolean         @default(true)
-  totpSecret   String?
-  totpEnabled  Boolean         @default(false)
-  sessionVersion Int           @default(0)
-  sharedCourier Boolean        @default(false)
-  courierFee   Decimal         @default(0) @db.Decimal(12,3)
-  createdAt    DateTime        @default(now())
+  id                     String          @id @default(cuid())
+  companyId              String
+  company                SupplierCompany @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  fullName               String
+  login                  String          @unique
+  passwordHash           String
+  role                   String          @default("ADMIN")
+  phone                  String?
+  driverAvailable        Boolean         @default(true)
+  deliverySessionVersion Int             @default(0)
+  isActive               Boolean         @default(true)
+  totpSecret             String?
+  totpEnabled            Boolean         @default(false)
+  sessionVersion         Int             @default(0)
+  sharedCourier          Boolean         @default(false)
+  courierFee             Decimal         @default(0) @db.Decimal(12, 3)
+  createdAt              DateTime        @default(now())
 }
 
 model SupplierProduct {
-  id          String          @id @default(cuid())
-  companyId   String
-  company     SupplierCompany @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  sku         String
-  barcode     String?
-  name        String
-  brand       String?
-  category    String?
-  brandId     String?
-  categoryId  String?
-  unitId      String?
-  description String?
-  imageUrl    String?
-  qualityGrade String?
-  price       Decimal         @db.Decimal(12,3)
-  retailPrice Decimal?        @db.Decimal(12,3)
-  wholesalePrice Decimal?     @db.Decimal(12,3)
-  minimumPrice Decimal?       @db.Decimal(12,3)
-  purchasePrice Decimal       @default(0) @db.Decimal(12,3)
-  averageCost Decimal         @default(0) @db.Decimal(12,3)
-  taxRate     Decimal         @default(0) @db.Decimal(5,2)
-  stock       Int             @default(0)
-  reservedStock Int           @default(0)
-  minStock    Int             @default(0)
-  maxStock    Int?
-  location    String?
-  minOrderQty Int             @default(1)
-  warrantyDays Int            @default(0)
-  serialTracked Boolean       @default(false)
-  active      Boolean         @default(true)
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @default(now()) @updatedAt
-  orderItems  SupplierOrderItem[]
-  stockAlerts StockAlertRequest[]
-  promos      SupplierPromo[]
+  id             String              @id @default(cuid())
+  companyId      String
+  company        SupplierCompany     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  sku            String
+  barcode        String?
+  name           String
+  brand          String?
+  category       String?
+  brandId        String?
+  categoryId     String?
+  unitId         String?
+  description    String?
+  imageUrl       String?
+  qualityGrade   String?
+  price          Decimal             @db.Decimal(12, 3)
+  retailPrice    Decimal?            @db.Decimal(12, 3)
+  wholesalePrice Decimal?            @db.Decimal(12, 3)
+  minimumPrice   Decimal?            @db.Decimal(12, 3)
+  purchasePrice  Decimal             @default(0) @db.Decimal(12, 3)
+  averageCost    Decimal             @default(0) @db.Decimal(12, 3)
+  taxRate        Decimal             @default(0) @db.Decimal(5, 2)
+  stock          Int                 @default(0)
+  reservedStock  Int                 @default(0)
+  minStock       Int                 @default(0)
+  maxStock       Int?
+  location       String?
+  minOrderQty    Int                 @default(1)
+  warrantyDays   Int                 @default(0)
+  serialTracked  Boolean             @default(false)
+  active         Boolean             @default(true)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @default(now()) @updatedAt
+  orderItems     SupplierOrderItem[]
+  stockAlerts    StockAlertRequest[]
+  promos         SupplierPromo[]
 
   @@unique([companyId, sku])
   @@index([companyId, active, name])
@@ -1685,24 +1743,24 @@ model SupplierProduct {
 }
 
 model SupplierOrder {
-  id          String              @id @default(cuid())
-  shopId      String
-  shop        Shop                @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  companyId   String
-  company     SupplierCompany     @relation(fields: [companyId], references: [id], onDelete: Restrict)
-  reference   String              @unique
-  status      SupplierOrderStatus @default(PENDING)
-  total       Decimal             @default(0) @db.Decimal(12,3)
-  note        String?
-  deliveryAddress String?
-  deliveryCode String?
-  confirmedAt DateTime?
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @default(now()) @updatedAt
+  id                String               @id @default(cuid())
+  shopId            String
+  shop              Shop                 @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  companyId         String
+  company           SupplierCompany      @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  reference         String               @unique
+  status            SupplierOrderStatus  @default(PENDING)
+  total             Decimal              @default(0) @db.Decimal(12, 3)
+  note              String?
+  deliveryAddress   String?
+  deliveryCode      String?
+  confirmedAt       DateTime?
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @default(now()) @updatedAt
   receivedToStockAt DateTime?
-  items       SupplierOrderItem[]
-  delivery    SupplierDelivery?
-  settlements SupplierSettlement[]
+  items             SupplierOrderItem[]
+  delivery          SupplierDelivery?
+  settlements       SupplierSettlement[]
 
   @@index([shopId, createdAt])
   @@index([companyId, status, createdAt])
@@ -1729,43 +1787,42 @@ model SupplierOrderItem {
   productId String
   product   SupplierProduct @relation(fields: [productId], references: [id], onDelete: Restrict)
   quantity  Int
-  unitPrice Decimal         @db.Decimal(12,3)
+  unitPrice Decimal         @db.Decimal(12, 3)
 }
 
 model SupplierDelivery {
-  id              String                 @id @default(cuid())
-  orderId         String                 @unique
-  order           SupplierOrder          @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  status          SupplierDeliveryStatus @default(PENDING)
-  driverAccountId String?
-  driverName      String?
-  driverPhone     String?
-  trackingNote    String?
-  proofUrl        String?
-  recipientName   String?
-  recipientPhone  String?
-  proofCode       String?
-  cashDue         Decimal                @default(0) @db.Decimal(12,3)
-  cashCollected   Decimal                @default(0) @db.Decimal(12,3)
-  deliveryFee     Decimal                @default(0) @db.Decimal(12,3)
-  attemptCount    Int                    @default(0)
-  exceptionStatus String?
-  returnCondition String?
-  returnNote      String?
-  returnedAt      DateTime?
-  assignedAt      DateTime?
-  acceptedAt      DateTime?
-  pickedUpAt      DateTime?
-  arrivedAt       DateTime?
-  deliveredAt     DateTime?
+  id               String                 @id @default(cuid())
+  orderId          String                 @unique
+  order            SupplierOrder          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  status           SupplierDeliveryStatus @default(PENDING)
+  driverAccountId  String?
+  driverName       String?
+  driverPhone      String?
+  trackingNote     String?
+  proofUrl         String?
+  recipientName    String?
+  recipientPhone   String?
+  proofCode        String?
+  cashDue          Decimal                @default(0) @db.Decimal(12, 3)
+  cashCollected    Decimal                @default(0) @db.Decimal(12, 3)
+  deliveryFee      Decimal                @default(0) @db.Decimal(12, 3)
+  attemptCount     Int                    @default(0)
+  exceptionStatus  String?
+  returnCondition  String?
+  returnNote       String?
+  returnedAt       DateTime?
+  assignedAt       DateTime?
+  acceptedAt       DateTime?
+  pickedUpAt       DateTime?
+  arrivedAt        DateTime?
+  deliveredAt      DateTime?
   partnerCompanyId String?
-  courierFee      Decimal?               @db.Decimal(12,3)
-  signatureUrl    String?
-  updatedAt       DateTime               @default(now()) @updatedAt
+  courierFee       Decimal?               @db.Decimal(12, 3)
+  signatureUrl     String?
+  updatedAt        DateTime               @default(now()) @updatedAt
+
   @@index([driverAccountId, status])
 }
-
-
 
 model CommunityPost {
   id              String                   @id @default(cuid())
@@ -1818,33 +1875,32 @@ model CommunityVote {
   @@index([shopId, type])
 }
 
-
 model PartMarketListing {
-  id              String              @id @default(cuid())
-  sellerShopId    String
-  sellerShop      Shop                @relation("ListingSellerShop", fields: [sellerShopId], references: [id], onDelete: Cascade)
-  createdById     String
-  createdBy       User                @relation(fields: [createdById], references: [id], onDelete: Cascade)
-  inventoryItemId String?
-  inventoryItem   InventoryItem?      @relation(fields: [inventoryItemId], references: [id], onDelete: SetNull)
-  title           String
-  reference       String?
-  category        String?
-  brand           String?
-  compatibleModels String[]           @default([])
-  quality         String?
-  condition       String              @default("NEW")
-  quantity        Int                 @default(1)
-  reservedQuantity Int                @default(0)
-  unitPrice       Decimal             @db.Decimal(12,3)
-  imageDataUrl    String?
-  notes           String?
-  region          String?
-  status          MarketListingStatus @default(ACTIVE)
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @default(now()) @updatedAt
-  requests        PartMarketRequest[]
-  sosResponses    SosPartResponse[]
+  id               String              @id @default(cuid())
+  sellerShopId     String
+  sellerShop       Shop                @relation("ListingSellerShop", fields: [sellerShopId], references: [id], onDelete: Cascade)
+  createdById      String
+  createdBy        User                @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  inventoryItemId  String?
+  inventoryItem    InventoryItem?      @relation(fields: [inventoryItemId], references: [id], onDelete: SetNull)
+  title            String
+  reference        String?
+  category         String?
+  brand            String?
+  compatibleModels String[]            @default([])
+  quality          String?
+  condition        String              @default("NEW")
+  quantity         Int                 @default(1)
+  reservedQuantity Int                 @default(0)
+  unitPrice        Decimal             @db.Decimal(12, 3)
+  imageDataUrl     String?
+  notes            String?
+  region           String?
+  status           MarketListingStatus @default(ACTIVE)
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @default(now()) @updatedAt
+  requests         PartMarketRequest[]
+  sosResponses     SosPartResponse[]
 
   @@index([status, createdAt])
   @@index([sellerShopId, status])
@@ -1853,93 +1909,93 @@ model PartMarketListing {
 }
 
 model PartMarketRequest {
-  id          String              @id @default(cuid())
-  listingId   String
-  listing     PartMarketListing   @relation(fields: [listingId], references: [id], onDelete: Cascade)
-  buyerShopId String
-  buyerShop   Shop                @relation("MarketBuyerShop", fields: [buyerShopId], references: [id], onDelete: Cascade)
-  buyerUserId String
-  buyerUser   User                @relation(fields: [buyerUserId], references: [id], onDelete: Cascade)
-  quantity    Int
-  offeredPrice Decimal?           @db.Decimal(12,3)
-  message     String?
-  status      MarketRequestStatus @default(PENDING)
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @default(now()) @updatedAt
+  id           String              @id @default(cuid())
+  listingId    String
+  listing      PartMarketListing   @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  buyerShopId  String
+  buyerShop    Shop                @relation("MarketBuyerShop", fields: [buyerShopId], references: [id], onDelete: Cascade)
+  buyerUserId  String
+  buyerUser    User                @relation(fields: [buyerUserId], references: [id], onDelete: Cascade)
+  quantity     Int
+  offeredPrice Decimal?            @db.Decimal(12, 3)
+  message      String?
+  status       MarketRequestStatus @default(PENDING)
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @default(now()) @updatedAt
 
   @@index([listingId, status])
   @@index([buyerShopId, status])
 }
 
 model SosPartRequest {
-  id            String        @id @default(cuid())
+  id              String            @id @default(cuid())
   requesterShopId String
-  requesterShop Shop          @relation("SosRequesterShop", fields: [requesterShopId], references: [id], onDelete: Cascade)
+  requesterShop   Shop              @relation("SosRequesterShop", fields: [requesterShopId], references: [id], onDelete: Cascade)
   requesterUserId String
-  requesterUser User          @relation(fields: [requesterUserId], references: [id], onDelete: Cascade)
-  partName      String
-  reference     String?
-  deviceModel   String?
-  quantity      Int           @default(1)
-  regionOnly    Boolean       @default(true)
-  region        String?
-  urgencyNote   String?
-  status        SosPartStatus @default(OPEN)
-  expiresAt     DateTime?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @default(now()) @updatedAt
-  responses     SosPartResponse[]
+  requesterUser   User              @relation(fields: [requesterUserId], references: [id], onDelete: Cascade)
+  partName        String
+  reference       String?
+  deviceModel     String?
+  quantity        Int               @default(1)
+  regionOnly      Boolean           @default(true)
+  region          String?
+  urgencyNote     String?
+  status          SosPartStatus     @default(OPEN)
+  expiresAt       DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @default(now()) @updatedAt
+  responses       SosPartResponse[]
 
   @@index([status, region, createdAt])
   @@index([requesterShopId, status])
 }
 
 model SosPartResponse {
-  id            String            @id @default(cuid())
-  requestId     String
-  request       SosPartRequest    @relation(fields: [requestId], references: [id], onDelete: Cascade)
-  responderShopId String
-  responderShop Shop              @relation("SosResponderShop", fields: [responderShopId], references: [id], onDelete: Cascade)
-  responderUserId String
-  responderUser User              @relation(fields: [responderUserId], references: [id], onDelete: Cascade)
-  listingId     String?
-  listing       PartMarketListing? @relation(fields: [listingId], references: [id], onDelete: SetNull)
+  id                String             @id @default(cuid())
+  requestId         String
+  request           SosPartRequest     @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  responderShopId   String
+  responderShop     Shop               @relation("SosResponderShop", fields: [responderShopId], references: [id], onDelete: Cascade)
+  responderUserId   String
+  responderUser     User               @relation(fields: [responderUserId], references: [id], onDelete: Cascade)
+  listingId         String?
+  listing           PartMarketListing? @relation(fields: [listingId], references: [id], onDelete: SetNull)
   quantityAvailable Int
-  price         Decimal?          @db.Decimal(12,3)
-  message       String?
-  status        SosResponseStatus @default(OFFERED)
-  createdAt     DateTime          @default(now())
-  updatedAt     DateTime          @default(now()) @updatedAt
+  price             Decimal?           @db.Decimal(12, 3)
+  message           String?
+  status            SosResponseStatus  @default(OFFERED)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @default(now()) @updatedAt
 
   @@index([requestId, status])
   @@index([responderShopId, status])
 }
 
 model ExpertCallRequest {
-  id              String           @id @default(cuid())
+  id              String              @id @default(cuid())
   requesterShopId String
-  requesterShop   Shop             @relation("ExpertRequesterShop", fields: [requesterShopId], references: [id], onDelete: Cascade)
+  requesterShop   Shop                @relation("ExpertRequesterShop", fields: [requesterShopId], references: [id], onDelete: Cascade)
   requesterUserId String
-  requesterUser   User             @relation("ExpertRequesterUser", fields: [requesterUserId], references: [id], onDelete: Cascade)
+  requesterUser   User                @relation("ExpertRequesterUser", fields: [requesterUserId], references: [id], onDelete: Cascade)
   acceptedShopId  String?
-  acceptedShop    Shop?            @relation("ExpertAcceptedShop", fields: [acceptedShopId], references: [id], onDelete: SetNull)
+  acceptedShop    Shop?               @relation("ExpertAcceptedShop", fields: [acceptedShopId], references: [id], onDelete: SetNull)
   acceptedUserId  String?
-  acceptedUser    User?            @relation("ExpertAcceptedUser", fields: [acceptedUserId], references: [id], onDelete: SetNull)
+  acceptedUser    User?               @relation("ExpertAcceptedUser", fields: [acceptedUserId], references: [id], onDelete: SetNull)
   specialty       String?
   device          String?
   title           String
   issue           String
-  regionOnly      Boolean          @default(false)
+  regionOnly      Boolean             @default(false)
   region          String?
-  budget          Decimal?         @db.Decimal(12,3)
-  agreedPrice     Decimal?         @db.Decimal(12,3)
-  status          ExpertCallStatus @default(OPEN)
+  budget          Decimal?            @db.Decimal(12, 3)
+  agreedPrice     Decimal?            @db.Decimal(12, 3)
+  status          ExpertCallStatus    @default(OPEN)
   meetingUrl      String?
   resolvedNote    String?
-  createdAt       DateTime         @default(now())
+  createdAt       DateTime            @default(now())
   acceptedAt      DateTime?
   resolvedAt      DateTime?
-  updatedAt       DateTime         @default(now()) @updatedAt
+  updatedAt       DateTime            @default(now()) @updatedAt
   messages        ExpertCallMessage[]
 
   @@index([status, createdAt])
@@ -1948,46 +2004,46 @@ model ExpertCallRequest {
 }
 
 model ExpertCallMessage {
-  id        String            @id @default(cuid())
-  callId    String
-  call      ExpertCallRequest @relation(fields: [callId], references: [id], onDelete: Cascade)
-  shopId    String
-  shop      Shop              @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  userId    String
-  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  body      String
+  id           String            @id @default(cuid())
+  callId       String
+  call         ExpertCallRequest @relation(fields: [callId], references: [id], onDelete: Cascade)
+  shopId       String
+  shop         Shop              @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  body         String
   imageDataUrl String?
-  createdAt DateTime          @default(now())
+  createdAt    DateTime          @default(now())
 
   @@index([callId, createdAt])
 }
 
 model AcademyCourse {
-  id          String       @id @default(cuid())
-  shopId      String?
-  shop        Shop?        @relation(fields: [shopId], references: [id], onDelete: SetNull)
-  title       String
-  description String
-  category    String
-  level       AcademyLevel @default(BEGINNER)
+  id           String          @id @default(cuid())
+  shopId       String?
+  shop         Shop?           @relation(fields: [shopId], references: [id], onDelete: SetNull)
+  title        String
+  description  String
+  category     String
+  level        AcademyLevel    @default(BEGINNER)
   coverDataUrl String?
-  published   Boolean      @default(true)
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @default(now()) @updatedAt
-  lessons     AcademyLesson[]
+  published    Boolean         @default(true)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @default(now()) @updatedAt
+  lessons      AcademyLesson[]
 }
 
 model AcademyLesson {
-  id          String        @id @default(cuid())
-  courseId    String
-  course      AcademyCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  title       String
-  content     String
-  videoUrl    String?
-  sortOrder   Int           @default(0)
-  estimatedMinutes Int      @default(10)
-  createdAt   DateTime      @default(now())
-  progress    AcademyLessonProgress[]
+  id               String                  @id @default(cuid())
+  courseId         String
+  course           AcademyCourse           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title            String
+  content          String
+  videoUrl         String?
+  sortOrder        Int                     @default(0)
+  estimatedMinutes Int                     @default(10)
+  createdAt        DateTime                @default(now())
+  progress         AcademyLessonProgress[]
 
   @@index([courseId, sortOrder])
 }
@@ -2007,37 +2063,37 @@ model AcademyLessonProgress {
 }
 
 model CarePlan {
-  id            String   @id @default(cuid())
+  id            String                   @id @default(cuid())
   shopId        String
-  shop          Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  shop          Shop                     @relation(fields: [shopId], references: [id], onDelete: Cascade)
   name          String
   description   String?
   durationDays  Int
-  price         Decimal  @db.Decimal(12,3)
-  benefits      String[] @default([])
-  active        Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @default(now()) @updatedAt
+  price         Decimal                  @db.Decimal(12, 3)
+  benefits      String[]                 @default([])
+  active        Boolean                  @default(true)
+  createdAt     DateTime                 @default(now())
+  updatedAt     DateTime                 @default(now()) @updatedAt
   subscriptions ClientCareSubscription[]
 
   @@index([shopId, active])
 }
 
 model ClientCareSubscription {
-  id          String                 @id @default(cuid())
-  shopId      String
-  shop        Shop                   @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  clientId    String
-  client      Client                 @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  planId      String
-  plan        CarePlan               @relation(fields: [planId], references: [id], onDelete: Restrict)
-  status      CareSubscriptionStatus @default(ACTIVE)
-  startsAt    DateTime               @default(now())
-  endsAt      DateTime
-  pricePaid   Decimal                @default(0) @db.Decimal(12,3)
-  note        String?
-  createdAt   DateTime               @default(now())
-  updatedAt   DateTime               @default(now()) @updatedAt
+  id        String                 @id @default(cuid())
+  shopId    String
+  shop      Shop                   @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  clientId  String
+  client    Client                 @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  planId    String
+  plan      CarePlan               @relation(fields: [planId], references: [id], onDelete: Restrict)
+  status    CareSubscriptionStatus @default(ACTIVE)
+  startsAt  DateTime               @default(now())
+  endsAt    DateTime
+  pricePaid Decimal                @default(0) @db.Decimal(12, 3)
+  note      String?
+  createdAt DateTime               @default(now())
+  updatedAt DateTime               @default(now()) @updatedAt
 
   @@index([shopId, status, endsAt])
   @@index([clientId, status])
@@ -2063,7 +2119,6 @@ model DigitalWarranty {
   @@index([clientId, status, endsAt])
 }
 
-
 model SupplierErpCustomer {
   id          String   @id @default(cuid())
   companyId   String
@@ -2074,14 +2129,15 @@ model SupplierErpCustomer {
   address     String?
   region      String?
   taxId       String?
-  creditLimit Decimal  @default(0) @db.Decimal(12,3)
+  creditLimit Decimal  @default(0) @db.Decimal(12, 3)
   // Tarif appliqué automatiquement à la caisse : RETAIL (détail) ou WHOLESALE (gros), plus une remise négociée en %.
   priceMode   String   @default("RETAIL")
-  discountPct Decimal  @default(0) @db.Decimal(5,2)
+  discountPct Decimal  @default(0) @db.Decimal(5, 2)
   notes       String?
   active      Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @default(now()) @updatedAt
+
   @@index([companyId, shopId])
   @@index([companyId, name])
   @@index([companyId, phone])
@@ -2098,31 +2154,31 @@ model SupplierSequence {
 }
 
 model SupplierCommercialDocument {
-  id          String   @id @default(cuid())
-  companyId   String
-  type        String
-  reference   String
-  status      String   @default("DRAFT")
-  customerId  String?
-  sourceSaleId String?
+  id            String    @id @default(cuid())
+  companyId     String
+  type          String
+  reference     String
+  status        String    @default("DRAFT")
+  customerId    String?
+  sourceSaleId  String?
   sourceOrderId String?
-  warehouseId String?
-  partyName   String?
-  partyPhone  String?
-  partyAddress String?
-  partyTaxId  String?
-  currency    String   @default("DT")
-  subtotal    Decimal  @default(0) @db.Decimal(12,3)
-  discount    Decimal  @default(0) @db.Decimal(12,3)
-  tax         Decimal  @default(0) @db.Decimal(12,3)
-  stamp       Decimal  @default(0) @db.Decimal(12,3)
-  total       Decimal  @default(0) @db.Decimal(12,3)
-  validUntil  DateTime?
-  issuedAt    DateTime @default(now())
-  note        String?
-  createdById String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @default(now()) @updatedAt
+  warehouseId   String?
+  partyName     String?
+  partyPhone    String?
+  partyAddress  String?
+  partyTaxId    String?
+  currency      String    @default("DT")
+  subtotal      Decimal   @default(0) @db.Decimal(12, 3)
+  discount      Decimal   @default(0) @db.Decimal(12, 3)
+  tax           Decimal   @default(0) @db.Decimal(12, 3)
+  stamp         Decimal   @default(0) @db.Decimal(12, 3)
+  total         Decimal   @default(0) @db.Decimal(12, 3)
+  validUntil    DateTime?
+  issuedAt      DateTime  @default(now())
+  note          String?
+  createdById   String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @default(now()) @updatedAt
 
   @@unique([companyId, reference])
   @@index([companyId, type, issuedAt])
@@ -2131,39 +2187,40 @@ model SupplierCommercialDocument {
 }
 
 model SupplierCommercialDocumentItem {
-  id         String   @id @default(cuid())
+  id         String  @id @default(cuid())
   documentId String
   productId  String?
   sku        String?
   name       String
   quantity   Int
-  unitPrice  Decimal  @default(0) @db.Decimal(12,3)
-  discount   Decimal  @default(0) @db.Decimal(12,3)
-  taxRate    Decimal  @default(0) @db.Decimal(5,2)
+  unitPrice  Decimal @default(0) @db.Decimal(12, 3)
+  discount   Decimal @default(0) @db.Decimal(12, 3)
+  taxRate    Decimal @default(0) @db.Decimal(5, 2)
 
   @@index([documentId])
   @@index([productId])
 }
 
 model SupplierErpSale {
-  id          String   @id @default(cuid())
-  companyId   String
-  customerId  String?
-  warehouseId String?
+  id            String    @id @default(cuid())
+  companyId     String
+  customerId    String?
+  warehouseId   String?
   sourceOrderId String?
   cashSessionId String?
-  reference   String
-  status      String   @default("DRAFT")
-  subtotal    Decimal  @default(0) @db.Decimal(12,3)
-  discount    Decimal  @default(0) @db.Decimal(12,3)
-  tax         Decimal  @default(0) @db.Decimal(12,3)
-  total       Decimal  @default(0) @db.Decimal(12,3)
-  paid        Decimal  @default(0) @db.Decimal(12,3)
-  dueAt       DateTime?
-  note        String?
-  createdById String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @default(now()) @updatedAt
+  reference     String
+  status        String    @default("DRAFT")
+  subtotal      Decimal   @default(0) @db.Decimal(12, 3)
+  discount      Decimal   @default(0) @db.Decimal(12, 3)
+  tax           Decimal   @default(0) @db.Decimal(12, 3)
+  total         Decimal   @default(0) @db.Decimal(12, 3)
+  paid          Decimal   @default(0) @db.Decimal(12, 3)
+  dueAt         DateTime?
+  note          String?
+  createdById   String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @default(now()) @updatedAt
+
   @@unique([companyId, reference])
   @@index([companyId, status, createdAt])
   @@index([companyId, sourceOrderId])
@@ -2171,32 +2228,34 @@ model SupplierErpSale {
 }
 
 model SupplierErpSaleItem {
-  id        String   @id @default(cuid())
+  id        String  @id @default(cuid())
   saleId    String
   productId String?
   sku       String?
   name      String
   quantity  Int
-  unitCost  Decimal  @default(0) @db.Decimal(12,3)
-  unitPrice Decimal  @db.Decimal(12,3)
-  discount  Decimal  @default(0) @db.Decimal(12,3)
+  unitCost  Decimal @default(0) @db.Decimal(12, 3)
+  unitPrice Decimal @db.Decimal(12, 3)
+  discount  Decimal @default(0) @db.Decimal(12, 3)
+
   @@index([saleId])
   @@index([productId])
 }
 
 model SupplierErpPayment {
-  id         String   @id @default(cuid())
-  companyId  String
-  customerId String?
-  saleId     String?
+  id            String   @id @default(cuid())
+  companyId     String
+  customerId    String?
+  saleId        String?
   cashSessionId String?
-  kind       String   @default("IN")
-  method     String   @default("CASH")
-  amount     Decimal  @db.Decimal(12,3)
-  reference  String?
-  note       String?
-  accountId  String?
-  createdAt  DateTime @default(now())
+  kind          String   @default("IN")
+  method        String   @default("CASH")
+  amount        Decimal  @db.Decimal(12, 3)
+  reference     String?
+  note          String?
+  accountId     String?
+  createdAt     DateTime @default(now())
+
   @@index([companyId, createdAt])
   @@index([companyId, cashSessionId])
   @@index([customerId])
@@ -2204,106 +2263,112 @@ model SupplierErpPayment {
 }
 
 model SupplierErpExpense {
-  id        String   @id @default(cuid())
-  companyId String
+  id            String   @id @default(cuid())
+  companyId     String
   cashSessionId String?
-  category  String
-  label     String
-  amount    Decimal  @db.Decimal(12,3)
-  method    String   @default("CASH")
-  note      String?
-  createdById String?
-  expenseDate DateTime @default(now())
-  createdAt DateTime @default(now())
+  category      String
+  label         String
+  amount        Decimal  @db.Decimal(12, 3)
+  method        String   @default("CASH")
+  note          String?
+  createdById   String?
+  expenseDate   DateTime @default(now())
+  createdAt     DateTime @default(now())
+
   @@index([companyId, expenseDate])
   @@index([companyId, cashSessionId])
 }
 
 model SupplierErpPurchase {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   companyId   String
   warehouseId String?
   vendorName  String
   reference   String
-  status      String   @default("DRAFT")
-  total       Decimal  @default(0) @db.Decimal(12,3)
-  paid        Decimal  @default(0) @db.Decimal(12,3)
+  status      String    @default("DRAFT")
+  total       Decimal   @default(0) @db.Decimal(12, 3)
+  paid        Decimal   @default(0) @db.Decimal(12, 3)
   dueAt       DateTime?
   note        String?
-  createdAt   DateTime @default(now())
+  createdAt   DateTime  @default(now())
   receivedAt  DateTime?
+
   @@unique([companyId, reference])
   @@index([companyId, createdAt])
 }
 
 model SupplierErpPurchaseItem {
-  id        String   @id @default(cuid())
+  id         String  @id @default(cuid())
   purchaseId String
-  productId String?
-  sku       String?
-  name      String
-  quantity  Int
-  unitCost  Decimal  @db.Decimal(12,3)
+  productId  String?
+  sku        String?
+  name       String
+  quantity   Int
+  unitCost   Decimal @db.Decimal(12, 3)
+
   @@index([purchaseId])
   @@index([productId])
 }
 
 model SupplierErpCashSession {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   companyId     String
   accountId     String
   warehouseId   String?
-  status        String   @default("OPEN")
-  openingAmount Decimal  @default(0) @db.Decimal(12,3)
-  expectedCash  Decimal  @default(0) @db.Decimal(12,3)
-  closingAmount Decimal? @db.Decimal(12,3)
-  difference    Decimal? @db.Decimal(12,3)
-  openedAt      DateTime @default(now())
+  status        String    @default("OPEN")
+  openingAmount Decimal   @default(0) @db.Decimal(12, 3)
+  expectedCash  Decimal   @default(0) @db.Decimal(12, 3)
+  closingAmount Decimal?  @db.Decimal(12, 3)
+  difference    Decimal?  @db.Decimal(12, 3)
+  openedAt      DateTime  @default(now())
   closedAt      DateTime?
   note          String?
+
   @@index([companyId, status, openedAt])
 }
 
 model SupplierErpStockMovement {
-  id          String   @id @default(cuid())
-  companyId   String
-  productId   String
-  type        String
-  quantity    Int
-  beforeQty   Int
-  afterQty    Int
-  unitCost    Decimal? @db.Decimal(12,3)
-  reference   String?
-  note        String?
-  accountId   String?
-  createdAt   DateTime @default(now())
+  id        String   @id @default(cuid())
+  companyId String
+  productId String
+  type      String
+  quantity  Int
+  beforeQty Int
+  afterQty  Int
+  unitCost  Decimal? @db.Decimal(12, 3)
+  reference String?
+  note      String?
+  accountId String?
+  createdAt DateTime @default(now())
+
   @@index([companyId, productId, createdAt])
 }
 
 model SupplierDriverLocation {
-  id         String   @id @default(cuid())
-  companyId  String
-  orderId    String
-  accountId  String?
-  latitude   Decimal  @db.Decimal(10,7)
-  longitude  Decimal  @db.Decimal(10,7)
-  accuracy   Decimal? @db.Decimal(10,2)
-  createdAt  DateTime @default(now())
+  id        String   @id @default(cuid())
+  companyId String
+  orderId   String
+  accountId String?
+  latitude  Decimal  @db.Decimal(10, 7)
+  longitude Decimal  @db.Decimal(10, 7)
+  accuracy  Decimal? @db.Decimal(10, 2)
+  createdAt DateTime @default(now())
+
   @@index([companyId, orderId, createdAt])
 }
 
-
 model SupplierCategory {
-  id        String   @id @default(cuid())
-  companyId String
-  name      String
-  slug      String
-  parentId  String?
+  id          String   @id @default(cuid())
+  companyId   String
+  name        String
+  slug        String
+  parentId    String?
   description String?
-  sortOrder Int      @default(0)
-  active    Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
+  sortOrder   Int      @default(0)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+
   @@unique([companyId, slug])
   @@index([companyId, active, sortOrder])
   @@index([parentId])
@@ -2317,6 +2382,7 @@ model SupplierBrand {
   active    Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
+
   @@unique([companyId, slug])
   @@index([companyId, active, name])
 }
@@ -2329,6 +2395,7 @@ model SupplierUnit {
   precision Int      @default(0)
   active    Boolean  @default(true)
   createdAt DateTime @default(now())
+
   @@unique([companyId, symbol])
   @@index([companyId, active])
 }
@@ -2342,29 +2409,31 @@ model SupplierPaymentMethod {
   active    Boolean  @default(true)
   sortOrder Int      @default(0)
   createdAt DateTime @default(now())
+
   @@unique([companyId, code])
   @@index([companyId, active, sortOrder])
 }
 
 model SupplierDeliveryShift {
-  id               String   @id @default(cuid())
+  id               String    @id @default(cuid())
   companyId        String
   driverAccountId  String
-  status           String   @default("OPEN")
-  startCash        Decimal  @default(0) @db.Decimal(12,3)
-  expectedCod      Decimal  @default(0) @db.Decimal(12,3)
-  collectedCod     Decimal  @default(0) @db.Decimal(12,3)
-  remittedCod      Decimal  @default(0) @db.Decimal(12,3)
-  declaredRemit    Decimal? @db.Decimal(12,3)
-  cashDifference   Decimal? @db.Decimal(12,3)
+  status           String    @default("OPEN")
+  startCash        Decimal   @default(0) @db.Decimal(12, 3)
+  expectedCod      Decimal   @default(0) @db.Decimal(12, 3)
+  collectedCod     Decimal   @default(0) @db.Decimal(12, 3)
+  remittedCod      Decimal   @default(0) @db.Decimal(12, 3)
+  declaredRemit    Decimal?  @db.Decimal(12, 3)
+  cashDifference   Decimal?  @db.Decimal(12, 3)
   cashierAccountId String?
   startMileage     Int?
   endMileage       Int?
   note             String?
-  openedAt         DateTime @default(now())
+  openedAt         DateTime  @default(now())
   submittedAt      DateTime?
   confirmedAt      DateTime?
   closedAt         DateTime?
+
   @@index([companyId, driverAccountId, status])
   @@index([companyId, openedAt])
   @@index([companyId, status, submittedAt])
@@ -2384,19 +2453,19 @@ model SupplierPushSubscription {
 }
 
 model SupplierNotification {
-  id        String   @id @default(cuid())
-  companyId String
-  accountId String
-  kind      String   @default("INFO")
-  priority  String   @default("NORMAL")
-  title     String
-  message   String
-  href      String?
-  soundKey  String   @default("CHIME")
-  experienceKey String @default("GENERAL")
-  metadata  Json?
-  readAt    DateTime?
-  createdAt DateTime @default(now())
+  id            String    @id @default(cuid())
+  companyId     String
+  accountId     String
+  kind          String    @default("INFO")
+  priority      String    @default("NORMAL")
+  title         String
+  message       String
+  href          String?
+  soundKey      String    @default("CHIME")
+  experienceKey String    @default("GENERAL")
+  metadata      Json?
+  readAt        DateTime?
+  createdAt     DateTime  @default(now())
 
   @@index([companyId, accountId, createdAt])
   @@index([accountId, readAt])
@@ -2411,6 +2480,7 @@ model SupplierAuditEvent {
   entityId  String?
   metadata  Json?
   createdAt DateTime @default(now())
+
   @@index([companyId, createdAt])
   @@index([companyId, entity, entityId])
 }
@@ -2425,6 +2495,7 @@ model SupplierWarehouse {
   active    Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
+
   @@unique([companyId, code])
   @@index([companyId, active])
 }
@@ -2438,179 +2509,191 @@ model SupplierWarehouseStock {
   quantity    Int      @default(0)
   reserved    Int      @default(0)
   updatedAt   DateTime @default(now()) @updatedAt
+
   @@unique([warehouseId, productId])
   @@index([companyId, productId])
 }
 
 model SupplierVendor {
-  id           String   @id @default(cuid())
-  companyId    String
-  name         String
-  phone        String?
-  email        String?
-  address      String?
-  taxId        String?
-  creditLimit  Decimal  @default(0) @db.Decimal(12,3)
-  openingDue   Decimal  @default(0) @db.Decimal(12,3)
-  notes        String?
-  active       Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @default(now()) @updatedAt
+  id          String   @id @default(cuid())
+  companyId   String
+  name        String
+  phone       String?
+  email       String?
+  address     String?
+  taxId       String?
+  creditLimit Decimal  @default(0) @db.Decimal(12, 3)
+  openingDue  Decimal  @default(0) @db.Decimal(12, 3)
+  notes       String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+
   @@index([companyId, name])
 }
 
 model SupplierReturn {
-  id          String   @id @default(cuid())
-  companyId   String
-  type        String
-  reference   String
-  sourceRef   String?
+  id           String    @id @default(cuid())
+  companyId    String
+  type         String
+  reference    String
+  sourceRef    String?
   sourceSaleId String?
-  warehouseId String?
-  customerId  String?
-  vendorId    String?
+  warehouseId  String?
+  customerId   String?
+  vendorId     String?
   refundMethod String?
-  status      String   @default("DRAFT")
-  total       Decimal  @default(0) @db.Decimal(12,3)
-  refund      Decimal  @default(0) @db.Decimal(12,3)
-  note        String?
-  createdById String?
-  createdAt   DateTime @default(now())
-  completedAt DateTime?
+  status       String    @default("DRAFT")
+  total        Decimal   @default(0) @db.Decimal(12, 3)
+  refund       Decimal   @default(0) @db.Decimal(12, 3)
+  note         String?
+  createdById  String?
+  createdAt    DateTime  @default(now())
+  completedAt  DateTime?
+
   @@unique([companyId, reference])
   @@index([companyId, type, createdAt])
   @@index([companyId, sourceSaleId])
 }
 
 model SupplierReturnItem {
-  id        String   @id @default(cuid())
-  returnId  String
+  id         String  @id @default(cuid())
+  returnId   String
   saleItemId String?
-  productId String?
-  sku       String?
-  name      String
-  quantity  Int
-  unitCost  Decimal  @default(0) @db.Decimal(12,3)
-  unitPrice Decimal  @default(0) @db.Decimal(12,3)
-  reason    String?
-  condition String?
-  restock   Boolean  @default(true)
+  productId  String?
+  sku        String?
+  name       String
+  quantity   Int
+  unitCost   Decimal @default(0) @db.Decimal(12, 3)
+  unitPrice  Decimal @default(0) @db.Decimal(12, 3)
+  reason     String?
+  condition  String?
+  restock    Boolean @default(true)
+
   @@index([returnId])
   @@index([productId])
 }
 
 model SupplierStockCount {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   companyId   String
   warehouseId String?
   reference   String
-  status      String   @default("OPEN")
+  status      String    @default("OPEN")
   note        String?
   createdById String?
-  createdAt   DateTime @default(now())
+  createdAt   DateTime  @default(now())
   closedAt    DateTime?
+
   @@unique([companyId, reference])
   @@index([companyId, status, createdAt])
 }
 
 model SupplierStockCountItem {
-  id          String   @id @default(cuid())
+  id           String @id @default(cuid())
   stockCountId String
-  productId   String
-  expectedQty Int
-  countedQty  Int?
-  difference  Int?
+  productId    String
+  expectedQty  Int
+  countedQty   Int?
+  difference   Int?
+
   @@unique([stockCountId, productId])
 }
 
 model SupplierPriceTier {
-  id        String   @id @default(cuid())
+  id        String  @id @default(cuid())
   companyId String
   productId String
   name      String
   minQty    Int
-  unitPrice Decimal  @db.Decimal(12,3)
-  active    Boolean  @default(true)
+  unitPrice Decimal @db.Decimal(12, 3)
+  active    Boolean @default(true)
+
   @@index([companyId, productId, minQty])
 }
 
 model SupplierDeliveryEvent {
-  id         String   @id @default(cuid())
-  companyId  String
-  orderId    String
-  accountId  String?
-  type       String
-  note       String?
-  amount     Decimal? @db.Decimal(12,3)
-  latitude   Decimal? @db.Decimal(10,7)
-  longitude  Decimal? @db.Decimal(10,7)
-  proofUrl   String?
-  createdAt  DateTime @default(now())
+  id        String   @id @default(cuid())
+  companyId String
+  orderId   String
+  accountId String?
+  type      String
+  note      String?
+  amount    Decimal? @db.Decimal(12, 3)
+  latitude  Decimal? @db.Decimal(10, 7)
+  longitude Decimal? @db.Decimal(10, 7)
+  proofUrl  String?
+  createdAt DateTime @default(now())
+
   @@index([companyId, orderId, createdAt])
 }
 
-
-/* FIXI Supplier SaaS – subscriptions for wholesale companies, separate from workshop plans.
-   Existing suppliers have no subscription until an admin assigns one; nothing is disabled on migration. */
+/**
+ * FIXI Supplier SaaS – subscriptions for wholesale companies, separate from workshop plans.
+ * Existing suppliers have no subscription until an admin assigns one; nothing is disabled on migration.
+ */
 model SupplierSaasPlan {
-  id                 String        @id @default(cuid())
-  code               String        @unique
-  name               String
-  description        String?
-  price              Decimal       @default(0) @db.Decimal(12,3)
-  durationValue      Int           @default(1)
-  durationUnit       DurationUnit  @default(MONTH)
-  trialDays          Int           @default(14)
-  maxProducts        Int           @default(500)
-  maxDrivers         Int           @default(1)
-  maxStaff           Int           @default(2)
-  maxOrdersPerMonth  Int           @default(200)
-  features           Json?
-  publicVisible      Boolean       @default(true)
-  active             Boolean       @default(true)
-  createdAt          DateTime      @default(now())
-  updatedAt          DateTime      @updatedAt
-  subscriptions      SupplierSaasSubscription[]
+  id                String                     @id @default(cuid())
+  code              String                     @unique
+  name              String
+  description       String?
+  price             Decimal                    @default(0) @db.Decimal(12, 3)
+  durationValue     Int                        @default(1)
+  durationUnit      DurationUnit               @default(MONTH)
+  trialDays         Int                        @default(14)
+  maxProducts       Int                        @default(500)
+  maxDrivers        Int                        @default(1)
+  maxStaff          Int                        @default(2)
+  maxOrdersPerMonth Int                        @default(200)
+  features          Json?
+  publicVisible     Boolean                    @default(true)
+  active            Boolean                    @default(true)
+  createdAt         DateTime                   @default(now())
+  updatedAt         DateTime                   @updatedAt
+  subscriptions     SupplierSaasSubscription[]
 }
 
 model SupplierSaasSubscription {
-  id          String             @id @default(cuid())
+  id          String                @id @default(cuid())
   companyId   String
-  company     SupplierCompany    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company     SupplierCompany       @relation(fields: [companyId], references: [id], onDelete: Cascade)
   planId      String
-  plan        SupplierSaasPlan   @relation(fields: [planId], references: [id], onDelete: Restrict)
-  agreedPrice Decimal?           @db.Decimal(12,3)
-  status      SubscriptionStatus @default(TRIAL)
-  startsAt    DateTime           @default(now())
+  plan        SupplierSaasPlan      @relation(fields: [planId], references: [id], onDelete: Restrict)
+  agreedPrice Decimal?              @db.Decimal(12, 3)
+  status      SubscriptionStatus    @default(TRIAL)
+  startsAt    DateTime              @default(now())
   endsAt      DateTime?
   note        String?
-  createdAt   DateTime           @default(now())
-  updatedAt   DateTime           @updatedAt
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
   payments    SupplierSaasPayment[]
 
   @@index([companyId, createdAt])
   @@index([planId])
 }
 
-/* Manual Supplier subscription requests: the submitted transfer is evidence,
-   not a confirmed payment. Admin approval is an explicit separate action. */
+/**
+ * Manual Supplier subscription requests: the submitted transfer is evidence,
+ * not a confirmed payment. Admin approval is an explicit separate action.
+ */
 model SupplierSubscriptionRequest {
-  id                 String   @id @default(cuid())
-  companyId          String
-  planId             String
-  requestedPrice     Decimal  @db.Decimal(12,3)
-  durationValue      Int
-  durationUnit       DurationUnit
-  paymentMethod      String
-  transferReference  String?
-  proofDataUrl       String?
-  note               String?
-  status             String   @default("PENDING")
-  adminNote          String?
-  reviewedById       String?
-  reviewedAt         DateTime?
-  subscriptionId     String?
-  createdAt          DateTime @default(now())
+  id                String       @id @default(cuid())
+  companyId         String
+  planId            String
+  requestedPrice    Decimal      @db.Decimal(12, 3)
+  durationValue     Int
+  durationUnit      DurationUnit
+  paymentMethod     String
+  transferReference String?
+  proofDataUrl      String?
+  note              String?
+  status            String       @default("PENDING")
+  adminNote         String?
+  reviewedById      String?
+  reviewedAt        DateTime?
+  subscriptionId    String?
+  createdAt         DateTime     @default(now())
+
   @@index([companyId, status, createdAt])
   @@index([status, createdAt])
   @@index([planId])
@@ -2622,7 +2705,7 @@ model SupplierSaasPayment {
   company        SupplierCompany          @relation(fields: [companyId], references: [id], onDelete: Cascade)
   subscriptionId String
   subscription   SupplierSaasSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
-  amount         Decimal                  @db.Decimal(12,3)
+  amount         Decimal                  @db.Decimal(12, 3)
   method         String
   reference      String                   @unique
   note           String?
@@ -2658,7 +2741,7 @@ model WidgetToken {
   id         String    @id @default(cuid())
   tokenHash  String    @unique
   kind       String    @default("ATELIER") // ATELIER, SUPPLIER, DRIVER
-  userId     String    // utilisateur atelier ou compte fournisseur/livreur
+  userId     String // utilisateur atelier ou compte fournisseur/livreur
   shopId     String?
   shop       Shop?     @relation(fields: [shopId], references: [id], onDelete: Cascade)
   companyId  String?
@@ -2677,7 +2760,7 @@ model RepairInstallment {
   repairId   String
   repair     Repair    @relation(fields: [repairId], references: [id], onDelete: Cascade)
   dueDate    DateTime
-  amount     Decimal   @db.Decimal(12,3)
+  amount     Decimal   @db.Decimal(12, 3)
   remindedAt DateTime?
   createdAt  DateTime  @default(now())
 
@@ -2696,8 +2779,8 @@ model ImeiReport {
   createdAt  DateTime  @default(now())
   resolvedAt DateTime?
 
-  @@index([imei])
   @@unique([imei, shopId])
+  @@index([imei])
 }
 
 /// Problème signalé depuis l'application (atelier, fournisseur, livreur ou caisse Windows) — visible dans l'admin Fixi.
@@ -2728,7 +2811,7 @@ model SupplierPromo {
   company    SupplierCompany @relation(fields: [companyId], references: [id], onDelete: Cascade)
   productId  String
   product    SupplierProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
-  promoPrice Decimal         @db.Decimal(12,3)
+  promoPrice Decimal         @db.Decimal(12, 3)
   message    String?
   startsAt   DateTime        @default(now())
   endsAt     DateTime
@@ -2747,7 +2830,7 @@ model SupplierReminder {
   customerId String
   level      Int
   channel    String
-  amount     Decimal  @db.Decimal(12,3)
+  amount     Decimal  @db.Decimal(12, 3)
   auto       Boolean  @default(false)
   createdAt  DateTime @default(now())
 
@@ -2793,18 +2876,18 @@ model SupplierPartRequest {
 
 /// 17.7 — Réponse d'un fournisseur : prix, quantité, délai, liée à une fiche produit (commande normale ensuite).
 model SupplierPartQuote {
-  id         String              @id @default(cuid())
-  requestId  String
-  request    SupplierPartRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
-  companyId  String
-  company    SupplierCompany     @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  productId  String
-  price      Decimal             @db.Decimal(12,3)
-  quantity   Int
-  delay      String              @default("TODAY")
-  message    String?
-  status     String              @default("OFFERED")
-  createdAt  DateTime            @default(now())
+  id        String              @id @default(cuid())
+  requestId String
+  request   SupplierPartRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  companyId String
+  company   SupplierCompany     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  productId String
+  price     Decimal             @db.Decimal(12, 3)
+  quantity  Int
+  delay     String              @default("TODAY")
+  message   String?
+  status    String              @default("OFFERED")
+  createdAt DateTime            @default(now())
 
   @@unique([requestId, companyId])
   @@index([companyId, createdAt])
@@ -2812,23 +2895,23 @@ model SupplierPartQuote {
 
 /// 17.8 — Pièce à reprendre chez l'atelier pendant une tournée (défectueuse, mauvaise pièce, échange).
 model SupplierReturnPickup {
-  id          String          @id @default(cuid())
-  companyId   String
-  company     SupplierCompany @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  shopId      String
-  shop        Shop            @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  orderId     String
-  saleId      String?
-  items       Json
-  reason      String
-  status      String          @default("REQUESTED")
+  id              String          @id @default(cuid())
+  companyId       String
+  company         SupplierCompany @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  shopId          String
+  shop            Shop            @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  orderId         String
+  saleId          String?
+  items           Json
+  reason          String
+  status          String          @default("REQUESTED")
   driverAccountId String?
-  proofUrl    String?
-  returnId    String?
-  note        String?
-  createdAt   DateTime        @default(now())
-  collectedAt DateTime?
-  completedAt DateTime?
+  proofUrl        String?
+  returnId        String?
+  note            String?
+  createdAt       DateTime        @default(now())
+  collectedAt     DateTime?
+  completedAt     DateTime?
 
   @@index([companyId, status])
   @@index([shopId, status])
