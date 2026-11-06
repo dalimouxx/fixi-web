@@ -1,0 +1,4 @@
+/* Facture : montant en toutes lettres (usage tunisien) */
+.invoice-words { margin: 14px 0 0; font-size: 13px; line-height: 1.5; color: var(--fxm-tx2); }
+.invoice-words b { color: var(--fxm-tx); }
+@media print { .invoice-words { color: #000; } .invoice-words b { color: #000; } }

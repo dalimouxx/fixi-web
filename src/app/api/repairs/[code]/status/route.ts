@@ -5,6 +5,7 @@ import { DigitalWarrantyStatus, PaymentKind, RepairStatus, UserRole } from '@pri
 import { canTransition } from '@/lib/repair';
 import { audit } from '@/lib/audit';
 import { notifyShop } from '@/lib/notifications';
+import { notifyRepairClient } from '@/lib/client-messages';
 import { publish } from '@/lib/realtime';
 import { defaultQualityChecks } from '@/lib/smart';
 
@@ -58,6 +59,8 @@ export async function PATCH(req:Request,{params}:{params:Promise<{code:string}>}
     await audit(s.shopId,s.id,'STATUS_CHANGE','REPAIR',r.id,{from:r.status,to});
     if(to===RepairStatus.READY) await notifyShop(s.shopId,'Appareil prêt',`${r.code} · ${r.client.fullName}`,`/app/repairs/${r.code}`,'REPAIR' as any,[UserRole.ADMIN,UserRole.RECEPTION,UserRole.CASHIER]);
     publish(s.shopId,'repair.status',{code,status:to});
+    // Client prévenu automatiquement (WhatsApp Cloud API), sans faire attendre l'atelier.
+    if(to===RepairStatus.READY) void notifyRepairClient(r.id,'READY');
     return ok(updated);
   }catch(e:any){return bad(e.message,e.status||500)}
 }

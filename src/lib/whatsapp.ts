@@ -13,3 +13,13 @@ export async function sendWhatsAppText(shop:WhatsAppShop,to:string,body:string){
   const j=await r.json().catch(()=>({}));if(!r.ok)throw Object.assign(new Error(j?.error?.message||'Échec envoi WhatsApp'),{status:502,details:j});
   return {providerRef:j?.messages?.[0]?.id||null,raw:j};
 }
+
+/** Message « modèle » approuvé par Meta : seul type autorisé hors de la fenêtre de 24 h du client. */
+export async function sendWhatsAppTemplate(shop:WhatsAppShop,to:string,name:string,lang:string,params:string[]){
+  if(!shop.whatsappCloudEnabled)throw Object.assign(new Error('WhatsApp Cloud API non activée'),{status:409});
+  const token=decryptSecret(shop.whatsappAccessTokenEncrypted);if(!token||!shop.whatsappPhoneNumberId)throw Object.assign(new Error('Configuration WhatsApp incomplète'),{status:409});
+  const version=process.env.WHATSAPP_GRAPH_VERSION||'v23.0';
+  const r=await fetch(`https://graph.facebook.com/${version}/${shop.whatsappPhoneNumberId}/messages`,{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({messaging_product:'whatsapp',to:normalizePhone(to,shop.countryCode),type:'template',template:{name,language:{code:lang||'fr'},components:params.length?[{type:'body',parameters:params.map(text=>({type:'text',text:String(text).slice(0,200)}))}]:[]}})});
+  const j=await r.json().catch(()=>({}));if(!r.ok)throw Object.assign(new Error(j?.error?.message||'Échec envoi WhatsApp (modèle)'),{status:502,details:j});
+  return {providerRef:j?.messages?.[0]?.id||null,raw:j};
+}

@@ -1,3 +1,4 @@
+import { notifyRepairClient } from '@/lib/client-messages';
 import { prisma } from '@/lib/prisma';
 import { requireSession } from '@/lib/auth';
 import { bad, ok } from '@/lib/http';
@@ -89,6 +90,7 @@ export async function POST(req: Request) {
     });
     await audit(s.shopId, s.id, 'CREATE', 'REPAIR', repair.id, { code });
     publish(s.shopId, 'repair.created', { code });
+    void notifyRepairClient(repair.id, 'RECEIVED');
     return ok(plain(repair), { status: 201 });
   } catch (e: any) {
     if (e?.issues) return bad('Formulaire invalide', 400, e.issues);
