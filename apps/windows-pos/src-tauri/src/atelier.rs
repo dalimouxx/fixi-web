@@ -1,5 +1,5 @@
 //! Mode atelier (Fixi Pro) : connexion boutique + profil + PIN 6 chiffres, puis appels limités aux écrans
-//! de comptoir (réception, à rendre, encaissement, fin de journée). Session séparée de la caisse fournisseur.
+//! de comptoir (réception, à rendre, encaissement, vente comptoir et retours, fin de journée). Session séparée de la caisse fournisseur.
 use std::sync::Arc;
 use tauri::State;
 use tokio::sync::Mutex;
@@ -33,6 +33,10 @@ fn allowed(method: &str, path: &str) -> bool {
         ("PATCH", ["api", "repairs", code, "status"]) => id_ok(code),
         ("GET", ["api", "cashier", "overview"]) | ("POST", ["api", "cashier", "checkout"]) => true,
         ("GET", ["api", "connect", "access"]) | ("GET", ["api", "dashboard"]) => true,
+        // Vente comptoir (accessoires) et retours client.
+        ("GET", ["api", "counter-sales"]) | ("POST", ["api", "counter-sales"]) => true,
+        ("GET", ["api", "counter-sales", id]) => id_ok(id),
+        ("POST", ["api", "counter-sales", id, "refund"]) => id_ok(id),
         _ => false,
     }
 }
@@ -104,5 +108,12 @@ mod tests {
         assert!(!allowed("DELETE", "/api/repairs"));
         assert!(!allowed("GET", "/api/users"));
         assert!(!allowed("PATCH", "/api/repairs/../users/status"));
+        assert!(allowed("GET", "/api/counter-sales?q=coque"));
+        assert!(allowed("POST", "/api/counter-sales"));
+        assert!(allowed("GET", "/api/counter-sales/V-000042"));
+        assert!(allowed("POST", "/api/counter-sales/V-000042/refund"));
+        assert!(!allowed("DELETE", "/api/counter-sales/V-000042"));
+        assert!(!allowed("POST", "/api/counter-sales/V-000042/delete"));
+        assert!(!allowed("GET", "/api/counter-sales/../users"));
     }
 }

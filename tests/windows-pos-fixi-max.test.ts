@@ -13,3 +13,14 @@ test('Caisse Windows Fixi Max : logo animé, habillage clair par défaut, thème
   assert.match(pcss, /:root\[data-theme=dark\]\{/);
   assert.match(pcss, /prefers-reduced-motion:reduce/);
 });
+
+test('Caisse Windows atelier : vente comptoir, douchette, tiroir, ticket et retours', () => {
+  const at = readFileSync('apps/windows-pos/src/atelier.tsx', 'utf8');
+  assert.ok(at.includes("['comptoir', ShoppingBag, 'Vente comptoir']") && at.includes('<CounterSaleTab') && at.includes("session.role === 'ADMIN'"));
+  assert.ok(at.includes('p.counterSale?.number'), 'fin de journée : ventes comptoir affichées');
+  assert.ok(at.includes('function SaleTicket') && at.includes("'REMBOURSEMENT'"));
+  const cs = readFileSync('apps/windows-pos/src/atelier-comptoir.tsx', 'utf8');
+  for (const k of ["'/api/counter-sales'", '/refund`', "cash_drawer_open", "e.key === 'Enter') scan()", 'managerPin: manager ? undefined : pin', "r !== 'Article défectueux'", 'needSession']) assert.ok(cs.includes(k), k);
+  const rs = readFileSync('apps/windows-pos/src-tauri/src/atelier.rs', 'utf8');
+  assert.ok(rs.includes('("POST", ["api", "counter-sales", id, "refund"]) => id_ok(id)') && rs.includes('assert!(!allowed("GET", "/api/counter-sales/../users"));'));
+});
