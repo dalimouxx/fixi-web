@@ -214,6 +214,17 @@ test('6b · vente comptoir : un accessoire vendu sans réparation sort du stock'
   const after = await (await atelier.request.get('/api/counter-sales?q=' + encodeURIComponent(name))).json();
   expect(after.items.find((i: any) => i.name === name).quantity).toBe(3);
   expect(after.sales[0].total).toBe('30');
+
+  // Retour client : une coque rapportée, remboursée et remise en stock.
+  await atelier.getByRole('button', { name: 'Nouvelle vente' }).click();
+  await atelier.locator('.fxm-cs-sale-main', { hasText: name }).click();
+  await atelier.locator('.fxm-rf-line', { hasText: name }).getByRole('button', { name: 'Plus' }).click();
+  await atelier.locator('.fxm-rf .fxm-cs-cats button', { hasText: 'Ne convient pas' }).click();
+  await atelier.getByRole('button', { name: /^Rembourser/ }).click();
+  await expect(atelier.getByText('Remboursement effectué')).toBeVisible();
+  const back = await (await atelier.request.get('/api/counter-sales?q=' + encodeURIComponent(name))).json();
+  expect(back.items.find((i: any) => i.name === name).quantity).toBe(4);
+  expect(back.sales[0].refundedTotal).toBe('15');
 });
 
 test('7 · double vérification de l’admin : le code est exigé à la connexion', async ({ browser }) => {

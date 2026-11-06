@@ -60,3 +60,44 @@ export function saleNumber(n: number) { return 'V-' + String(Math.max(1, Math.tr
 export function maxDiscountFor(role: string, cashierMax: number, subtotal: number) {
   return role === 'ADMIN' ? subtotal : Math.max(0, Math.min(subtotal, Number(cashierMax) || 0));
 }
+
+export type RefundableLine = { id: string; name: string; quantity: number; returnedQuantity: number; unitPrice: number };
+export type RefundRequest = { lineId: string; quantity: number; restock?: boolean };
+
+/**
+ * Remboursement d'une vente comptoir : quantités rendues par ligne, montant au prorata de la remise
+ * (une remise de 10 % sur la vente s'applique aussi au remboursement), jamais plus que ce qui reste encaissé.
+ */
+export function priceRefund(sale: { subtotal: number; total: number; refundedTotal: number }, lines: RefundableLine[], req: RefundRequest[]) {
+  const byId = new Map(lines.map(l => [l.id, l]));
+  const merged = new Map<string, { quantity: number; restock: boolean }>();
+  for (const r of req || []) {
+    const q = Math.trunc(Number(r?.quantity));
+    if (!r?.lineId || !(q > 0)) continue;
+    const prev = merged.get(String(r.lineId));
+    merged.set(String(r.lineId), { quantity: (prev?.quantity || 0) + q, restock: r.restock !== false });
+  }
+  if (lines.every(l => l.quantity - l.returnedQuantity <= 0) || sale.refundedTotal + 0.0005 >= sale.total) throw new Error('Cette vente est déjà entièrement remboursée');
+  if (!merged.size) throw new Error('Choisissez au moins un article à rembourser');
+  const out = [...merged].map(([lineId, x]) => {
+    const l = byId.get(lineId);
+    if (!l) throw new Error('Ligne de vente introuvable');
+    const left = l.quantity - l.returnedQuantity;
+    if (x.quantity > left) throw new Error(`${l.name} : ${left} article${left > 1 ? 's' : ''} remboursable${left > 1 ? 's' : ''} au maximum`);
+    return { lineId, name: l.name, quantity: x.quantity, restock: x.restock, gross: round3(l.unitPrice * x.quantity) };
+  });
+  const ratio = sale.subtotal > 0 ? sale.total / sale.subtotal : 0;
+  const gross = round3(out.reduce((a, l) => a + l.gross, 0));
+  const remaining = round3(Math.max(0, sale.total - sale.refundedTotal));
+  // Tout ce qui restait est rendu : on rembourse exactement le solde (pas d'écart d'arrondi).
+  const allBack = lines.every(l => l.quantity - l.returnedQuantity === (merged.get(l.id)?.quantity || 0));
+  const amount = allBack ? remaining : round3(Math.min(remaining, gross * ratio));
+  if (!(amount > 0)) throw new Error('Cette vente est déjà entièrement remboursée');
+  return { lines: out, amount, remaining: round3(remaining - amount) };
+}
+
+/** État lisible d'une vente : rien rendu, partiellement ou entièrement remboursée. */
+export function refundState(total: number, refundedTotal: number): 'NONE' | 'PARTIAL' | 'FULL' {
+  if (!(refundedTotal > 0.0004)) return 'NONE';
+  return refundedTotal + 0.0005 >= total ? 'FULL' : 'PARTIAL';
+}

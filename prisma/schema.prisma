@@ -712,37 +712,41 @@ model RepairPart {
 
 /// Vente au comptoir (accessoires, câbles, coques…) sans réparation.
 model CounterSale {
-  id        String            @id @default(cuid())
-  shopId    String
-  shop      Shop              @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  number    String
-  clientId  String?
-  client    Client?           @relation(fields: [clientId], references: [id], onDelete: SetNull)
-  userId    String?
-  user      User?             @relation("CounterSaleUser", fields: [userId], references: [id], onDelete: SetNull)
-  subtotal  Decimal           @db.Decimal(12, 3)
-  discount  Decimal           @default(0) @db.Decimal(12, 3)
-  total     Decimal           @db.Decimal(12, 3)
-  note      String?
-  createdAt DateTime          @default(now())
-  lines     CounterSaleLine[]
-  payments  Payment[]
+  id            String            @id @default(cuid())
+  shopId        String
+  shop          Shop              @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  number        String
+  clientId      String?
+  client        Client?           @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  userId        String?
+  user          User?             @relation("CounterSaleUser", fields: [userId], references: [id], onDelete: SetNull)
+  subtotal      Decimal           @db.Decimal(12, 3)
+  discount      Decimal           @default(0) @db.Decimal(12, 3)
+  total         Decimal           @db.Decimal(12, 3)
+  /// Montant déjà remboursé au client.
+  refundedTotal Decimal           @default(0) @db.Decimal(12, 3)
+  note          String?
+  createdAt     DateTime          @default(now())
+  lines         CounterSaleLine[]
+  payments      Payment[]
 
   @@unique([shopId, number])
   @@index([shopId, createdAt])
 }
 
 model CounterSaleLine {
-  id              String         @id @default(cuid())
-  saleId          String
-  sale            CounterSale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
-  inventoryItemId String?
-  inventoryItem   InventoryItem? @relation(fields: [inventoryItemId], references: [id], onDelete: SetNull)
-  name            String
-  quantity        Int
-  unitCost        Decimal        @default(0) @db.Decimal(12, 3)
-  unitPrice       Decimal        @db.Decimal(12, 3)
-  total           Decimal        @db.Decimal(12, 3)
+  id               String         @id @default(cuid())
+  saleId           String
+  sale             CounterSale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  inventoryItemId  String?
+  inventoryItem    InventoryItem? @relation(fields: [inventoryItemId], references: [id], onDelete: SetNull)
+  name             String
+  quantity         Int
+  unitCost         Decimal        @default(0) @db.Decimal(12, 3)
+  unitPrice        Decimal        @db.Decimal(12, 3)
+  total            Decimal        @db.Decimal(12, 3)
+  /// Quantité déjà rendue par le client (remboursements comptoir).
+  returnedQuantity Int            @default(0)
 
   @@index([saleId])
 }
