@@ -2,13 +2,14 @@
 // (tiroir-caisse, ticket), fin de journée. Même installateur et même matériel que la caisse fournisseur.
 import { useEffect, useMemo, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
-import { ArrowLeftRight, Banknote, CheckCircle2, ClipboardList, CreditCard, LogOut, MapPin, Moon, Printer, Search, Smartphone, Sparkles, Store, UserRound, Wrench } from 'lucide-react';
+import { ArrowLeftRight, Banknote, CheckCircle2, ClipboardList, CreditCard, LogOut, MapPin, Moon, Printer, Search, ShoppingBag, Smartphone, Sparkles, Store, UserRound, Wrench } from 'lucide-react';
+import { CounterSaleTab, METHOD_LABEL, type SalePrint } from './atelier-comptoir';
 import { FixiLogo, Clock } from './brand';
 import { dt } from './dialogs';
 import { defaultSettings, readJson, SETTINGS_KEY, type Settings } from './storage';
 
 type Opt = { regions?: string[]; shops?: { slug: string; name: string }[]; users?: { id: string; fullName: string; roleLabel: string }[] };
-type Session = { fullName: string; roleLabel: string; accessTier: string; shopName: string };
+type Session = { fullName: string; role?: string; roleLabel: string; accessTier: string; shopName: string };
 const SERVER = 'https://fixi-web.onrender.com';
 const KEY = 'fixi-atelier-last';
 const req = <T,>(method: string, path: string, body?: unknown) => invoke<T>('atelier_request', { method, path, body: body ?? null });
@@ -32,13 +33,13 @@ export function AtelierApp() {
       const r = await invoke<any>('atelier_login', { server, shopSlug: shop, userId: user, pin });
       localStorage.setItem(KEY, JSON.stringify({ server, region, shop, user }));
       const shopName = opt.shops?.find(s => s.slug === shop)?.name || '';
-      setSession({ fullName: r.fullName, roleLabel: r.roleLabel, accessTier: r.accessTier, shopName }); setPro(r.accessTier === 'PRO'); setPin('');
+      setSession({ fullName: r.fullName, role: r.role, roleLabel: r.roleLabel, accessTier: r.accessTier, shopName }); setPro(r.accessTier === 'PRO'); setPin('');
     } catch (x) { setErr(clean(x)); setPin(''); } finally { setBusy(false); }
   }
 
   if (!session) return <div className="v5-login">
     <div className="v5-login-identity"><FixiLogo size={72} className="v7-logo--hero" /><h1>FIXI Caisse · Atelier</h1><p>Le comptoir de votre atelier de réparation.</p>
-      <ul><li><ClipboardList size={18} /> Réception en 30 secondes, ticket de dépôt imprimé</li><li><Banknote size={18} /> Encaissement, tiroir-caisse et ticket</li><li><Moon size={18} /> Fin de journée en un coup d’œil</li></ul></div>
+      <ul><li><ClipboardList size={18} /> Réception en 30 secondes, ticket de dépôt imprimé</li><li><Banknote size={18} /> Encaissement, tiroir-caisse et ticket</li><li><ShoppingBag size={18} /> Vente d’accessoires et retours client</li><li><Moon size={18} /> Fin de journée en un coup d’œil</li></ul></div>
     <div className="v5-login-panel"><form className="v5-card v5-login-form" onSubmit={login}>
       <h2>Connexion atelier</h2><p>Avec votre profil Fixi et votre code à 6 chiffres.</p>
       <label className="v5-field"><span><MapPin size={14} /> Région</span><select value={region} onChange={e => { setRegion(e.target.value); setShop(''); setUser(''); }} required><option value="">Choisir…</option>{(opt.regions || []).map(r => <option key={r}>{r}</option>)}</select></label>
@@ -59,7 +60,7 @@ export function AtelierApp() {
   return <Counter session={session} server={server} onLogout={async () => { await invoke('atelier_logout').catch(() => {}); setSession(null); }} />;
 }
 
-type Tab = 'reception' | 'rendre' | 'jour';
+type Tab = 'reception' | 'rendre' | 'comptoir' | 'jour';
 
 function Counter({ session, server, onLogout }: { session: Session; server: string; onLogout: () => void }) {
   const [tab, setTab] = useState<Tab>('reception'); const [msg, setMsg] = useState(''); const [err, setErr] = useState('');
@@ -70,16 +71,17 @@ function Counter({ session, server, onLogout }: { session: Session; server: stri
     <aside className="v5-side">
       <div className="v5-brand"><FixiLogo size={40} /><div className="v5-brand-text"><strong>FIXI</strong><small>Atelier</small></div></div>
       <nav className="v5-nav" aria-label="Menu"><div className="v5-nav-group"><span className="v5-nav-heading">Comptoir</span>
-        {([['reception', ClipboardList, 'Réception'], ['rendre', Wrench, 'À rendre · Encaisser'], ['jour', Moon, 'Fin de journée']] as const).map(([k, I, l]) => <button key={k} className="v5-nav-item" aria-current={tab === k ? 'page' : undefined} onClick={() => { setTab(k); setErr(''); setMsg(''); }}><I size={19} /><span>{l}</span></button>)}
+        {([['reception', ClipboardList, 'Réception'], ['rendre', Wrench, 'À rendre · Encaisser'], ['comptoir', ShoppingBag, 'Vente comptoir'], ['jour', Moon, 'Fin de journée']] as const).map(([k, I, l]) => <button key={k} className="v5-nav-item" aria-current={tab === k ? 'page' : undefined} onClick={() => { setTab(k); setErr(''); setMsg(''); }}><I size={19} /><span>{l}</span></button>)}
       </div></nav>
       <div className="v5-account"><span className="v5-led" aria-hidden /><div><strong>{session.fullName}</strong><small>{session.roleLabel} · {session.shopName}</small></div>
         <div className="v5-account-actions"><button className="v5-icon-btn" title="Mode fournisseur" aria-label="Mode fournisseur" onClick={() => switchSpace('supplier')}><ArrowLeftRight size={17} /></button><button className="v5-icon-btn" title="Déconnexion" aria-label="Déconnexion" onClick={onLogout}><LogOut size={17} /></button></div></div>
     </aside>
-    <main className="v5-main at-main"><header className="at-head"><Clock /><h1>{tab === 'reception' ? 'Réception' : tab === 'rendre' ? 'À rendre · Encaisser' : 'Fin de journée'}</h1></header>
+    <main className="v5-main at-main"><header className="at-head"><Clock /><h1>{tab === 'reception' ? 'Réception' : tab === 'rendre' ? 'À rendre · Encaisser' : tab === 'comptoir' ? 'Vente comptoir' : 'Fin de journée'}</h1></header>
       {msg && <p className="v5-alert v5-alert--info" role="status"><CheckCircle2 size={16} /> <span>{msg}</span></p>}
       {err && <p className="v5-alert v5-alert--danger" role="alert"><span>{err}</span></p>}
       {tab === 'reception' && <Reception onDone={r => { setMsg(`Dossier ${r.code} créé.`); setPrinting({ kind: 'depot', r }); }} onError={fail} />}
       {tab === 'rendre' && <ToReturn onPaid={(r, amount, method) => { setMsg(`${r.code} encaissé : ${dt(amount)}.`); setPrinting({ kind: 'recu', r, amount, method }); }} onError={fail} />}
+      {tab === 'comptoir' && <CounterSaleTab manager={session.role === 'ADMIN'} onSold={(p, m) => { setErr(''); setMsg(m); setPrinting({ kind: p.kind, sale: p }); }} onError={fail} />}
       {tab === 'jour' && <Day onError={fail} />}
     </main>
     {printing && <AtelierTicket p={printing} shopName={session.shopName} server={server} />}
@@ -143,12 +145,13 @@ function Day({ onError }: { onError: (e: unknown) => void }) {
   return <div className="at-day">
     <div className="v5-card at-kpi"><span>Encaissé aujourd’hui</span><b>{dt(Number(k.net || 0))}</b><small>{k.count || 0} paiement(s) · {k.delivered || 0} appareil(s) rendu(s)</small></div>
     <div className="v5-card"><h3>Par moyen de paiement</h3>{Object.entries(by).map(([m, v]) => <p className="at-line" key={m}><span>{({ CASH: 'Espèces', CARD: 'Carte', D17: 'D17', FLOUCI: 'Flouci', BANK_TRANSFER: 'Virement', OTHER: 'Autre' } as Record<string, string>)[m] || m}</span><b>{dt(Number(v))}</b></p>)}{!Object.keys(by).length && <p>Aucun paiement aujourd’hui.</p>}</div>
-    <div className="v5-card"><h3>Derniers encaissements</h3>{(d.payments || []).slice(0, 12).map((p: any) => <p className="at-line" key={p.id}><span>{new Date(p.createdAt).toLocaleTimeString('fr-TN', { hour: '2-digit', minute: '2-digit' })} · {p.repair?.code} · {p.repair?.client?.fullName}</span><b>{p.kind === 'REFUND' ? '−' : ''}{dt(Number(p.amount))}</b></p>)}</div>
+    <div className="v5-card"><h3>Derniers encaissements</h3>{(d.payments || []).slice(0, 12).map((p: any) => <p className="at-line" key={p.id}><span>{new Date(p.createdAt).toLocaleTimeString('fr-TN', { hour: '2-digit', minute: '2-digit' })} · {p.repair?.code || p.counterSale?.number} · {p.repair?.client?.fullName || p.counterSale?.client?.fullName || (p.counterSale ? 'Vente comptoir' : '')}</span><b>{p.kind === 'REFUND' ? '−' : ''}{dt(Number(p.amount))}</b></p>)}</div>
     <button className="v5-btn v5-btn--ghost" onClick={() => window.print()}><Printer size={16} /> Imprimer</button>
   </div>;
 }
 
 function AtelierTicket({ p, shopName, server }: { p: any; shopName: string; server: string }) {
+  if (p.kind === 'vente' || p.kind === 'retour') return <SaleTicket s={p.sale} shopName={shopName} />;
   const r = p.r;
   return <div className="at-ticket" aria-hidden="true">
     <header><b>{shopName}</b><small>{new Date().toLocaleString('fr-TN')}</small></header>
@@ -158,5 +161,21 @@ function AtelierTicket({ p, shopName, server }: { p: any; shopName: string; serv
     {p.kind === 'depot' ? <><p><span>Panne</span><b>{r.reportedIssue}</b></p>{r.estimatedPrice != null && <p><span>Prix estimé</span><b>{dt(Number(r.estimatedPrice))}</b></p>}<small className="at-track">Suivi : {server.replace(/^https:\/\//, '')}/track/{r.code}</small></>
       : <><p><span>Payé</span><b>{dt(Number(p.amount))}</b></p><p><span>Moyen</span><b>{p.method}</b></p></>}
     <footer>Merci de votre confiance · Fixi</footer>
+  </div>;
+}
+
+/** Ticket 80 mm d'une vente comptoir ou d'un retour client. */
+function SaleTicket({ s, shopName }: { s: SalePrint; shopName: string }) {
+  const refund = s.kind === 'retour';
+  return <div className="at-ticket" aria-hidden="true">
+    <header><b>{shopName}</b><small>{new Date().toLocaleString('fr-TN')}</small></header>
+    <h3>{refund ? 'REMBOURSEMENT' : 'TICKET DE CAISSE'}</h3>
+    <div className="at-code">{s.number}</div>
+    {s.lines.map((l, i) => <p key={i}><span>{l.quantity} × {l.name}</span><b>{refund ? '− ' : ''}{dt(l.total)}</b></p>)}
+    {!!s.discount && <p><span>Remise</span><b>− {dt(s.discount)}</b></p>}
+    <p><span>{refund ? 'Rendu au client' : 'Total'}</span><b>{refund ? '− ' : ''}{dt(s.total)}</b></p>
+    <p><span>Moyen</span><b>{METHOD_LABEL[s.method] || s.method}</b></p>
+    {!refund && s.received != null && s.method === 'CASH' && <><p><span>Reçu</span><b>{dt(s.received)}</b></p><p><span>Monnaie</span><b>{dt(s.change || 0)}</b></p></>}
+    <footer>{refund ? 'Remboursement enregistré' : 'Merci pour votre achat'} · Fixi</footer>
   </div>;
 }
