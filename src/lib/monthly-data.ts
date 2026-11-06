@@ -9,7 +9,7 @@ const FAMILY_LABEL: Record<string, string> = { ecran: 'Écran', batterie: 'Batte
 export async function monthlyData(shopId: string, ym: string) {
   const { start, end } = monthRange(ym);
   const [payments, expenses, parts, received, delivered, documents, shop] = await Promise.all([
-    prisma.payment.findMany({ where: { shopId, createdAt: { gte: start, lt: end } }, select: { createdAt: true, amount: true, kind: true, method: true, note: true, repair: { select: { code: true, brand: true, model: true, client: { select: { fullName: true } } } }, user: { select: { fullName: true } } }, orderBy: { createdAt: 'asc' } }),
+    prisma.payment.findMany({ where: { shopId, createdAt: { gte: start, lt: end } }, select: { createdAt: true, amount: true, kind: true, method: true, note: true, repair: { select: { code: true, brand: true, model: true, client: { select: { fullName: true } } } }, counterSale: { select: { number: true, client: { select: { fullName: true } } } }, user: { select: { fullName: true } } }, orderBy: { createdAt: 'asc' } }),
     prisma.expense.findMany({ where: { shopId, expenseDate: { gte: start, lt: end } }, select: { expenseDate: true, category: true, label: true, amount: true, note: true }, orderBy: { expenseDate: 'asc' } }),
     prisma.repairPart.findMany({ where: { repair: { shopId, deliveredAt: { gte: start, lt: end } } }, select: { quantity: true, unitCost: true } }),
     prisma.repair.findMany({ where: { shopId, createdAt: { gte: start, lt: end } }, select: { reportedIssue: true } }),

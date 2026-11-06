@@ -195,6 +195,27 @@ test('6 · le module Réparations propose l’essai Pro, qui s’active en un cl
   expect((await r.json()).eligible).toBe(false); // un seul essai par atelier
 });
 
+test('6b · vente comptoir : un accessoire vendu sans réparation sort du stock', async () => {
+  const name = `Coque robot ${RUN}`;
+  // Atelier neuf : on termine la configuration (sinon /app redirige vers /onboarding) puis on ouvre la caisse.
+  expect((await atelier.request.post('/api/settings/complete', { data: { name: `Atelier Robot ${RUN}` } })).ok()).toBeTruthy();
+  const session = await atelier.request.post('/api/cash-sessions', { data: { openingAmount: 50 } });
+  expect(session.ok(), await session.text()).toBeTruthy();
+  const created = await atelier.request.post('/api/stock', { data: { sku: `ACC-${RUN}`, name, category: 'Coques', quantity: 5, minQuantity: 1, purchasePrice: 4, salePrice: 15 } });
+  expect(created.ok(), await created.text()).toBeTruthy();
+  await atelier.evaluate(() => localStorage.setItem('fixi-tour-atelier-v1', '1')); // visite guidée déjà vue
+  await atelier.goto('/app/cashier?mode=comptoir');
+  const tile = atelier.locator('.fxm-cs-item', { hasText: name });
+  await tile.click();
+  await tile.click();
+  await expect(atelier.locator('.fxm-cs-line', { hasText: name })).toContainText('30');
+  await atelier.getByRole('button', { name: /Encaisser la vente/ }).click();
+  await expect(atelier.getByText('Vente encaissée')).toBeVisible();
+  const after = await (await atelier.request.get('/api/counter-sales?q=' + encodeURIComponent(name))).json();
+  expect(after.items.find((i: any) => i.name === name).quantity).toBe(3);
+  expect(after.sales[0].total).toBe('30');
+});
+
 test('7 · double vérification de l’admin : le code est exigé à la connexion', async ({ browser }) => {
   const ctx = await browser.newContext(); const page = await ctx.newPage();
   expect((await page.request.post('/api/platform/auth/login', { data: PLATFORM })).ok()).toBeTruthy();

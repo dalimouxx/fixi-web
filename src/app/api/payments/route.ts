@@ -9,7 +9,7 @@ import { plain } from '@/lib/serializers';
 import { notifyShop } from '@/lib/notifications';
 
 export async function GET() {
-  try {const s = await requireSession([UserRole.ADMIN, UserRole.CASHIER]);const start = new Date(); start.setHours(0, 0, 0, 0);const rows = await prisma.payment.findMany({ where: { shopId: s.shopId, createdAt: { gte: start } }, include: { repair: { include: { client: true } }, user: { select: { fullName: true } },cashSession:true }, orderBy: { createdAt: 'desc' } });return ok(plain(rows));} catch (e: any) { return bad(e.message, e.status || 500); }
+  try {const s = await requireSession([UserRole.ADMIN, UserRole.CASHIER]);const start = new Date(); start.setHours(0, 0, 0, 0);const rows = await prisma.payment.findMany({ where: { shopId: s.shopId, createdAt: { gte: start } }, include: { repair: { include: { client: true } }, counterSale: { include: { client: true } }, user: { select: { fullName: true } },cashSession:true }, orderBy: { createdAt: 'desc' } });return ok(plain(rows));} catch (e: any) { return bad(e.message, e.status || 500); }
 }
 
 export async function POST(req: Request) {
