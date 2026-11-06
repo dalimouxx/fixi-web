@@ -1,6 +1,6 @@
 [package]
 name = "fixi_windows_pos"
-version = "0.11.0"
+version = "0.12.0"
 description = "FIXI Caisse Windows"
 authors = ["FIXI"]
 edition = "2021"
