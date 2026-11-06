@@ -44,6 +44,7 @@ export function CounterSalePanel() {
   const got = method === 'CASH' ? Number(String(received || total).replace(',', '.')) || 0 : total;
   const change = method === 'CASH' ? Math.max(0, round3(got - total)) : 0;
   const short = method === 'CASH' && got + 0.0001 < total;
+  const needSession = method === 'CASH' && !!data?.shop?.cashRequireSession && data?.sessionOpen === false;
 
   function add(it: Item, d = 1) {
     setMsg(''); setDone(null);
@@ -132,7 +133,8 @@ export function CounterSalePanel() {
           </div>
         </div>}
 
-        <button type="button" className="fxm-cash-go" disabled={busy || short || !(total >= 0) || !lines.length} onClick={sell}><CheckCircle2 /><span>{busy ? 'Traitement…' : 'Encaisser la vente'}</span><b className="fxm-num">{money(total, cur)}</b></button>
+        {needSession && <div className="fxm-cs-warn" role="alert">La caisse n’est pas ouverte : ouvrez la session pour encaisser en espèces, ou choisissez un autre mode. <Link href="/app/cash-sessions">Ouvrir la caisse</Link></div>}
+        <button type="button" className="fxm-cash-go" disabled={busy || short || needSession || !(total >= 0) || !lines.length} onClick={sell}><CheckCircle2 /><span>{busy ? 'Traitement…' : 'Encaisser la vente'}</span><b className="fxm-num">{money(total, cur)}</b></button>
       </> : !done && <div className="fxm-cash-empty">
         <span className="fxm-ico fxm-ico--o" style={{ width: 72, height: 72, borderRadius: 24 }}><ShoppingBag size={32} /></span>
         <h2>Panier vide</h2>

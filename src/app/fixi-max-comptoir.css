@@ -62,3 +62,5 @@ html[data-theme='dark'] .fxm-cs-item.on { background: linear-gradient(#17131d, #
   .fxm-cash .fxm-rp-actions { flex-wrap: wrap; }
   .fxm-cash .fxm-rp-actions > .btn { flex: 1 1 140px; justify-content: center; }
 }
+.fxm-cs-warn { padding: 12px 14px; border-radius: 14px; background: var(--fxm-warn-s); color: var(--fxm-warn); font-size: 13.5px; font-weight: 600; line-height: 1.45; animation: fxm-up 0.3s var(--fxm-ease); }
+.fxm-cs-warn a { color: inherit; font-weight: 800; text-decoration: underline; margin-inline-start: 4px; }

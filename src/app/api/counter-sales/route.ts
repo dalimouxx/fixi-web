@@ -18,12 +18,13 @@ export async function GET(req: Request) {
     const start = new Date(); start.setHours(0, 0, 0, 0);
     const where: Prisma.InventoryItemWhereInput = { shopId: s.shopId, active: true, salePrice: { gt: 0 } };
     if (q) where.OR = [{ name: { contains: q, mode: 'insensitive' } }, { sku: { contains: q, mode: 'insensitive' } }, { category: { contains: q, mode: 'insensitive' } }];
-    const [items, sales, shop] = await Promise.all([
+    const [items, sales, shop, session] = await Promise.all([
       prisma.inventoryItem.findMany({ where, select: { id: true, sku: true, name: true, category: true, quantity: true, minQuantity: true, salePrice: true }, orderBy: [{ category: 'asc' }, { name: 'asc' }], take: 120 }),
       prisma.counterSale.findMany({ where: { shopId: s.shopId, createdAt: { gte: start } }, include: { lines: { select: { name: true, quantity: true } }, payments: { select: { method: true, amount: true } }, client: { select: { fullName: true } }, user: { select: { fullName: true } } }, orderBy: { createdAt: 'desc' }, take: 30 }),
       prisma.shop.findUniqueOrThrow({ where: { id: s.shopId }, select: { currency: true, cashierMaxDiscount: true, cashRequireSession: true } }),
+      prisma.cashSession.findFirst({ where: { shopId: s.shopId, status: CashSessionStatus.OPEN }, select: { id: true } }),
     ]);
-    return ok(plain({ items, sales, shop, role: s.role, todayTotal: sales.reduce((a, x) => a + Number(x.total), 0) }));
+    return ok(plain({ items, sales, shop, role: s.role, sessionOpen: Boolean(session), todayTotal: sales.reduce((a, x) => a + Number(x.total), 0) }));
   } catch (e: any) { return bad(e.message, e.status || 500); }
 }
 
