@@ -106,3 +106,25 @@ test('Livreur et suivi client Fixi Max : clair par défaut, couleur de la boutiq
   assert.match(css, /\.fx-track \{[^}]*--fx-bg: var\(--fxm-bg\)/);
   assert.match(css, /\.fx-track[^{]*\{[^}]*var\(--shop-brand-soft\)/);
 });
+
+test('Connexion Fixi Max : atelier, fournisseur et livreur avec logo animé et bascule de thème', () => {
+  const back = readFileSync('src/components/fixi-auth-backdrop.tsx', 'utf8');
+  assert.ok(back.includes('<ThemeToggle/>') && back.includes('fxm-aurora'));
+  for (const p of ['src/app/login/page.tsx', 'src/app/supplier/login/page.tsx', 'src/app/delivery/login/page.tsx']) {
+    const s = readFileSync(p, 'utf8');
+    assert.ok(s.includes('fxm-auth') && s.includes('<FixiAuthBackdrop/>') && s.includes('<FixiAnimatedLogo'), p);
+  }
+  assert.ok(readFileSync('src/app/login/page.tsx', 'utf8').includes('<LoginForm/>'));
+  assert.ok(readFileSync('src/app/supplier/login/page.tsx', 'utf8').includes("/api/supplier/auth/login"));
+  assert.ok(readFileSync('src/app/delivery/login/page.tsx', 'utf8').includes("/api/delivery/auth/login"));
+  assert.match(css, /\.fxm-auth \{[^}]*--fx-bg: var\(--fxm-bg\)/);
+});
+
+test('Landing Fixi Max : clair par défaut, logo animé, thème, sombre complet', () => {
+  const page = readFileSync('src/app/page.tsx', 'utf8');
+  assert.ok(page.includes('className="lp fxm-lp"') && page.includes("import './landing-fxm.css'"));
+  assert.ok(page.includes('<FixiAnimatedLogo size={36} />') && page.includes('<ThemeToggle />'));
+  const lp = readFileSync('src/app/landing-fxm.css', 'utf8');
+  assert.match(lp, /\.fxm-lp \.lp-hero \{ background: var\(--fxm-bg\)/);
+  assert.match(lp, /html\[data-theme='dark'\] \.fxm-lp \.faq-v7/);
+});

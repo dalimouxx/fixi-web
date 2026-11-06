@@ -84,6 +84,8 @@ html[data-theme='dark'] {
 /* ---------- Logo animé ---------- */
 .fxm-logo {
   position: relative;
+  display: inline-block;
+  vertical-align: middle;
   width: var(--fxm-logo-size, 128px);
   height: var(--fxm-logo-size, 128px);
   border-radius: calc(var(--fxm-logo-size, 128px) * 0.3);
@@ -1111,3 +1113,95 @@ html[data-theme='dark'] .fx-track { --fx-surface: #17131d; --fx-shadow-sm: none;
 .fx-track .fx-track-btn-soft { box-shadow: none; border-radius: 16px !important; }
 .fx-track .fx-track-money b, .fx-track .fx-track-quote b { font-family: var(--fxm-font-display); }
 @media (prefers-reduced-motion: reduce) { .fx-track .fx-track-card, .fx-track .fx-track-hero-icon, .fx-track .fx-track-btn::after { animation: none !important; } .fx-track .fx-track-btn:hover { transform: none; } }
+
+/* =====================================================================
+ * Étape 13 — Écrans de connexion (atelier, fournisseur, livreur)
+ * ===================================================================== */
+.fxm-auth {
+  --fx-bg: var(--fxm-bg); --fx-surface: var(--fxm-card2); --fx-line: var(--fxm-line); --fx-ink: var(--fxm-tx); --fx-muted: var(--fxm-tx3);
+  --panel: var(--fxm-card2); --border: var(--fxm-line); --line: var(--fxm-line); --text: var(--fxm-tx); --muted: var(--fxm-tx3);
+  position: relative; isolation: isolate; overflow: hidden; color: var(--fxm-tx); background: var(--fxm-bg) !important;
+}
+.fxm-auth .fxm-aurora { z-index: -1; }
+.fxm-auth .fxm-blob.b3 { width: 340px; height: 340px; background: #ff3d77; top: 40%; inset-inline-start: 38%; animation: fxm-drift2 26s ease-in-out infinite alternate; }
+.fxm-auth-theme { position: absolute; top: max(14px, env(safe-area-inset-top)); inset-inline-end: 14px; z-index: 5; }
+.fxm-auth-theme .theme-toggle { width: 42px; height: 42px; border-radius: 14px; background: var(--fxm-card) !important; border: 1px solid var(--fxm-line2) !important; color: var(--fxm-tx) !important; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+.fxm-auth :is(.input, .select) { background: var(--fxm-card2) !important; border-color: var(--fxm-line2) !important; color: var(--fxm-tx) !important; border-radius: 14px !important; }
+.fxm-auth :is(.input, .select):focus { border-color: #ff3d77 !important; box-shadow: 0 0 0 4px rgba(255, 61, 119, 0.15) !important; }
+.fxm-auth .label { color: var(--fxm-tx2) !important; }
+.fxm-auth .btn-primary { position: relative; overflow: hidden; border: 0 !important; border-radius: 16px !important; background: var(--fxm-grad) !important; color: #fff !important; box-shadow: 0 12px 30px rgba(255, 61, 119, 0.35) !important; transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s; }
+.fxm-auth .btn-primary:not(:disabled):hover { transform: translateY(-2px); box-shadow: 0 16px 36px rgba(255, 61, 119, 0.45) !important; }
+.fxm-auth .btn-primary:not(:disabled)::after { content: ''; position: absolute; top: 0; bottom: 0; width: 30%; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent); animation: fxm-sweep 2.6s ease-in-out infinite; pointer-events: none; }
+.fxm-auth .btn-primary:disabled { opacity: 0.45; box-shadow: none !important; }
+.fxm-auth .error { border-radius: 12px; background: var(--fxm-bad-s) !important; color: var(--fxm-bad) !important; border: 0 !important; animation: fxm-pop 0.4s var(--fxm-ease) both; }
+.fxm-auth h1, .fxm-auth h2 { font-family: var(--fxm-font-display); letter-spacing: -0.03em; color: var(--fxm-tx); }
+.fxm-auth h1 em, .fxm-auth h2 em { font-style: normal; background: var(--fxm-grad3); -webkit-background-clip: text; background-clip: text; color: transparent; }
+/* Carte vitrée commune */
+.fxm-auth :is(.login-card, .supplier-login-card, .dv-login-card) {
+  position: relative; background: var(--fxm-card) !important; border: 1px solid var(--fxm-line) !important; border-radius: 28px !important;
+  box-shadow: var(--fxm-shadow) !important; backdrop-filter: blur(24px) saturate(1.3); -webkit-backdrop-filter: blur(24px) saturate(1.3);
+  color: var(--fxm-tx); animation: fxm-up 0.7s 0.1s var(--fxm-ease) backwards;
+}
+html:not([data-theme='dark']) .fxm-auth :is(.login-card, .supplier-login-card, .dv-login-card) { background: rgba(255, 255, 255, 0.82) !important; }
+.fxm-auth :is(.login-card, .supplier-login-card, .dv-login-card) :is(p, small, .muted) { color: var(--fxm-tx3); }
+
+/* Atelier : visuel gauche + carte PIN */
+.fxm-auth.auth-page { grid-template-columns: 1.05fr 0.95fr; }
+.fxm-auth .auth-visual { background: transparent !important; border: 0 !important; color: var(--fxm-tx) !important; }
+.fxm-auth .auth-visual::after { background-image: linear-gradient(var(--fxm-line) 1px, transparent 1px), linear-gradient(90deg, var(--fxm-line) 1px, transparent 1px) !important; background-size: 48px 48px; mask-image: radial-gradient(ellipse 70% 60% at 40% 45%, #000 20%, transparent 75%); -webkit-mask-image: radial-gradient(ellipse 70% 60% at 40% 45%, #000 20%, transparent 75%); }
+.fxm-auth .auth-copy > .fxm-logo { display: block; }
+.fxm-auth .auth-copy { animation: fxm-up 0.8s var(--fxm-ease) backwards; }
+.fxm-auth .auth-copy .eyebrow { display: inline-flex; margin-top: 26px; padding: 6px 12px; border-radius: 999px; background: var(--fxm-card); border: 1px solid var(--fxm-line2); color: var(--fxm-acc) !important; font-weight: 800; font-size: 12px; letter-spacing: 0.12em; }
+.fxm-auth .auth-copy h1 { font-size: clamp(38px, 4.6vw, 62px); color: var(--fxm-tx) !important; margin: 18px 0 16px; }
+.fxm-auth .auth-copy p { color: var(--fxm-tx2) !important; font-size: 17px; max-width: 520px; }
+.fxm-auth-points { list-style: none; margin: 26px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 10px; }
+.fxm-auth-points li { display: grid; gap: 2px; padding: 12px 16px; border-radius: 16px; background: var(--fxm-card); border: 1px solid var(--fxm-line); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); font-size: 13px; color: var(--fxm-tx3); animation: fxm-up 0.6s var(--d, 0s) var(--fxm-ease) backwards; }
+.fxm-auth-points b { font-family: var(--fxm-font-display); font-size: 18px; color: var(--fxm-tx); }
+.fxm-auth .auth-panel { background: transparent !important; position: relative; z-index: 1; }
+.fxm-auth .login-v4 .login-logo .fx-brand-logo, .fxm-auth .login-version { color: var(--fxm-tx3) !important; }
+.fxm-auth .login-title h2 { font-size: 28px; }
+.fxm-auth .fx-login-shop, .fxm-auth .pin-welcome { background: var(--fxm-card2) !important; border: 1px solid var(--fxm-line) !important; border-radius: 16px !important; color: var(--fxm-tx) !important; }
+.fxm-auth .profile-option { background: var(--fxm-card2) !important; border: 1px solid var(--fxm-line) !important; border-radius: 16px !important; color: var(--fxm-tx) !important; transition: transform 0.2s var(--fxm-ease), border-color 0.2s, box-shadow 0.2s; }
+.fxm-auth .profile-option:hover { transform: translateY(-2px); }
+.fxm-auth .profile-option > span { background: var(--fxm-grad) !important; color: #fff !important; }
+.fxm-auth .profile-option.selected { border-color: #ff3d77 !important; box-shadow: 0 0 0 4px rgba(255, 61, 119, 0.14) !important; }
+.fxm-auth .pin-dot { border-color: var(--fxm-line2) !important; background: transparent !important; transition: transform 0.25s var(--fxm-ease), background 0.2s; }
+.fxm-auth .pin-dot.filled { background: var(--fxm-grad) !important; border-color: transparent !important; transform: scale(1.15); }
+.fxm-auth .pin-key { background: var(--fxm-card2) !important; border: 1px solid var(--fxm-line) !important; color: var(--fxm-tx) !important; border-radius: 16px !important; font-family: var(--fxm-font-display); transition: transform 0.12s, background 0.2s; }
+.fxm-auth .pin-key:hover { background: var(--fxm-card) !important; }
+.fxm-auth .pin-key:active { transform: scale(0.93); }
+.fxm-auth .login-signup a { color: var(--fxm-acc) !important; font-weight: 700; }
+
+/* Fournisseur : carte centrée */
+.fxm-auth--card { display: grid; place-items: center; min-height: 100dvh; }
+.fxm-auth .supplier-login-logo { display: flex; align-items: center; gap: 12px; }
+.fxm-auth .supplier-login-logo b { font-family: var(--fxm-font-display); color: var(--fxm-tx); }
+.fxm-auth .supplier-login-logo span:not(.fxm-logo, .fxm-logo *) { color: var(--fxm-tx3); }
+.fxm-auth .supplier-login-foot { color: var(--fxm-tx3) !important; border-color: var(--fxm-line) !important; }
+
+/* Livreur : en-tête clair par défaut */
+.fxm-auth--dv { background: var(--fxm-bg) !important; }
+.fxm-auth--dv .dv-login-hero { background: transparent !important; color: var(--fxm-tx); padding-top: calc(56px + env(safe-area-inset-top)); animation: fxm-up 0.7s var(--fxm-ease) backwards; }
+.fxm-auth--dv .dv-login-hero h1 { color: var(--fxm-tx) !important; }
+.fxm-auth--dv .dv-login-hero p, .fxm-auth--dv .dv-login-hero li { color: var(--fxm-tx2) !important; }
+.fxm-auth--dv .dv-login-hero li { padding: 10px 12px; border-radius: 14px; background: var(--fxm-card); border: 1px solid var(--fxm-line); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+.fxm-auth--dv .dv-login-hero li:nth-child(1) { animation: fxm-up 0.6s 0.25s var(--fxm-ease) backwards; }
+.fxm-auth--dv .dv-login-hero li:nth-child(2) { animation: fxm-up 0.6s 0.35s var(--fxm-ease) backwards; }
+.fxm-auth--dv .dv-login-hero li:nth-child(3) { animation: fxm-up 0.6s 0.45s var(--fxm-ease) backwards; }
+.fxm-auth--dv .dv-login-hero li svg { color: #ff3d77 !important; }
+.fxm-auth--dv .dv-login-card { margin-top: -24px; }
+.fxm-auth--dv .dv-login-foot { color: var(--fxm-tx3) !important; }
+@media (min-width: 900px) {
+  .fxm-auth--dv { grid-template-columns: 1fr 440px; align-content: center; gap: 40px; padding: 0 6vw; }
+  .fxm-auth--dv .dv-login-card { margin: 0; }
+}
+@media (max-width: 900px) {
+  .fxm-auth.auth-page { grid-template-columns: 1fr; }
+  .fxm-auth .auth-visual { padding: 64px 20px 8px; }
+  .fxm-auth .auth-copy h1 { font-size: 34px; }
+  .fxm-auth .auth-copy p, .fxm-auth-points { display: none; }
+  .fxm-auth .auth-panel { padding: 12px 14px 32px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fxm-auth *, .fxm-auth .fxm-blob { animation: none !important; transition: none !important; }
+}
