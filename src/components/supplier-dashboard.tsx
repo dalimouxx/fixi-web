@@ -23,6 +23,7 @@ import {dateTime,money} from '@/lib/format';
 import {SupplierPos} from './supplier-pos';
 import {SupplierProductStudio} from './supplier-product-studio';
 import {SupplierHome} from './supplier-home';
+import {FixiAnimatedLogo} from './fixi-animated-logo';
 import {SupplierPromoDialog,SupplierPromoList} from './supplier-promos';
 import {SecurityPanel} from './security-panel';
 import {EinvoiceReadiness} from './einvoice-readiness';
@@ -157,11 +158,11 @@ export function SupplierDashboard({session}:{session:any}){
   const [mobileNavOpen,setMobileNavOpen]=useState(false);
   const mobilePrimary=nav.filter(([key])=>['dashboard','orders','products','delivery','cashier'].includes(key)).slice(0,4);
 
-  return <div className="supplier-os supplier-erp"><PwaRegister/><GuidedTour space="supplier"/>
+  return <div className="supplier-os supplier-erp fxm-sup"><PwaRegister/><GuidedTour space="supplier"/><div className="fxm-aurora" aria-hidden="true"><span className="fxm-blob b1"/><span className="fxm-blob b2"/></div>
     {mobileNavOpen&&<button aria-label="Fermer le menu fournisseur" className="fixi-supplier-drawer-backdrop" onClick={()=>setMobileNavOpen(false)}/>}
     <aside className={mobileNavOpen?'fixi-supplier-drawer open':'fixi-supplier-drawer'} aria-label="Navigation Supplier">
       <button className="fixi-supplier-drawer-close" aria-label="Fermer le menu" onClick={()=>setMobileNavOpen(false)}><X size={20}/></button>
-      <div className="supplier-os-brand"><FixiMark/><div><b>Fixi Fournisseur</b><span>{session.companyName}</span></div></div>
+      <div className="supplier-os-brand"><FixiAnimatedLogo size={42}/><div><b>fixi<em>.</em> pro</b><span>{session.companyName}</span></div></div>
       <div className="fixi-supplier-menu-scroll" role="navigation" aria-label="Modules du fournisseur" tabIndex={0}>
         <nav className="fx-sup-nav" aria-label="Menu fournisseur">
           {groups.map(g=>{const Icon=g.icon;const on=currentGroup?.id===g.id;return <button type="button" key={g.id} className={on?'active':''} aria-current={on?'page':undefined}

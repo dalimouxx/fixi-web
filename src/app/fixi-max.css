@@ -886,3 +886,155 @@ html[data-theme='dark'] .fxm-so .supplier-order-total b { background-image: line
   .supplier-os .fxm-so .supplier-orders-tabs button:not(.active) b { background: var(--fxm-line) !important; }
 }
 @media (max-width: 899px) { .fxm-so .fx-board-toggle { display: none !important; } }
+
+/* =====================================================================
+ * Étape 10 — Habillage commun des écrans restants (atelier + fournisseur)
+ * Les anciennes feuilles utilisent les variables --fx-* (et --panel, --border…).
+ * On les rebranche sur les jetons Fixi Max à l'intérieur des espaces connectés.
+ * ===================================================================== */
+:is(.fxm-shell, .supplier-os) {
+  --fx-bg: var(--fxm-bg);
+  --fx-surface: var(--fxm-card2);
+  --fx-surface-2: rgba(24, 16, 40, 0.035);
+  --fx-surface-3: rgba(24, 16, 40, 0.06);
+  --fx-line: var(--fxm-line);
+  --fx-line-strong: var(--fxm-line2);
+  --fx-ink: var(--fxm-tx);
+  --fx-ink-2: var(--fxm-tx2);
+  --fx-text: var(--fxm-tx);
+  --fx-muted: var(--fxm-tx3);
+  --fx-brand: #ea580c;
+  --fx-brand-hover: #c2410c;
+  --fx-brand-soft: #fff1e8;
+  --fx-brand-ink: #c2410c;
+  --fx-on-brand: #ffffff;
+  --fx-focus: rgba(255, 122, 24, 0.35);
+  --fx-success: var(--fxm-ok); --fx-success-soft: var(--fxm-ok-s);
+  --fx-warning: var(--fxm-warn); --fx-warning-soft: var(--fxm-warn-s);
+  --fx-danger: var(--fxm-bad); --fx-danger-soft: var(--fxm-bad-s);
+  --fx-info: var(--fxm-info); --fx-info-soft: var(--fxm-info-s);
+  --fx-radius-sm: 10px; --fx-radius: 14px; --fx-radius-lg: 20px; --fx-radius-xl: 24px;
+  --fx-shadow-sm: 0 1px 2px rgba(60, 30, 90, 0.04), 0 8px 24px rgba(60, 30, 90, 0.05);
+  --fx-shadow: 0 12px 32px rgba(60, 30, 90, 0.10);
+  --fx-shadow-lg: 0 24px 60px rgba(60, 30, 90, 0.16);
+  --panel: var(--fxm-card2); --panel2: rgba(24, 16, 40, 0.035); --border: var(--fxm-line); --text: var(--fxm-tx); --muted: var(--fxm-tx3);
+}
+html[data-theme='dark'] :is(.fxm-shell, .supplier-os) {
+  --fx-surface: #17131d;
+  --fx-surface-2: rgba(255, 255, 255, 0.05);
+  --fx-surface-3: rgba(255, 255, 255, 0.08);
+  --fx-brand: #f97316; --fx-brand-hover: #fb923c; --fx-brand-soft: rgba(249, 115, 22, 0.16); --fx-brand-ink: #ffb37a; --fx-on-brand: #ffffff;
+  --fx-shadow-sm: none; --fx-shadow: 0 20px 50px rgba(0, 0, 0, 0.45); --fx-shadow-lg: 0 30px 70px rgba(0, 0, 0, 0.55);
+  --panel: #17131d; --panel2: rgba(255, 255, 255, 0.05);
+}
+.supplier-os { background: var(--fxm-bg) !important; color: var(--fxm-tx); }
+
+/* Titres */
+:is(.fxm-shell .fx-content, .supplier-os main) :is(.page-title, .fx-page > h1, .fx-page-head h1) { font-family: var(--fxm-font-display); letter-spacing: -0.03em; }
+:is(.fxm-shell .fx-content, .supplier-os main) .section-title { font-family: var(--fxm-font-display); letter-spacing: -0.01em; }
+:is(.fxm-shell .fx-content, .supplier-os main) .smart-kicker { color: var(--fxm-acc) !important; letter-spacing: 0.1em; }
+
+/* Cartes et panneaux : verre dépoli, entrée animée, soulèvement au survol */
+:is(.fxm-shell .fx-content, .supplier-os main) :is(.card, .fx-panel, .supplier-panel, .fx-kpi, .supplier-kpis > div, .stat-card) {
+  background: var(--fxm-card) !important; border: 1px solid var(--fxm-line) !important; border-radius: var(--fxm-r-lg) !important;
+  backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+  animation: fxm-up 0.7s var(--fxm-ease) backwards;
+}
+:is(.fxm-shell .fx-content, .supplier-os main) :is(.fx-kpi, .supplier-kpis > div, .stat-card) { transition: transform 0.3s var(--fxm-ease), box-shadow 0.3s, border-color 0.3s; }
+:is(.fxm-shell .fx-content, .supplier-os main) :is(.fx-kpi, .supplier-kpis > div, .stat-card):hover { transform: translateY(-3px); border-color: rgba(255, 122, 24, 0.4) !important; box-shadow: var(--fxm-shadow); }
+:is(.fxm-shell .fx-content, .supplier-os main) :is(.fx-kpi, .supplier-kpis > div) > svg:first-child,
+:is(.fxm-shell .fx-content, .supplier-os main) .fx-kpi > svg { width: 44px !important; height: 44px !important; padding: 11px; box-sizing: border-box; border-radius: 14px; color: #fff !important; background: var(--fxm-grad); box-shadow: 0 8px 20px rgba(255, 61, 119, 0.3); }
+:is(.fxm-shell .fx-content, .supplier-os main) :is(.fx-kpi strong, .supplier-kpis b) { font-family: var(--fxm-font-display); letter-spacing: -0.02em; }
+
+/* Lignes de liste */
+:is(.fxm-shell .fx-content, .supplier-os main) .fx-row { border-radius: 14px; transition: background 0.2s, transform 0.25s var(--fxm-ease); }
+:is(.fxm-shell .fx-content, .supplier-os main) a.fx-row:hover, :is(.fxm-shell .fx-content, .supplier-os main) button.fx-row:hover { transform: translateX(4px); background: var(--fxm-line) !important; }
+
+/* Boutons */
+:is(.fxm-shell .fx-content, .supplier-os main, .supplier-modal) .btn-primary {
+  position: relative; overflow: hidden; border: 0 !important; background: var(--fxm-grad) !important; color: #fff !important;
+  box-shadow: 0 8px 22px rgba(255, 61, 119, 0.3) !important; transition: transform 0.2s, box-shadow 0.2s !important;
+}
+:is(.fxm-shell .fx-content, .supplier-os main, .supplier-modal) .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(255, 61, 119, 0.42) !important; }
+:is(.fxm-shell .fx-content, .supplier-os main, .supplier-modal) .btn-primary::after { content: ''; position: absolute; top: 0; bottom: 0; width: 35%; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent); transform: translateX(-120%) skewX(-20deg); pointer-events: none; }
+:is(.fxm-shell .fx-content, .supplier-os main, .supplier-modal) .btn-primary:hover::after { animation: fxm-sweep 0.8s ease; }
+:is(.fxm-shell .fx-content, .supplier-os main, .supplier-modal) :is(.btn-soft, .btn-ghost) { border-radius: 12px !important; }
+:is(.fxm-shell .fx-content, .supplier-os main, .supplier-modal) .btn-soft { background: var(--fxm-card2) !important; border: 1px solid var(--fxm-line2) !important; color: var(--fxm-tx) !important; }
+:is(.fxm-shell .fx-content, .supplier-os main, .supplier-modal) .btn-soft:hover { border-color: var(--fxm-a1) !important; color: var(--fxm-acc) !important; }
+:is(.fxm-shell .fx-content, .supplier-os main, .supplier-modal) .btn { border-radius: 12px; }
+
+/* Champs */
+:is(.fxm-shell .fx-content, .supplier-os main, .supplier-modal) :is(.input, .select, textarea.input, .fx-searchbar, .global-search, .searchbox .input) {
+  border-radius: 12px !important; border-color: var(--fxm-line2) !important; background: var(--fxm-card2) !important; color: var(--fxm-tx) !important;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+html[data-theme='dark'] :is(.fxm-shell .fx-content, .supplier-os main, .supplier-modal) :is(.input, .select, textarea.input, .fx-searchbar, .global-search) { background: rgba(255, 255, 255, 0.05) !important; }
+:is(.fxm-shell .fx-content, .supplier-os main, .supplier-modal) :is(.input, .select):focus { border-color: var(--fxm-a1) !important; box-shadow: 0 0 0 4px rgba(255, 122, 24, 0.16) !important; outline: none; }
+:is(.fxm-shell .fx-content, .supplier-os main, .supplier-modal) :is(.fx-searchbar, .global-search):focus-within { border-color: var(--fxm-a1) !important; box-shadow: 0 0 0 4px rgba(255, 122, 24, 0.16) !important; }
+
+/* Tableaux */
+:is(.fxm-shell .fx-content, .supplier-os main) .table th { font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--fxm-tx3) !important; background: transparent !important; border-color: var(--fxm-line) !important; }
+:is(.fxm-shell .fx-content, .supplier-os main) .table td { border-color: var(--fxm-line) !important; }
+:is(.fxm-shell .fx-content, .supplier-os main) .table tbody tr { transition: background 0.2s; }
+:is(.fxm-shell .fx-content, .supplier-os main) .table tbody tr:hover { background: var(--fxm-line); }
+
+/* Onglets et puces */
+:is(.fxm-shell .fx-content, .supplier-os main) .fx-subtabs button[aria-current='page'],
+.supplier-os main > .fx-subtabs button[aria-current='page'] { background: var(--fxm-grad) !important; color: #fff !important; border-color: transparent !important; box-shadow: 0 6px 18px rgba(255, 61, 119, 0.3); }
+:is(.fxm-shell .fx-content, .supplier-os main) .badge { border-radius: 999px; font-weight: 800; }
+
+/* Fenêtres (modales) */
+.supplier-modal { border-radius: 24px !important; background: var(--fxm-card2) !important; border: 1px solid var(--fxm-line) !important; box-shadow: var(--fxm-shadow) !important; animation: fxm-pop 0.35s var(--fxm-ease) backwards; color: var(--fxm-tx); }
+html[data-theme='dark'] .supplier-modal { background: #17131d !important; }
+.supplier-modal-backdrop { backdrop-filter: blur(6px); }
+
+@media (prefers-reduced-motion: reduce) {
+  :is(.fxm-shell .fx-content, .supplier-os main) :is(.card, .fx-panel, .supplier-panel, .fx-kpi, .supplier-kpis > div, .stat-card), .supplier-modal { animation: none !important; }
+  :is(.fxm-shell .fx-content, .supplier-os main) :is(.fx-kpi, .supplier-kpis > div, .stat-card):hover, :is(.fxm-shell .fx-content, .supplier-os main) a.fx-row:hover { transform: none; }
+}
+
+/* Barre latérale et en-tête fournisseur (Fixi Max) */
+.fxm-sup > aside { background: rgba(255, 255, 255, 0.78) !important; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-inline-end: 1px solid var(--fxm-line) !important; box-shadow: 4px 0 30px rgba(60, 30, 90, 0.05) !important; position: relative; z-index: 3; }
+html[data-theme='dark'] .fxm-sup > aside { background: rgba(255, 255, 255, 0.025) !important; box-shadow: none !important; }
+.fxm-sup > main { position: relative; z-index: 1; background: transparent !important; }
+.fxm-sup .supplier-os-brand { display: flex; align-items: center; gap: 12px; }
+.fxm-sup .supplier-os-brand b { font-family: var(--fxm-font-display); letter-spacing: -0.02em; color: var(--fxm-tx) !important; }
+.fxm-sup .supplier-os-brand b em { font-style: normal; color: var(--fxm-a1); }
+.fxm-sup .supplier-os-brand span { color: var(--fxm-tx3) !important; }
+.fxm-sup .fx-sup-nav button { border-radius: 12px !important; font-weight: 700; color: var(--fxm-tx2) !important; background: transparent !important; transition: transform 0.25s var(--fxm-ease), background 0.25s, color 0.25s !important; animation: fxm-nav-in 0.5s var(--fxm-ease) backwards; }
+.fxm-sup .fx-sup-nav button:nth-child(2) { animation-delay: 0.04s; } .fxm-sup .fx-sup-nav button:nth-child(3) { animation-delay: 0.08s; }
+.fxm-sup .fx-sup-nav button:nth-child(4) { animation-delay: 0.12s; } .fxm-sup .fx-sup-nav button:nth-child(5) { animation-delay: 0.16s; } .fxm-sup .fx-sup-nav button:nth-child(6) { animation-delay: 0.2s; }
+.fxm-sup .fx-sup-nav button:hover { background: var(--fxm-line) !important; color: var(--fxm-tx) !important; transform: translateX(4px); }
+.fxm-sup .fx-sup-nav button.active { color: #c2410c !important; background: linear-gradient(90deg, rgba(255, 122, 24, 0.16), rgba(255, 61, 119, 0.07)) !important; box-shadow: inset 0 0 0 1px rgba(255, 122, 24, 0.32) !important; }
+html[data-theme='dark'] .fxm-sup .fx-sup-nav button.active { color: #fff !important; background: linear-gradient(90deg, rgba(255, 122, 24, 0.32), rgba(255, 61, 119, 0.16)) !important; box-shadow: inset 0 0 0 1px rgba(255, 122, 24, 0.4), 0 0 28px rgba(255, 61, 119, 0.18) !important; }
+.fxm-sup .fx-sup-nav button em { background: var(--fxm-grad) !important; color: #fff !important; border-radius: 999px !important; font-style: normal; }
+.fxm-sup .fx-mode { background: var(--fxm-line) !important; border-radius: 12px !important; }
+.fxm-sup .fx-mode button[aria-pressed='true'] { background: var(--fxm-grad) !important; color: #fff !important; box-shadow: 0 6px 18px rgba(255, 61, 119, 0.3) !important; }
+.fxm-sup .supplier-nav-label { color: var(--fxm-tx3) !important; letter-spacing: 0.1em; }
+.fxm-sup .supplier-delivery-link { border-radius: 12px !important; color: var(--fxm-tx2) !important; transition: transform 0.25s var(--fxm-ease), background 0.2s !important; }
+.fxm-sup .supplier-delivery-link:hover { background: var(--fxm-line) !important; color: var(--fxm-tx) !important; transform: translateX(4px); }
+.fxm-sup .supplier-side-foot { border-radius: 16px; background: var(--fxm-card) !important; border: 1px solid var(--fxm-line) !important; }
+.fxm-sup > main > header { background: rgba(255, 255, 255, 0.7) !important; backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border-bottom: 1px solid var(--fxm-line) !important; }
+html[data-theme='dark'] .fxm-sup > main > header { background: rgba(255, 255, 255, 0.04) !important; }
+.fxm-sup > main > header h1 { font-family: var(--fxm-font-display); letter-spacing: -0.03em; }
+.fxm-sup .fx-subtabs button { border-radius: 999px !important; font-weight: 800; transition: all 0.25s; }
+.fxm-sup .fx-subtabs button[aria-current='page'] { background: var(--fxm-grad) !important; color: #fff !important; border-color: transparent !important; box-shadow: 0 6px 18px rgba(255, 61, 119, 0.3); }
+@layer fxm-force {
+  html[data-theme='dark'] .supplier-os.fxm-sup :is(aside) .fx-sup-nav button.active :is(span, svg) { color: #fff !important; }
+  html[data-theme='dark'] .supplier-os.fxm-sup .fx-subtabs button[aria-current='page'] { color: #fff !important; }
+}
+@media (prefers-reduced-motion: reduce) { .fxm-sup .fx-sup-nav button { animation: none !important; } .fxm-sup .fx-sup-nav button:hover, .fxm-sup .supplier-delivery-link:hover { transform: none; } }
+
+/* Blocs du fournisseur dont le fond blanc est écrit en dur : verre Fixi Max (clair) et surface sombre (sombre) */
+.supplier-os main :is(.supplier-delivery-kpis > div, .supplier-dues-kpis > div, .supplier-kpis > div, .supplier-master-counts > div, .supplier-card-grid article, .supplier-action-list button, .supplier-count-list > button, .supplier-ok, .supplier-dispatch-list article, .supplier-delivery, .supplier-check-wide, .driver-state-btn, .supplier-master-list button) {
+  background: var(--fxm-card) !important; border-color: var(--fxm-line) !important; color: var(--fxm-tx) !important; border-radius: 16px !important;
+  transition: transform 0.25s var(--fxm-ease), border-color 0.25s, box-shadow 0.25s;
+}
+.supplier-os main :is(.supplier-delivery-kpis > div, .supplier-dues-kpis > div, .supplier-card-grid article, .supplier-action-list button, .supplier-dispatch-list article):hover { transform: translateY(-2px); border-color: rgba(255, 122, 24, 0.4) !important; box-shadow: var(--fxm-shadow); }
+.supplier-os main .supplier-dispatch-list article.selected { box-shadow: inset 0 0 0 2px #ff7a18, 0 10px 26px rgba(255, 61, 119, 0.18) !important; }
+.supplier-os main :is(.supplier-dues-tabs button, .supplier-master-tabs button, .supplier-document-actions button) { background: var(--fxm-card2) !important; color: var(--fxm-tx) !important; border-color: var(--fxm-line2) !important; border-radius: 12px !important; }
+html[data-theme='dark'] .supplier-os main :is(.supplier-dues-tabs button, .supplier-master-tabs button, .supplier-document-actions button, .supplier-dispatch-assign select) { background: rgba(255, 255, 255, 0.05) !important; }
+@layer fxm-force {
+  html[data-theme='dark'] .supplier-os main :is(.supplier-delivery-kpis > div, .supplier-dues-kpis > div, .supplier-dispatch-list article, .supplier-card-grid article) :is(b, strong, span, small, div, code) { color: inherit !important; }
+  html[data-theme='dark'] .supplier-os main :is(.supplier-delivery-kpis > div, .supplier-dues-kpis > div, .supplier-dispatch-list article, .supplier-card-grid article) :is(span, small) { color: var(--fxm-tx3) !important; }
+}
