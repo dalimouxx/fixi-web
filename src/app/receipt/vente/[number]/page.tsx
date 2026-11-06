@@ -14,8 +14,10 @@ export default async function CounterReceipt({ params }: { params: Promise<{ num
   const sale = await prisma.counterSale.findFirst({ where: { shopId: s.shopId, number: decodeURIComponent(number) }, include: { shop: true, lines: true, payments: true, client: true, user: { select: { fullName: true } } } });
   if (!sale) notFound();
   const cur = sale.shop.currency;
-  const received = sale.payments.reduce((a, p) => a + Number(p.receivedAmount ?? p.amount), 0);
-  const change = sale.payments.reduce((a, p) => a + Number(p.changeAmount || 0), 0);
+  const paidRows = sale.payments.filter(p => p.kind !== 'REFUND');
+  const refunds = sale.payments.filter(p => p.kind === 'REFUND');
+  const received = paidRows.reduce((a, p) => a + Number(p.receivedAmount ?? p.amount), 0);
+  const change = paidRows.reduce((a, p) => a + Number(p.changeAmount || 0), 0);
   return <div style={{ padding: '25px 0' }}>
     <div className="no-print" style={{ display: 'flex', justifyContent: 'center', marginBottom: 14 }}><PrintButton /></div>
     <div className="print-receipt fx-branded" style={shopBrandVars(sale.shop.brandColor) as any}>
@@ -31,15 +33,18 @@ export default async function CounterReceipt({ params }: { params: Promise<{ num
       {sale.client && <div className="receipt-row"><span>Client</span><span>{sale.client.fullName}</span></div>}
       <div className="receipt-sep" />
       {sale.lines.map(l => <div key={l.id} style={{ margin: '5px 0' }}>
-        <div>{l.name}</div>
+        <div>{l.name}{l.returnedQuantity > 0 && <em style={{ fontStyle: 'normal', fontSize: 10 }}> · {l.returnedQuantity} rendu{l.returnedQuantity > 1 ? 's' : ''}</em>}</div>
         <div className="receipt-row" style={{ margin: 0, fontSize: 11 }}><span>{l.quantity} × {money(Number(l.unitPrice), cur)}</span><strong>{money(Number(l.total), cur)}</strong></div>
       </div>)}
       <div className="receipt-sep" />
       <div className="receipt-row"><span>Sous-total</span><span>{money(Number(sale.subtotal), cur)}</span></div>
       {Number(sale.discount) > 0 && <div className="receipt-row"><span>Remise</span><span>− {money(Number(sale.discount), cur)}</span></div>}
       <div className="receipt-row receipt-due"><span>Total</span><strong>{money(Number(sale.total), cur)}</strong></div>
-      {sale.payments.map(p => <div className="receipt-row" key={p.id}><span>{METHOD[p.method] || p.method}</span><span>{money(Number(p.amount), cur)}</span></div>)}
+      {paidRows.map(p => <div className="receipt-row" key={p.id}><span>{METHOD[p.method] || p.method}</span><span>{money(Number(p.amount), cur)}</span></div>)}
       {change > 0 && <><div className="receipt-row"><span>Reçu</span><span>{money(received, cur)}</span></div><div className="receipt-row"><span>Rendu</span><span>{money(change, cur)}</span></div></>}
+      {refunds.length > 0 && <><div className="receipt-sep" />
+        {refunds.map(p => <div className="receipt-row" key={p.id}><span>Remboursé ({METHOD[p.method] || p.method}) · {dateTime(p.createdAt)}</span><strong>− {money(Number(p.amount), cur)}</strong></div>)}
+        <div className="receipt-row receipt-due"><span>Net payé</span><strong>{money(Number(sale.total) - Number(sale.refundedTotal), cur)}</strong></div></>}
       <div className="receipt-sep" />
       <div className="receipt-center" style={{ fontSize: 10 }}>{sale.shop.footerText || 'Merci pour votre achat !'}</div>
     </div>

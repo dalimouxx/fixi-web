@@ -62,3 +62,39 @@ test('Vente comptoir : schéma, API transactionnelle, caisse et listes de paieme
   assert.ok(readFileSync('src/app/receipt/vente/[number]/page.tsx', 'utf8').includes('prisma.counterSale.findFirst'));
   assert.ok(readFileSync('src/app/layout.tsx', 'utf8').includes("import './fixi-max-comptoir.css'"));
 });
+
+import { priceRefund, refundState } from '../src/lib/counter-sale';
+const sold = [
+  { id: 'l1', name: 'Coque A54', quantity: 3, returnedQuantity: 0, unitPrice: 15 },
+  { id: 'l2', name: 'Verre trempé', quantity: 2, returnedQuantity: 0, unitPrice: 5 },
+];
+
+test('Remboursement comptoir : remise déduite au prorata, solde exact au dernier retour', () => {
+  const sale = { subtotal: 55, total: 49.5, refundedTotal: 0 };
+  const a = priceRefund(sale, sold, [{ lineId: 'l1', quantity: 1, restock: false }]);
+  assert.equal(a.amount, 13.5); assert.equal(a.lines[0].restock, false);
+  const after = sold.map(l => l.id === 'l1' ? { ...l, returnedQuantity: 1 } : l);
+  const b = priceRefund({ ...sale, refundedTotal: 13.5 }, after, [{ lineId: 'l1', quantity: 2 }, { lineId: 'l2', quantity: 2 }]);
+  assert.equal(b.amount, 36); assert.equal(b.remaining, 0); assert.equal(b.lines[0].restock, true, 'remis en stock par défaut');
+  const odd = priceRefund({ subtotal: 83, total: 80, refundedTotal: 0 }, [{ id: 'x', name: 'Coque', quantity: 2, returnedQuantity: 0, unitPrice: 29 }, { id: 'y', name: 'Chargeur', quantity: 1, returnedQuantity: 0, unitPrice: 25 }], [{ lineId: 'x', quantity: 1 }]);
+  assert.equal(odd.amount, 27.952);
+});
+
+test('Remboursement comptoir : jamais plus que vendu, ni deux fois', () => {
+  const sale = { subtotal: 55, total: 55, refundedTotal: 0 };
+  assert.throws(() => priceRefund(sale, sold, [{ lineId: 'l1', quantity: 4 }]), /3 articles remboursables au maximum/);
+  assert.throws(() => priceRefund(sale, sold, []), /au moins un article/);
+  assert.throws(() => priceRefund(sale, sold, [{ lineId: 'zz', quantity: 1 }]), /introuvable/);
+  const all = sold.map(l => ({ ...l, returnedQuantity: l.quantity }));
+  assert.throws(() => priceRefund({ ...sale, refundedTotal: 55 }, all, [{ lineId: 'l1', quantity: 1 }]), /déjà entièrement remboursée/);
+  assert.equal(refundState(55, 0), 'NONE'); assert.equal(refundState(55, 13.5), 'PARTIAL'); assert.equal(refundState(55, 55), 'FULL');
+});
+
+test('Remboursement comptoir : API sécurisée (motif, code gérant pour le caissier, garde-fous concurrents)', () => {
+  const api = readFileSync('src/app/api/counter-sales/[id]/refund/route.ts', 'utf8');
+  for (const k of ['Indiquez le motif', 'Code du gérant requis', "bcrypt.compare(pin, m.pinHash)", 'returnedQuantity: { lte: line.quantity - l.quantity }', 'refundedTotal: { lte:', 'kind: PaymentKind.REFUND', 'StockMovementType.RETURN', 'Serializable', 'cashRequireSession']) assert.ok(api.includes(k), k);
+  assert.match(readFileSync('prisma/schema.prisma', 'utf8'), /returnedQuantity\s+Int\s+@default\(0\)/);
+  const ui = readFileSync('src/components/counter-refund.tsx', 'utf8');
+  assert.ok(ui.includes('Remettre en stock') && ui.includes('Code du gérant') && ui.includes("r !== 'Article défectueux'"));
+  assert.ok(readFileSync('src/app/receipt/vente/[number]/page.tsx', 'utf8').includes('Net payé'));
+});
