@@ -1,0 +1,58 @@
+/* Fixi Max — écrans système : erreur, santé de la plateforme, sécurité et données, code PIN oublié. */
+/* =====================================================================
+ * Écran d'erreur (page qui plante) — clair, rassurant, animé
+ * ===================================================================== */
+.fxm-error { min-height: 70vh; display: grid; place-items: center; padding: 24px 16px; }
+.fxm-error-card { max-width: 460px; text-align: center; display: grid; justify-items: center; gap: 12px; padding: 32px 24px; border-radius: 28px; background: var(--fxm-card2); border: 1px solid var(--fxm-line); box-shadow: var(--fxm-shadow); animation: fxm-up 0.6s var(--fxm-ease) both; }
+.fxm-error-ico { width: 64px; height: 64px; display: grid; place-items: center; border-radius: 22px; background: var(--fxm-grad); color: #fff; font: 800 32px/1 var(--fxm-font-display); box-shadow: 0 14px 30px -10px rgba(255, 61, 119, 0.6); }
+.fxm-error h1 { margin: 6px 0 0; font-family: var(--fxm-font-display); font-size: 22px; letter-spacing: -0.02em; color: var(--fxm-tx); }
+.fxm-error p { margin: 0; color: var(--fxm-tx2); line-height: 1.55; }
+.fxm-error-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 6px; }
+.fxm-error small { color: var(--fxm-tx3); font-family: ui-monospace, monospace; }
+
+/* ---------- Fixi Control : santé du système ---------- */
+.ph { display: grid; gap: 16px; }
+.ph-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.ph-card { display: flex; gap: 12px; align-items: flex-start; padding: 16px; border-radius: 18px; border: 1px solid var(--fxm-line); background: var(--fxm-card2); animation: fxm-up 0.5s var(--fxm-ease) backwards; }
+.ph-card > svg { flex: none; width: 38px; height: 38px; padding: 9px; border-radius: 12px; }
+.ph-card.ok > svg { background: var(--fxm-ok-s); color: var(--fxm-ok); }
+.ph-card.warn > svg { background: var(--fxm-warn-s); color: var(--fxm-warn); }
+.ph-card.bad > svg { background: var(--fxm-bad-s); color: var(--fxm-bad); }
+.ph-card span { display: block; font-size: 12px; font-weight: 700; color: var(--fxm-tx3); text-transform: uppercase; letter-spacing: 0.05em; }
+.ph-card b { display: block; font-size: 20px; margin: 2px 0; color: var(--fxm-tx); }
+.ph-card small { color: var(--fxm-tx3); font-size: 12.5px; line-height: 1.4; }
+.ph-link { padding: 0; border: 0; background: none; color: var(--fxm-acc); font: inherit; font-weight: 700; cursor: pointer; text-decoration: underline; }
+.ph-msg { margin: 0; padding: 10px 14px; border-radius: 12px; background: var(--fxm-info-s); color: var(--fxm-info); font-weight: 600; }
+.ph-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.ph-list { display: grid; gap: 8px; margin-top: 10px; }
+.ph-row { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 14px; border: 1px solid var(--fxm-line); background: var(--fxm-card2); }
+.ph-main { flex: 1; min-width: 0; }
+.ph-main b { display: block; font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ph-main small { color: var(--fxm-tx3); font-size: 12px; }
+.ph-kind { flex: none; font-style: normal; font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 999px; }
+.ph-kind.s { background: var(--fxm-bad-s); color: var(--fxm-bad); }
+.ph-kind.c { background: var(--fxm-vio-s); color: var(--fxm-vio); }
+.ph-empty { display: flex; align-items: center; gap: 8px; color: var(--fxm-ok); font-weight: 700; }
+
+/* ---------- Paramètres : sécurité et données ---------- */
+.fx-sec-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin-top: 16px; }
+.fx-sec-box { display: grid; gap: 10px; align-content: start; padding: 16px; border-radius: 16px; border: 1px solid var(--fxm-line); background: var(--fxm-card2); }
+.fx-sec-box > b { display: inline-flex; align-items: center; gap: 8px; }
+.fx-sec-box p { margin: 0; color: var(--fxm-tx2); font-size: 13.5px; line-height: 1.5; }
+.fx-sec-box .btn { justify-self: start; }
+.fx-sec-state.ok { color: var(--fxm-ok); font-weight: 700; } .fx-sec-state.warn { color: var(--fxm-warn); font-weight: 700; }
+.fx-sec-code { display: grid; gap: 6px; padding: 14px; border-radius: 14px; border: 2px dashed var(--fxm-line2); background: var(--fxm-card); animation: fxm-pop 0.35s var(--fxm-ease); }
+.fx-sec-code span { font-size: 20px; font-weight: 800; letter-spacing: 0.08em; }
+.fx-sec-code small { color: var(--fxm-warn); font-weight: 700; }
+.fx-sec-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.fx-sec-msg { margin: 12px 0 0; color: var(--fxm-ok); font-weight: 600; }
+.fxm-forgot { display: grid; gap: 8px; width: min(460px, 100%) !important; }
+.fxm-forgot > p { margin: 4px 0 6px; }
+.fxm-forgot-warn { color: var(--fxm-bad); font-weight: 600; }
+.fxm-forgot-done { display: grid; justify-items: center; gap: 10px; text-align: center; padding: 10px 0; }
+.fxm-forgot-done svg { color: var(--fxm-ok); animation: fxm-pop 0.5s var(--fxm-ease); }
+.fxm-forgot-done h1 { font-size: 22px; margin: 0; }
+.fxm-auth .supplier-login-foot a { display: inline-flex; align-items: center; gap: 6px; color: var(--fxm-acc); font-weight: 700; }
+
+/* ---------- Écrans d'authentification minimaux (si les styles Fixi Max de connexion ne sont pas chargés) ---------- */
+.fxm-forgot .input { width: 100%; }

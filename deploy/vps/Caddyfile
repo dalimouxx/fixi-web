@@ -1,0 +1,5 @@
+# HTTPS automatique (Let's Encrypt) : le domaine doit pointer vers l'adresse IP du VPS.
+{$FIXI_DOMAIN} {
+	encode zstd gzip
+	reverse_proxy app:3000
+}

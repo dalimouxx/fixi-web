@@ -1,0 +1,49 @@
+# Fixi sur un VPS : application + PostgreSQL 16 + HTTPS automatique (Caddy) + sauvegardes nocturnes.
+# Démarrage : cp .env.example .env  (remplir)  puis  docker compose up -d --build
+name: fixi
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: fixi
+      POSTGRES_USER: fixi
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?mot de passe base requis}
+    volumes: [db-data:/var/lib/postgresql/data]
+    healthcheck: { test: ["CMD-SHELL", "pg_isready -U fixi -d fixi"], interval: 10s, timeout: 5s, retries: 10 }
+
+  app:
+    build: { context: ../.., dockerfile: Dockerfile }
+    restart: unless-stopped
+    depends_on: { db: { condition: service_healthy } }
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://fixi:${POSTGRES_PASSWORD}@db:5432/fixi
+      PORT: "3000"
+      BACKUP_EXPECTED: "on"
+    volumes: [app-data:/app/data]
+    healthcheck: { test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/api/health >/dev/null || exit 1"], interval: 30s, timeout: 5s, retries: 5 }
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on: [app]
+    ports: ["80:80", "443:443"]
+    environment: { FIXI_DOMAIN: "${FIXI_DOMAIN:?domaine requis}" }
+    volumes: [./Caddyfile:/etc/caddy/Caddyfile:ro, caddy-data:/data, caddy-config:/config]
+
+  backup:
+    build: { context: ../.., dockerfile: deploy/vps/backup/Dockerfile }
+    restart: unless-stopped
+    depends_on: { db: { condition: service_healthy } }
+    environment:
+      DATABASE_URL: postgresql://fixi:${POSTGRES_PASSWORD}@db:5432/fixi
+      RESTORE_ADMIN_URL: postgresql://fixi:${POSTGRES_PASSWORD}@db:5432/postgres
+      BACKUP_PASSPHRASE: ${BACKUP_PASSPHRASE:?phrase de chiffrement requise}
+      BACKUP_REMOTE: ${BACKUP_REMOTE:-}
+      UPLOADS_DIR: /app-data
+      APP_URL: http://app:3000
+      CRON_SECRET: ${CRON_SECRET}
+    volumes: [backups:/backups, app-data:/app-data:ro, ./rclone:/root/.config/rclone]
+
+volumes: { db-data: {}, app-data: {}, backups: {}, caddy-data: {}, caddy-config: {} }

@@ -1,0 +1,65 @@
+name: Fixi sauvegarde nocturne
+# Chaque nuit : sauvegarde chiffrée de la base de production + test de restauration dans une base jetable.
+# Secrets du dépôt (Settings → Secrets and variables → Actions) :
+#   FIXI_DATABASE_URL   URL EXTERNE de la base (Render → base → « External Database URL »)
+#   BACKUP_PASSPHRASE   phrase de chiffrement (gardez-en une copie hors de GitHub !)
+#   FIXI_APP_URL + FIXI_CRON_SECRET   (facultatif) pour voir l'état dans Fixi Control et recevoir les alertes
+#   RCLONE_CONFIG + BACKUP_REMOTE     (facultatif) copie vers Google Drive / Backblaze / S3 en plus de GitHub
+# Sans FIXI_DATABASE_URL, le travail ne fait rien.
+on:
+  schedule:
+    - cron: '17 1 * * *'   # 02 h 17 à Tunis
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      restore:
+        image: postgres:16
+        env: { POSTGRES_PASSWORD: restore }
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      DATABASE_URL: ${{ secrets.FIXI_DATABASE_URL }}
+      BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+      APP_URL: ${{ secrets.FIXI_APP_URL }}
+      CRON_SECRET: ${{ secrets.FIXI_CRON_SECRET }}
+      BACKUP_REMOTE: ${{ secrets.BACKUP_REMOTE }}
+      BACKUP_DIR: ${{ github.workspace }}/sauvegardes
+      RESTORE_ADMIN_URL: postgresql://postgres:restore@localhost:5432/postgres
+    steps:
+      - name: Configuration présente ?
+        id: cfg
+        run: |
+          if [ -z "$DATABASE_URL" ] || [ -z "$BACKUP_PASSPHRASE" ]; then echo "FIXI_DATABASE_URL ou BACKUP_PASSPHRASE absent : rien à faire."; echo "skip=1" >> "$GITHUB_OUTPUT"; fi
+      - uses: actions/checkout@v5
+        if: steps.cfg.outputs.skip != '1'
+      - name: Outils PostgreSQL 16, gpg, rclone
+        if: steps.cfg.outputs.skip != '1'
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -fsSL -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
+          sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client-16 gnupg rclone
+          echo "/usr/lib/postgresql/16/bin" >> "$GITHUB_PATH"
+      - name: Configuration rclone
+        if: steps.cfg.outputs.skip != '1' && env.BACKUP_REMOTE != ''
+        env: { RCLONE_CONFIG_CONTENT: '${{ secrets.RCLONE_CONFIG }}' }
+        run: mkdir -p ~/.config/rclone && printf '%s' "$RCLONE_CONFIG_CONTENT" > ~/.config/rclone/rclone.conf
+      - name: Sauvegarde
+        if: steps.cfg.outputs.skip != '1'
+        run: bash scripts/backup/fixi-backup.sh
+      - name: Test de restauration
+        if: steps.cfg.outputs.skip != '1'
+        run: bash scripts/backup/fixi-restore-test.sh
+      - name: Conserver la sauvegarde chiffrée (30 jours)
+        if: steps.cfg.outputs.skip != '1'
+        uses: actions/upload-artifact@v4
+        with:
+          name: fixi-sauvegarde-${{ github.run_id }}
+          path: sauvegardes/*.gpg*
+          retention-days: 30
