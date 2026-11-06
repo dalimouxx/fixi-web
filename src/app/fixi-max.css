@@ -1038,3 +1038,76 @@ html[data-theme='dark'] .supplier-os main :is(.supplier-dues-tabs button, .suppl
   html[data-theme='dark'] .supplier-os main :is(.supplier-delivery-kpis > div, .supplier-dues-kpis > div, .supplier-dispatch-list article, .supplier-card-grid article) :is(b, strong, span, small, div, code) { color: inherit !important; }
   html[data-theme='dark'] .supplier-os main :is(.supplier-delivery-kpis > div, .supplier-dues-kpis > div, .supplier-dispatch-list article, .supplier-card-grid article) :is(span, small) { color: var(--fxm-tx3) !important; }
 }
+
+/* =====================================================================
+ * Étape 11 — Appli Livreur (mobile)
+ * ===================================================================== */
+.delivery-app.driver-v3 {
+  --dv-bg: var(--fxm-bg); --dv-card: var(--fxm-card2); --dv-line: var(--fxm-line); --dv-brand: #f97316; --dv-brand-deep: #ea580c;
+  --fx-surface: var(--fxm-card2); --fx-line: var(--fxm-line); --fx-ink: var(--fxm-tx); --fx-muted: var(--fxm-tx3);
+  background: var(--fxm-bg) !important; color: var(--fxm-tx); position: relative; isolation: isolate;
+}
+html[data-theme='dark'] .delivery-app.driver-v3 { --dv-card: #17131d; }
+.delivery-app.driver-v3::before { content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none; background: radial-gradient(60% 40% at 0% 0%, rgba(255, 122, 24, 0.22), transparent 70%), radial-gradient(50% 40% at 100% 70%, rgba(139, 92, 246, 0.18), transparent 70%); }
+/* En-tête : verre clair (sombre en mode sombre) */
+html:not([data-theme='dark']) .delivery-app.driver-v3 .dv-top { background: rgba(255, 255, 255, 0.82) !important; color: var(--fxm-tx) !important; backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border-bottom: 1px solid var(--fxm-line); }
+html:not([data-theme='dark']) .delivery-app.driver-v3 .dv-top-title small { color: var(--fxm-tx3) !important; }
+html:not([data-theme='dark']) .delivery-app.driver-v3 .dv-top :is(button, a) { color: var(--fxm-tx) !important; background: var(--fxm-card2) !important; border-color: var(--fxm-line2) !important; }
+html[data-theme='dark'] .delivery-app.driver-v3 .dv-top { background: rgba(20, 16, 28, 0.85) !important; backdrop-filter: blur(18px); }
+/* Bandeau principal : dégradé pastel en clair */
+.delivery-app.driver-v3 .dv-hero { border-radius: 0 0 28px 28px; animation: fxm-up 0.6s var(--fxm-ease) backwards; }
+html:not([data-theme='dark']) .delivery-app.driver-v3 .dv-hero { background: linear-gradient(135deg, #ffe8d8 0%, #ffe2ee 50%, #eee6ff 100%) !important; color: var(--fxm-tx) !important; box-shadow: 0 20px 50px rgba(120, 60, 140, 0.12) !important; }
+html:not([data-theme='dark']) .delivery-app.driver-v3 .dv-hero :is(h1, b, strong) { color: var(--fxm-tx) !important; }
+html:not([data-theme='dark']) .delivery-app.driver-v3 .dv-hero :is(small, span, p) { color: var(--fxm-tx2) !important; }
+html:not([data-theme='dark']) .delivery-app.driver-v3 .dv-hero .dv-chip { background: rgba(255, 255, 255, 0.75) !important; border-color: rgba(24, 16, 40, 0.1) !important; color: var(--fxm-tx) !important; }
+html:not([data-theme='dark']) .delivery-app.driver-v3 .dv-hero .dv-chip.is-on { background: var(--fxm-ok-s) !important; color: var(--fxm-ok) !important; border-color: rgba(15, 138, 95, 0.3) !important; }
+html:not([data-theme='dark']) .delivery-app.driver-v3 .dv-stats div { background: rgba(255, 255, 255, 0.72) !important; border-color: rgba(24, 16, 40, 0.08) !important; }
+html[data-theme='dark'] .delivery-app.driver-v3 .dv-hero { background: radial-gradient(120% 140% at 100% 0%, #8a2b12 0%, #2a1020 45%, #120e18 80%) !important; }
+.delivery-app.driver-v3 .dv-stats b { font-family: var(--fxm-font-display); letter-spacing: -0.02em; }
+/* Cartes, missions, lignes */
+.delivery-app.driver-v3 :is(.dv-offer, .dv-current, .dv-row, .dv-menu-row, .dv-stops > *, .dv-list > *, .dv-empty) { border-radius: 20px !important; background: var(--fxm-card2) !important; border-color: var(--fxm-line) !important; animation: fxm-up 0.5s var(--fxm-ease) backwards; }
+html[data-theme='dark'] .delivery-app.driver-v3 :is(.dv-offer, .dv-current, .dv-row, .dv-menu-row, .dv-stops > *, .dv-list > *, .dv-empty) { background: rgba(255, 255, 255, 0.05) !important; }
+.delivery-app.driver-v3 .dv-offer, .delivery-app.driver-v3 .dv-current { border: 0 !important; box-shadow: inset 0 0 0 2px #ff7a18, 0 16px 40px rgba(255, 61, 119, 0.16) !important; }
+.delivery-app.driver-v3 .dv-offer header strong, .delivery-app.driver-v3 .dv-amount { font-family: var(--fxm-font-display); background: linear-gradient(90deg, #e2560c, #e11d63); -webkit-background-clip: text; background-clip: text; color: transparent !important; }
+.delivery-app.driver-v3 .dv-stop-n { background: var(--fxm-grad) !important; color: #fff !important; box-shadow: 0 6px 16px rgba(255, 61, 119, 0.35); }
+/* Boutons */
+.delivery-app.driver-v3 :is(.btn-primary, .dv-hero-cta) { position: relative; overflow: hidden; border: 0 !important; background: var(--fxm-grad) !important; color: #fff !important; border-radius: 16px !important; box-shadow: 0 12px 30px rgba(255, 61, 119, 0.4) !important; }
+.delivery-app.driver-v3 :is(.btn-primary, .dv-hero-cta)::after { content: ''; position: absolute; top: 0; bottom: 0; width: 30%; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent); animation: fxm-sweep 2.6s ease-in-out infinite; pointer-events: none; }
+.delivery-app.driver-v3 .btn-soft { border-radius: 14px !important; background: var(--fxm-card2) !important; border: 1px solid var(--fxm-line2) !important; color: var(--fxm-tx) !important; }
+.delivery-app.driver-v3 .dv-chip { border-radius: 999px !important; }
+/* Barre d'onglets du bas */
+.delivery-app.driver-v3 .dv-tabs { background: rgba(255, 255, 255, 0.86) !important; backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border-top: 1px solid var(--fxm-line) !important; }
+html[data-theme='dark'] .delivery-app.driver-v3 .dv-tabs { background: rgba(20, 16, 28, 0.88) !important; }
+.delivery-app.driver-v3 .dv-tabs :is(button, a)[aria-current='page'], .delivery-app.driver-v3 .dv-tabs :is(button, a)[aria-selected='true'], .delivery-app.driver-v3 .dv-tabs :is(button, a).active { color: #ea580c !important; }
+.delivery-app.driver-v3 .delivery-modal, .delivery-app.driver-v3 .supplier-modal { border-radius: 24px !important; background: var(--fxm-card2) !important; animation: fxm-pop 0.35s var(--fxm-ease) backwards; }
+@media (prefers-reduced-motion: reduce) {
+  .delivery-app.driver-v3 :is(.dv-hero, .dv-offer, .dv-current, .dv-row, .dv-menu-row, .dv-stops > *, .dv-list > *, .dv-empty), .delivery-app.driver-v3 :is(.btn-primary, .dv-hero-cta)::after { animation: none !important; }
+}
+@layer fxm-force {
+  html:not([data-theme='dark']) .delivery-app.driver-v3 .dv-top .rt-notifications button { color: var(--fxm-tx) !important; background: var(--fxm-card2) !important; border-color: var(--fxm-line2) !important; }
+}
+
+/* =====================================================================
+ * Étape 12 — Suivi client (/track) : garde la couleur de la boutique
+ * ===================================================================== */
+.fx-track {
+  --fx-bg: var(--fxm-bg); --fx-surface: var(--fxm-card2); --fx-line: var(--fxm-line); --fx-ink: var(--fxm-tx); --fx-muted: var(--fxm-tx3);
+  --fx-radius-xl: 24px; --fx-shadow-sm: 0 1px 2px rgba(60, 30, 90, 0.04), 0 10px 30px rgba(60, 30, 90, 0.07);
+  background: radial-gradient(70% 45% at 0% 0%, var(--shop-brand-soft), transparent 70%), radial-gradient(60% 45% at 100% 60%, rgba(139, 92, 246, 0.14), transparent 70%), var(--fxm-bg) !important;
+  background-attachment: fixed;
+}
+html[data-theme='dark'] .fx-track { --fx-surface: #17131d; --fx-shadow-sm: none; }
+.fx-track .fx-track-top > i { box-shadow: 0 8px 20px var(--shop-brand-soft); }
+.fx-track .fx-track-top b { font-family: var(--fxm-font-display); letter-spacing: -0.02em; }
+.fx-track .fx-track-card { backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); animation: fxm-up 0.7s var(--fxm-ease) backwards; }
+.fx-track .fx-track-main > *:nth-child(2) { animation-delay: 0.08s; } .fx-track .fx-track-main > *:nth-child(3) { animation-delay: 0.16s; }
+.fx-track .fx-track-main > *:nth-child(4) { animation-delay: 0.24s; } .fx-track .fx-track-main > *:nth-child(5) { animation-delay: 0.32s; }
+.fx-track .fx-track-hero { background: linear-gradient(135deg, var(--shop-brand-soft), rgba(255, 61, 119, 0.10) 55%, rgba(139, 92, 246, 0.12)) !important; position: relative; overflow: hidden; }
+.fx-track .fx-track-hero-icon { animation: fxm-float 4s ease-in-out infinite; box-shadow: 0 12px 30px var(--shop-brand-soft); }
+.fx-track .fx-track-hero h1, .fx-track .fx-track-hero b { font-family: var(--fxm-font-display); letter-spacing: -0.03em; }
+.fx-track .fx-track-btn { position: relative; overflow: hidden; border-radius: 16px !important; box-shadow: 0 10px 26px var(--shop-brand-soft); transition: transform 0.2s; }
+.fx-track .fx-track-btn:hover { transform: translateY(-2px); }
+.fx-track .fx-track-btn:not(.fx-track-btn-soft)::after { content: ''; position: absolute; top: 0; bottom: 0; width: 30%; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent); animation: fxm-sweep 2.8s ease-in-out infinite; pointer-events: none; }
+.fx-track .fx-track-btn-soft { box-shadow: none; border-radius: 16px !important; }
+.fx-track .fx-track-money b, .fx-track .fx-track-quote b { font-family: var(--fxm-font-display); }
+@media (prefers-reduced-motion: reduce) { .fx-track .fx-track-card, .fx-track .fx-track-hero-icon, .fx-track .fx-track-btn::after { animation: none !important; } .fx-track .fx-track-btn:hover { transform: none; } }

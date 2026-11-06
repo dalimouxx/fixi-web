@@ -100,3 +100,9 @@ test('Habillage commun Fixi Max : variables --fx-* rebranchées, barre fournisse
   const globals = readFileSync('src/app/globals.css', 'utf8');
   assert.ok(globals.includes('@layer fxm-force, fx-force, legacy;'));
 });
+
+test('Livreur et suivi client Fixi Max : clair par défaut, couleur de la boutique conservée', () => {
+  assert.match(css, /html:not\(\[data-theme='dark'\]\) \.delivery-app\.driver-v3 \.dv-hero \{/);
+  assert.match(css, /\.fx-track \{[^}]*--fx-bg: var\(--fxm-bg\)/);
+  assert.match(css, /\.fx-track[^{]*\{[^}]*var\(--shop-brand-soft\)/);
+});
