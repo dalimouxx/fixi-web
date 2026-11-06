@@ -1,0 +1,64 @@
+/* =====================================================================
+ * Vente comptoir (accessoires) — onglet de la Caisse
+ * ===================================================================== */
+.fxm-cash-mode button { height: 36px; }
+.fxm-cs-cats { display: flex; gap: 6px; overflow-x: auto; padding: 2px 2px 10px; scrollbar-width: none; }
+.fxm-cs-cats button { flex: none; display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--fxm-line2); background: var(--fxm-card2); color: var(--fxm-tx2); font-family: inherit; font-size: 13px; font-weight: 700; line-height: 1; cursor: pointer; transition: transform 0.2s var(--fxm-ease), background 0.2s, color 0.2s; }
+.fxm-cs-cats button small { color: var(--fxm-tx3); font-weight: 600; }
+.fxm-cs-cats button.on { background: var(--fxm-grad); border-color: transparent; color: #fff; box-shadow: 0 6px 16px -6px rgba(255, 61, 119, 0.6); }
+.fxm-cs-cats button.on small { color: rgba(255, 255, 255, 0.85); }
+.fxm-cs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 10px; align-content: start; }
+.fxm-cs-item { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-height: 128px; padding: 12px; text-align: start; border-radius: 18px; border: 1px solid var(--fxm-line); background: var(--fxm-card2); color: var(--fxm-tx); font-family: inherit; cursor: pointer; transition: transform 0.22s var(--fxm-ease), box-shadow 0.22s, border-color 0.22s; }
+.fxm-cs-item:hover:not(:disabled) { transform: translateY(-3px); border-color: rgba(255, 61, 119, 0.35); box-shadow: 0 18px 36px -18px rgba(109, 63, 217, 0.45); }
+.fxm-cs-item:active:not(:disabled) { transform: scale(0.97); }
+.fxm-cs-item:disabled { opacity: 0.55; cursor: not-allowed; }
+.fxm-cs-item.on { border-color: transparent; background: linear-gradient(var(--fxm-card2), var(--fxm-card2)) padding-box, var(--fxm-grad) border-box; border: 2px solid transparent; }
+.fxm-cs-item > b { font-size: 14px; line-height: 1.25; }
+.fxm-cs-item > small { color: var(--fxm-tx3); font-size: 11px; }
+.fxm-cs-cat { font-size: 10.5px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--fxm-vio); background: var(--fxm-vio-s); padding: 3px 8px; border-radius: 999px; }
+.fxm-cs-foot { margin-top: auto; width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.fxm-cs-foot b { font-size: 16px; font-family: var(--fxm-font-display); }
+.fxm-cs-stock { font-size: 11px; font-weight: 700; padding: 3px 7px; border-radius: 999px; background: var(--fxm-ok-s); color: var(--fxm-ok); white-space: nowrap; }
+.fxm-cs-stock.low { background: var(--fxm-warn-s); color: var(--fxm-warn); }
+.fxm-cs-stock.out { background: var(--fxm-bad-s); color: var(--fxm-bad); }
+.fxm-cs-qty { position: absolute; top: -8px; inset-inline-end: -8px; min-width: 26px; height: 26px; padding: 0 7px; display: grid; place-items: center; border-radius: 999px; background: var(--fxm-grad); color: #fff; font-weight: 800; font-size: 13px; box-shadow: 0 6px 14px rgba(255, 61, 119, 0.45); animation: fxm-pop 0.35s var(--fxm-ease); }
+.fxm-cs-lines { display: flex; flex-direction: column; gap: 8px; max-height: 300px; overflow-y: auto; padding-inline-end: 2px; }
+.fxm-cs-line { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 14px; background: var(--fxm-card2); border: 1px solid var(--fxm-line); }
+.fxm-cs-line b { display: block; font-size: 14px; }
+.fxm-cs-line small { color: var(--fxm-tx3); font-size: 12px; }
+.fxm-cs-line-total { min-width: 84px; text-align: end; font-family: var(--fxm-font-display); }
+.fxm-cs-step { display: inline-flex; align-items: center; gap: 2px; padding: 3px; border-radius: 12px; background: var(--fxm-card); border: 1px solid var(--fxm-line); }
+.fxm-cs-step button { width: 30px; height: 30px; display: grid; place-items: center; border: 0; border-radius: 9px; background: transparent; color: var(--fxm-tx); cursor: pointer; }
+.fxm-cs-step button:hover:not(:disabled) { background: var(--fxm-card2); }
+.fxm-cs-step button:disabled { opacity: 0.35; }
+.fxm-cs-step span { min-width: 22px; text-align: center; font-weight: 800; }
+.fxm-cs-extra { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; }
+.fxm-cs-extra > .fxm-cash-field { flex: 1 1 160px; }
+.fxm-cs-extra em { font-style: normal; color: var(--fxm-tx3); font-weight: 600; }
+.fxm-cs-client { flex: 2 1 280px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.fxm-cs-today { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.fxm-cs-sale { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--fxm-line); background: var(--fxm-card2); color: var(--fxm-tx); text-decoration: none; font-size: 13px; transition: border-color 0.2s, transform 0.2s; }
+.fxm-cs-sale:hover { border-color: rgba(255, 61, 119, 0.35); transform: translateX(2px); }
+.fxm-cs-sale .fxm-grow { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--fxm-tx2); }
+.fxm-cs-mobilebar { position: sticky; bottom: 76px; z-index: 5; margin-top: 12px; width: 100%; display: flex; align-items: center; gap: 10px; height: 54px; padding: 0 18px; border: 0; border-radius: 16px; background: var(--fxm-grad); color: #fff; font-family: inherit; font-size: 15px; font-weight: 800; box-shadow: 0 14px 30px -10px rgba(255, 61, 119, 0.65); animation: fxm-up 0.35s var(--fxm-ease); }
+.fxm-cs-mobilebar span { flex: 1; text-align: start; }
+@media (max-width: 760px) {
+  .fxm-cs-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .fxm-cs-client { grid-template-columns: 1fr; }
+  .fxm-cash-mode { width: 100%; } .fxm-cash-mode button { flex: 1; justify-content: center; }
+}
+@media (prefers-reduced-motion: reduce) { .fxm-cs-item, .fxm-cs-qty, .fxm-cs-mobilebar, .fxm-cs-sale { animation: none !important; transition: none !important; } }
+.fxm-cs .fxm-cash-list { flex: 999 1 520px; max-width: none; }
+.fxm-cs .fxm-cash-main { flex: 1 1 440px; max-width: 520px; min-height: 560px; position: sticky; top: 84px; }
+.fxm-cs .fxm-cash-input input { min-width: 0; width: 100%; }
+.fxm-cs .fxm-cash-field { min-width: 0; }
+.fxm-cs .fxm-cash-totals { grid-template-columns: 1fr 1fr; }
+.fxm-cs .fxm-cash-totals .due { grid-column: 1 / -1; display: flex; align-items: baseline; justify-content: space-between; }
+@media (min-width: 761px) { .fxm-cs-mobilebar { display: none !important; } }
+@media (max-width: 900px) { .fxm-cs .fxm-cash-main { max-width: none; position: relative; top: 0; } }
+.fxm-cs .fxm-cash-totals .due b { margin-top: 0; }
+html[data-theme='dark'] .fxm-cs-item.on { background: linear-gradient(#17131d, #17131d) padding-box, var(--fxm-grad) border-box; }
+@media (max-width: 760px) {
+  .fxm-cash .fxm-rp-actions { flex-wrap: wrap; }
+  .fxm-cash .fxm-rp-actions > .btn { flex: 1 1 140px; justify-content: center; }
+}

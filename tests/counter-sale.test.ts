@@ -60,4 +60,5 @@ test('Vente comptoir : schéma, API transactionnelle, caisse et listes de paieme
   assert.ok(readFileSync('src/app/api/payments/overview/route.ts', 'utf8').includes("source:'COUNTER'"));
   assert.ok(readFileSync('src/app/(app)/app/cashier/pro/page.tsx', 'utf8').includes('p.counterSale?.number'));
   assert.ok(readFileSync('src/app/receipt/vente/[number]/page.tsx', 'utf8').includes('prisma.counterSale.findFirst'));
+  assert.ok(readFileSync('src/app/layout.tsx', 'utf8').includes("import './fixi-max-comptoir.css'"));
 });
