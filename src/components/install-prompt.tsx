@@ -21,6 +21,8 @@ export function InstallPrompt() {
   const [android, setAndroid] = useState(false);
   // Uniquement dans les espaces de travail : jamais sur les pages vues par les clients finaux.
   const enabled = /^\/(app|login|onboarding|change-pin|supplier|delivery|saas)(\/|$)/.test(pathname);
+  // Ouverture automatique seulement sur les pages d'accueil : jamais au milieu d'une réception, d'une caisse ou d'un formulaire.
+  const autoOk = /^\/(app\/dashboard|app|login|supplier\/login|delivery\/login|supplier|delivery)\/?$/.test(pathname);
 
   useEffect(() => {
     if (!enabled || isStandalone()) return;
@@ -32,13 +34,16 @@ export function InstallPrompt() {
     let snoozedUntil = 0;
     try { snoozedUntil = Number(localStorage.getItem(key) || 0); } catch {}
     const mobile = matchMedia('(pointer: coarse)').matches || innerWidth < 900;
-    const show = () => { if (!isStandalone() && Date.now() > snoozedUntil && mobile && (iosDevice || androidDevice || canPromptInstall())) setOpen(true); };
+    const typing = () => { const a = document.activeElement as HTMLElement | null; return !!a && (a.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)); };
+    const show = () => { if (autoOk && !typing() && !isStandalone() && Date.now() > snoozedUntil && mobile && (iosDevice || androidDevice || canPromptInstall())) setOpen(true); };
     const t = setTimeout(show, 2500);
     const off = onInstallChange(() => { setNative(canPromptInstall()); if (isStandalone()) setOpen(false); else show(); });
     const force = () => { if (!isStandalone()) setOpen(true); };
     window.addEventListener(INSTALL_OPEN_EVENT, force);
     return () => { clearTimeout(t); off(); window.removeEventListener(INSTALL_OPEN_EVENT, force); };
-  }, [key, enabled]);
+  }, [key, enabled, autoOk]);
+
+  useEffect(() => { if (!autoOk) setOpen(false); }, [autoOk]);
 
   function later() {
     try { localStorage.setItem(key, String(Date.now() + SNOOZE_DAYS * 86400000)); } catch {}

@@ -82,7 +82,10 @@ html[data-theme='dark'] {
 @keyframes fxm-shimmer { from { background-position: -200% 0; } to { background-position: 200% 0; } }
 
 /* ---------- Logo animé ---------- */
+/* contain: paint garde l'anneau tournant à l'intérieur du logo, même sur Safari. */
 .fxm-logo {
+  contain: paint;
+  isolation: isolate;
   position: relative;
   width: var(--fxm-logo-size, 128px);
   height: var(--fxm-logo-size, 128px);
@@ -251,7 +254,8 @@ html[data-theme='dark'] .fxm-shell .fx-nav-link.active { color: #fff; background
 
 /* Carte d'abonnement (bordure animée) */
 .fxm-plan { position: relative; display: block; border-radius: 18px; padding: 1.5px; overflow: hidden; text-decoration: none; color: var(--fxm-tx); margin-top: 6px; }
-.fxm-plan::before { content: ''; position: absolute; inset: -60%; background: conic-gradient(from 0deg, transparent 0 60%, #ff7a18 70%, #ff3d77 80%, #8b5cf6 90%, transparent 100%); animation: fxm-spin 6s linear infinite; }
+/* Bordure animée sans élément débordant (Safari iPhone ne coupait pas le grand cône tournant, qui recouvrait la page et captait les touchers). */
+.fxm-plan { background: conic-gradient(from var(--fxm-ang, 0deg), transparent 0 60%, #ff7a18 70%, #ff3d77 80%, #8b5cf6 90%, transparent 100%); animation: fxm-ang 6s linear infinite; isolation: isolate; contain: paint; }
 .fxm-plan-in { position: relative; z-index: 1; display: block; border-radius: 16.5px; padding: 12px 14px; background: linear-gradient(160deg, #ffffff 0%, #fff6f0 100%); }
 html[data-theme='dark'] .fxm-plan-in { background: linear-gradient(160deg, #1a1222 0%, #0f0c15 60%); }
 .fxm-plan-top { display: flex; align-items: center; gap: 8px; font-size: 14px; }
@@ -283,7 +287,7 @@ html[data-theme='dark'] .fxm-shell .fx-tabbar { background: rgba(20, 16, 28, 0.8
 .fxm-shell .fx-tab-fab > span { background: var(--fxm-grad); box-shadow: 0 0 0 5px var(--fxm-bg); animation: fxm-glow 2.4s ease-in-out infinite; }
 
 @media (prefers-reduced-motion: reduce) {
-  .fxm-aurora .fxm-blob, .fxm-nav-block, .fxm-plan::before, .fxm-shell .fx-side-cta::after, .fxm-shell .fx-tab-fab > span { animation: none !important; }
+  .fxm-aurora .fxm-blob, .fxm-nav-block, .fxm-plan, .fxm-shell .fx-side-cta::after, .fxm-shell .fx-tab-fab > span { animation: none !important; }
   .fxm-shell .fx-nav-section:hover, .fxm-shell .fx-nav-link:hover:not(.active), .fxm-shell .fx-side-cta:hover { transform: none; }
 }
 
@@ -330,8 +334,11 @@ html[data-theme='dark'] .fxm-gt { background-image: linear-gradient(90deg, var(-
 .fxm-card { background: var(--fxm-card); border: 1px solid var(--fxm-line); border-radius: var(--fxm-r-lg); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); box-shadow: 0 1px 2px rgba(60, 30, 90, 0.04), 0 8px 24px rgba(60, 30, 90, 0.05); color: inherit; text-decoration: none; transition: transform 0.35s var(--fxm-ease), border-color 0.35s, box-shadow 0.35s; }
 html[data-theme='dark'] .fxm-card { box-shadow: none; }
 .fxm-hov:hover { transform: translateY(-4px); border-color: rgba(255, 122, 24, 0.4); box-shadow: var(--fxm-shadow), 0 0 40px rgba(255, 61, 119, 0.12); }
-.fxm-ba { position: relative; border-radius: 24px; padding: 1.5px; overflow: hidden; min-width: 0; }
-.fxm-ba::before { content: ''; position: absolute; inset: -60%; background: conic-gradient(from 0deg, transparent 0 60%, #ff7a18 70%, #ff3d77 80%, #8b5cf6 90%, transparent 100%); animation: fxm-spin 6s linear infinite; }
+.fxm-ba { position: relative; border-radius: 24px; padding: 1.5px; overflow: hidden; min-width: 0; isolation: isolate; contain: paint; background: conic-gradient(from var(--fxm-ang, 0deg), transparent 0 60%, #ff7a18 70%, #ff3d77 80%, #8b5cf6 90%, transparent 100%); animation: fxm-ang 6s linear infinite; }
+@property --fxm-ang { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+@keyframes fxm-ang { to { --fxm-ang: 360deg; } }
+/* Entrée animée + bordure qui tourne, sur le même élément. */
+.fxm-ba.fxm-up { animation: fxm-up 0.8s var(--fxm-ease) var(--d, 0s) backwards, fxm-ang 6s linear infinite; }
 .fxm-ba-in { position: relative; z-index: 1; border-radius: 22.5px; height: 100%; box-sizing: border-box; background: linear-gradient(160deg, #ffffff 0%, #fff6f0 100%); }
 html[data-theme='dark'] .fxm-ba-in { background: linear-gradient(160deg, #1a1222 0%, #0f0c15 60%); }
 .fxm-hero-cash { padding: 24px; display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-end; }
@@ -397,7 +404,7 @@ a.fxm-todo:hover { background: var(--fxm-line); transform: translateX(4px); }
 html[data-theme='dark'] .fxm-av span { background: #15111c; }
 
 @media (prefers-reduced-motion: reduce) {
-  .fxm-up, .fxm-in, .fxm-draw, .fxm-ring-p, .fxm-ico, .fxm-gt, .fxm-ba::before, .fxm-qa--primary::after, .fxm-live::after { animation: none !important; }
+  .fxm-up, .fxm-in, .fxm-draw, .fxm-ring-p, .fxm-ico, .fxm-gt, .fxm-ba, .fxm-qa--primary::after, .fxm-live::after { animation: none !important; }
   .fxm-hov:hover, a.fxm-todo:hover { transform: none; }
 }
 
