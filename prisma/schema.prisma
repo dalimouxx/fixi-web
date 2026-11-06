@@ -547,6 +547,9 @@ model User {
   email                  String?
   role                   UserRole
   pinHash                String
+  /// Code de secours du gérant (haché), pour retrouver l'accès sans le PIN.
+  recoveryCodeHash       String?
+  recoveryCodeAt         DateTime?
   isActive               Boolean                 @default(true)
   mustChangePin          Boolean                 @default(false)
   technicianSpecialties  String[]                @default([])
@@ -2947,4 +2950,20 @@ model ShopSequence {
   value  Int    @default(0)
 
   @@unique([shopId, key])
+}
+
+/// Journal technique de la plateforme : erreurs (regroupées), sauvegardes et tests de restauration.
+model SystemEvent {
+  id          String    @id @default(cuid())
+  kind        String
+  fingerprint String    @unique
+  message     String
+  details     Json?
+  count       Int       @default(1)
+  firstAt     DateTime  @default(now())
+  lastAt      DateTime  @default(now())
+  notifiedAt  DateTime?
+  resolvedAt  DateTime?
+
+  @@index([kind, lastAt])
 }
