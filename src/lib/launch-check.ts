@@ -6,6 +6,8 @@ export type LaunchFacts = {
   backupAgeHours: number | null; restoreOkAgeDays: number | null; errors24h: number;
   platformAdmins: number; platformAdminsWithout2fa: number;
   shops: number; shopsWithoutRecovery: number; openProblems: number;
+  /** E-mail ou téléphone de contact renseigné dans Fixi Control → Identité (pages légales, aide). */
+  hasContact?: boolean;
 };
 export type LaunchCheck = { key: string; label: string; ok: boolean; level: 'bad' | 'warn'; hint: string };
 
@@ -23,6 +25,8 @@ export function launchChecks(env: Record<string, string | undefined>, f: LaunchF
     { key: 'encryption', label: 'Chiffrement des données sensibles (CIN, jetons)', ok: strong(env.DATA_ENCRYPTION_KEY), level: 'bad', hint: 'DATA_ENCRYPTION_KEY manquante ou trop courte. Ne la changez plus jamais une fois en production.' },
     { key: 'cron', label: 'Tâches automatiques protégées', ok: (env.CRON_SECRET || '').length >= 16, level: 'bad', hint: 'CRON_SECRET (16 caractères minimum) protège les envois automatiques et les sauvegardes.' },
     { key: 'https', label: 'Adresse publique en HTTPS', ok: /^https:\/\/[^/]+\.[a-z]{2,}/i.test(url) && !/localhost|127\.0\.0\.1/.test(url), level: 'bad', hint: url ? `NEXT_PUBLIC_APP_URL = ${url}` : 'NEXT_PUBLIC_APP_URL manquante (liens de suivi, QR, messages).' },
+    { key: 'domain', label: 'Nom de domaine à vous', ok: /^https:\/\//i.test(url) && !/\.onrender\.com|\.vercel\.app|localhost/i.test(url), level: 'warn', hint: 'Une adresse du type fixi.votre-domaine.tn inspire confiance (QR, SMS, factures) et ne change pas si vous changez d’hébergeur.' },
+    { key: 'contact', label: 'Contact visible (pages légales et aide)', ok: f.hasContact !== false, level: 'warn', hint: 'Renseignez l’e-mail et le téléphone de support dans Fixi Control → Identité.' },
     { key: 'alerts', label: 'Alertes sur votre téléphone', ok: !!(env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_CHAT_ID) || !!env.ALERT_WEBHOOK_URL, level: 'warn', hint: 'TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID (ou ALERT_WEBHOOK_URL) : sans eux, une panne passe inaperçue.' },
     { key: 'backup', label: 'Sauvegarde de moins de 26 h', ok: f.backupAgeHours !== null && f.backupAgeHours <= 26, level: 'bad', hint: f.backupAgeHours === null ? 'Aucune sauvegarde reçue. Lancez-en une (deploy/vps/README.md, étape 5).' : `Dernière sauvegarde il y a ${Math.round(f.backupAgeHours)} h.` },
     { key: 'restore', label: 'Restauration testée cette semaine', ok: f.restoreOkAgeDays !== null && f.restoreOkAgeDays <= 8, level: 'warn', hint: 'Une sauvegarde jamais restaurée n’est pas une sauvegarde : lancez le test de restauration.' },

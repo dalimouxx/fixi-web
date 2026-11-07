@@ -10,3 +10,7 @@
 .lg-intro{font-size:16px;color:#57534e;line-height:1.6}
 .lg-doc h2{font-size:17px;margin:26px 0 8px;letter-spacing:-.01em}
 .lg-doc p{font-size:15px;line-height:1.7;color:#44403c;margin:0 0 10px}
+.lg-contact{margin-top:28px;padding:18px;border-radius:18px;background:linear-gradient(135deg,rgba(240,120,43,.08),rgba(124,58,237,.08));border:1px solid rgba(124,58,237,.18)}
+.lg-contact ul{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:8px}
+.lg-contact li{display:flex;gap:8px;align-items:center;font-weight:700}
+.lg-contact li svg{color:#7c3aed}

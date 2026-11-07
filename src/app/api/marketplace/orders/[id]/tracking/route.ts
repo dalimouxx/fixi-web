@@ -11,7 +11,7 @@ export async function GET(_req:Request,{params}:{params:Promise<{id:string}>}){
   const{id}=await params;
   const order=await prisma.supplierOrder.findFirst({
    where:{id,shopId:s.shopId},
-   include:{delivery:true,company:{select:{name:true}},shop:{select:{latitude:true,longitude:true}}}
+   include:{delivery:{select:{status:true,driverName:true,driverPhone:true,recipientName:true}},company:{select:{name:true}},shop:{select:{latitude:true,longitude:true}}}
   });
   if(!order)return bad('Commande introuvable',404);
   const latest=await prisma.supplierDriverLocation.findFirst({

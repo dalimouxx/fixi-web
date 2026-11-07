@@ -18,17 +18,20 @@ export async function POST(req: Request) {
   try {
     const s = await requireDeliverySession();
     const b = await req.json();
-    if (typeof b.orderId !== 'string' || typeof b.idempotencyKey !== 'string' || b.idempotencyKey.length < 12 || b.idempotencyKey.length > 128) return bad('Parametres invalides');
-    if (b.method !== PaymentMethod.CASH) return bad('Seuls les encaissements en especes sont autorises pour le livreur');
+    if (typeof b.orderId !== 'string' || typeof b.idempotencyKey !== 'string' || b.idempotencyKey.length < 12 || b.idempotencyKey.length > 128) return bad('Paramètres invalides');
+    if (b.method !== PaymentMethod.CASH) return bad('Le livreur encaisse uniquement en espèces');
+    // Comme « Encaisser » sur la mission : l'argent doit entrer dans une journée ouverte, sinon il n'apparaît dans aucune remise caisse.
+    const shift = await prisma.supplierDeliveryShift.findFirst({ where: { companyId: s.companyId, driverAccountId: s.id, status: 'OPEN' }, select: { id: true } });
+    if (!shift) return bad('Ouvrez votre journée livreur avant tout encaissement.', 409);
     const amount = money(b.amount);
     const receipt = await prisma.$transaction(async tx => {
       const existing = await tx.supplierSettlement.findUnique({ where: { idempotencyKey: b.idempotencyKey } });
-      if (existing) throw Object.assign(new Error('Encaissement deja saisi'), { status: 409 });
+      if (existing) throw Object.assign(new Error('Encaissement déjà saisi'), { status: 409 });
       const { order, remaining } = await orderBalance(tx, s.companyId, b.orderId);
-      if (order.delivery?.driverAccountId !== s.id) throw Object.assign(new Error('Livraison non attribuee'), { status: 403 });
-      if (amount.greaterThan(remaining)) throw Object.assign(new Error('Montant superieur a la dette'), { status: 409 });
+      if (order.delivery?.driverAccountId !== s.id) throw Object.assign(new Error('Livraison non attribuée'), { status: 403 });
+      if (amount.greaterThan(remaining)) throw Object.assign(new Error('Montant supérieur au reste à payer'), { status: 409 });
       const pending = await tx.supplierSettlement.aggregate({ where: { companyId: s.companyId, orderId: order.id, status: 'PENDING' }, _sum: { amount: true } });
-      if (amount.greaterThan(remaining.minus(pending._sum.amount || 0))) throw Object.assign(new Error('Encaissements en attente trop eleves'), { status: 409 });
+      if (amount.greaterThan(remaining.minus(pending._sum.amount || 0))) throw Object.assign(new Error('Des encaissements sont déjà en attente pour cette commande'), { status: 409 });
       const record = await tx.supplierSettlement.create({ data: {
         companyId: s.companyId, shopId: order.shopId, orderId: order.id, driverAccountId: s.id,
         collector: 'DRIVER', status: 'PENDING', method: 'CASH', amount,

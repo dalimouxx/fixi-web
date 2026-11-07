@@ -5,6 +5,7 @@ import { bad, ok } from '@/lib/http';
 import { plain } from '@/lib/serializers';
 import { notifyShop } from '@/lib/notifications';
 import { notifySupplier } from '@/lib/supplier-notifications';
+import { handoverOk } from '@/lib/return-pickup';
 
 const ROLES = ['OWNER', 'ADMIN', 'MANAGER', 'SALES', 'DELIVERY_MANAGER', 'STOCK'] as const;
 export const dynamic = 'force-dynamic';
@@ -27,9 +28,20 @@ export async function PATCH(req: Request) {
     if (!p) return bad('Reprise introuvable', 404);
     if (b.action === 'accept') {
       const driver = b.driverAccountId ? await prisma.supplierAccount.findFirst({ where: { id: String(b.driverAccountId), companyId: s.companyId, role: 'DRIVER', isActive: true }, select: { id: true, fullName: true } }) : null;
-      await prisma.supplierReturnPickup.update({ where: { id: p.id }, data: { status: 'ACCEPTED', driverAccountId: driver?.id || null } });
-      await notifyShop(p.shopId, 'Reprise acceptée', `Le livreur récupérera la pièce à son prochain passage${driver ? ' (' + driver.fullName + ')' : ''}.`, '/app/suppliers?tab=orders', NotificationType.INFO).catch(() => {});
-      if (driver) await notifySupplier(s.companyId, 'Pièce à reprendre', 'Une reprise est ajoutée à votre tournée.', { href: '/delivery', kind: 'DELIVERY', experienceKey: 'DRIVER_NEW_MISSION', accountIds: [driver.id], eventId: 'rpd-' + p.id }).catch(() => {});
+      if (p.status !== 'REQUESTED') return bad('Reprise déjà traitée', 409);
+      const dropoff = p.mode === 'SHOP_DROPOFF';
+      await prisma.supplierReturnPickup.update({ where: { id: p.id }, data: { status: 'ACCEPTED', driverAccountId: dropoff ? null : driver?.id || null } });
+      await notifyShop(p.shopId, 'Reprise acceptée', dropoff ? 'Déposez la pièce chez le fournisseur et donnez-lui votre code de reprise (Fournisseurs → Reprises).' : `Le livreur récupérera la pièce à son prochain passage${driver ? ' (' + driver.fullName + ')' : ''}. Donnez-lui votre code de reprise au moment de la remise.`, '/app/suppliers?tab=orders', NotificationType.INFO).catch(() => {});
+      if (!dropoff && !driver) await notifySupplier(s.companyId, 'Pièce à reprendre', 'Une reprise attend le prochain livreur qui passe chez cet atelier.', { href: '/delivery', kind: 'DELIVERY', experienceKey: 'DRIVER_NEW_MISSION', roles: ['DRIVER'], eventId: 'rpd-' + p.id }).catch(() => {});
+      if (!dropoff && driver) await notifySupplier(s.companyId, 'Pièce à reprendre', 'Une reprise est ajoutée à votre tournée.', { href: '/delivery', kind: 'DELIVERY', experienceKey: 'DRIVER_NEW_MISSION', accountIds: [driver.id], eventId: 'rpd-' + p.id }).catch(() => {});
+      return ok({ ok: true });
+    }
+    if (b.action === 'receive') {
+      // Dépôt par l'atelier lui-même : le fournisseur saisit le code donné par l'atelier.
+      if (p.status !== 'ACCEPTED' || p.mode !== 'SHOP_DROPOFF') return bad('Cette reprise passe par le livreur', 409);
+      if (!handoverOk(p.handoverCode, b.code)) return bad('Code de reprise incorrect : demandez à l’atelier son code à 4 chiffres.', 403);
+      await prisma.supplierReturnPickup.update({ where: { id: p.id }, data: { status: 'COLLECTED', collectedAt: new Date(), collectedById: s.id } });
+      await notifyShop(p.shopId, 'Pièce reçue par le fournisseur', 'Votre dépôt est confirmé. L’avoir suivra.', '/app/suppliers?tab=orders', NotificationType.INFO).catch(() => {});
       return ok({ ok: true });
     }
     if (b.action === 'reject') {

@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 
-type Info = { k: 'SHOP' | 'SUPPLIER'; n: string; a: string; e: number };
+type Info = { k: 'SHOP' | 'SUPPLIER'; n: string; a: string; e: number; r?: number };
 
 function read(): Info | null {
   try {
@@ -26,9 +26,9 @@ export function SupportBanner() {
     try { const r = await fetch('/api/support/exit', { method: 'POST' }); const j = await r.json().catch(() => ({})); location.href = j.url || '/saas'; }
     catch { setBusy(false); }
   }
-  return <div className="fx-support-banner" role="status">
+  return <div className={'fx-support-banner' + (info.r ? ' is-ro' : '')} role="status">
     <span className="fx-support-dot" aria-hidden />
-    <span><b>Mode support</b> · <span className="fx-support-target">{info.k === 'SHOP' ? 'Boutique' : 'Fournisseur'} « {info.n} »</span><span className="fx-support-by"> · par {info.a}</span> · fin à {end}</span>
+    <span><b>Mode support{info.r ? ' · lecture seule' : ''}</b> · <span className="fx-support-target">{info.k === 'SHOP' ? 'Boutique' : 'Fournisseur'} « {info.n} »</span><span className="fx-support-by"> · par {info.a}</span> · fin à {end}</span>
     <button type="button" onClick={quit} disabled={busy}>{busy ? '…' : <><span className="fx-support-by">Quitter le mode support</span><span className="fx-support-short">Quitter</span></>}</button>
   </div>;
 }

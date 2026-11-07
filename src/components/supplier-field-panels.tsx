@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { humanError } from '@/lib/human-error';
 import { Award, Check, Loader2, PackageX, RotateCcw, Truck, X } from 'lucide-react';
 import { money } from '@/lib/format';
 
@@ -22,18 +23,18 @@ export function SupplierReturnPickups({ onChanged }: { onChanged?: () => void })
         const j = await r.json(); if (!r.ok) throw new Error(j.error || 'Avoir impossible'); returnId = j.id || null;
       }
       await patch({ id: p.id, action: 'complete', returnId }); setN(x => x + 1); onChanged?.();
-    } catch (e: any) { setErr(e.message); } finally { setBusy(''); }
+    } catch (e: any) { setErr(humanError(e)); } finally { setBusy(''); }
   }
   return <section className="supplier-panel rp">
     <h3><RotateCcw size={17} /> Reprises chez les ateliers <em>{d.rows.length}</em></h3>
     {err && <p className="rm-err">{err}</p>}
     <ul>{d.rows.map(p => <li key={p.id}>
-      <span className={'rp-st rp-' + p.status.toLowerCase()}>{p.status === 'REQUESTED' ? 'À valider' : p.status === 'ACCEPTED' ? 'Au livreur' : 'Reprise faite'}</span>
-      <div><b>{p.shop.name} · {REASON[p.reason]}</b><small>{(p.items as any[]).map(i => `${i.quantity} × ${i.name}`).join(', ')}{p.note ? ` · « ${p.note} »` : ''}</small></div>
+      <span className={'rp-st rp-' + p.status.toLowerCase()}>{p.status === 'REQUESTED' ? 'À valider' : p.status === 'ACCEPTED' ? (p.mode === 'SHOP_DROPOFF' ? 'Dépôt atelier attendu' : 'Au livreur') : 'Pièce reçue'}</span>
+      <div><b>{p.shop.name} · {REASON[p.reason]}{p.mode === 'SHOP_DROPOFF' ? ' · dépôt par l’atelier' : ''}</b><small>{(p.items as any[]).map(i => `${i.quantity} × ${i.name}`).join(', ')}{p.note ? ` · « ${p.note} »` : ''}</small></div>
       {p.proofUrl && <a href={p.proofUrl} target="_blank" rel="noreferrer"><img className="rp-proof" src={p.proofUrl} alt="Photo de la pièce reprise" /></a>}
-      {p.status === 'REQUESTED' && <><select className="input rp-driver" defaultValue="" onChange={e => (e.target as any).dataset.v = e.target.value} id={'drv-' + p.id}><option value="">Prochain livreur</option>{d.drivers.map(x => <option key={x.id} value={x.id}>{x.fullName}</option>)}</select>
-        <button className="btn btn-primary btn-sm" onClick={async () => { try { await patch({ id: p.id, action: 'accept', driverAccountId: (document.getElementById('drv-' + p.id) as HTMLSelectElement)?.value || null }); setN(x => x + 1); } catch (e: any) { setErr(e.message); } }}><Truck size={14} /> Accepter</button>
-        <button className="btn btn-ghost btn-sm" onClick={async () => { const note = window.prompt('Motif du refus (envoyé à l’atelier)') || ''; try { await patch({ id: p.id, action: 'reject', note }); setN(x => x + 1); } catch (e: any) { setErr(e.message); } }}><X size={14} /></button></>}
+      {p.status === 'ACCEPTED' && p.mode === 'SHOP_DROPOFF' && <button className="btn btn-primary btn-sm" disabled={busy === p.id} onClick={async () => { const code = window.prompt('Code de reprise donné par l’atelier (4 chiffres)') || ''; if (!code) return; setBusy(p.id); setErr(''); try { await patch({ id: p.id, action: 'receive', code }); setN(x => x + 1); } catch (e: any) { setErr(humanError(e)); } finally { setBusy(''); } }}><Check size={14} /> Pièce déposée · saisir le code</button>}{p.status === 'REQUESTED' && p.mode === 'SHOP_DROPOFF' && <button className="btn btn-primary btn-sm" onClick={async () => { try { await patch({ id: p.id, action: 'accept' }); setN(x => x + 1); } catch (e: any) { setErr(humanError(e)); } }}>Accepter le dépôt</button>}{p.status === 'REQUESTED' && p.mode === 'SHOP_DROPOFF' && <button className="btn btn-ghost btn-sm" onClick={async () => { const note = window.prompt('Motif du refus (envoyé à l’atelier)') || ''; try { await patch({ id: p.id, action: 'reject', note }); setN(x => x + 1); } catch (e: any) { setErr(humanError(e)); } }}><X size={14} /> Refuser</button>}{p.status === 'REQUESTED' && p.mode !== 'SHOP_DROPOFF' && <><select className="input rp-driver" defaultValue="" onChange={e => (e.target as any).dataset.v = e.target.value} id={'drv-' + p.id}><option value="">Prochain livreur</option>{d.drivers.map(x => <option key={x.id} value={x.id}>{x.fullName}</option>)}</select>
+        <button className="btn btn-primary btn-sm" onClick={async () => { try { await patch({ id: p.id, action: 'accept', driverAccountId: (document.getElementById('drv-' + p.id) as HTMLSelectElement)?.value || null }); setN(x => x + 1); } catch (e: any) { setErr(humanError(e)); } }}><Truck size={14} /> Accepter</button>
+        <button className="btn btn-ghost btn-sm" onClick={async () => { const note = window.prompt('Motif du refus (envoyé à l’atelier)') || ''; try { await patch({ id: p.id, action: 'reject', note }); setN(x => x + 1); } catch (e: any) { setErr(humanError(e)); } }}><X size={14} /></button></>}
       {p.status === 'COLLECTED' && <button className="btn btn-primary btn-sm" disabled={busy === p.id} onClick={() => receive(p)}>{busy === p.id ? <Loader2 size={14} className="ps-spin" /> : <Check size={14} />} Reçue · créer l’avoir</button>}
     </li>)}</ul>
   </section>;
@@ -57,12 +58,12 @@ export function SupplierDriverBoard() {
 
 /** Atelier : demander la reprise d'une pièce d'une commande livrée. */
 export function ReturnRequestDialog({ order, onClose, onDone }: { order: any; onClose: () => void; onDone: () => void }) {
-  const [itemId, setItemId] = useState(order.items?.[0]?.id || ''); const [qty, setQty] = useState('1'); const [reason, setReason] = useState('DEFECTIVE'); const [note, setNote] = useState(''); const [err, setErr] = useState(''); const [busy, setBusy] = useState(false);
+  const [itemId, setItemId] = useState(order.items?.[0]?.id || ''); const [qty, setQty] = useState('1'); const [reason, setReason] = useState('DEFECTIVE'); const [mode, setMode] = useState<'DRIVER' | 'SHOP_DROPOFF'>('DRIVER'); const [note, setNote] = useState(''); const [err, setErr] = useState(''); const [busy, setBusy] = useState(false);
   const item = order.items.find((i: any) => i.id === itemId);
   async function send(e: React.FormEvent) {
     e.preventDefault(); setBusy(true); setErr('');
-    try { const r = await fetch('/api/marketplace/returns', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ orderId: order.id, items: [{ itemId, quantity: qty }], reason, note }) }); const j = await r.json(); if (!r.ok) throw new Error(j.error); onDone(); onClose(); }
-    catch (x: any) { setErr(x.message); setBusy(false); }
+    try { const r = await fetch('/api/marketplace/returns', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ orderId: order.id, items: [{ itemId, quantity: qty }], reason, note, mode }) }); const j = await r.json(); if (!r.ok) throw new Error(j.error); onDone(); onClose(); }
+    catch (x: any) { setErr(humanError(x)); setBusy(false); }
   }
   return <div className="pm-back" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
     <form className="pm" onSubmit={send}>
@@ -70,10 +71,11 @@ export function ReturnRequestDialog({ order, onClose, onDone }: { order: any; on
       <label className="pm-field"><span>Pièce</span><select className="input" value={itemId} onChange={e => { setItemId(e.target.value); setQty('1'); }}>{order.items.map((i: any) => <option key={i.id} value={i.id}>{i.product.name} (×{i.quantity})</option>)}</select></label>
       <div className="pm-days">{Object.entries(REASON).map(([k, l]) => <button type="button" key={k} aria-pressed={reason === k} onClick={() => setReason(k)}>{l}</button>)}</div>
       <label className="pm-field"><span>Quantité</span><input value={qty} onChange={e => setQty(e.target.value.replace(/\D/g, ''))} inputMode="numeric" max={item?.quantity} /></label>
+      <div className="pm-field"><span>Qui apporte la pièce ?</span><div className="pm-days rp-mode"><button type="button" aria-pressed={mode === 'DRIVER'} onClick={() => setMode('DRIVER')}><Truck size={14} /> Le livreur la récupère</button><button type="button" aria-pressed={mode === 'SHOP_DROPOFF'} onClick={() => setMode('SHOP_DROPOFF')}><PackageX size={14} /> Je la dépose moi-même</button></div></div>
       <label className="pm-field"><span>Précision</span><input value={note} onChange={e => setNote(e.target.value)} maxLength={300} placeholder="Ex. pas d’image, tactile mort…" /></label>
       {err && <p className="pm-err">{err}</p>}
       <button className="pm-save pr-save" disabled={busy}><RotateCcw size={17} /> Demander la reprise</button>
-      <small className="ch-tip">Le livreur récupère la pièce à son prochain passage ; l’avoir est déduit de votre solde à la réception.</small>
+      <small className="ch-tip">{mode === 'DRIVER' ? 'Le livreur la récupère à son prochain passage.' : 'Vous la déposez chez le fournisseur.'} Un code de reprise à 4 chiffres s’affichera dans « Mes reprises » : donnez-le seulement au moment de la remise. L’avoir est ensuite déduit de votre solde.</small>
     </form>
   </div>;
 }

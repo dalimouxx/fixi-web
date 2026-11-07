@@ -17,6 +17,8 @@ export async function POST(_:Request,{params}:{params:Promise<{id:string}>}){
   if(order.delivery?.driverAccountId)
     return bad('Cette mission est déjà attribuée à un autre livreur',409);
   const updated=await prisma.$transaction(async tx=>{
+   // Commande prête sans fiche de livraison (ancienne donnée) : on la crée au lieu d'afficher « déjà acceptée ».
+   if(!order.delivery)await tx.supplierDelivery.create({data:{orderId:id,status:SupplierDeliveryStatus.PENDING}});
    const claimed=await tx.supplierDelivery.updateMany({
     where:{orderId:id,driverAccountId:null,status:{in:[SupplierDeliveryStatus.PENDING,SupplierDeliveryStatus.ASSIGNED]}},
     data:{driverAccountId:s.id,driverName:s.fullName,driverPhone:account.phone||null,status:SupplierDeliveryStatus.ASSIGNED,assignedAt:new Date()}

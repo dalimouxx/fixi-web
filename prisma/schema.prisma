@@ -1223,25 +1223,30 @@ model LoginGuard {
 }
 
 model PlatformSettings {
-  id                         String   @id @default("platform")
-  appName                    String   @default("Fixi")
+  id                         String    @id @default("platform")
+  appName                    String    @default("Fixi")
   logoDataUrl                String?
-  primaryColor               String   @default("#FF6B00")
+  primaryColor               String    @default("#FF6B00")
   supportEmail               String?
   supportPhone               String?
-  landingHeadline            String   @default("Votre atelier. Enfin sous contrôle.")
-  landingSubheadline         String   @default("Réparations, caisse, stock, clients et pilotage dans une seule plateforme.")
-  queueAdsEnabled            Boolean  @default(true)
-  trackingAdsEnabled         Boolean  @default(true)
-  adsDefaultCpm              Decimal  @default(12) @db.Decimal(12, 3)
-  adsDefaultCpc              Decimal  @default(0.5) @db.Decimal(12, 3)
-  supplierMarketplaceEnabled Boolean  @default(true)
+  landingHeadline            String    @default("Votre atelier. Enfin sous contrôle.")
+  landingSubheadline         String    @default("Réparations, caisse, stock, clients et pilotage dans une seule plateforme.")
+  queueAdsEnabled            Boolean   @default(true)
+  trackingAdsEnabled         Boolean   @default(true)
+  adsDefaultCpm              Decimal   @default(12) @db.Decimal(12, 3)
+  adsDefaultCpc              Decimal   @default(0.5) @db.Decimal(12, 3)
+  supplierMarketplaceEnabled Boolean   @default(true)
   // Configurable payee instructions, never fabricated and never auto-charge.
   paymentD17Phone            String?
   paymentBankName            String?
   paymentBankRib             String?
   paymentInstructions        String?
-  updatedAt                  DateTime @default(now()) @updatedAt
+  // Mode maintenance (Fixi Control) : écran d'attente pour tout le monde sauf le super admin.
+  maintenanceEnabled         Boolean   @default(false)
+  maintenanceMessage         String?
+  maintenanceStartedAt       DateTime?
+  maintenanceUntil           DateTime?
+  updatedAt                  DateTime  @default(now()) @updatedAt
 }
 
 model PlatformMessage {
@@ -2952,6 +2957,11 @@ model SupplierReturnPickup {
   proofUrl        String?
   returnId        String?
   note            String?
+  /// DRIVER : le livreur récupère la pièce · SHOP_DROPOFF : l'atelier la dépose lui-même chez le fournisseur.
+  mode            String          @default("DRIVER")
+  /// Code à 4 chiffres affiché à l'atelier : il le donne seulement au moment de la remise (preuve de reprise).
+  handoverCode    String?
+  collectedById   String?
   createdAt       DateTime        @default(now())
   collectedAt     DateTime?
   completedAt     DateTime?
@@ -3099,6 +3109,7 @@ model SupportAccess {
   targetId   String
   targetName String
   reason     String
+  readOnly   Boolean   @default(false)
   ip         String?
   startedAt  DateTime  @default(now())
   expiresAt  DateTime
@@ -3106,4 +3117,22 @@ model SupportAccess {
 
   @@index([startedAt])
   @@index([kind, targetId])
+}
+
+/// Annonce visible en bandeau dans les applications (atelier, fournisseur, livreur).
+model PlatformAnnouncement {
+  id        String    @id @default(cuid())
+  audience  String    @default("ALL") // ALL | SHOPS | SUPPLIERS | DRIVERS
+  region    String?
+  tone      String    @default("INFO") // INFO | SUCCESS | WARNING
+  title     String
+  message   String
+  href      String?
+  active    Boolean   @default(true)
+  startsAt  DateTime  @default(now())
+  endsAt    DateTime?
+  createdBy String?
+  createdAt DateTime  @default(now())
+
+  @@index([active, startsAt])
 }

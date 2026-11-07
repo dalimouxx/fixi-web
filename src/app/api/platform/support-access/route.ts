@@ -22,6 +22,6 @@ export async function POST(req: Request) {
     if (!kind || !b.id) return bad('Boutique ou fournisseur requis');
     const reason = cleanReason(b.reason);
     if (!reason) return bad('Indiquez le motif de l’intervention (5 caractères minimum)');
-    return ok(await startSupportAccess(admin, kind, String(b.id), reason, clientIp(req)));
+    return ok(await startSupportAccess(admin, kind, String(b.id), reason, clientIp(req), b.readOnly === true));
   } catch (e: any) { return bad(e.message, e.status || 500); }
 }

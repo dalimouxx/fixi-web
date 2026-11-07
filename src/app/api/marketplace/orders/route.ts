@@ -1,3 +1,4 @@
+import {LIGHT_DELIVERY,withProofFlags} from '@/lib/delivery-proof';
 import {prisma} from '@/lib/prisma';
 import { whatsappNewOrderAlert } from '@/lib/platform-whatsapp';
 import {requireSession} from '@/lib/auth';
@@ -23,10 +24,10 @@ export async function GET(){
       where:{shopId:s.shopId},
       include:{company:{select:{id:true,name:true,region:true,phone:true,logoUrl:true,verified:true}},
         items:{include:{product:{select:{id:true,name:true,sku:true,brand:true,category:true,imageUrl:true,qualityGrade:true}}}},
-        delivery:true},
+        delivery:LIGHT_DELIVERY},
       orderBy:{createdAt:'desc'},take:200
     });
-    return ok(plain(rows));
+    return ok(plain(await withProofFlags(rows)));
   }catch(e:any){return bad(e.message,e.status||500)}
 }
 

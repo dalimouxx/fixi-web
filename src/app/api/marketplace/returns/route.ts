@@ -4,13 +4,21 @@ import { requireSession } from '@/lib/auth';
 import { bad, ok } from '@/lib/http';
 import { plain } from '@/lib/serializers';
 import { notifySupplier } from '@/lib/supplier-notifications';
+import { newHandoverCode, pickupMode } from '@/lib/return-pickup';
 
 const ROLES = [UserRole.ADMIN, UserRole.RECEPTION];
 export const dynamic = 'force-dynamic';
 const REASONS = ['DEFECTIVE', 'WRONG_PART', 'EXCHANGE'] as const;
 
 export async function GET() {
-  try { const s = await requireSession(ROLES, 'CONNECT'); return ok(plain(await prisma.supplierReturnPickup.findMany({ where: { shopId: s.shopId }, orderBy: { createdAt: 'desc' }, take: 50, include: { company: { select: { name: true } } } }))); }
+  try {
+    const s = await requireSession(ROLES, 'CONNECT');
+    const rows = await prisma.supplierReturnPickup.findMany({ where: { shopId: s.shopId }, orderBy: { createdAt: 'desc' }, take: 50, include: { company: { select: { name: true, phone: true, address: true } } } });
+    const orders = await prisma.supplierOrder.findMany({ where: { id: { in: rows.map(r => r.orderId) } }, select: { id: true, reference: true } });
+    const ref = new Map(orders.map(o => [o.id, o.reference]));
+    // La photo de reprise est lourde : elle se charge à la demande.
+    return ok(plain(rows.map(({ proofUrl, ...r }) => ({ ...r, hasProof: !!proofUrl, orderReference: ref.get(r.orderId) || null }))));
+  }
   catch (e: any) { return bad(e.message, e.status || 500); }
 }
 
@@ -33,8 +41,21 @@ export async function POST(req: Request) {
     if (!items.length) return bad('Choisissez la pièce et la quantité à reprendre');
     const open = await prisma.supplierReturnPickup.findFirst({ where: { orderId: o.id, status: { in: ['REQUESTED', 'ACCEPTED'] } }, select: { id: true } });
     if (open) return bad('Une reprise est déjà en cours pour cette commande', 409);
-    const p = await prisma.supplierReturnPickup.create({ data: { companyId: o.companyId, shopId: s.shopId, orderId: o.id, saleId: sale?.id || null, items: items as any, reason, note: String(b.note || '').slice(0, 300) || null } });
-    await notifySupplier(o.companyId, 'Demande de reprise', `${o.reference} : ${items.map((i: any) => i.quantity + ' × ' + i.name).join(', ')}`, { href: '/supplier?tab=returns', kind: 'WARNING', experienceKey: 'SUPPLIER_UPDATE', eventId: 'rp-' + p.id, roles: ['OWNER', 'ADMIN', 'MANAGER', 'SALES', 'DELIVERY_MANAGER'] }).catch(() => {});
+    const mode = pickupMode(b.mode);
+    const p = await prisma.supplierReturnPickup.create({ data: { companyId: o.companyId, shopId: s.shopId, orderId: o.id, saleId: sale?.id || null, items: items as any, reason, mode, handoverCode: newHandoverCode(), note: String(b.note || '').slice(0, 300) || null } });
+    await notifySupplier(o.companyId, mode === 'SHOP_DROPOFF' ? 'Pièce à recevoir (dépôt atelier)' : 'Demande de reprise', `${o.reference} : ${items.map((i: any) => i.quantity + ' × ' + i.name).join(', ')}${mode === 'SHOP_DROPOFF' ? ' · l’atelier la dépose lui-même' : ''}`, { href: '/supplier?tab=returns', kind: 'WARNING', experienceKey: 'SUPPLIER_UPDATE', eventId: 'rp-' + p.id, roles: ['OWNER', 'ADMIN', 'MANAGER', 'SALES', 'DELIVERY_MANAGER'] }).catch(() => {});
     return ok(plain(p), { status: 201 });
+  } catch (e: any) { return bad(e.message, e.status || 500); }
+}
+
+/** L'atelier annule une demande pas encore traitée. */
+export async function PATCH(req: Request) {
+  try {
+    const s = await requireSession(ROLES, 'CONNECT');
+    const b = await req.json().catch(() => ({}));
+    if (b.action !== 'cancel') return bad('Action inconnue');
+    const r = await prisma.supplierReturnPickup.updateMany({ where: { id: String(b.id || ''), shopId: s.shopId, status: 'REQUESTED' }, data: { status: 'CANCELLED' } });
+    if (!r.count) return bad('Reprise déjà prise en charge : contactez le fournisseur', 409);
+    return ok({ ok: true });
   } catch (e: any) { return bad(e.message, e.status || 500); }
 }

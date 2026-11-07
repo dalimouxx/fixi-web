@@ -2,6 +2,9 @@ import {prisma} from '@/lib/prisma';
 import {requireSupplierRole} from '@/lib/supplier-auth';
 import {bad,ok} from '@/lib/http';
 import {plain} from '@/lib/serializers';
+import {Prisma} from '@prisma/client';
+import {driverCash} from '@/lib/driver-cash';
+import {orderBalance,mirrorSettlementToErp} from '@/lib/supplier-settlement-ledger';
 
 export async function GET(){
  try{
@@ -12,7 +15,10 @@ export async function GET(){
   const events=ids.length?await prisma.supplierDeliveryEvent.findMany({where:{companyId:s.companyId,OR:ids.map(id=>({orderId:'SHIFT:'+id}))},orderBy:{createdAt:'desc'}}):[];
   const deliveryEvents=driverIds.length?await prisma.supplierDeliveryEvent.findMany({where:{companyId:s.companyId,accountId:{in:driverIds},type:{in:['COD_COLLECTED','DUE_COLLECTED']},createdAt:{gte:new Date(Date.now()-7*86400000)}},orderBy:{createdAt:'desc'},take:1000}):[];
   const driverMap=new Map(drivers.map(d=>[d.id,d]));
-  return ok(plain(shifts.map(x=>({...x,driver:driverMap.get(x.driverAccountId)||null,events:events.filter(e=>e.orderId==='SHIFT:'+x.id),collections:deliveryEvents.filter(e=>e.accountId===x.driverAccountId&&e.createdAt>=x.openedAt&&(!x.submittedAt||e.createdAt<=x.submittedAt))}))));
+  // Détail de la caisse remise (livraisons + anciens dûs + « Ma caisse ») pour les remises à contrôler.
+  const cash=new Map<string,any>();
+  for(const x of shifts.filter(x=>x.status==='PENDING_CASHIER'))cash.set(x.id,await driverCash(prisma,s.companyId,x.driverAccountId,x.openedAt,x.submittedAt||new Date()));
+  return ok(plain(shifts.map(x=>({...x,driver:driverMap.get(x.driverAccountId)||null,cash:cash.get(x.id)||null,events:events.filter(e=>e.orderId==='SHIFT:'+x.id),collections:deliveryEvents.filter(e=>e.accountId===x.driverAccountId&&e.createdAt>=x.openedAt&&(!x.submittedAt||e.createdAt<=x.submittedAt))}))));
  }catch(e:any){return bad(e.message,e.status||500)}
 }
 
@@ -33,6 +39,19 @@ export async function POST(req:Request){
    });
    if(changed.count!==1)throw Object.assign(new Error('Remise déjà clôturée sur une autre caisse : actualisez'),{status:409});
    const updated=await tx.supplierDeliveryShift.findUniqueOrThrow({where:{id:shift.id}});
+   // Encaissements saisis dans « Ma caisse » pendant cette journée : l'argent est maintenant au caissier.
+   // On les confirme (s'ils étaient en attente) et on note leur reversement, pour ne jamais les compter deux fois.
+   const receipts=await tx.supplierSettlement.findMany({where:{companyId:s.companyId,driverAccountId:shift.driverAccountId,collector:'DRIVER',status:{in:['PENDING','CONFIRMED']},collectedAt:{gte:shift.openedAt,lte:submittedAt}},include:{remittances:{where:{confirmedAt:{not:null}},select:{amount:true}}}});
+   for(const r of receipts){
+    if(r.status==='PENDING'&&r.orderId){
+     const {remaining}=await orderBalance(tx,s.companyId,r.orderId);
+     if(r.amount.greaterThan(remaining))continue;
+     await tx.supplierSettlement.update({where:{id:r.id},data:{status:'CONFIRMED',confirmedAt:new Date()}});
+     await mirrorSettlementToErp(tx,{companyId:s.companyId,orderId:r.orderId,amount:r.amount,reference:r.reference,method:r.method,accountId:s.id});
+    }
+    const left=r.amount.minus(r.remittances.reduce((a,x)=>a.plus(x.amount),new Prisma.Decimal(0)));
+    if(left.greaterThan(0))await tx.supplierSettlementRemittance.create({data:{settlementId:r.id,amount:left,reference:'CAISSE-'+shift.id+'-'+r.id,confirmedAt:new Date()}});
+   }
    await tx.supplierErpPayment.updateMany({where:{companyId:s.companyId,accountId:shift.driverAccountId,cashSessionId:null,kind:'IN',createdAt:{gte:shift.openedAt,lte:submittedAt}},data:{cashSessionId:cashSession.id}});
    await tx.supplierDeliveryEvent.create({data:{companyId:s.companyId,orderId:'SHIFT:'+shift.id,accountId:s.id,type:'CASH_REMIT_CONFIRMED',amount:actual,note:'Attendu '+expected.toFixed(3)+' DT · reçu '+actual.toFixed(3)+' DT · écart '+difference.toFixed(3)+' DT'}});
    await tx.supplierAuditEvent.create({data:{companyId:s.companyId,accountId:s.id,action:'DRIVER_CASH_CONFIRM',entity:'DELIVERY_SHIFT',entityId:shift.id,metadata:{driverAccountId:shift.driverAccountId,expected,declared:Number(shift.declaredRemit||0),actual,difference,cashSessionId:cashSession.id,note:b.note||null}}});

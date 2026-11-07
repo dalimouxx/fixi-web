@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { humanError } from '@/lib/human-error';
 import { createPortal } from 'react-dom';
 import { History, LifeBuoy, Loader2, X } from 'lucide-react';
 import { dateTime } from '@/lib/format';
@@ -10,16 +11,17 @@ const REASONS = ['Problème signalé par le client', 'Bug à reproduire', 'Aide 
 export function SupportAccessButton({ kind, id, name, compact, defaultReason }: { kind: 'SHOP' | 'SUPPLIER'; id: string; name: string; compact?: boolean; defaultReason?: string }) {
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState(defaultReason || '');
+  const [readOnly, setReadOnly] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   async function go(e: React.FormEvent) {
     e.preventDefault(); setBusy(true); setErr('');
     try {
-      const r = await fetch('/api/platform/support-access', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ kind, id, reason }) });
+      const r = await fetch('/api/platform/support-access', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ kind, id, reason, readOnly }) });
       const j = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(j.error || 'Accès impossible');
       location.href = j.url;
-    } catch (x: any) { setErr(x.message); setBusy(false); }
+    } catch (x: any) { setErr(humanError(x)); setBusy(false); }
   }
   return <>
     <button type="button" className={'btn btn-sm ' + (compact ? 'btn-ghost' : 'btn-soft') + ' fx-support-btn'} onClick={() => setOpen(true)} title={`Ouvrir l’espace de ${name} pour régler un problème`}><LifeBuoy size={14} /> Accéder</button>
@@ -30,8 +32,9 @@ export function SupportAccessButton({ kind, id, name, compact, defaultReason }: 
         <label className="label" htmlFor="fx-support-reason">Motif de l’intervention</label>
         <input id="fx-support-reason" className="input" autoFocus required minLength={5} maxLength={300} value={reason} onChange={e => setReason(e.target.value)} placeholder="Ex. : la caisse ne s’ouvre pas" />
         <div className="fx-support-chips">{REASONS.map(r => <button type="button" key={r} aria-pressed={reason === r} onClick={() => setReason(r)}>{r}</button>)}</div>
+        <label className="fx-support-ro"><input type="checkbox" checked={readOnly} onChange={e => setReadOnly(e.target.checked)} /><span><b>Lecture seule</b><small>Regarder sans pouvoir rien modifier (aucun risque d’erreur).</small></span></label>
         {err && <div className="error" role="alert">{err}</div>}
-        <button className="btn btn-primary btn-block" disabled={busy || reason.trim().length < 5}>{busy ? <Loader2 size={16} className="ps-spin" /> : <LifeBuoy size={16} />} Ouvrir en mode support</button>
+        <button className="btn btn-primary btn-block" disabled={busy || reason.trim().length < 5}>{busy ? <Loader2 size={16} className="ps-spin" /> : <LifeBuoy size={16} />} {readOnly ? 'Consulter en lecture seule' : 'Ouvrir en mode support'}</button>
       </form>
     </div>, document.body)}
   </>;
@@ -45,6 +48,6 @@ export function SupportJournal() {
   return <div className="control-panel span2 fx-support-journal">
     <div className="panel-head"><div><h3><History /> Journal des accès support</h3><p>Qui est entré chez qui, pourquoi et combien de temps.</p></div></div>
     {rows === null ? <p className="muted">Chargement…</p> : rows.length === 0 ? <p className="muted">Aucun accès support pour l’instant.</p> :
-      <div className="fx-support-rows">{rows.map(r => <div key={r.id} className="tool-row"><div><strong>{r.kind === 'SHOP' ? 'Boutique' : 'Fournisseur'} · {r.targetName}</strong><small>{dateTime(r.startedAt)} · {r.adminName} · {r.reason}</small></div><span className={`status-pill ${state(r) === 'En cours' ? 'active' : 'paused'}`}>{state(r)}</span></div>)}</div>}
+      <div className="fx-support-rows">{rows.map(r => <div key={r.id} className="tool-row"><div><strong>{r.kind === 'SHOP' ? 'Boutique' : 'Fournisseur'} · {r.targetName}</strong><small>{dateTime(r.startedAt)} · {r.adminName} · {r.reason}{r.readOnly ? ' · lecture seule' : ''}</small></div><span className={`status-pill ${state(r) === 'En cours' ? 'active' : 'paused'}`}>{state(r)}</span></div>)}</div>}
   </div>;
 }

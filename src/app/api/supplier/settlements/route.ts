@@ -33,9 +33,9 @@ export async function POST(req: Request) {
     const amount = money(b.amount);
     const result = await prisma.$transaction(async tx => {
       const existing = await tx.supplierSettlement.findUnique({ where: { idempotencyKey: b.idempotencyKey } });
-      if (existing) throw Object.assign(new Error('Paiement deja enregistre'), { status: 409 });
+      if (existing) throw Object.assign(new Error('Paiement déjà enregistré'), { status: 409 });
       const { order, remaining } = await orderBalance(tx, s.companyId, b.orderId);
-      if (amount.greaterThan(remaining)) throw Object.assign(new Error('Montant superieur au reste a payer'), { status: 409 });
+      if (amount.greaterThan(remaining)) throw Object.assign(new Error('Montant supérieur au reste à payer'), { status: 409 });
       const receipt = await tx.supplierSettlement.create({ data: {
         companyId: s.companyId, shopId: order.shopId, orderId: order.id,
         collector: 'SUPPLIER', status: 'CONFIRMED', amount, method: b.method,

@@ -1,13 +1,14 @@
 import {SignJWT,jwtVerify} from 'jose';
 import {cookies} from 'next/headers';
 import {prisma} from './prisma';
+import {apiGuard} from './maintenance';
 
 const COOKIE='fixi_supplier_session';
 const secret=()=>new TextEncoder().encode(process.env.SUPPLIER_AUTH_SECRET||process.env.AUTH_SECRET||'dev-supplier-secret-change-me-123456789');
 
 export const supplierRoles=['OWNER','ADMIN','MANAGER','STOCK','SALES','CASHIER','ACCOUNTANT','DELIVERY_MANAGER','DRIVER'] as const;
 export type SupplierRole=(typeof supplierRoles)[number];
-export type SupplierSession={id:string;companyId:string;fullName:string;companyName:string;role:SupplierRole;sv?:number;support?:string};
+export type SupplierSession={id:string;companyId:string;fullName:string;companyName:string;role:SupplierRole;sv?:number;support?:string;supportRo?:boolean};
 
 export async function createSupplierSession(v:SupplierSession,ttlSeconds=43200){
  const t=await new SignJWT(v).setProtectedHeader({alg:'HS256'}).setIssuedAt().setExpirationTime(Math.floor(Date.now()/1000)+ttlSeconds).sign(secret());
@@ -20,6 +21,7 @@ export async function getSupplierSession():Promise<SupplierSession|null>{
 }
 export async function requireSupplierSession(){
  const s=await getSupplierSession();if(!s)throw Object.assign(new Error('UNAUTHENTICATED'),{status:401});
+ await apiGuard(s);
  const a=await prisma.supplierAccount.findFirst({where:{id:s.id,companyId:s.companyId,isActive:true},include:{company:true}});
  if(!a||!a.company.active)throw Object.assign(new Error('UNAUTHENTICATED'),{status:401});
  // « Déconnecter tous les appareils » incrémente sessionVersion : les anciennes sessions sont refusées.
