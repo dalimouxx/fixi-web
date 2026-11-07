@@ -419,6 +419,16 @@ model Shop {
   coverDataUrl                 String?
   openingHours                 Json?
   taxId                        String?
+  /// Registre national des entreprises (RNE), imprimé sur les factures.
+  tradeRegister                String?
+  /// Droit de timbre (1 DT) ajouté à chaque facture, comme l'exige la loi tunisienne.
+  invoiceStampDuty             Boolean                  @default(true)
+  /// Modèles WhatsApp approuvés par Meta (messages envoyés hors fenêtre de 24 h).
+  whatsappTemplateReceived     String?
+  whatsappTemplateReady        String?
+  whatsappTemplateLang         String                   @default("fr")
+  /// Envoi automatique du message « reçu » / « prêt » au changement de statut.
+  whatsappAutoNotify           Boolean                  @default(true)
   countryCode                  String                   @default("216")
   currency                     String                   @default("DT")
   locale                       String                   @default("fr-TN")
@@ -470,6 +480,7 @@ model Shop {
   repairs                      Repair[]
   payments                     Payment[]
   counterSales                 CounterSale[]
+  documentSequences            ShopSequence[]
   inventory                    InventoryItem[]
   suppliers                    Supplier[]
   purchases                    Purchase[]
@@ -583,6 +594,9 @@ model Client {
   fullName          String
   phone             String
   email             String?
+  /// Client professionnel : adresse et matricule fiscal imprimés sur la facture.
+  address           String?
+  taxId             String?
   notes             String?
   loyaltyPoints     Int                      @default(0)
   walletToken       String?                  @unique @default(cuid())
@@ -996,6 +1010,8 @@ model SalesDocument {
   discount           Decimal             @default(0) @db.Decimal(12, 3)
   taxRate            Decimal             @default(0) @db.Decimal(5, 2)
   taxAmount          Decimal             @default(0) @db.Decimal(12, 3)
+  /// Droit de timbre fiscal (factures).
+  stampDuty          Decimal             @default(0) @db.Decimal(12, 3)
   total              Decimal             @default(0) @db.Decimal(12, 3)
   notes              String?
   validUntil         DateTime?
@@ -2926,6 +2942,17 @@ model SupplierReturnPickup {
   @@index([companyId, status])
   @@index([shopId, status])
   @@index([driverAccountId, status])
+}
+
+/// Numérotation continue des factures, devis et avoirs par boutique et par année (FAC-2026-000001).
+model ShopSequence {
+  id     String @id @default(cuid())
+  shopId String
+  shop   Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  key    String
+  value  Int    @default(0)
+
+  @@unique([shopId, key])
 }
 
 /// Journal technique de la plateforme : erreurs (regroupées), sauvegardes et tests de restauration.

@@ -5,6 +5,7 @@ import { Phone, MessageCircle, PlusCircle, WalletCards, ExternalLink, Smartphone
 import { StatusBadge, useApi } from '@/components/ui';
 import { dateOnly, money } from '@/lib/format';
 import { waLink } from '@/lib/whatsapp-link';
+import { ClientBilling } from '@/components/client-billing';
 
 const docLabels: Record<string, string> = { QUOTE: 'Devis', INVOICE: 'Facture', CREDIT_NOTE: 'Avoir', RECEIPT: 'Reçu' };
 
@@ -34,6 +35,8 @@ export default function ClientDetail() {
       <div className={`fx-kpi ${due > 0 ? 'fx-kpi--due' : ''}`}><WalletCards /><div><span>Reste à payer</span><strong>{money(due)}</strong></div></div>
       <div className="fx-kpi"><Gift /><div><span>Fidélité</span><strong>{c.loyaltyPoints || 0} pts</strong></div></div>
     </section>
+
+    <ClientBilling client={c} />
 
     {c.devices?.length > 0 && <section className="fx-panel" style={{ marginTop: 12 }}>
       <div className="fx-panel-head"><h2>Appareils connus</h2></div>
