@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
 import {useEffect,useMemo,useState} from 'react';
+import {FormDialog} from '@/components/control-form-dialog';
 import {ArrowLeft,CheckCircle2,CreditCard,CalendarClock,Plus,RefreshCw,Users,Truck,Package,ShieldCheck,Edit3,Archive,Trash2,Save,FileCheck2,Eye,AlertTriangle} from 'lucide-react';
 
 type Plan={id:string;code:string;name:string;description:string|null;publicVisible:boolean;price:number|string;trialDays:number;maxProducts:number;maxDrivers:number;maxStaff:number;maxOrdersPerMonth:number;active:boolean;durationValue:number;durationUnit:string};
@@ -13,11 +14,12 @@ type RequestRow={id:string;companyId:string;planId:string;status:string;createdA
  adminNote:string|null;company:{name:string;region:string|null;phone:string|null}|null;
  plan:{name:string;price:number|string;durationValue:number;durationUnit:string}|null};
 const fmt=(v:any)=>Number(v||0).toFixed(3)+' DT';
-const day=(v:any)=>v?new Date(v).toLocaleDateString('fr-TN'):'—';
+const day=(v:any)=>v?new Date(v).toLocaleDateString('fr-FR'):'—';
 
 export default function SupplierBillingAdmin(){
  const [data,setData]=useState<Data>({plans:[],companies:[]}),[loading,setLoading]=useState(true);
  const [requests,setRequests]=useState<RequestRow[]>([]);
+ const [reviewing,setReviewing]=useState<{x:RequestRow;action:'APPROVE'|'REJECT'}|null>(null);
  const [proofPreview,setProofPreview]=useState<{id:string;dataUrl:string}|null>(null);
  const [companyId,setCompanyId]=useState(''),[planId,setPlanId]=useState(''),[status,setStatus]=useState('TRIAL');
  const [endsAt,setEndsAt]=useState(''),[agreedPrice,setAgreedPrice]=useState(''),[note,setNote]=useState('');
@@ -107,22 +109,19 @@ export default function SupplierBillingAdmin(){
   }catch(e){setErr(e instanceof Error?e.message:'Impossible de charger la preuve')}
   finally{setBusy(false)}
  }
- async function reviewRequest(x:RequestRow,action:'APPROVE'|'REJECT'){
-  if(busy)return;
-  const adminNote=window.prompt(action==='APPROVE'?'Note interne de vérification (optionnelle)':'Motif du refus (obligatoire)','');
-  if(adminNote===null)return;
-  if(action==='REJECT'&&!adminNote.trim()){setErr('Précisez le motif du refus.');return;}
+ function reviewRequest(x:RequestRow,action:'APPROVE'|'REJECT'){if(!busy)setReviewing({x,action});}
+ /** Validation ou refus d'un versement fournisseur, en une seule fenêtre. */
+ async function submitReview(v:Record<string,string>){
+  const {x,action}=reviewing!;
+  const adminNote=String(v.adminNote||'').trim();
+  if(action==='REJECT'&&!adminNote)throw new Error('Précisez le motif du refus.');
   let verifiedAmount:number|undefined,reference:string|undefined;
   if(action==='APPROVE'){
-    const amount=window.prompt('Montant réellement vérifié sur D17 / relevé bancaire (DT)',String(x.requestedPrice));
-    if(amount===null)return;
-    verifiedAmount=Number(amount.replace(',','.'));
-    if(!Number.isFinite(verifiedAmount)||verifiedAmount<=0){setErr('Montant invalide');return}
-    const answer=window.prompt('Référence de virement ou référence du rapprochement',x.transferReference||'');
-    if(answer===null)return;
-    reference=answer.trim();
-    if(!reference&&!adminNote.trim()){setErr('Référence ou note de rapprochement obligatoire');return;}
-    if(!window.confirm('CONFIRMATION FINANCIÈRE : Vous avez vérifié ce versement dans votre compte D17 ou bancaire ? Cette action enregistrera le paiement et activera l’abonnement.'))return;
+    verifiedAmount=Number(String(v.verifiedAmount).replace(',','.'));
+    if(!Number.isFinite(verifiedAmount)||verifiedAmount<=0)throw new Error('Montant invalide.');
+    reference=String(v.reference||'').trim();
+    if(!reference&&!adminNote)throw new Error('Référence ou note de rapprochement obligatoire.');
+    if(v.confirm!=='YES')throw new Error('Confirmez que le versement est bien arrivé sur votre compte.');
   }
   setBusy(true);setErr('');setMsg('');
   try{
@@ -133,8 +132,7 @@ export default function SupplierBillingAdmin(){
     const j=await r.json();if(!r.ok)throw new Error(j.error||'Validation impossible');
     setProofPreview(null);
     await load();setMsg(action==='APPROVE'?'Versement contrôlé et abonnement activé.':'Demande refusée avec traçabilité.');
-  }catch(e){setErr(e instanceof Error?e.message:'Erreur')}
-  finally{setBusy(false)}
+  }finally{setBusy(false)}
  }
  async function createPlan(e:React.FormEvent){e.preventDefault();
    if(await send('POST',{action:'PLAN',...newPlan,price:Number(newPlan.price),
@@ -145,12 +143,19 @@ export default function SupplierBillingAdmin(){
  }
  const statusLabel=(s:string)=>({ACTIVE:'Actif',TRIAL:'Essai',PAST_DUE:'Impayé',SUSPENDED:'Suspendu',CANCELLED:'Annulé'} as Record<string,string>)[s]||s;
  return <main className="fixi-supplier-billing fixi-supplier-billing-admin">
+  {reviewing&&<FormDialog title={reviewing.action==='APPROVE'?'Valider le versement':'Refuser la demande'} submitLabel={reviewing.action==='APPROVE'?'Valider et activer':'Refuser'} onClose={()=>setReviewing(null)} onSubmit={submitReview}
+   fields={reviewing.action==='REJECT'?[{name:'adminNote',label:'Motif du refus',type:'textarea',required:true}]:[
+    {name:'verifiedAmount',label:'Montant reçu sur D17 / relevé bancaire (DT)',type:'number',required:true,defaultValue:String(reviewing.x.requestedPrice)},
+    {name:'reference',label:'Référence du virement',defaultValue:reviewing.x.transferReference||''},
+    {name:'adminNote',label:'Note interne (obligatoire sans référence)',type:'textarea'},
+    {name:'confirm',label:'J’ai constaté le versement sur le compte réel',type:'select',required:true,options:[['YES','Oui, le versement est arrivé']]},
+   ]}/>}
   <nav className="fixi-billing-switch" aria-label="Navigation des abonnements Fixi">
     <Link className="fixi-supplier-back" href="/saas"><ArrowLeft size={16}/> Fixi Control</Link>
     <Link className="fixi-supplier-back" href="/saas/suppliers"><Users size={16}/> Réseau fournisseurs</Link>
     <Link className="fixi-supplier-back" href="/saas?tab=subscriptions"><CreditCard size={16}/> Abonnements Atelier</Link>
   </nav>
-  <div className="fixi-supplier-billing-title"><div><span>FIXI CONTROL · BILLING</span><h1>Abonnements fournisseurs</h1>
+  <div className="fixi-supplier-billing-title"><div><span>FIXI CONTROL · FACTURATION</span><h1>Abonnements fournisseurs</h1>
    <p>Forfaits indépendants des abonnements Atelier. Affectation manuelle, suivi des périodes et paiements horodatés.</p></div>
    <button className="fixi-supplier-back" onClick={()=>void load()} disabled={loading}><RefreshCw size={16}/> Actualiser</button>
   </div>
@@ -164,7 +169,7 @@ export default function SupplierBillingAdmin(){
   <section className="fixi-billing-card fixi-supplier-requests-admin" id="fixi-supplier-requests">
    <div className="fixi-billing-title-row">
      <div><span className="fixi-billing-eyebrow"><FileCheck2 size={15}/> VERSEMENTS À VÉRIFIER</span>
-       <h2>Centre de validation des abonnements Supplier</h2>
+       <h2>Validation des abonnements fournisseurs</h2>
        <p>Les captures transmises ne sont pas des paiements. Confirmez le crédit réellement reçu sur D17 ou votre relevé avant toute activation.</p></div>
      <strong className="fixi-supplier-requests-count">{requests.filter(x=>x.status==='PENDING').length} demande(s) à traiter</strong>
    </div>

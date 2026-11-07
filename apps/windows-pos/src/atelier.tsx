@@ -147,7 +147,7 @@ function Day({ onError }: { onError: (e: unknown) => void }) {
   return <div className="at-day">
     <div className="v5-card at-kpi"><span>Encaissé aujourd’hui</span><b>{dt(Number(k.net || 0))}</b><small>{k.count || 0} paiement(s) · {k.delivered || 0} appareil(s) rendu(s)</small></div>
     <div className="v5-card"><h3>Par moyen de paiement</h3>{Object.entries(by).map(([m, v]) => <p className="at-line" key={m}><span>{({ CASH: 'Espèces', CARD: 'Carte', D17: 'D17', FLOUCI: 'Flouci', BANK_TRANSFER: 'Virement', OTHER: 'Autre' } as Record<string, string>)[m] || m}</span><b>{dt(Number(v))}</b></p>)}{!Object.keys(by).length && <p>Aucun paiement aujourd’hui.</p>}</div>
-    <div className="v5-card"><h3>Derniers encaissements</h3>{(d.payments || []).slice(0, 12).map((p: any) => <p className="at-line" key={p.id}><span>{new Date(p.createdAt).toLocaleTimeString('fr-TN', { hour: '2-digit', minute: '2-digit' })} · {p.repair?.code || p.counterSale?.number} · {p.repair?.client?.fullName || p.counterSale?.client?.fullName || (p.counterSale ? 'Vente comptoir' : '')}</span><b>{p.kind === 'REFUND' ? '−' : ''}{dt(Number(p.amount))}</b></p>)}</div>
+    <div className="v5-card"><h3>Derniers encaissements</h3>{(d.payments || []).slice(0, 12).map((p: any) => <p className="at-line" key={p.id}><span>{new Date(p.createdAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })} · {p.repair?.code || p.counterSale?.number} · {p.repair?.client?.fullName || p.counterSale?.client?.fullName || (p.counterSale ? 'Vente comptoir' : '')}</span><b>{p.kind === 'REFUND' ? '−' : ''}{dt(Number(p.amount))}</b></p>)}</div>
     <button className="v5-btn v5-btn--ghost" onClick={() => window.print()}><Printer size={16} /> Imprimer</button>
   </div>;
 }
@@ -156,7 +156,7 @@ function AtelierTicket({ p, shopName, server }: { p: any; shopName: string; serv
   if (p.kind === 'vente' || p.kind === 'retour') return <SaleTicket s={p.sale} shopName={shopName} />;
   const r = p.r;
   return <div className="at-ticket" aria-hidden="true">
-    <header><b>{shopName}</b><small>{new Date().toLocaleString('fr-TN')}</small></header>
+    <header><b>{shopName}</b><small>{new Date().toLocaleString('fr-FR')}</small></header>
     <h3>{p.kind === 'depot' ? 'TICKET DE DÉPÔT' : 'REÇU DE PAIEMENT'}</h3>
     <div className="at-code">{r.code}</div>
     <p><span>Client</span><b>{r.client?.fullName || ''}</b></p><p><span>Appareil</span><b>{[r.brand, r.model].filter(Boolean).join(' ')}</b></p>
@@ -170,7 +170,7 @@ function AtelierTicket({ p, shopName, server }: { p: any; shopName: string; serv
 function SaleTicket({ s, shopName }: { s: SalePrint; shopName: string }) {
   const refund = s.kind === 'retour';
   return <div className="at-ticket" aria-hidden="true">
-    <header><b>{shopName}</b><small>{new Date().toLocaleString('fr-TN')}</small></header>
+    <header><b>{shopName}</b><small>{new Date().toLocaleString('fr-FR')}</small></header>
     <h3>{refund ? 'REMBOURSEMENT' : 'TICKET DE CAISSE'}</h3>
     <div className="at-code">{s.number}</div>
     {s.lines.map((l, i) => <p key={i}><span>{l.quantity} × {l.name}</span><b>{refund ? '− ' : ''}{dt(l.total)}</b></p>)}

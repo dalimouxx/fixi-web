@@ -39,7 +39,7 @@ export function SupplierPromoList({ refresh }: { refresh: number }) {
   const live = rows.filter(r => r.active && new Date(r.endsAt) > new Date());
   if (!live.length) return null;
   return <section className="supplier-panel pm-list"><h3><Tag size={16} /> Promotions en cours <small>{live.length}</small></h3>
-    <ul>{live.map(r => <li key={r.id}><div><b>{r.product?.name}</b><small>{money(Number(r.promoPrice))} au lieu de {money(Number(r.product?.retailPrice ?? r.product?.price))} · jusqu’au {new Date(r.endsAt).toLocaleDateString('fr-TN')}{r.notified ? ` · ${r.notified} atelier(s) prévenu(s)` : ''}</small></div>
+    <ul>{live.map(r => <li key={r.id}><div><b>{r.product?.name}</b><small>{money(Number(r.promoPrice))} au lieu de {money(Number(r.product?.retailPrice ?? r.product?.price))} · jusqu’au {new Date(r.endsAt).toLocaleDateString('fr-FR')}{r.notified ? ` · ${r.notified} atelier(s) prévenu(s)` : ''}</small></div>
       <button className="btn btn-ghost btn-sm" onClick={async () => { await api('/api/supplier/promos', { method: 'PATCH', body: JSON.stringify({ id: r.id }) }); setN(x => x + 1); }}>Arrêter</button></li>)}</ul>
   </section>;
 }

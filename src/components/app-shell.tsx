@@ -62,7 +62,7 @@ export function AppShell({ children, user }: { children?: React.ReactNode; user:
 
   // Barre d'onglets mobile : 4 sections + « Plus ».
   const tabs = useMemo(() => {
-    const wanted = connect ? ['parts', 'more'] : ['home', 'repairs', 'cash', 'parts'];
+    const wanted = connect ? ['parts', 'more', 'help'] : ['home', 'repairs', 'cash', 'parts'];
     return sections.filter(s => wanted.includes(s.id)).slice(0, 4).map(s => ({ section: s, item: s.items[0] }));
   }, [sections, connect]);
 
@@ -115,7 +115,7 @@ export function AppShell({ children, user }: { children?: React.ReactNode; user:
       </nav>
       {connect && <Link href="/app/upgrade" className="btn btn-soft"><Sparkles size={16} /> Passer à Fixi Pro</Link>}
       <div className="fx-side-foot">
-        <div className="fx-side-shop"><span className="fx-avatar" aria-hidden="true">{initials}</span><div style={{ minWidth: 0 }}><b>{user.shopName}</b><small>{user.fullName} · {user.roleLabel}</small></div></div>
+        <div className="fx-side-shop"><span className="fx-avatar" aria-hidden="true">{initials}</span><div style={{ minWidth: 0 }}><b>{user.shopName}</b><small>{user.fullName} · {user.roleLabel}</small></div><button type="button" className="fx-icon-btn fx-side-logout" onClick={logout} title="Quitter" aria-label="Se déconnecter"><LogOut size={17} /></button></div>
         {modeSwitch}
         <div className="fx-side-tools">
           {!connect && <Link href={`/queue?shop=${encodeURIComponent(user.shopSlug)}`} target="_blank" className="fx-icon-btn" title="Écran d'attente clients" aria-label="Ouvrir l'écran d'attente clients"><MonitorPlay size={18} /></Link>}
@@ -123,8 +123,6 @@ export function AppShell({ children, user }: { children?: React.ReactNode; user:
           {!connect && <Link href="/comptoir" target="_blank" className="fx-icon-btn" title="Écran client au comptoir" aria-label="Ouvrir l’écran client au comptoir"><MonitorSmartphone size={18} /></Link>}
           <LangToggle />
           <TextSizeToggle />
-          <ThemeToggle />
-          <button type="button" className="btn btn-ghost btn-sm" onClick={logout}><LogOut size={16} /> Quitter</button>
         </div>
       </div>
     </aside>
@@ -178,7 +176,7 @@ export function AppShell({ children, user }: { children?: React.ReactNode; user:
 }
 
 /** Groupes affichés au-dessus des sections de la barre latérale. */
-const NAV_GROUPS: Record<string, string> = { home: 'Atelier', repairs: 'Atelier', clients: 'Atelier', cash: 'Commerce', parts: 'Commerce', more: 'Plus' };
+const NAV_GROUPS: Record<string, string> = { home: 'Atelier', repairs: 'Atelier', clients: 'Atelier', cash: 'Commerce', parts: 'Commerce', more: 'Gestion', help: 'Gestion' };
 
 function MoreIcon() {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" /></svg>;

@@ -7,7 +7,7 @@ type P={id:string;name:string;sku:string;barcode?:string|null;stock:number;onHan
 type Line={id:string;qty:number;cost:string};
 const norm=(s?:string|null)=>String(s||'').toUpperCase().replace(/\s+/g,'');
 export const findByCode=<T extends {barcode?:string|null;sku:string}>(items:T[],raw:string)=>{const v=norm(raw);if(!v)return undefined;return items.find(i=>norm(i.barcode)===v)||items.find(i=>norm(i.sku)===v)};
-const dt=(n:number)=>n.toLocaleString('fr-TN',{minimumFractionDigits:3,maximumFractionDigits:3})+' DT';
+const dt=(n:number)=>n.toLocaleString('fr-FR',{minimumFractionDigits:3,maximumFractionDigits:3})+' DT';
 
 /** Entrée de stock au scanner (fournisseur) : 1 scan = +1 pièce, coût d'achat modifiable, validation par le gérant. */
 export function StockInPage({products,storageKey,canEnter,demo,onDone,onError,onMessage,onUnknown}:{products:P[];storageKey:string;canEnter:boolean;demo:boolean;onDone:()=>void;onError:(m:string)=>void;onMessage:(m:string)=>void;onUnknown:(code:string)=>void}){

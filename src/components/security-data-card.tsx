@@ -17,7 +17,7 @@ export function SecurityDataCard() {
   }
   function print() {
     const w = window.open('', '_blank', 'width=420,height=520'); if (!w) return;
-    w.document.write(`<html><head><title>Code de secours Fixi</title></head><body style="font-family:system-ui;padding:24px;text-align:center"><h2>Code de secours Fixi</h2><p>À garder en lieu sûr. Il permet au gérant de choisir un nouveau code PIN s’il l’a oublié. Il ne sert qu’une fois.</p><p style="font:700 24px ui-monospace,monospace;letter-spacing:2px;border:2px dashed #999;padding:14px;border-radius:12px">${code}</p><p style="color:#666">Créé le ${new Date().toLocaleString('fr-TN')}</p><script>window.print()</script></body></html>`);
+    w.document.write(`<html><head><title>Code de secours Fixi</title></head><body style="font-family:system-ui;padding:24px;text-align:center"><h2>Code de secours Fixi</h2><p>À garder en lieu sûr. Il permet au gérant de choisir un nouveau code PIN s’il l’a oublié. Il ne sert qu’une fois.</p><p style="font:700 24px ui-monospace,monospace;letter-spacing:2px;border:2px dashed #999;padding:14px;border-radius:12px">${code}</p><p style="color:#666">Créé le ${new Date().toLocaleString('fr-FR')}</p><script>window.print()</script></body></html>`);
     w.document.close();
   }
   return <section id="securite" className="card card-pad fx-sec">

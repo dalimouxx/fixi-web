@@ -31,7 +31,7 @@ export async function PATCH(req: Request) {
       if (p.status !== 'REQUESTED') return bad('Reprise déjà traitée', 409);
       const dropoff = p.mode === 'SHOP_DROPOFF';
       await prisma.supplierReturnPickup.update({ where: { id: p.id }, data: { status: 'ACCEPTED', driverAccountId: dropoff ? null : driver?.id || null } });
-      await notifyShop(p.shopId, 'Reprise acceptée', dropoff ? 'Déposez la pièce chez le fournisseur et donnez-lui votre code de reprise (Fournisseurs → Reprises).' : `Le livreur récupérera la pièce à son prochain passage${driver ? ' (' + driver.fullName + ')' : ''}. Donnez-lui votre code de reprise au moment de la remise.`, '/app/suppliers?tab=orders', NotificationType.INFO).catch(() => {});
+      await notifyShop(p.shopId, 'Reprise acceptée', dropoff ? 'Déposez la pièce chez le fournisseur et donnez-lui votre code de reprise (Commander une pièce → Reprises).' : `Le livreur récupérera la pièce à son prochain passage${driver ? ' (' + driver.fullName + ')' : ''}. Donnez-lui votre code de reprise au moment de la remise.`, '/app/suppliers?tab=orders', NotificationType.INFO).catch(() => {});
       if (!dropoff && !driver) await notifySupplier(s.companyId, 'Pièce à reprendre', 'Une reprise attend le prochain livreur qui passe chez cet atelier.', { href: '/delivery', kind: 'DELIVERY', experienceKey: 'DRIVER_NEW_MISSION', roles: ['DRIVER'], eventId: 'rpd-' + p.id }).catch(() => {});
       if (!dropoff && driver) await notifySupplier(s.companyId, 'Pièce à reprendre', 'Une reprise est ajoutée à votre tournée.', { href: '/delivery', kind: 'DELIVERY', experienceKey: 'DRIVER_NEW_MISSION', accountIds: [driver.id], eventId: 'rpd-' + p.id }).catch(() => {});
       return ok({ ok: true });

@@ -29,7 +29,7 @@ export function PickupCollect({ pickup, onDone, inline }: { pickup: any; onDone:
       <label className={'btn btn-ghost btn-sm dx-cam' + (photo ? ' is-on' : '')}><Camera size={15} /> {photo ? 'Photo ✓' : 'Photo'}<input type="file" accept="image/*" capture="environment" onChange={async e => { const f = e.target.files?.[0]; if (f) setPhoto(await compress(f)); }} /></label>
       <button type="button" className="btn btn-primary btn-sm" disabled={busy || (pickup.needsCode && code.length !== 4)} onClick={send}>{busy ? '…' : <><Check size={15} /> Pièce reprise</>}</button>
     </div>
-    {pickup.needsCode && <small>L’atelier voit ce code dans Fournisseurs → Mes reprises. Il le donne quand il vous remet la pièce.</small>}
+    {pickup.needsCode && <small>L’atelier voit ce code dans « Commander une pièce → Mes reprises ». Il le donne quand il vous remet la pièce.</small>}
     {err && <p className="rm-err">{err}</p>}
   </div>;
 }

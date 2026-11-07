@@ -1,0 +1,84 @@
+/*
+ * Mode sombre : blocs restés blancs (ou texte clair sur fond clair) repérés par l'audit automatique.
+ * Chargé en dernier dans layout.tsx. Fonds = surfaces sombres, textes = encre claire.
+ */
+html[data-theme="dark"] {
+  --fxd-s1: var(--fx-surface, #1e1b18);
+  --fxd-s2: var(--fx-surface-2, #24201d);
+  --fxd-s3: var(--fx-surface-3, #2c2723);
+  --fxd-line: var(--fx-line, #36302b);
+  --fxd-ink: var(--fx-ink, #f5f2ef);
+  --fxd-muted: var(--fx-muted, #a89f97);
+}
+
+/* Cartes et bandeaux clairs → surfaces sombres */
+html[data-theme="dark"] :is(
+  .atelier-mini-kpis > div, .atelier-report-strip > div, .smart-tip, .care-digital > div, .cash-select-empty > div,
+  .expert-trust > div, .offline-safety, .market-hero, .v6-camera-box, .fixi-payment-option, .fixi-billing-card,
+  .fixi-billing-footnote, .fixi-billing-track, .fixi-supplier-back,
+  .supplier-register, .fixi-pos-cash-dashboard, .fixi-pos-cash-stats > div, .supplier-pos-products, .supplier-pos-search,
+  .supplier-pos-pricing > button, .supplier-pos-categories > button, .supplier-pos-product, .supplier-pos-cart,
+  .supplier-pos-customer, .supplier-pos-balance, .supplier-master-hero, .supplier-warehouse-empty, .supplier-due-collect-client,
+  .supplier-report-kpis > div, .supplier-aging > div, .supplier-live-details > div, .supplier-delivery-order-detail > div,
+  .supplier-delivery-due-detail, .supplier-role-guide > div, .supplier-rank-list em, .supplier-import-page,
+  .supplier-import-page .supplier-panel, .supplier-csv-drop, .fx-eod-head
+) {
+  background: var(--fxd-s2) !important;
+  background-image: none !important;
+  border-color: var(--fxd-line) !important;
+  color: var(--fxd-ink) !important;
+}
+
+html[data-theme="dark"] :is(.fixi-pos-cash-stats > div.important, .supplier-aging > div.danger, .supplier-delivery-due-detail, .fixi-billing-highlight) {
+  background: rgba(240, 120, 43, .12) !important;
+  border-color: rgba(240, 120, 43, .45) !important;
+}
+html[data-theme="dark"] .offline-safety { background: rgba(251, 191, 36, .1) !important; border-color: rgba(251, 191, 36, .35) !important; }
+html[data-theme="dark"] .supplier-import-page { background: var(--fx-bg, #141210) !important; }
+
+/* Titres, montants et petites lignes à l'intérieur de ces blocs */
+html[data-theme="dark"] :is(
+  .atelier-mini-kpis, .atelier-report-strip, .smart-tip, .care-digital, .cash-select-empty, .expert-trust, .offline-safety, .market-hero,
+  .v6-camera-box, .fixi-payment-option, .fixi-billing-card, .fixi-billing-footnote, .supplier-register, .fixi-pos-cash-dashboard,
+  .supplier-pos-products, .supplier-pos-product, .supplier-pos-cart, .supplier-pos-balance, .supplier-master-hero, .supplier-warehouse-empty,
+  .supplier-report-kpis, .supplier-aging, .supplier-live-details, .supplier-delivery-order-detail, .supplier-delivery-due-detail,
+  .supplier-role-guide, .supplier-rank-list, .supplier-import-page, .fx-eod-head
+) :is(h1, h2, h3, h4, b, strong, td, label, p, span:not([class*="pill"]):not([class*="badge"]), em) {
+  color: inherit;
+}
+html[data-theme="dark"] :is(
+  .atelier-mini-kpis, .atelier-report-strip, .smart-tip, .fixi-payment-option, .fixi-billing-card, .supplier-pos-product, .supplier-pos-cart,
+  .supplier-report-kpis, .supplier-aging, .supplier-live-details, .supplier-delivery-order-detail, .supplier-role-guide, .fx-eod-head,
+  .supplier-import-page, .v6-camera-box, .market-hero
+) :is(small, p, .muted) {
+  color: var(--fxd-muted) !important;
+}
+
+/* Champs restés blancs */
+html[data-theme="dark"] :is(.supplier-pos-warehouse select, .supplier-payment-line select, .supplier-payment-line input, .fixi-pos-sale-note textarea, .fixi-billing-card th, .fixi-billing-card td) {
+  background: var(--fxd-s1) !important;
+  color: var(--fxd-ink) !important;
+  border-color: var(--fxd-line) !important;
+}
+html[data-theme="dark"] .supplier-pos-categories > button.active,
+html[data-theme="dark"] .supplier-pos-pricing > button.active { background: var(--fx-brand, #f0782b) !important; color: #1c1007 !important; }
+
+/* Pastilles de rôle : texte foncé sur fond clair conservé, lisible */
+html[data-theme="dark"] .supplier-role-pill { background: var(--fxd-s3) !important; color: var(--fxd-ink) !important; }
+
+/* Anneau du score (vue propriétaire) */
+html[data-theme="dark"] .score-ring span { color: var(--fxd-muted) !important; }
+
+/* Page 404 Next.js en sombre */
+html[data-theme="dark"] :is(.next-error-h1, .next-error-h1 + div h2) { color: var(--fxd-ink) !important; border-color: var(--fxd-line) !important; }
+html[data-theme="dark"] body:has(.next-error-h1) { background: var(--fx-bg, #141210); color: var(--fxd-ink); }
+
+/* Affiche « arrivée » : reste blanche (elle s'imprime), texte foncé */
+html[data-theme="dark"] .ci-poster, html[data-theme="dark"] .ci-poster :is(h1, h2, h3, p, b, li, small, span) { color: #181512 !important; }
+
+/* Fixi Control (toujours clair) : restes de l'ancien thème sombre */
+.saas-v4 .system-item { background: #faf7f4; border: 1px solid #eee5dc; }
+.saas-v4 .system-item strong { color: #181512; font-size: 13px; }
+.saas-v4 .system-item small { color: #746d67; font-size: 12px; }
+.saas-v4 .system-item > span { font-size: 11px; font-weight: 700; }
+.saas-v4 .brand-preview strong, .saas-v4 .brand-preview b { color: #fff; }

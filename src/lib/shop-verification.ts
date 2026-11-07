@@ -48,5 +48,5 @@ export async function requireVerifiedShop(shopId: string) {
   const { prisma } = await import('./prisma');
   const shop = await prisma.shop.findUnique({ where: { id: shopId }, select: { verificationStatus: true } });
   if (!isVerified(shop?.verificationStatus))
-    throw Object.assign(new Error('Votre atelier doit être vérifié par Fixi pour voir les produits des fournisseurs. Envoyez vos documents dans Fournisseurs → Vérification.'), { status: 403, code: VERIFICATION_REQUIRED });
+    throw Object.assign(new Error('Votre atelier doit être vérifié par Fixi pour voir les produits des fournisseurs. Envoyez vos documents dans Commander une pièce → Vérification.'), { status: 403, code: VERIFICATION_REQUIRED });
 }

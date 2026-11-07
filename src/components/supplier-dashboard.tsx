@@ -1,4 +1,5 @@
 'use client';
+import { ROLE_LABEL } from '@/lib/supplier-permissions';
 import {ReportProblemButton} from './report-problem';
 import {useEffect,useMemo,useState} from 'react';
 import Link from 'next/link';
@@ -128,16 +129,17 @@ export function SupplierDashboard({session}:{session:any}){
     ['finance','Bénéfice',TrendingUp],['reports','Rapports',FileText],['delivery','Livraison',Truck],['team','Équipe',Users]
   ] as const;
   const nav=navAll.filter(([key])=>(access[role]||access.ADMIN).includes(key));
-  // 17 modules regroupés en 6 entrées ; les modules experts n'apparaissent qu'en Mode Avancé.
+  // 18 modules regroupés en 7 entrées ; les modules experts n'apparaissent qu'en Mode Avancé.
   const {advanced:advancedMode,setMode}=useUiMode('supplier');
   const advancedTabs=['masters','warehouses','pricing','inventory','vendors','finance'];
   const groupDefs=[
     {id:'home',label:'Accueil',icon:LayoutDashboard,tabs:['dashboard']},
     {id:'sell',label:'Vendre',icon:WalletCards,tabs:['cashier','orders']},
     {id:'products',label:'Produits',icon:Warehouse,tabs:['products','inventory','pricing','warehouses','masters']},
-    {id:'money',label:'Clients & argent',icon:Banknote,tabs:['clients','invoices','dues','returns']},
+    {id:'buy',label:'Achats',icon:ArrowDownToLine,tabs:['purchases','vendors']},
+    {id:'money',label:'Clients & argent',icon:Banknote,tabs:['clients','invoices','dues','returns','finance']},
     {id:'delivery',label:'Livraison',icon:Truck,tabs:['delivery']},
-    {id:'more',label:'Plus',icon:MoreHorizontal,tabs:['purchases','vendors','finance','reports','team']},
+    {id:'more',label:'Gestion',icon:FileText,tabs:['reports','team']},
   ] as const;
   const groups=groupDefs.map(g=>({...g,items:g.tabs.map(t=>nav.find(([key])=>key===t)).filter((x):x is (typeof nav)[number]=>!!x&&(advancedMode||!advancedTabs.includes(x[0])||tab===x[0]))})).filter(g=>g.items.length>0);
   const currentGroup=groups.find(g=>g.items.some(([key])=>key===tab));
@@ -164,7 +166,7 @@ export function SupplierDashboard({session}:{session:any}){
 
   return <div className="supplier-os supplier-erp fxm-sup"><PwaRegister/><GuidedTour space="supplier"/><div className="fxm-aurora" aria-hidden="true"><span className="fxm-blob b1"/><span className="fxm-blob b2"/></div>
     {mobileNavOpen&&<button aria-label="Fermer le menu fournisseur" className="fixi-supplier-drawer-backdrop" onClick={()=>setMobileNavOpen(false)}/>}
-    <aside className={mobileNavOpen?'fixi-supplier-drawer open':'fixi-supplier-drawer'} aria-label="Navigation Supplier">
+    <aside className={mobileNavOpen?'fixi-supplier-drawer open':'fixi-supplier-drawer'} aria-label="Navigation fournisseur">
       <button className="fixi-supplier-drawer-close" aria-label="Fermer le menu" onClick={()=>setMobileNavOpen(false)}><X size={20}/></button>
       <div className="supplier-os-brand"><FixiAnimatedLogo size={42}/><div><b>fixi<em>.</em> pro</b><span>{session.companyName}</span></div></div>
       <div className="fixi-supplier-menu-scroll" role="navigation" aria-label="Modules du fournisseur" tabIndex={0}>
@@ -181,7 +183,7 @@ export function SupplierDashboard({session}:{session:any}){
         <Link href="/supplier/subscription" onClick={()=>setMobileNavOpen(false)} className="supplier-delivery-link"><ReceiptText/><span>Mon abonnement</span></Link><Link href="/supplier/daily-report" onClick={()=>setMobileNavOpen(false)} className="supplier-delivery-link"><Moon/><span>Fin de journée</span></Link>
                 <Link href="/delivery/login" target="_blank" className="supplier-delivery-link"><MapPinned/><span>App livreur</span></Link>
       </div>
-      <div className="fx-sup-tools"><LangToggle/><TextSizeToggle/><ThemeToggle/><AndroidWidgetButton space="supplier"/></div><div className="supplier-side-foot"><div><strong>{session.fullName}</strong><small>{session.role||'ADMIN'} · Compte fournisseur</small></div><button onClick={logout}><LogOut/></button></div>
+      <div className="fx-sup-tools"><LangToggle/><TextSizeToggle/><ThemeToggle/><AndroidWidgetButton space="supplier"/></div><div className="supplier-side-foot"><div><strong>{session.fullName}</strong><small>{ROLE_LABEL[session.role||'ADMIN']||'Gérant'} · Compte fournisseur</small></div><button onClick={logout}><LogOut/></button></div>
     </aside>
 
     <main>
@@ -252,7 +254,7 @@ export function SupplierDashboard({session}:{session:any}){
 
       {tab==='clients'&&<SupplierChurn/>}{tab==='clients'&&<section className="supplier-panel"><div className="supplier-section-head"><div><b>Clients professionnels</b><span>Boutiques Fixi + clients directs du fournisseur</span></div><button className="btn btn-primary btn-sm" onClick={newCustomer}><Plus/> Nouveau client</button></div><div className="table-wrap"><table className="table"><thead><tr><th>Client</th><th>Région</th><th>Téléphone</th><th>Commandes</th><th>CA cumulé</th><th>Dernière activité</th></tr></thead><tbody>{clients.map((x:any)=><tr key={x.name}><td><b>{x.name}</b><div className="muted">{x.address||'—'}</div></td><td>{x.region||'—'}</td><td>{x.phone||'—'}</td><td>{x.orders}</td><td><b>{money(x.total)}</b></td><td>{dateTime(x.last)}</td></tr>)}{(erp.customers||[]).map((x:any)=><tr key={x.id}><td><b>{x.name}</b><div className="muted">{x.address||'Client direct'}</div></td><td>{x.region||'—'}</td><td>{x.phone||'—'}</td><td>Direct</td><td>—</td><td>{dateTime(x.updatedAt)}</td></tr>)}</tbody></table></div></section>}
 
-      {tab==='invoices'&&<><EinvoiceReadiness/><section className="supplier-panel"><div className="supplier-section-head"><div><b>Factures de vente</b><span>Factures issues du POS et des commandes Fixi livrées, avec statut de règlement.</span></div></div><div className="supplier-invoice-list">{(erp.sales||[]).map((x:any)=>{const credits=(erp.returns||[]).filter((r:any)=>r.sourceSaleId===x.id&&r.status==='COMPLETED');const credit=credits.reduce((a:number,r:any)=>a+Number(r.total||0),0),refund=credits.reduce((a:number,r:any)=>a+Number(r.refund||0),0),netTotal=Math.max(0,Number(x.total)-credit),netPaid=Math.max(0,Number(x.paid)-refund),due=Math.max(0,netTotal-netPaid);return <article key={x.id}><div className="supplier-invoice-list-main"><i><ReceiptText/></i><span><code>{x.reference}</code><b>{x.sourceOrderId?'Commande Marketplace':'Vente directe / POS'}</b><small>{dateTime(x.createdAt)}{credit>0?' · avoir '+money(credit):''}</small></span></div><div className="supplier-invoice-list-money"><b>{money(netTotal)}</b><small className={due>0?'due':''}>{due>0?'Reste '+money(due):'Soldée'}</small></div><Link className="btn btn-soft btn-sm" href={'/supplier/documents/'+x.id} target="_blank"><FileText/> Facture</Link></article>})}{!(erp.sales||[]).length&&<div className="delivery-empty"><ReceiptText/><h3>Aucune facture</h3><p>Les ventes POS et commandes Marketplace livrées apparaîtront ici.</p></div>}</div></section><section className="supplier-panel" style={{marginTop:12}}><SupplierCommercialDocuments products={products} customers={erp.customers||[]} vendors={advanced.vendors||[]} warehouses={advanced.warehouses||[]} onChanged={()=>setRefresh(x=>x+1)}/></section></>}
+      {tab==='invoices'&&<><EinvoiceReadiness/><section className="supplier-panel"><div className="supplier-section-head"><div><b>Factures de vente</b><span>Factures issues du POS et des commandes Fixi livrées, avec statut de règlement.</span></div></div><div className="supplier-invoice-list">{(erp.sales||[]).map((x:any)=>{const credits=(erp.returns||[]).filter((r:any)=>r.sourceSaleId===x.id&&r.status==='COMPLETED');const credit=credits.reduce((a:number,r:any)=>a+Number(r.total||0),0),refund=credits.reduce((a:number,r:any)=>a+Number(r.refund||0),0),netTotal=Math.max(0,Number(x.total)-credit),netPaid=Math.max(0,Number(x.paid)-refund),due=Math.max(0,netTotal-netPaid);return <article key={x.id}><div className="supplier-invoice-list-main"><i><ReceiptText/></i><span><code>{x.reference}</code><b>{x.sourceOrderId?'Commande Marketplace':'Vente directe / POS'}</b><small>{dateTime(x.createdAt)}{credit>0?' · avoir '+money(credit):''}</small></span></div><div className="supplier-invoice-list-money"><b>{money(netTotal)}</b><small className={due>0?'due':''}>{due>0?'Reste '+money(due):'Soldée'}</small></div><Link className="btn btn-soft btn-sm" href={'/supplier/documents/'+x.id} target="_blank"><FileText/> Facture</Link></article>})}{!(erp.sales||[]).length&&<div className="delivery-empty"><ReceiptText/><h3>Aucune facture</h3><p>Les ventes en caisse et les commandes livrées apparaîtront ici.</p></div>}</div></section><section className="supplier-panel" style={{marginTop:12}}><SupplierCommercialDocuments products={products} customers={erp.customers||[]} vendors={advanced.vendors||[]} warehouses={advanced.warehouses||[]} onChanged={()=>setRefresh(x=>x+1)}/></section></>}
 
       {tab==='finance'&&<><SupplierCashForecast/><div className="supplier-kpis"><K icon={BadgeDollarSign} label="CA marketplace" value={money(revenue)}/><K icon={Banknote} label="Ventes directes" value={money(directSales)}/><K icon={AlertTriangle} label="Créances clients" value={money(dueSales)}/><K icon={Warehouse} label="Dettes achats" value={money(duePurchases)}/></div><section className="supplier-panel"><div className="supplier-section-head"><div><b>Finance fournisseur</b><span>Ventes, paiements, achats et dépenses enregistrés.</span></div><button className="btn btn-soft btn-sm" onClick={newExpense}><Plus/> Dépense</button></div><div className="supplier-metrics"><div><span>Encaissements directs</span><b>{money(directPaid)}</b></div><div><span>Dépenses</span><b>{money(expensesTotal)}</b></div><div><span>Achats</span><b>{money(purchaseTotal)}</b></div><div><span>Résultat de flux</span><b>{money(revenue+directPaid-expensesTotal-purchaseTotal)}</b></div></div></section></>}
 

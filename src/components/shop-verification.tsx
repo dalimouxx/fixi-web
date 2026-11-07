@@ -43,7 +43,7 @@ export function ShopVerificationGate({ state, onSent }: { state: State; onSent: 
             : 'Le catalogue et les prix des fournisseurs sont réservés aux ateliers de réparation. Envoyez vos documents : Fixi les vérifie puis ouvre l’accès.'}</p>
       </div>
     </header>
-    {state.status === 'PENDING' && !edit && <div className="sv-sent"><BadgeCheck size={18} /> Dossier envoyé{state.file?.submittedAt ? ' le ' + new Date(state.file.submittedAt).toLocaleString('fr-TN', { dateStyle: 'medium', timeStyle: 'short' }) : ''} · {state.file?.legalName} · MF {state.file?.taxId}
+    {state.status === 'PENDING' && !edit && <div className="sv-sent"><BadgeCheck size={18} /> Dossier envoyé{state.file?.submittedAt ? ' le ' + new Date(state.file.submittedAt).toLocaleString('fr-FR', { dateStyle: 'medium', timeStyle: 'short' }) : ''} · {state.file?.legalName} · MF {state.file?.taxId}
       <button type="button" className="btn btn-ghost btn-sm" onClick={() => setEdit(true)}>Modifier le dossier</button></div>}
     {edit && <form className="sv-form" onSubmit={send}>
       <div className="sv-grid">

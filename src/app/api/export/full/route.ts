@@ -34,7 +34,7 @@ export async function GET() {
     const safeShop = Object.fromEntries(Object.entries(shop).filter(([k]) => !/token|secret|apikey|api_key|key$|password|hash/i.test(k)));
     const stamp = new Date().toISOString().slice(0, 10);
     const files = [
-      { name: 'LISEZ-MOI.txt', data: `Export complet Fixi — ${shop.name} — ${new Date().toLocaleString('fr-TN')}\r\n\r\nLes fichiers CSV s'ouvrent dans Excel (séparateur « ; », UTF-8).\r\ndonnees-completes.json contient tout, y compris l'historique des réparations et les lignes de documents.\r\nLes codes PIN, jetons et clés ne sont jamais exportés.\r\n` },
+      { name: 'LISEZ-MOI.txt', data: `Export complet Fixi — ${shop.name} — ${new Date().toLocaleString('fr-FR',{timeZone:'Africa/Tunis'})}\r\n\r\nLes fichiers CSV s'ouvrent dans Excel (séparateur « ; », UTF-8).\r\ndonnees-completes.json contient tout, y compris l'historique des réparations et les lignes de documents.\r\nLes codes PIN, jetons et clés ne sont jamais exportés.\r\n` },
       { name: 'clients.csv', data: toCsv(clients as any[], ['id', 'fullName', 'phone', 'email', 'notes', 'loyaltyPoints', 'createdAt']) },
       { name: 'reparations.csv', data: toCsv(repairs.map(({ parts, statusEvents, publicToken, ...r }) => r) as any[]) },
       { name: 'pieces-utilisees.csv', data: toCsv(repairs.flatMap(r => r.parts.map(p => ({ repairCode: r.code, ...p }))) as any[]) },

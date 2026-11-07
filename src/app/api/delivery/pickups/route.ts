@@ -25,7 +25,7 @@ export async function PATCH(req: Request) {
     const b = await req.json().catch(() => ({}));
     const p = await prisma.supplierReturnPickup.findFirst({ where: { id: String(b.id || ''), companyId: s.companyId, status: 'ACCEPTED', mode: 'DRIVER', OR: [{ driverAccountId: s.id }, { driverAccountId: null }] }, select: { id: true, shopId: true, handoverCode: true, items: true } });
     if (!p) return bad('Reprise introuvable ou déjà faite', 404);
-    if (!handoverOk(p.handoverCode, b.code)) return bad('Code de reprise incorrect : demandez à l’atelier le code à 4 chiffres affiché dans Fournisseurs → Reprises.', 403);
+    if (!handoverOk(p.handoverCode, b.code)) return bad('Code de reprise incorrect : demandez à l’atelier le code à 4 chiffres affiché dans Commander une pièce → Reprises.', 403);
     const done = await prisma.supplierReturnPickup.updateMany({ where: { id: p.id, status: 'ACCEPTED' }, data: { status: 'COLLECTED', driverAccountId: s.id, collectedById: s.id, collectedAt: new Date(), proofUrl: typeof b.proofUrl === 'string' && b.proofUrl.startsWith('data:image/') && b.proofUrl.length < 1_600_000 ? b.proofUrl : null } });
     if (!done.count) return bad('Reprise déjà faite', 409);
     await notifyShop(p.shopId, 'Pièce reprise par le livreur', `${s.fullName} a récupéré : ${(p.items as any[]).map(i => i.quantity + ' × ' + i.name).join(', ')}. L’avoir suivra à la réception chez le fournisseur.`, '/app/suppliers?tab=orders').catch(() => {});

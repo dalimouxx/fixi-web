@@ -1,5 +1,6 @@
 'use client';
 import {useMemo,useState} from 'react';
+import {FormDialog} from './control-form-dialog';
 import {api,Modal,useApi} from './ui';
 import {CalendarClock,Check,Edit3,Plus,Trash2,Archive,RefreshCw,ShieldCheck,Users,Tag,Clock3,Search} from 'lucide-react';
 import {dateOnly,money} from '@/lib/format';
@@ -19,6 +20,7 @@ export function SaasSubscriptionsV8(){
  const {data:history}=useApi<any[]>('/api/platform/subscriptions',refresh);
  const [screen,setScreen]=useState<Screen>('plans');
  const [edit,setEdit]=useState<any>(null),[subEdit,setSubEdit]=useState<any>(null);
+ const [reviewing,setReviewing]=useState<{r:any;action:string}|null>(null);
  const [create,setCreate]=useState(false),[createSub,setCreateSub]=useState(false);
  const [f,setF]=useState<any>(blank),[sf,setSf]=useState<any>(emptySubscription);
  const [search,setSearch]=useState(''),[historyTenant,setHistoryTenant]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState(''),[message,setMessage]=useState('');
@@ -83,49 +85,45 @@ export function SaasSubscriptionsV8(){
   if(await mutate(()=>api('/api/platform/subscriptions/'+s.id,{method:'DELETE'}),'Période traitée.'))
     setSubEdit(null);
  }
- async function review(r:any,action:string){
+ function review(r:any,action:string){setReviewing({r,action});}
+ /** Validation ou refus d'une demande, en une seule fenêtre (prix, durée, versement vérifié). */
+ async function submitReview(v:Record<string,string>){
+  const {r,action}=reviewing!;
   if(action==='REJECT'){
-   const adminNote=window.prompt('Motif obligatoire du refus','');
-   if(!adminNote?.trim())return;
-   await mutate(()=>api('/api/platform/subscription-requests/'+r.id,{
-     method:'PATCH',body:JSON.stringify({action:'REJECT',adminNote})
-   }),'Demande refusée avec motif.');
-   return;
+   if(!v.adminNote?.trim())throw new Error('Indiquez le motif du refus.');
+   await api('/api/platform/subscription-requests/'+r.id,{method:'PATCH',body:JSON.stringify({action:'REJECT',adminNote:v.adminNote})});
+   setMessage('Demande refusée avec motif.');setRefresh(x=>x+1);return;
   }
-  const raw=window.prompt('Prix convenu (DT)',String(r.requestedPrice??r.plan?.price??0));
-  if(raw===null)return;
-  const price=Number(raw.replace(',','.'));
-  if(!Number.isFinite(price)||price<0){setError('Prix invalide');return;}
-  const value=window.prompt('Durée',String(r.durationValue??r.plan?.durationValue??1));
-  if(value===null)return;
-  const durationValue=Number(value);
-  if(!Number.isSafeInteger(durationValue)||durationValue<1||durationValue>120){setError('Durée invalide');return;}
-  const durationUnit=window.prompt('Unité : DAY / WEEK / MONTH / YEAR',r.durationUnit??r.plan?.durationUnit??'MONTH');
-  if(!durationUnit||!units[durationUnit]){setError('Unité de durée invalide');return;}
+  const price=Number(String(v.price).replace(',','.'));
+  if(!Number.isFinite(price)||price<0)throw new Error('Prix invalide.');
+  const durationValue=Number(v.durationValue);
+  if(!Number.isSafeInteger(durationValue)||durationValue<1||durationValue>120)throw new Error('Durée invalide (1 à 120).');
+  const durationUnit=v.durationUnit;
+  if(!units[durationUnit])throw new Error('Choisissez l’unité de durée.');
   let verified=false,verifiedAmount=0,reference='',adminNote='';
   if(price>0){
-    const amount=window.prompt('Montant effectivement crédité sur D17 / relevé bancaire (DT)',String(price));
-    if(amount===null)return;
-    verifiedAmount=Number(amount.replace(',','.'));
-    if(!Number.isFinite(verifiedAmount)||verifiedAmount<price){setError('Montant vérifié insuffisant');return;}
-    const ref=window.prompt('Référence transaction / rapprochement',r.transferReference||'');
-    if(ref===null)return;
-    reference=ref.trim();
-    if(!reference){
-     const note=window.prompt('Note obligatoire expliquant le rapprochement manuel','');
-     if(!note?.trim())return;
-     adminNote=note;
-    }
-    verified=window.confirm('CONFIRMATION FINANCIÈRE : vous avez constaté le versement sur votre compte réel ? Fixi enregistrera le paiement et activera la période.');
-    if(!verified)return;
+   verifiedAmount=Number(String(v.verifiedAmount).replace(',','.'));
+   if(!Number.isFinite(verifiedAmount)||verifiedAmount<price)throw new Error('Le montant reçu est inférieur au prix convenu.');
+   reference=String(v.reference||'').trim();adminNote=String(v.adminNote||'').trim();
+   if(!reference&&!adminNote)throw new Error('Donnez la référence du versement ou une note expliquant le rapprochement.');
+   if(v.confirm!=='YES')throw new Error('Confirmez que le versement est bien arrivé sur votre compte.');
+   verified=true;
   }
-  await mutate(()=>api('/api/platform/subscription-requests/'+r.id,{
-    method:'PATCH',body:JSON.stringify({action:'APPROVE',planId:r.planId,price,
-      durationValue,durationUnit,paymentMethod:r.paymentMethod,
-      verified,verifiedAmount,reference,adminNote})
-  }),'Demande approuvée après contrôle.');
+  await api('/api/platform/subscription-requests/'+r.id,{method:'PATCH',body:JSON.stringify({action:'APPROVE',planId:r.planId,price,durationValue,durationUnit,paymentMethod:r.paymentMethod,verified,verifiedAmount,reference,adminNote})});
+  setMessage('Demande approuvée après contrôle.');setRefresh(x=>x+1);
  }
  return <section className="control-content subscriptions-v8 fixi-subscription-admin">
+  {reviewing&&<FormDialog title={reviewing.action==='REJECT'?'Refuser la demande':'Valider la demande'} subtitle={reviewing.r.shop?.name||reviewing.r.tenant?.name||''}
+   submitLabel={reviewing.action==='REJECT'?'Refuser':'Valider et activer'} onClose={()=>setReviewing(null)} onSubmit={submitReview}
+   fields={reviewing.action==='REJECT'?[{name:'adminNote',label:'Motif du refus',type:'textarea',required:true,placeholder:'Ex. : virement introuvable sur le relevé'}]:[
+    {name:'price',label:'Prix convenu (DT)',type:'number',required:true,defaultValue:String(reviewing.r.requestedPrice??reviewing.r.plan?.price??0)},
+    {name:'durationValue',label:'Durée',type:'number',required:true,defaultValue:String(reviewing.r.durationValue??reviewing.r.plan?.durationValue??1)},
+    {name:'durationUnit',label:'Unité',type:'select',required:true,defaultValue:reviewing.r.durationUnit??reviewing.r.plan?.durationUnit??'MONTH',options:[['DAY','Jour(s)'],['WEEK','Semaine(s)'],['MONTH','Mois'],['YEAR','An(s)']]},
+    {name:'verifiedAmount',label:'Montant reçu sur D17 / relevé bancaire (DT)',type:'number',defaultValue:String(reviewing.r.requestedPrice??reviewing.r.plan?.price??0),hint:'Laissez tel quel si l’offre est gratuite.'},
+    {name:'reference',label:'Référence du versement',defaultValue:reviewing.r.transferReference||''},
+    {name:'adminNote',label:'Note (obligatoire sans référence)',type:'textarea'},
+    {name:'confirm',label:'J’ai constaté le versement sur le compte réel',type:'select',options:[['YES','Oui, le versement est arrivé']],hint:'Obligatoire pour une offre payante : Fixi enregistre le paiement et active la période.'},
+   ]}/>}
   <div className="fixi-subs-title">
    <div><span className="control-kicker">FACTURATION ATELIER</span><h2>Abonnements des boutiques</h2>
     <p>Créez, modifiez, attribuez et archivez les offres. Fixi Connect reste toujours gratuit pour la commande et la livraison.</p>

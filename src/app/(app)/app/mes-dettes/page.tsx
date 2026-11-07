@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, RefreshCw, ReceiptText, CheckCircle2, Clock3, Package, Wallet } from 'lucide-react';
+import { statusLabel } from '@/lib/labels';
 import styles from '@/components/finance-ledger.module.css';
 
 type Payment = {
@@ -24,7 +25,7 @@ type Statement = {
   collections?:{id:string;reference:string;amount:number;date:string;status:string;method:string;collector:string;collectorName?:string|null}[]}[];
 };
 const currency = (n:number) => Number(n||0).toFixed(3) + ' DT';
-const dt = (v:string|null|undefined) => v ? new Date(v).toLocaleString('fr-TN', {dateStyle:'medium',timeStyle:'short'}) : '—';
+const dt = (v:string|null|undefined) => v ? new Date(v).toLocaleString('fr-FR', {dateStyle:'medium',timeStyle:'short'}) : '—';
 const via = (p:Payment|Pending) => p.collector === 'DRIVER' ? 'Livreur' + (p.collectorName ? ' : '+p.collectorName : '') :
  p.collector === 'DELIVERY_LEGACY' ? 'Livraison (historique)' : 'Fournisseur';
 const method = (s:string) => ({CASH:'Espèces',BANK_TRANSFER:'Virement',CARD:'Carte',D17:'D17',FLOUCI:'Flouci',ONLINE:'En ligne'} as Record<string,string>)[s] || s;
@@ -56,10 +57,10 @@ export default function MySupplierDebts() {
 
   return <main className={styles.page}>
     <div className={styles.head}>
-      <div><Link href="/app/suppliers" className={styles.action}><ArrowLeft size={15}/> Fixi Supplier</Link>
+      <div><Link href="/app/suppliers" className={styles.action}><ArrowLeft size={15}/> Commander une pièce</Link>
         <div style={{marginTop:16}} className={styles.eyebrow}>Compte atelier · Relevé officiel</div>
         <h1>Mes dettes fournisseurs</h1>
-        <p>Le même solde que dans « Fixi Supplier → Mon dû ». Toutes les factures, dates de paiement, produits et justificatifs au même endroit.</p>
+        <p>Le même solde que chez vos fournisseurs. Toutes les factures, dates de paiement, produits et justificatifs au même endroit.</p>
       </div>
       <button className={styles.action} onClick={()=>void load()} disabled={loading}><RefreshCw size={16}/> Actualiser</button>
     </div>
@@ -121,7 +122,7 @@ export default function MySupplierDebts() {
       <div className={styles.panelTop}><div><h2><Clock3 size={17} style={{verticalAlign:'middle'}}/> Commandes pas encore facturées</h2>
         <small>Ces commandes ne sont PAS incluses dans le total dû. Le solde n’augmente qu’après comptabilisation de la facture.</small></div><strong>{data.pendingOrders.length} commande(s)</strong></div>
       <div className={styles.block}>{data.pendingOrders.map(o=><div className={styles.line} key={o.id}>
-        <div><strong>{o.reference}</strong><div><span>{o.supplier} · {dt(o.createdAt)} · {o.status}</span></div>
+        <div><strong>{o.reference}</strong><div><span>{o.supplier} · {dt(o.createdAt)} · {statusLabel(o.status)}</span></div>
           {(o.collections||[]).map(p=><div key={p.id} style={{marginTop:5}}><span>{p.status==='CONFIRMED'?'Avance confirmée':'Encaissement à valider'} : {currency(p.amount)} · {dt(p.date)} · {via(p)} · {p.reference}</span></div>)}
         </div><strong>{currency(o.total)}</strong>
       </div>)}</div>

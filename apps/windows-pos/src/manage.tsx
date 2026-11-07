@@ -4,6 +4,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { Archive, BadgePercent, Ban, Boxes, Check, FileText, KeyRound, Pencil, Plus, Printer, RefreshCw, RotateCcw, Search, ShieldCheck, Trash2, Truck, UserPlus, Warehouse } from 'lucide-react';
 import { Modal, dt } from './dialogs';
 import { findByCode } from './stock-in';
+import { payFr, statusFr } from './codes';
 
 export type Perm = 'sell' | 'cash' | 'discount' | 'refund' | 'customers' | 'customerPay' | 'customerView' | 'productCreate' | 'stockIn' | 'inventory' | 'productEdit' | 'productPrice' | 'productArchive' | 'promo' | 'masters' | 'priceTiers' | 'seeCost' | 'purchases' | 'vendors' | 'vendorPay' | 'expenses' | 'documents' | 'quotes' | 'orders' | 'ordersPrepare' | 'deliveryAssign' | 'driverCash' | 'reports' | 'reportsStock' | 'reportsOwnCash' | 'team' | 'warehouses';
 export const ALL_PERMS: Perm[] = ['sell', 'cash', 'discount', 'refund', 'customers', 'customerPay', 'customerView', 'productCreate', 'stockIn', 'inventory', 'productEdit', 'productPrice', 'productArchive', 'promo', 'masters', 'priceTiers', 'seeCost', 'purchases', 'vendors', 'vendorPay', 'expenses', 'documents', 'quotes', 'orders', 'ordersPrepare', 'deliveryAssign', 'driverCash', 'reports', 'reportsStock', 'reportsOwnCash', 'team', 'warehouses'];
@@ -20,7 +21,7 @@ export const pageAllowed = (page: string, perms: Perm[]) => { const need = PAGE_
 
 const api = <T = any,>(method: string, path: string, body?: unknown) => invoke<T>('supplier_api', { method, path, body: body ?? null });
 const num = (v: string) => { const n = Number(String(v).replace(',', '.')); return Number.isFinite(n) ? n : NaN; };
-const date = (v: string) => v ? new Date(v).toLocaleString('fr-TN', { dateStyle: 'short', timeStyle: 'short' }) : '—';
+const date = (v: string) => v ? new Date(v).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' }) : '—';
 type Ctx = { perms: Perm[]; products: any[]; customers: any[]; demo: boolean; onError: (m: string) => void; onMessage: (m: string) => void; onCatalogChanged: () => void };
 const has = (c: Ctx, p: Perm) => c.perms.includes(p);
 function DemoNote() { return <section className="v5-card v6-inv-start"><ShieldCheck size={34} /><h2>Disponible une fois connecté</h2><p className="v5-hint">Ce module lit et modifie vos vraies données FIXI : connectez la caisse à votre compte fournisseur.</p></section>; }
@@ -245,7 +246,7 @@ function Expenses(c: Ctx) {
     </form>
     <div className="v5-kpis"><div className="v5-kpi"><span>Ce mois-ci</span><b>{dt(month)}</b></div></div>
     <div className="v5-card"><div className="v5-table-wrap"><table className="v5-table"><thead><tr><th>Dépense</th><th>Catégorie</th><th>Mode</th><th className="num">Montant</th></tr></thead><tbody>
-      {rows.map((x: any) => <tr key={x.id}><td><b>{x.label}</b><small>{date(x.expenseDate || x.createdAt)}</small></td><td>{x.category}</td><td>{x.method}</td><td className="num">{dt(Number(x.amount))}</td></tr>)}
+      {rows.map((x: any) => <tr key={x.id}><td><b>{x.label}</b><small>{date(x.expenseDate || x.createdAt)}</small></td><td>{x.category}</td><td>{payFr(x.method)}</td><td className="num">{dt(Number(x.amount))}</td></tr>)}
       {!rows.length && <tr><td colSpan={4} className="v5-hint">{erp.data ? 'Aucune dépense.' : 'Chargement…'}</td></tr>}</tbody></table></div></div>
   </section>;
 }
@@ -264,7 +265,7 @@ function Documents(c: Ctx) {
     <div className="v6-actions"><button className="v5-btn v5-btn--ghost" onClick={reload}><RefreshCw size={15} /> Actualiser</button><button className="v5-btn v5-btn--primary" onClick={() => setOpen(true)}><FileText size={16} /> Nouveau devis / document</button></div>
     {err && <div className="v5-alert v5-alert--danger">{err}</div>}
     <div className="v5-card"><div className="v5-table-wrap"><table className="v5-table"><thead><tr><th>Document</th><th>Client</th><th>Statut</th><th className="num">Total</th><th className="act"></th></tr></thead><tbody>
-      {rows.slice(0, 200).map(d => <tr key={d.id}><td><b>{DOC_LABEL[d.type] || d.type}</b><small className="v5-mono">{d.reference} · {date(d.createdAt)}</small></td><td>{d.partyName || '—'}</td><td><span className="v5-chip">{d.status}</span></td><td className="num">{dt(Number(d.total))}</td>
+      {rows.slice(0, 200).map(d => <tr key={d.id}><td><b>{DOC_LABEL[d.type] || d.type}</b><small className="v5-mono">{d.reference} · {date(d.createdAt)}</small></td><td>{d.partyName || '—'}</td><td><span className="v5-chip">{statusFr(d.status)}</span></td><td className="num">{dt(Number(d.total))}</td>
         <td className="act v6-row-actions"><button className="v5-icon-btn" title="Imprimer" aria-label="Imprimer" onClick={() => setPrint({ ...d, items: itemsOf(d.id) })}><Printer size={15} /></button>
           {d.type === 'QUOTE' && !['CONVERTED', 'CANCELLED'].includes(d.status) && <><button className="v5-btn v5-btn--ghost v5-btn--sm" title="Le devis devient une vente facturée (stock et dette client mis à jour)" onClick={() => { if (confirm('Transformer ce devis en vente facturée ? Le stock sera déduit.')) void convert(d, 'SALE'); }}>→ Vente</button><button className="v5-btn v5-btn--ghost v5-btn--sm" onClick={() => void convert(d, 'DELIVERY_NOTE')}>→ BL</button></>}
           {!['CONVERTED', 'CANCELLED'].includes(d.status) && <button className="v5-icon-btn" title="Annuler" aria-label="Annuler" onClick={() => { if (confirm('Annuler ce document ?')) void status(d, 'CANCELLED'); }}><Ban size={15} /></button>}</td></tr>)}
@@ -311,7 +312,7 @@ function Delivery(c: Ctx) {
   return <section className="v5-stack">
     <div className="v5-kpis"><div className="v5-kpi"><span>À attribuer</span><b>{ready.length}</b></div><div className="v5-kpi"><span>En livraison</span><b>{onRoad.length}</b></div><div className="v5-kpi"><span>Livreurs</span><b>{list.filter(d => d.isActive !== false).length}</b></div></div>
     <div className="v5-card"><div className="v5-table-wrap"><table className="v5-table"><thead><tr><th>Commande</th><th>Atelier</th><th>Statut</th><th className="num">Total</th><th>Livreur</th></tr></thead><tbody>
-      {ready.map((o: any) => <tr key={o.id}><td><b className="v5-mono">{o.reference}</b><small>{date(o.createdAt)}</small></td><td>{o.shop?.name}<small>{o.shop?.region}</small></td><td><span className="v5-chip">{o.status}</span></td><td className="num">{dt(Number(o.total))}</td>
+      {ready.map((o: any) => <tr key={o.id}><td><b className="v5-mono">{o.reference}</b><small>{date(o.createdAt)}</small></td><td>{o.shop?.name}<small>{o.shop?.region}</small></td><td><span className="v5-chip">{statusFr(o.status)}</span></td><td className="num">{dt(Number(o.total))}</td>
         <td><select className="v5-input" defaultValue="" onChange={e => void assign(o, e.target.value)}><option value="">Choisir…</option>{list.filter(d => d.isActive !== false).map(d => <option key={d.id} value={d.id}>{d.fullName}</option>)}</select></td></tr>)}
       {onRoad.map((o: any) => <tr key={o.id} className="is-muted"><td><b className="v5-mono">{o.reference}</b></td><td>{o.shop?.name}</td><td><span className="v5-chip is-ok">{o.status === 'OUT_FOR_DELIVERY' ? 'En route' : 'Attribuée'}</span></td><td className="num">{dt(Number(o.total))}</td><td><Truck size={14} /> {o.delivery?.driverName || '—'}</td></tr>)}
       {!ready.length && !onRoad.length && <tr><td colSpan={5} className="v5-hint">{orders.data ? 'Aucune commande à livrer.' : 'Chargement…'}</td></tr>}</tbody></table></div></div>
