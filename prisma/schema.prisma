@@ -1786,6 +1786,7 @@ model SupplierProduct {
   @@unique([companyId, sku])
   @@index([companyId, active, name])
   @@index([companyId, barcode])
+  @@index([barcode])
   @@index([companyId, categoryId])
   @@index([companyId, brandId])
 }

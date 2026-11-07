@@ -14,6 +14,7 @@ import {waPhone,ticketMessage,waUrl} from './whatsapp';
 import {useArabic} from './i18n';
 import {InvoiceDialog,InvoicePrint,PaymentSlip,type InvoiceData,type PaymentSlipData} from './invoice';
 import {InventoryPage} from './inventory';
+import {StockInPage,findByCode} from './stock-in';
 import {ReportDialog} from './report';
 import {Banknote,BookOpen,Boxes,Check,ChevronRight,CircleAlert,CircleCheck,CreditCard,Delete,HandCoins,Inbox,KeyRound,Landmark,Lock,LockOpen,LogIn,Minus,PackageOpen,PackageSearch,PanelLeftClose,PanelLeftOpen,Plus,Power,Printer,ReceiptText,RefreshCw,ScanBarcode,Search,ShieldCheck,ShoppingCart,Tags,Trash2,TriangleAlert,Truck,Undo2,UserPlus,UserRound,UserRoundCog,Users,Wallet,X,PencilLine,Percent,PauseCircle,PlayCircle,Settings2,WifiOff,CloudUpload,MessageCircle,Download,Flame,ClipboardList,FileText,type LucideIcon,PackagePlus,Wrench} from 'lucide-react';
 import '@fontsource-variable/manrope';
@@ -44,7 +45,7 @@ type Draft={cart:Record<string,number>;customerId:string;amount:string;method:st
 type DebtRequest={saleId?:string;customerId?:string;amount:number;method:string;reference:string};
 type ReturnRequest={sourceSaleId:string;items:{saleItemId:string;quantity:number;restock:boolean;condition:string;reason:string}[];refund:number;refundMethod:string;note:string;reference:string};
 type Result={exists:boolean;reference:string;record?:{reference?:string;remaining?:number}|null};
-type Page='caisse'|'produits'|'stock'|'clients'|'commandes'|'dettes'|'retours'|'historique'|'session'|'livreurs'|'inventaire';
+type Page='caisse'|'produits'|'stock'|'clients'|'commandes'|'dettes'|'retours'|'historique'|'session'|'livreurs'|'inventaire'|'entree';
 // Isolé (\u2066…\u2069) pour que « 185,000 DT » reste lisible en arabe.
 const money=(n:number)=>'\u2066'+new Intl.NumberFormat('fr-TN',{minimumFractionDigits:3,maximumFractionDigits:3}).format(n)+' DT\u2069';
 const initialServer='https://fixi-web.onrender.com';
@@ -61,12 +62,13 @@ const nav:NavItem[]=[
  {id:'produits',icon:BookOpen,label:'Catalogue',hint:'Prix détail et gros de chaque article.'},
  {id:'stock',icon:Boxes,label:'Stock',hint:'Les ruptures d’abord.'},
  {id:'inventaire',icon:ClipboardList,label:'Inventaire',hint:'Scannez les articles du rayon, comparez avec le stock FIXI, corrigez.'},
+ {id:'entree',icon:PackagePlus,label:'Entrée de stock',hint:'Scannez la marchandise reçue : 1 scan = +1 pièce, puis validez.'},
 ];
 const navGroups:{label:string;items:Page[]}[]=[
  {label:'Vente',items:['caisse','historique','retours','session']},
  {label:'Clients',items:['clients','dettes']},
  {label:'Livraison',items:['commandes','livreurs']},
- {label:'Articles',items:['produits','stock','inventaire']},
+ {label:'Articles',items:['produits','stock','entree','inventaire']},
 ];
 const demo:Boot={companyName:'Mode démonstration',role:'DEMO',products:[
  {id:'d1',name:'Écran Samsung A04',sku:'A04-LCD',price:89,stock:12,category:'Afficheurs'},
@@ -221,7 +223,8 @@ function App(){
    setCart(c=>({...c,[id]:Math.max(0,(c[id]||0)+delta)}));setError('');focusScan()
  }
  function barcode(){const value=scan.trim().toLowerCase();if(!value)return;
-  const p=products.find(x=>[x.barcode,x.sku].some(c=>c?.trim().toLowerCase()===value));
+  // Code tapé à la main si la douchette ne marche pas : espaces et majuscules ignorés (« 0000 a04 » = 0000A04).
+  const p=findByCode(products,value);
   if(p){add(p.id,1);setSearch('');setMessage(p.name+' ajouté au panier')}
   else if(canCreateProduct&&!saleRef){setNewCode(scan.trim());setDialog('product');setScan('');return}
   else setError('Code-barres introuvable : '+scan+(canCreateProduct?'':' — demandez au gérant de créer la pièce.'));
@@ -630,6 +633,7 @@ function App(){
     <div className="v5-card"><h2 className="v5-card-title">Remises livreurs</h2>{courierShifts.length===0?<Empty icon={Truck} title="Aucune remise" text="L’historique des remises apparaîtra ici."/>:<div className="v5-table-wrap"><table className="v5-table"><thead><tr><th>Livreur</th><th className="num">Déclaré</th><th className="num">Attendu</th><th>État</th></tr></thead><tbody>{courierShifts.map(x=><tr key={x.id}><td><b>{x.driver?.fullName||'Livreur'}</b></td>
     <td className="num">{money(Number(x.declaredRemit||0))}</td><td className="num">{money(Number(x.expectedCod||0))}</td><td><StatusChip status={x.status}/></td></tr>)}</tbody></table></div>}</div>
    </section>}
+   {page==='entree'&&<StockInPage products={products} storageKey={(draftKey||'demo')+':stock-in'} demo={boot.role==='DEMO'} canEnter={['OWNER','ADMIN','MANAGER','DEMO'].includes(boot.role)} onDone={()=>void refresh()} onError={setError} onMessage={setMessage} onUnknown={code=>{setNewCode(code);setDialog('product')}}/>}
    {page==='inventaire'&&<InventoryPage products={products} storageKey={(draftKey||'demo')+':inventory'} demo={boot.role==='DEMO'} canClose={['OWNER','ADMIN','MANAGER','DEMO'].includes(boot.role)} onDone={()=>void refresh()} onError={setError} onMessage={setMessage}/>}
   </main>
   {page==='caisse'&&<aside className="v5-basket" aria-label="Panier">
@@ -672,7 +676,7 @@ function App(){
   <InvoicePrint data={invoiceData} logo={logo}/>
   {invoiceFor&&<InvoiceDialog reference={invoiceFor.reference} customer={invoiceFor.customer} onClose={()=>setInvoiceFor(null)} onDone={printInvoice}/>}
   {reportOpen&&<ReportDialog page={page} onClose={()=>setReportOpen(false)} onSent={()=>setMessage('Merci, le problème est envoyé à l’équipe Fixi.')}/>}
-  {dialog==='product'&&<NewProductDialog barcode={newCode} onClose={()=>{setDialog('');focusScan()}} onCreate={createProduct}/>}
+  {dialog==='product'&&<NewProductDialog stockIn={page==='entree'} barcode={newCode} onClose={()=>{setDialog('');focusScan()}} onCreate={createProduct}/>}
   {dialog==='free'&&<FreeItemDialog onClose={()=>{setDialog('');focusScan()}} onAdd={x=>setCustom(list=>[...list,{id:crypto.randomUUID(),...x}])}/>}
   {dialog==='discount'&&<DiscountDialog subtotal={subtotal} discount={cartDiscount} onClose={()=>setDialog('')}
    lines={entries.map(e=>({key:e.product.id,name:e.product.name,quantity:e.quantity,base:basePrice(e.product),price:priceFor(e.product)} as DiscountLine))}

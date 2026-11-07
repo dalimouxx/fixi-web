@@ -37,6 +37,8 @@ fn allowed(method: &str, path: &str) -> bool {
         ("GET", ["api", "counter-sales"]) | ("POST", ["api", "counter-sales"]) => true,
         ("GET", ["api", "counter-sales", id]) => id_ok(id),
         ("POST", ["api", "counter-sales", id, "refund"]) => id_ok(id),
+        // Entrée de stock (gérant) : liste des articles, création d'un article, réception.
+        ("GET", ["api", "stock"]) | ("POST", ["api", "stock"]) | ("POST", ["api", "purchases"]) => true,
         _ => false,
     }
 }
@@ -115,5 +117,11 @@ mod tests {
         assert!(!allowed("DELETE", "/api/counter-sales/V-000042"));
         assert!(!allowed("POST", "/api/counter-sales/V-000042/delete"));
         assert!(!allowed("GET", "/api/counter-sales/../users"));
+        assert!(allowed("GET", "/api/stock?q=0000A04"));
+        assert!(allowed("POST", "/api/purchases"));
+        assert!(allowed("POST", "/api/stock"));
+        assert!(!allowed("DELETE", "/api/stock"));
+        assert!(!allowed("PATCH", "/api/stock/x"));
+        assert!(!allowed("GET", "/api/purchases"));
     }
 }
