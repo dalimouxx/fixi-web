@@ -47,6 +47,7 @@ export const atelierNav: NavSection[] = [
     { label: 'Encaisser', href: '/app/cashier', icon: Banknote, roles: ['ADMIN', 'CASHIER'] },
     { label: 'Devis & factures', href: '/app/documents', icon: ReceiptText, roles: ['ADMIN', 'RECEPTION', 'CASHIER'] },
     { label: 'Paiements reçus', href: '/app/payments', icon: Wallet, roles: ['ADMIN', 'CASHIER'] },
+    { label: 'Téléphones d’occasion', href: '/app/occasion', icon: Smartphone, roles: ['ADMIN', 'RECEPTION', 'CASHIER'] },
     { label: 'Ouverture & clôture', href: '/app/cash-sessions', icon: History, roles: ['ADMIN', 'CASHIER'] },
     { label: 'Dépenses', href: '/app/expenses', icon: HandCoins, roles: ['ADMIN'] },
   ] },

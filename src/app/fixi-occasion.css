@@ -1,0 +1,129 @@
+/* Fixi Max — téléphones d'occasion : écrans, étiquette, attestation, registre. */
+.fxm-occ { display: grid; gap: 14px; }
+.fxm-occ-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.fxm-occ-bar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.fxm-occ-bar .fx-searchbar { flex: 1 1 260px; }
+.fxm-occ-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
+.fxm-occ-card { display: grid; gap: 6px; padding: 14px; border-radius: 18px; border: 1px solid var(--fxm-line); background: var(--fxm-card2); color: var(--fxm-tx); text-decoration: none; transition: transform 0.22s var(--fxm-ease), box-shadow 0.22s, border-color 0.22s; }
+.fxm-occ-card:hover { transform: translateY(-3px); border-color: rgba(255, 61, 119, 0.35); box-shadow: 0 18px 36px -18px rgba(109, 63, 217, 0.45); }
+.fxm-occ-card > b { font-size: 16px; font-family: var(--fxm-font-display); letter-spacing: -0.01em; }
+.fxm-occ-card > small { color: var(--fxm-tx3); }
+.fxm-occ-card.st-SOLD { opacity: 0.8; }
+.fxm-occ-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.fxm-occ-num { font: 700 11.5px ui-monospace, monospace; color: var(--fxm-tx3); }
+.fxm-occ-st { font-style: normal; font-size: 11px; font-weight: 800; padding: 3px 9px; border-radius: 999px; }
+.fxm-occ-st.st-IN_STOCK { background: var(--fxm-ok-s); color: var(--fxm-ok); }
+.fxm-occ-st.st-RESERVED { background: var(--fxm-warn-s); color: var(--fxm-warn); }
+.fxm-occ-st.st-SOLD { background: var(--fxm-vio-s); color: var(--fxm-vio); }
+.fxm-occ-st.st-RETURNED { background: var(--fxm-bad-s); color: var(--fxm-bad); }
+.fxm-occ-bat { justify-self: start; display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 800; padding: 3px 9px; border-radius: 999px; background: var(--fxm-ok-s); color: var(--fxm-ok); }
+.fxm-occ-bat.low { background: var(--fxm-warn-s); color: var(--fxm-warn); }
+.fxm-occ-foot { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-top: 4px; font-size: 12.5px; color: var(--fxm-tx3); }
+.fxm-occ-foot strong { font: 800 18px var(--fxm-font-display); color: var(--fxm-tx); }
+.fxm-occ-date { font-size: 11.5px; }
+
+/* Formulaire d'achat */
+.fxm-occ-form { max-width: 980px; }
+.fxm-occ-form .fx-panel { display: grid; gap: 12px; }
+.fxm-occ-form .fx-panel-head h2, .fxm-occ .fx-panel-head h2 { display: inline-flex; align-items: center; gap: 8px; }
+.fxm-occ-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.fxm-occ-chips button { height: 36px; padding: 0 13px; border-radius: 999px; border: 1px solid var(--fxm-line2); background: var(--fxm-card2); color: var(--fxm-tx2); font: 700 13px inherit; font-family: inherit; cursor: pointer; transition: transform 0.15s, background 0.2s, color 0.2s; }
+.fxm-occ-chips button:active { transform: scale(0.96); }
+.fxm-occ-chips button.on { background: var(--fxm-grad); border-color: transparent; color: #fff; box-shadow: 0 6px 16px -6px rgba(255, 61, 119, 0.6); }
+.fxm-occ-check { display: inline-flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 12.5px; font-weight: 700; }
+.fxm-occ-check.ok { color: var(--fxm-ok); } .fxm-occ-check.checking { color: var(--fxm-tx3); }
+.fxm-occ-check.flagged, .fxm-occ-check.invalid, .fxm-occ-bad { color: var(--fxm-bad); font-weight: 700; }
+.fxm-occ-unlock, .fxm-occ-declare { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 14px; border: 1px dashed var(--fxm-line2); font-size: 13.5px; line-height: 1.45; cursor: pointer; }
+.fxm-occ-unlock small { color: var(--fxm-tx3); }
+.fxm-occ-unlock.on { border-style: solid; border-color: var(--fxm-ok); background: var(--fxm-ok-s); }
+.fxm-occ-declare input, .fxm-occ-unlock input { margin-top: 3px; width: 18px; height: 18px; accent-color: #ff3d77; flex: none; }
+.fxm-occ-privacy { display: flex; gap: 6px; align-items: center; margin: 0; font-size: 12.5px; color: var(--fxm-tx3); }
+.fxm-occ-submit { position: sticky; bottom: 12px; z-index: 5; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border-radius: 18px; background: var(--fxm-card2); border: 1px solid var(--fxm-line); box-shadow: var(--fxm-shadow); }
+.fxm-occ-submit span { color: var(--fxm-tx3); font-size: 13px; }
+
+/* Détail et vente */
+.fxm-occ-fresh { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 14px 16px; border-radius: 18px; background: var(--fxm-ok-s); color: var(--fxm-ok); }
+.fxm-occ-fresh div { flex: 1 1 220px; display: grid; } .fxm-occ-fresh span { color: var(--fxm-tx2); font-size: 13px; }
+.fxm-occ-detail { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 14px; align-items: start; }
+.fxm-occ-title { margin: 6px 0 2px; font: 800 26px var(--fxm-font-display); letter-spacing: -0.02em; }
+.fxm-occ-sub { margin: 0 0 12px; color: var(--fxm-tx2); display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.fxm-occ-dl { display: grid; gap: 0; margin: 0; }
+.fxm-occ-dl > div { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-top: 1px solid var(--fxm-line); }
+.fxm-occ-dl dt { color: var(--fxm-tx3); font-size: 13px; } .fxm-occ-dl dd { margin: 0; text-align: end; font-weight: 600; display: inline-flex; gap: 5px; align-items: center; }
+.fxm-occ-dl .ok { color: var(--fxm-ok); } .fxm-occ-dl .warn { color: var(--fxm-warn); }
+.fxm-occ-side { display: grid; gap: 10px; position: sticky; top: 84px; }
+.fxm-occ-kick { font-size: 12px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--fxm-tx3); }
+.fxm-occ-price { font: 800 34px var(--fxm-font-display); background: var(--fxm-grad3); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.fxm-occ-prints { display: flex; gap: 6px; flex-wrap: wrap; padding-top: 8px; border-top: 1px solid var(--fxm-line); }
+.fxm-occ-sold { display: grid; justify-items: center; gap: 8px; padding: 10px; color: var(--fxm-vio); }
+.fxm-occ-msg { margin: 0; color: var(--fxm-ok); font-weight: 600; font-size: 13px; }
+.fxm-occ-modal { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 16px; background: rgba(10, 6, 20, 0.45); backdrop-filter: blur(6px); animation: fxm-up 0.25s var(--fxm-ease); }
+.fxm-occ-sell, .fxm-occ-done { width: min(560px, 100%); max-height: 92vh; overflow: auto; display: grid; gap: 12px; position: relative; }
+.fxm-occ-done { min-height: 380px; }
+.fxm-occ-sum { display: grid; grid-template-columns: auto auto; justify-content: space-between; gap: 4px 12px; padding: 12px 14px; border-radius: 14px; background: var(--fxm-card); }
+.fxm-occ-sum b { font-family: var(--fxm-font-display); text-align: end; }
+.fxm-occ-sellbtns { display: flex; justify-content: flex-end; gap: 8px; }
+@media (max-width: 860px) { .fxm-occ-detail { grid-template-columns: 1fr; } .fxm-occ-side { position: static; } }
+
+/* ---------- Étiquette vitrine ---------- */
+.occ-lbl-page { min-height: 100vh; display: grid; place-content: center; gap: 16px; padding: 20px; background: #f3f1f6; font-family: var(--fxm-font-display, system-ui), system-ui, sans-serif; }
+.occ-lbl-tools { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.occ-lbl-tools [role=group] { display: flex; gap: 4px; padding: 4px; border-radius: 12px; background: #fff; }
+.occ-lbl-tools button { border: 0; border-radius: 9px; padding: 8px 12px; background: transparent; font: 700 13px system-ui; cursor: pointer; }
+.occ-lbl-tools button[aria-pressed=true], .occ-lbl-print { background: linear-gradient(135deg, #ff7a18, #ff3d77) !important; color: #fff; }
+.occ-lbl-print { display: inline-flex; align-items: center; gap: 6px; border-radius: 12px !important; }
+.occ-lbl { width: 58mm; height: 40mm; box-sizing: border-box; padding: 2.5mm 3mm; background: #fff; color: #000; border-radius: 3mm; display: grid; grid-template-rows: auto auto 1fr auto; gap: 1mm; box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15); overflow: hidden; }
+.occ-lbl header { display: flex; align-items: baseline; justify-content: space-between; gap: 2mm; }
+.occ-lbl header b { font-size: 11pt; font-weight: 800; line-height: 1.05; }
+.occ-lbl-gb { font-size: 9pt; font-weight: 800; padding: 0.3mm 1.5mm; border: 0.3mm solid #000; border-radius: 1mm; white-space: nowrap; }
+.occ-lbl-specs { display: flex; flex-wrap: wrap; gap: 0.6mm 2mm; font-size: 6.6pt; font-weight: 600; }
+.occ-lbl-price { align-self: center; font-size: 17pt; font-weight: 900; letter-spacing: -0.3pt; }
+.occ-lbl footer { display: grid; justify-items: start; gap: 0.3mm; }
+.occ-lbl-bar { height: 6mm; max-width: 100%; }
+.occ-lbl footer small { font-size: 5.6pt; color: #333; }
+html[data-label='50x30'] .occ-lbl { width: 50mm; height: 30mm; padding: 1.8mm 2.4mm; }
+html[data-label='50x30'] .occ-lbl header b { font-size: 9pt; } html[data-label='50x30'] .occ-lbl-price { font-size: 13pt; }
+html[data-label='50x30'] .occ-lbl-specs { font-size: 5.6pt; } html[data-label='50x30'] .occ-lbl-bar { height: 4mm; }
+html[data-label='a4'] .occ-lbl { width: 120mm; height: 80mm; padding: 7mm 8mm; border: 1mm solid #000; }
+html[data-label='a4'] .occ-lbl header b { font-size: 22pt; } html[data-label='a4'] .occ-lbl-gb { font-size: 16pt; }
+html[data-label='a4'] .occ-lbl-specs { font-size: 12pt; gap: 1.5mm 4mm; } html[data-label='a4'] .occ-lbl-price { font-size: 36pt; }
+html[data-label='a4'] .occ-lbl-bar { height: 10mm; } html[data-label='a4'] .occ-lbl footer small { font-size: 9pt; }
+@media print {
+  @page { margin: 0; }
+  html[data-label='58x40'] { --pw: 58mm; } 
+  .occ-lbl-page { display: block; padding: 0; background: #fff; min-height: 0; }
+  .occ-lbl { box-shadow: none; border-radius: 0; break-inside: avoid; }
+  html[data-label='a4'] .occ-lbl { margin: 15mm auto; }
+}
+
+/* ---------- Attestation (A4, deux exemplaires) ---------- */
+.occ-att-page { max-width: 210mm; margin: 0 auto; padding: 16px; background: #fff; color: #111; font: 10.5pt/1.5 system-ui, sans-serif; }
+.occ-att-tools { display: flex; gap: 10px; align-items: center; justify-content: center; flex-wrap: wrap; margin-bottom: 12px; }
+.occ-att-tools form { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.occ-att { padding: 8mm 10mm; border: 1px solid #ccc; border-radius: 3mm; break-inside: avoid; }
+.occ-att header { display: flex; justify-content: space-between; gap: 6mm; border-bottom: 1px solid #ccc; padding-bottom: 3mm; }
+.occ-att header small { display: block; color: #555; font-size: 8.5pt; }
+.occ-att-ref { text-align: end; } .occ-att-ref em { display: block; font-style: normal; font-size: 8pt; text-transform: uppercase; letter-spacing: 0.08em; color: #777; }
+.occ-att h1 { font-size: 13pt; margin: 4mm 0 2mm; text-align: center; }
+.occ-att p { margin: 2mm 0; text-align: justify; }
+.occ-att-tab { width: 100%; border-collapse: collapse; margin: 2mm 0; font-size: 10pt; }
+.occ-att-tab th { width: 32mm; text-align: start; color: #555; font-weight: 600; padding: 1.2mm 2mm 1.2mm 0; vertical-align: top; }
+.occ-att-tab td { padding: 1.2mm 0; border-bottom: 1px dotted #ccc; }
+.occ-att-sign { display: grid; grid-template-columns: 1fr 1fr; gap: 10mm; margin-top: 5mm; }
+.occ-att-sign div { height: 24mm; border: 1px solid #bbb; border-radius: 2mm; padding: 2mm 3mm; display: grid; align-content: start; }
+.occ-att-sign small { color: #777; font-size: 8pt; }
+.occ-att-cut { text-align: center; margin: 4mm 0; color: #999; border-top: 1px dashed #bbb; line-height: 0; padding-top: 2mm; }
+@media print { .occ-att-page { padding: 0; } .occ-att { border: 0; padding: 4mm 8mm; } }
+
+/* ---------- Registre ---------- */
+.occ-reg-page { padding: 16px; background: #fff; color: #111; font: 9.5pt/1.4 system-ui, sans-serif; }
+.occ-reg-page h1 { font-size: 15pt; margin: 0; } .occ-reg-sub { color: #555; margin: 2px 0 10px; }
+.occ-reg { width: 100%; border-collapse: collapse; }
+.occ-reg th, .occ-reg td { border: 1px solid #ccc; padding: 4px 6px; text-align: start; vertical-align: top; }
+.occ-reg th { background: #f3f1f6; font-size: 8.5pt; }
+@media print { @page { size: A4 landscape; margin: 10mm; } .occ-reg-page { padding: 0; } }
+@media (prefers-reduced-motion: reduce) { .fxm-occ-card, .fxm-occ-modal { animation: none !important; transition: none !important; } }
+.fxm-occ > .btn { justify-self: start; }
+.fxm-occ-pricebox { display: flex !important; gap: 6px; align-items: center; }
+.fxm-occ-pricebox .input { flex: 1; min-width: 0; }
+.fxm-occ-pricebox .btn { flex: none; height: 44px; }
