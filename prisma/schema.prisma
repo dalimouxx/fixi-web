@@ -3089,3 +3089,21 @@ enum SelfCheckInStatus {
   CONVERTED
   DISMISSED
 }
+
+/// Accès « mode support » du super admin à une boutique ou un fournisseur (journal visible dans Fixi Control).
+model SupportAccess {
+  id         String    @id @default(cuid())
+  adminId    String
+  adminName  String
+  kind       String // SHOP | SUPPLIER
+  targetId   String
+  targetName String
+  reason     String
+  ip         String?
+  startedAt  DateTime  @default(now())
+  expiresAt  DateTime
+  endedAt    DateTime?
+
+  @@index([startedAt])
+  @@index([kind, targetId])
+}

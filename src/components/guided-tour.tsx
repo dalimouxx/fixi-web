@@ -28,6 +28,7 @@ export function GuidedTour({ space }: { space: 'atelier' | 'supplier' }) {
   useEffect(() => {
     let seen = true;
     try { seen = !!localStorage.getItem(key(space)); } catch {}
+    if (document.cookie.includes('fixi_support_ui=')) seen = true; // mode support : pas de visite guidée
     const t = seen ? null : setTimeout(() => setOpen(true), 900);
     const replay = () => { setI(0); setOpen(true); };
     window.addEventListener('fixi:tour', replay);
