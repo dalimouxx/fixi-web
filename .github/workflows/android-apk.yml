@@ -17,8 +17,12 @@ jobs:
   apk:
     runs-on: ubuntu-latest
     env:
-      TWA_HOST: ${{ inputs.host || vars.TWA_HOST || 'fixi-web.onrender.com' }}
+      TWA_HOST: ${{ inputs.host || vars.TWA_HOST || vars.FIXI_PUBLIC_URL || 'fixi-web.onrender.com' }}
     steps:
+      - name: Adresse du site sans https:// ni « / » final
+        run: |
+          h="${TWA_HOST#https://}"; h="${h#http://}"; h="${h%%/*}"
+          echo "TWA_HOST=$h" >> "$GITHUB_ENV"
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
@@ -61,7 +65,7 @@ jobs:
           "$BT/apksigner" sign --ks android/fixi.keystore --ks-key-alias fixi --ks-pass env:KS_PASS --key-pass env:KS_PASS --out android/Fixi.apk android/fixi-aligned.apk
           jarsigner -keystore android/fixi.keystore -storepass "$KS_PASS" -keypass "$KS_PASS" android/build/app/build/outputs/bundle/release/app-release.aab fixi
           cp android/build/app/build/outputs/bundle/release/app-release.aab android/Fixi.aab
-          echo "### Empreinte à mettre dans TWA_SHA256 (Render)" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Empreinte à mettre dans TWA_SHA256 (fichier .env du serveur)" >> "$GITHUB_STEP_SUMMARY"
           keytool -list -v -keystore android/fixi.keystore -alias fixi -storepass "$KS_PASS" | grep "SHA256:" | sed 's/.*SHA256: //' >> "$GITHUB_STEP_SUMMARY"
       - name: Publier pour le téléchargement direct (/android)
         env:

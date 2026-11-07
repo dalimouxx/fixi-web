@@ -11,7 +11,7 @@ import { defaultSettings, readJson, SETTINGS_KEY, type Settings } from './storag
 
 type Opt = { regions?: string[]; shops?: { slug: string; name: string }[]; users?: { id: string; fullName: string; roleLabel: string }[] };
 type Session = { fullName: string; role?: string; roleLabel: string; accessTier: string; shopName: string };
-const SERVER = 'https://fixi-web.onrender.com';
+const SERVER = ((import.meta as any).env?.VITE_FIXI_SERVER as string | undefined) || 'https://fixi-web.onrender.com';
 const KEY = 'fixi-atelier-last';
 const req = <T,>(method: string, path: string, body?: unknown) => invoke<T>('atelier_request', { method, path, body: body ?? null });
 const clean = (e: unknown) => String(e).replace(/^(PRO_REQUIS|SESSION_EXPIREE):\s*/, '');

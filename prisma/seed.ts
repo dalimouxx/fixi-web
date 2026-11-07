@@ -6,8 +6,15 @@ import { compatibilityPack2 } from './compatibility-pack-2';
 const prisma = new PrismaClient();
 
 async function main() {
+  // SEED_MODE=production (serveur réel) : base vierge. On crée le compte Fixi Control, les formules, le catalogue
+  // d'appareils, les compatibilités et les formations. AUCUNE boutique de démonstration, aucun PIN par défaut.
+  const production = process.env.SEED_MODE === 'production';
   const platformLogin = process.env.PLATFORM_ADMIN_LOGIN || 'platform';
   const platformPassword = process.env.PLATFORM_ADMIN_PASSWORD || 'ChangeMe-Fixi-2026!';
+  if (production) {
+    const weak = !process.env.PLATFORM_ADMIN_PASSWORD || platformPassword.length < 12 || /^(changeme|password|admin|platform)/i.test(platformPassword);
+    if (weak) { console.error('SEED_MODE=production : PLATFORM_ADMIN_PASSWORD doit être défini (12 caractères minimum, pas un mot de passe par défaut).'); process.exit(1); }
+  }
   const initialShopSlug = (process.env.INITIAL_SHOP_SLUG || 'atelier-principal').toLowerCase();
   const initialShopName = process.env.INITIAL_SHOP_NAME || 'Mon Atelier';
   const initialShopRegion = process.env.INITIAL_SHOP_REGION || 'Gabès';
@@ -42,51 +49,53 @@ async function main() {
     if(plan && Number(plan.price)===0 && Number(plan.priceMonthly)>0) await prisma.plan.update({where:{id:plan.id},data:{price:plan.priceMonthly,durationValue:1,durationUnit:DurationUnit.MONTH,publicVisible:true}});
   }
 
-  let shop = await prisma.shop.findUnique({ where: { slug: initialShopSlug } });
-  if (!shop) {
-    const tenant = await prisma.tenant.create({ data: { name: initialShopName } });
-    shop = await prisma.shop.create({
-      data: {
-        tenantId: tenant.id,
-        name: initialShopName,
-        slug: initialShopSlug,
-        region: initialShopRegion,
-        countryCode: '216',
-        currency: 'DT',
-      },
-    });
-    await prisma.subscription.create({ data: { tenantId: tenant.id, planId: starter.id, status: SubscriptionStatus.ACTIVE } });
-  } else {
-    if (!shop.region || shop.region === 'Non classée') shop = await prisma.shop.update({ where: { id: shop.id }, data: { region: initialShopRegion } });
-    const existingSub = await prisma.subscription.findFirst({ where: { tenantId: shop.tenantId } });
-    if (!existingSub) await prisma.subscription.create({ data: { tenantId: shop.tenantId, planId: starter.id, status: SubscriptionStatus.ACTIVE } });
-  }
+  if (!production) {
+    let shop = await prisma.shop.findUnique({ where: { slug: initialShopSlug } });
+    if (!shop) {
+      const tenant = await prisma.tenant.create({ data: { name: initialShopName } });
+      shop = await prisma.shop.create({
+        data: {
+          tenantId: tenant.id,
+          name: initialShopName,
+          slug: initialShopSlug,
+          region: initialShopRegion,
+          countryCode: '216',
+          currency: 'DT',
+        },
+      });
+      await prisma.subscription.create({ data: { tenantId: tenant.id, planId: starter.id, status: SubscriptionStatus.ACTIVE } });
+    } else {
+      if (!shop.region || shop.region === 'Non classée') shop = await prisma.shop.update({ where: { id: shop.id }, data: { region: initialShopRegion } });
+      const existingSub = await prisma.subscription.findFirst({ where: { tenantId: shop.tenantId } });
+      if (!existingSub) await prisma.subscription.create({ data: { tenantId: shop.tenantId, planId: starter.id, status: SubscriptionStatus.ACTIVE } });
+    }
 
-  const admin = await prisma.user.findUnique({ where: { shopId_loginCode: { shopId: shop.id, loginCode: initialAdminLogin } } });
-  if (!admin) {
-    const pinHash = await bcrypt.hash(initialAdminPin, 12);
-    await prisma.user.create({
-      data: {
-        shopId: shop.id,
-        loginCode: initialAdminLogin,
-        fullName: 'Administrateur',
-        role: UserRole.ADMIN,
-        pinHash,
-        isActive: true,
-        mustChangePin: true,
-      },
-    });
-  }
+    const admin = await prisma.user.findUnique({ where: { shopId_loginCode: { shopId: shop.id, loginCode: initialAdminLogin } } });
+    if (!admin) {
+      const pinHash = await bcrypt.hash(initialAdminPin, 12);
+      await prisma.user.create({
+        data: {
+          shopId: shop.id,
+          loginCode: initialAdminLogin,
+          fullName: 'Administrateur',
+          role: UserRole.ADMIN,
+          pinHash,
+          isActive: true,
+          mustChangePin: true,
+        },
+      });
+    }
 
-  const types: Array<[string, DeviceCategory, boolean, number | null]> = [
-    ['Écran cassé', DeviceCategory.PHONE, false, null],
-    ['Batterie', DeviceCategory.PHONE, false, null],
-    ['Connecteur de charge', DeviceCategory.PHONE, false, null],
-    ['Diagnostic PC', DeviceCategory.COMPUTER, false, null],
-  ];
-  for (const [name, category, isFixedPrice, fixedPrice] of types) {
-    const exists = await prisma.repairType.findFirst({ where: { shopId: shop.id, name, category } });
-    if (!exists) await prisma.repairType.create({ data: { shopId: shop.id, name, category, isFixedPrice, fixedPrice } });
+    const types: Array<[string, DeviceCategory, boolean, number | null]> = [
+      ['Écran cassé', DeviceCategory.PHONE, false, null],
+      ['Batterie', DeviceCategory.PHONE, false, null],
+      ['Connecteur de charge', DeviceCategory.PHONE, false, null],
+      ['Diagnostic PC', DeviceCategory.COMPUTER, false, null],
+    ];
+    for (const [name, category, isFixedPrice, fixedPrice] of types) {
+      const exists = await prisma.repairType.findFirst({ where: { shopId: shop.id, name, category } });
+      if (!exists) await prisma.repairType.create({ data: { shopId: shop.id, name, category, isFixedPrice, fixedPrice } });
+    }
   }
 
   await prisma.platformSettings.upsert({ where:{id:'platform'}, update:{}, create:{id:'platform',appName:'Fixi',primaryColor:'#FF6B00'} });
@@ -271,9 +280,8 @@ async function main() {
   const delivered=await prisma.repair.findMany({where:{status:RepairStatus.DELIVERED,deliveredAt:{not:null},warrantyDays:{gt:0}},select:{id:true,shopId:true,clientId:true,deliveredAt:true,warrantyDays:true}});
   for(const r of delivered){if(!r.deliveredAt)continue;const exists=await prisma.digitalWarranty.findUnique({where:{repairId:r.id}});if(!exists){const endsAt=new Date(r.deliveredAt.getTime()+r.warrantyDays*86400000);await prisma.digitalWarranty.create({data:{shopId:r.shopId,clientId:r.clientId,repairId:r.id,startsAt:r.deliveredAt,endsAt,coverageText:`Garantie atelier ${r.warrantyDays} jours sur l’intervention réalisée.`}})}}
 
-  console.log('Fixi V10 seed OK');
-  console.log(`Boutique initiale : ${initialShopSlug}`);
-  console.log(`Administrateur atelier : ${initialAdminLogin}`);
+  console.log(production ? 'Fixi seed OK (production : base vierge, aucune boutique de démonstration)' : 'Fixi V10 seed OK');
+  if (!production) { console.log(`Boutique initiale : ${initialShopSlug}`); console.log(`Administrateur atelier : ${initialAdminLogin}`); }
   console.log(`Plateforme SaaS : ${platformLogin}`);
 }
 
