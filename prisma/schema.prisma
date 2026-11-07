@@ -756,6 +756,8 @@ model CounterSale {
   /// Montant déjà remboursé au client.
   refundedTotal Decimal           @default(0) @db.Decimal(12, 3)
   note          String?
+  /// Référence créée par la caisse (vente faite hors ligne) : un renvoi ne crée jamais de doublon.
+  clientRef     String?
   createdAt     DateTime          @default(now())
   lines         CounterSaleLine[]
   payments      Payment[]
@@ -763,6 +765,7 @@ model CounterSale {
 
   @@unique([shopId, number])
   @@index([shopId, createdAt])
+  @@index([shopId, clientRef])
 }
 
 model CounterSaleLine {
