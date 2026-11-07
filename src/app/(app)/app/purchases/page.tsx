@@ -1,4 +1,5 @@
 'use client';
+import { ShopSuppliersPanel } from '@/components/shop-suppliers';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Plus, Trash2, PackagePlus, Truck, PackageOpen } from 'lucide-react';
@@ -26,6 +27,8 @@ export default function Purchases() {
   return <div className="fx-page">
     <div className="fx-hello"><div><h1>Achats</h1><p>Pièces achetées hors Fixi : à la réception, le stock est mis à jour.</p></div>
       <button className="btn btn-primary" onClick={() => setOpen(true)}><PackagePlus size={18} /> Recevoir un achat</button></div>
+
+    <ShopSuppliersPanel onChanged={() => fetch('/api/suppliers').then(r => r.ok ? r.json() : []).then(setSuppliers).catch(() => {})} />
 
     <section className="fx-kpis" aria-label="Résumé">
       <div className="fx-kpi"><PackagePlus /><div><span>Achats ce mois</span><strong>{money(month)}</strong></div></div>

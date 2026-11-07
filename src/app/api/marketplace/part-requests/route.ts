@@ -1,4 +1,5 @@
 import { NotificationType, UserRole } from '@prisma/client';
+import { requireVerifiedShop } from '@/lib/shop-verification';
 import { prisma } from '@/lib/prisma';
 import { requireSession } from '@/lib/auth';
 import { bad, ok } from '@/lib/http';
@@ -22,6 +23,7 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const s = await requireSession(ROLES, 'CONNECT');
+    await requireVerifiedShop(s.shopId);
     const v = validPartRequest(await req.json().catch(() => ({})));
     if (!v.ok) return bad(v.error);
     const open = await prisma.supplierPartRequest.count({ where: { shopId: s.shopId, status: 'OPEN', expiresAt: { gt: new Date() } } });
@@ -41,6 +43,7 @@ export async function POST(req: Request) {
 export async function PATCH(req: Request) {
   try {
     const s = await requireSession(ROLES, 'CONNECT');
+    await requireVerifiedShop(s.shopId);
     const b = await req.json().catch(() => ({}));
     const r = await prisma.supplierPartRequest.findFirst({ where: { id: String(b.id || ''), shopId: s.shopId }, include: { quotes: true } });
     if (!r) return bad('Demande introuvable', 404);

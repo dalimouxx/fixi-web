@@ -19,7 +19,8 @@ export default function Stock() {
   const [refresh, setRefresh] = useState(0);
   const [open, setOpen] = useState(false);
   const [edit, setEdit] = useState<any>(null);
-  const { data, loading, error } = useApi<any[]>(`/api/stock?q=${encodeURIComponent(q)}`, refresh);
+  const archived = filter === 'archived';
+  const { data, loading, error } = useApi<any[]>(`/api/stock?q=${encodeURIComponent(q)}${archived ? '&archived=1' : ''}`, refresh);
   const suppliers = useApi<any[]>('/api/suppliers').data || [];
   const [f, setF] = useState<any>(empty);
   const [scan, setScan] = useState<'field' | 'search' | null>(null);
@@ -28,7 +29,7 @@ export default function Stock() {
   const low = rows.filter(x => x.quantity <= x.minQuantity);
   const value = rows.reduce((a, x) => a + Number(x.quantity) * Number(x.purchasePrice || 0), 0);
   const cats = useMemo(() => [...new Set(rows.map(x => x.category).filter(Boolean))].slice(0, 8) as string[], [rows]);
-  const shown = rows.filter(x => filter === 'all' ? true : filter === 'low' ? x.quantity <= x.minQuantity : x.category === filter);
+  const shown = rows.filter(x => filter === 'all' || archived ? true : filter === 'low' ? x.quantity <= x.minQuantity : x.category === filter);
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -37,6 +38,13 @@ export default function Stock() {
       else await api('/api/stock', { method: 'POST', body: JSON.stringify(f) });
       setOpen(false); setEdit(null); setF(empty); setRefresh(x => x + 1);
     } catch (err: any) { alert(err.message); }
+  }
+  async function remove(x: any) {
+    if (!confirm(`Supprimer « ${x.name} » ?\n\nS’il a déjà servi (ventes, réparations, achats), il sera archivé : caché partout, mais son historique reste juste.`)) return;
+    try { const r: any = await api(`/api/stock/${x.id}`, { method: 'DELETE' }); setOpen(false); setEdit(null); setF(empty); setRefresh(v => v + 1); alert(r.message); } catch (err: any) { alert(err.message); }
+  }
+  async function restore(x: any) {
+    try { await api(`/api/stock/${x.id}`, { method: 'PATCH', body: JSON.stringify({ active: true }) }); setRefresh(v => v + 1); } catch (err: any) { alert(err.message); }
   }
   async function adjust(x: any, d: number) {
     try { await api(`/api/stock/${x.id}`, { method: 'PATCH', body: JSON.stringify({ quantity: Math.max(0, x.quantity + d) }) }); setRefresh(v => v + 1); } catch (err: any) { alert(err.message); }
@@ -61,6 +69,7 @@ export default function Stock() {
         <button type="button" aria-pressed={filter === 'all'} onClick={() => setFilter('all')}>Tout</button>
         <button type="button" aria-pressed={filter === 'low'} onClick={() => setFilter('low')} data-tone="danger">À racheter {low.length > 0 && <b>{low.length}</b>}</button>
         {cats.map(c => <button type="button" key={c} aria-pressed={filter === c} onClick={() => setFilter(c)}>{c}</button>)}
+        <button type="button" aria-pressed={archived} onClick={() => setFilter(archived ? 'all' : 'archived')}>Archivés</button>
       </div>
     </div>
 
@@ -74,7 +83,8 @@ export default function Stock() {
             <b className={isLow ? 'is-low' : ''}>{x.quantity}</b>
             <button type="button" onClick={() => adjust(x, 1)} aria-label="Ajouter une pièce"><Plus size={16} /></button>
           </div>
-          {isLow && <Link href={`/app/suppliers?q=${encodeURIComponent(x.name)}`} className="btn btn-soft btn-sm fx-stock-order"><PackageOpen size={15} /> Commander</Link>}
+          {archived && <button type="button" className="btn btn-soft btn-sm" onClick={() => restore(x)}>Restaurer</button>}
+          {isLow && !archived && <Link href={`/app/suppliers?q=${encodeURIComponent(x.name)}`} className="btn btn-soft btn-sm fx-stock-order"><PackageOpen size={15} /> Commander</Link>}
         </div>; })}
         {!shown.length && <div className="fx-empty"><b>{filter === 'low' ? 'Rien à racheter' : 'Aucune pièce'}</b><span>{filter === 'low' ? 'Toutes vos pièces sont au-dessus du seuil d’alerte.' : 'Ajoutez vos pièces pour suivre le stock et la marge.'}</span>{filter !== 'low' && <button className="btn btn-primary" onClick={() => setOpen(true)}><Plus size={18} /> Nouvelle pièce</button>}</div>}
       </div>}
@@ -93,6 +103,7 @@ export default function Stock() {
         <label className="field span-2"><span className="label">Fournisseur</span><select className="select" value={f.supplierId} onChange={e => setF({ ...f, supplierId: e.target.value })}><option value="">Aucun</option>{suppliers.map((s: any) => <option value={s.id} key={s.id}>{s.name}</option>)}</select></label>
         {f.salePrice > 0 && f.purchasePrice > 0 && <p className="span-2 fx-form-hint">Marge : {money(f.salePrice - f.purchasePrice)} par pièce ({Math.round((1 - f.purchasePrice / f.salePrice) * 100)} %)</p>}
         <button className="btn btn-primary btn-block span-2">{edit ? 'Enregistrer' : 'Ajouter la pièce'}</button>
+        {edit && <button type="button" className="btn btn-ghost btn-block span-2 fx-danger-text" onClick={() => remove(edit)}>Supprimer la pièce</button>}
       </form>
     </FxSheet>
   {scan && <BarcodeCamera kicker="STOCK" title={scan === 'field' ? 'Scanner le code-barres' : 'Retrouver une pièce'} text="Présentez le code-barres de l’emballage devant la caméra." submitLabel={scan === 'field' ? 'Utiliser ce code' : 'Chercher'} onDetected={(c: string) => { if (scan === 'field') setF((x: any) => ({ ...x, barcode: c })); else setQ(c); setScan(null); }} onClose={() => setScan(null)} />}

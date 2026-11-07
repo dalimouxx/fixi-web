@@ -34,3 +34,31 @@ export async function POST(req: Request, { params }: { params: Promise<{ code: s
     return ok(plain(result.part), { status: 201 });
   } catch (e: any) { return bad(e.message, e.status || 500); }
 }
+
+/** Retirer une pièce ajoutée par erreur (?partId=) : la quantité revient dans le stock. */
+export async function DELETE(req: Request, { params }: { params: Promise<{ code: string }> }) {
+  try {
+    const s = await requireSession([UserRole.ADMIN, UserRole.TECHNICIAN]);
+    const { code } = await params;
+    const partId = new URL(req.url).searchParams.get('partId') || '';
+    const repair = await prisma.repair.findUnique({ where: { shopId_code: { shopId: s.shopId, code } } });
+    if (!repair) return bad('Réparation introuvable', 404);
+    if (s.role === UserRole.TECHNICIAN && repair.technicianId && repair.technicianId !== s.id) return bad('Accès refusé', 403);
+    if (repair.status === 'DELIVERED') return bad('Appareil déjà rendu : la pièce ne peut plus être retirée.', 409);
+    const part = await prisma.repairPart.findFirst({ where: { id: partId, repairId: repair.id } });
+    if (!part) return bad('Pièce introuvable sur cette réparation', 404);
+    await prisma.$transaction(async tx => {
+      await tx.repairPart.delete({ where: { id: part.id } });
+      if (part.inventoryItemId) {
+        const item = await tx.inventoryItem.findFirst({ where: { id: part.inventoryItemId, shopId: s.shopId } });
+        if (item) {
+          const updated = await tx.inventoryItem.update({ where: { id: item.id }, data: { quantity: { increment: part.quantity } } });
+          await tx.stockMovement.create({ data: { shopId: s.shopId, inventoryItemId: item.id, userId: s.id, type: StockMovementType.RETURN, quantityChange: part.quantity, quantityAfter: updated.quantity, unitCost: part.unitCost, reference: repair.code, note: `Retirée de ${repair.code}` } });
+        }
+      }
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+    await audit(s.shopId, s.id, 'REMOVE_PART', 'REPAIR', repair.id, { partId: part.id, name: part.name, qty: part.quantity });
+    if (part.inventoryItemId) publish(s.shopId, 'stock.changed', { itemId: part.inventoryItemId });
+    return ok({ ok: true, restocked: !!part.inventoryItemId });
+  } catch (e: any) { return bad(e.message, e.status || 500); }
+}

@@ -1,4 +1,5 @@
 import { learnTac } from '@/lib/tac';
+import { cleanIssues, issuesTotal } from '@/lib/repair-issues';
 import { notifyRepairClient } from '@/lib/client-messages';
 import { prisma } from '@/lib/prisma';
 import { requireSession } from '@/lib/auth';
@@ -52,6 +53,8 @@ export async function POST(req: Request) {
   try {
     const s = await requireSession([UserRole.ADMIN, UserRole.RECEPTION, UserRole.CASHIER]);
     const raw = await req.json();
+    // Plusieurs pannes : liste détaillée (prix par panne) en plus du texte « Écran + Batterie ».
+    const issueList = cleanIssues(raw?.issues);
     const b = repairCreateSchema.parse(raw);
     if (b.technicianId) {
       const technician=await prisma.user.findFirst({where:{id:b.technicianId,shopId:s.shopId,role:UserRole.TECHNICIAN,isActive:true}});
@@ -79,7 +82,8 @@ export async function POST(req: Request) {
           reportedIssue: b.reportedIssue,
           priority: b.priority as RepairPriority,
           technicianId: b.technicianId || null,
-          estimatedPrice: b.estimatedPrice ?? null,
+          estimatedPrice: b.estimatedPrice ?? issuesTotal(issueList),
+          issues: issueList.length ? (issueList as any) : undefined,
           finalPrice: b.finalPrice ?? null,
           warrantyDays: b.warrantyDays,
           promisedAt: b.promisedAt ? new Date(b.promisedAt) : null,

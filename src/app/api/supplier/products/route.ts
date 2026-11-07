@@ -1,4 +1,5 @@
 import {prisma} from '@/lib/prisma';
+import {SUPPLIER_COST_ROLES,stripCosts} from '@/lib/stock-delete';
 import {resolveBarcode} from '@/lib/supplier-barcode';
 import {requireSupplierRole,requireSupplierSession} from '@/lib/supplier-auth';
 import {bad,ok} from '@/lib/http';
@@ -22,7 +23,9 @@ async function resolveMaster(companyId:string,categoryId?:string|null,brandId?:s
 export async function GET(){
  try{
   const s=await requireSupplierSession();
-  return ok(plain(await prisma.supplierProduct.findMany({where:{companyId:s.companyId},orderBy:[{active:'desc'},{updatedAt:'desc'}]})));
+  const rows=await prisma.supplierProduct.findMany({where:{companyId:s.companyId},orderBy:[{active:'desc'},{updatedAt:'desc'}]});
+  // Prix d'achat et coûts : seulement pour le gérant, le magasinier et le comptable (pas le livreur ni le caissier).
+  return ok(plain(SUPPLIER_COST_ROLES.includes(s.role)?rows:rows.map(stripCosts)));
  }catch(e:any){return bad(e.message,e.status||500)}
 }
 
@@ -74,7 +77,8 @@ export async function PATCH(req:Request){
   const strFields=['name','description','imageUrl','qualityGrade','barcode','location'];
   for(const k of strFields)if(b[k]!==undefined)data[k]=String(b[k]||'').trim()||null;
   if(b.barcode!==undefined)data.barcode=await resolveBarcode(prisma as any,s.companyId,{barcode:b.barcode,name:String(b.name||current.name),category:current.category,exceptId:id});
-  if(b.sku!==undefined)data.sku=String(b.sku).trim().toUpperCase();
+  if(b.sku!==undefined&&String(b.sku).trim())data.sku=String(b.sku).trim().toUpperCase();
+  if(b.name!==undefined&&!String(b.name||'').trim())return bad('Nom du produit requis');
   if(b.categoryId!==undefined){data.categoryId=b.categoryId||null;data.category=category?.name||null}
   if(b.brandId!==undefined){data.brandId=b.brandId||null;data.brand=brand?.name||null}
   if(b.unitId!==undefined)data.unitId=b.unitId||null;

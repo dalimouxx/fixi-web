@@ -38,14 +38,25 @@ test('1 · un réparateur crée son compte seul (offre gratuite)', async ({ brow
   await atelier.locator('.su-accept input').check();
   await atelier.getByRole('button', { name: /Créer mon compte gratuit/ }).click();
   await expect(atelier).toHaveURL(/\/app\/suppliers/, { timeout: 30_000 });
-  await expect(atelier.getByText('Premiers pas')).toBeVisible();
+  // Inscription libre : pas de catalogue fournisseurs avant la vérification par Fixi Control.
+  await expect(atelier.getByRole('heading', { name: 'Faites vérifier votre atelier' })).toBeVisible();
+  expect((await atelier.request.get('/api/marketplace/products?q=')).status()).toBe(403);
+  const img = 'data:image/jpeg;base64,' + Buffer.alloc(900, 7).toString('base64');
+  const sent = await atelier.request.post('/api/verification', { data: { legalName: `Atelier Robot ${RUN}`, ownerName: 'Robot Test', taxId: '1234567A/A/M/000', address: 'Avenue Habib Bourguiba, Gabès', city: 'Gabès', documentUrl: img, facadeUrl: img } });
+  expect(sent.ok(), await sent.text()).toBeTruthy();
 });
 
 test('2 · Fixi Control crée un fournisseur', async ({ request }) => {
   const login = await request.post('/api/platform/auth/login', { data: PLATFORM });
   expect(login.ok(), await login.text()).toBeTruthy();
   const r = await request.post('/api/platform/suppliers', { data: { ...SUPPLIER, fullName: 'Gérant Robot', region: 'Gabès', verified: true } });
-  expect(r.status(), await r.text()).toBe(201);
+  expect(r.status(), await r.text()).toBe(201);  // Fixi Control vérifie l'atelier inscrit au test 1 : son catalogue fournisseurs s'ouvre.
+  const pending = await (await request.get('/api/platform/verifications?status=PENDING')).json();
+  const shop = pending.rows.find((x: any) => x.name === `Atelier Robot ${RUN}`);
+  expect(shop?.file?.taxId).toBe('1234567A/A/M/000');
+  const ok = await request.post('/api/platform/verifications', { data: { shopId: shop.id, decision: 'VERIFIED' } });
+  expect(ok.ok(), await ok.text()).toBeTruthy();
+  expect((await atelier.request.get('/api/marketplace/products?q=')).status()).toBe(200);
 });
 
 test('3 · le fournisseur ajoute un produit avec 3 champs et lance une promo', async ({ browser }) => {
