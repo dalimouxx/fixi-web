@@ -51,7 +51,8 @@ type Page='caisse'|'produits'|'stock'|'clients'|'commandes'|'dettes'|'retours'|'
 const MANAGE_PAGES:Page[]=['gestion','achats','depenses','documents','livraison','rapports','equipe','depots','droits'];
 // Isolé (\u2066…\u2069) pour que « 185,000 DT » reste lisible en arabe.
 const money=(n:number)=>'\u2066'+new Intl.NumberFormat('fr-TN',{minimumFractionDigits:3,maximumFractionDigits:3}).format(n)+' DT\u2069';
-const initialServer='https://fixi-web.onrender.com';
+/** Adresse du serveur proposée à la connexion : fixée à la construction (variable FIXI_PUBLIC_URL de GitHub), modifiable dans l'écran de connexion. */
+const initialServer=((import.meta as any).env?.VITE_FIXI_SERVER as string|undefined)||'https://fixi-web.onrender.com';
 type NavItem={id:Page;icon:LucideIcon;label:string;hint?:string};
 const nav:NavItem[]=[
  {id:'caisse',icon:ShoppingCart,label:'Caisse'},

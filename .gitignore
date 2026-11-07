@@ -16,3 +16,7 @@ android/build/
 android/*.keystore
 android/*.apk
 android/*.aab
+
+# Serveur VPS : états locaux et configuration de copie des sauvegardes (jamais dans git)
+deploy/vps/.state/
+deploy/vps/rclone/

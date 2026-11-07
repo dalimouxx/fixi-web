@@ -38,7 +38,7 @@ export const FAQ: { q: L; a: L }[] = [
   { q: { fr: 'Comment ajouter mon fournisseur habituel ?', ar: 'كيف أضيف مزودي المعتاد؟' }, a: { fr: 'Commander une pièce → « Inviter mon fournisseur » : il reçoit un lien pour créer son espace.', ar: 'المزودون ← «ادعُ مزودي»: يستلم رابطاً لإنشاء فضائه.' } },
 ];
 
-export function pitch(app = 'Fixi', url = 'https://fixi-web.onrender.com/inscription') {
+export function pitch(app = 'Fixi', url = (process.env.NEXT_PUBLIC_APP_URL || '') + '/inscription') {
   return {
     fr: `Bonjour 👋 Je vous présente ${app}, l’application des ateliers de réparation en Tunisie : commandez vos pièces chez les fournisseurs, suivez la livraison, gérez vos dettes — gratuitement. Réparations, stock et caisse avec ${app} Pro (essai gratuit). Inscription en 2 minutes : ${url}`,
     ar: `مرحباً 👋 أقدّم لك ${app}، تطبيق ورشات الإصلاح في تونس: اطلب قطعك من المزودين، تابع التوصيل، وتصرّف في ديونك — مجاناً. الإصلاحات والمخزون والصندوق مع ${app} Pro (تجربة مجانية). التسجيل في دقيقتين: ${url}`,

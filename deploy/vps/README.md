@@ -1,5 +1,7 @@
 # Fixi sur un VPS — mise en ligne et sauvegardes
 
+> 👉 **Première installation : suivez [GUIDE_HOSTINGER.md](GUIDE_HOSTINGER.md)** (pas à pas, base vierge, mises à jour automatiques depuis GitHub, QR codes). Ce fichier est la référence technique.
+
 Ce dossier installe tout Fixi sur un seul serveur (Ubuntu 22.04/24.04, 2 Go de RAM minimum) :
 
 | Service | Rôle |
@@ -24,16 +26,12 @@ Faites pointer votre domaine (enregistrement **A**) vers l'adresse IP du VPS.
 ## 2. Configurer
 
 ```bash
-cp .env.example .env
+./make-env.sh fixi.votre-domaine.tn
 ```
 
-Remplissez `.env`. Pour chaque secret :
+Crée `.env` avec tous les secrets déjà générés (jamais de mot de passe par défaut) et affiche le mot de passe de Fixi Control et la phrase de chiffrement des sauvegardes.
 
-```bash
-openssl rand -base64 32
-```
-
-**Notez `BACKUP_PASSPHRASE` hors du serveur** (gestionnaire de mots de passe, papier dans un coffre). Sans elle, les sauvegardes sont illisibles — c'est voulu : un voleur de sauvegarde ne peut rien en faire.
+**Notez la phrase (`BACKUP_PASSPHRASE`) hors du serveur** (gestionnaire de mots de passe, papier dans un coffre). Sans elle, les sauvegardes sont illisibles — c'est voulu : un voleur de sauvegarde ne peut rien en faire.
 
 ## 3. Copie des sauvegardes hors du serveur (fortement conseillé)
 

@@ -1,6 +1,9 @@
 # Fixi sur un VPS : application + PostgreSQL 16 + HTTPS automatique (Caddy) + sauvegardes nocturnes.
 # Démarrage : cp .env.example .env  (remplir)  puis  docker compose up -d --build
 name: fixi
+x-logging: &logging
+  driver: json-file
+  options: { max-size: "10m", max-file: "3" }   # les journaux ne remplissent jamais le disque
 services:
   db:
     image: postgres:16-alpine
@@ -9,6 +12,7 @@ services:
       POSTGRES_DB: fixi
       POSTGRES_USER: fixi
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?mot de passe base requis}
+    logging: *logging
     volumes: [db-data:/var/lib/postgresql/data]
     healthcheck: { test: ["CMD-SHELL", "pg_isready -U fixi -d fixi"], interval: 10s, timeout: 5s, retries: 10 }
 
@@ -17,10 +21,21 @@ services:
     restart: unless-stopped
     depends_on: { db: { condition: service_healthy } }
     env_file: .env
+    logging: *logging
+    # Démarrage : schéma de la base (sans jamais perdre de données), puis données de référence
+    # (compte Fixi Control, formules, catalogue d'appareils) en mode « base vierge », puis l'application.
+    command: ["sh", "-c", "npx prisma db push --skip-generate && ./node_modules/.bin/tsx prisma/seed.ts && exec node server.js"]
     environment:
       DATABASE_URL: postgresql://fixi:${POSTGRES_PASSWORD}@db:5432/fixi
       PORT: "3000"
       BACKUP_EXPECTED: "on"
+      SEED_MODE: production
+      FIXI_WINDOWS_SALES_ENABLED: ${FIXI_WINDOWS_SALES_ENABLED:-true}
+      FIXI_WINDOWS_ORDERS_ENABLED: ${FIXI_WINDOWS_ORDERS_ENABLED:-true}
+      FIXI_WINDOWS_RETURNS_ENABLED: ${FIXI_WINDOWS_RETURNS_ENABLED:-true}
+      FIXI_WINDOWS_DEBT_PAYMENTS_ENABLED: ${FIXI_WINDOWS_DEBT_PAYMENTS_ENABLED:-true}
+      # Toutes les adresses des QR codes, étiquettes, messages WhatsApp et liens de suivi partent de cette valeur.
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:?adresse publique requise (https://votre-domaine)}
     volumes: [app-data:/app/data]
     healthcheck: { test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/api/health >/dev/null || exit 1"], interval: 30s, timeout: 5s, retries: 5 }
 
@@ -30,12 +45,14 @@ services:
     depends_on: [app]
     ports: ["80:80", "443:443"]
     environment: { FIXI_DOMAIN: "${FIXI_DOMAIN:?domaine requis}" }
+    logging: *logging
     volumes: [./Caddyfile:/etc/caddy/Caddyfile:ro, caddy-data:/data, caddy-config:/config]
 
   backup:
     build: { context: ../.., dockerfile: deploy/vps/backup/Dockerfile }
     restart: unless-stopped
     depends_on: { db: { condition: service_healthy } }
+    logging: *logging
     environment:
       DATABASE_URL: postgresql://fixi:${POSTGRES_PASSWORD}@db:5432/fixi
       RESTORE_ADMIN_URL: postgresql://fixi:${POSTGRES_PASSWORD}@db:5432/postgres
