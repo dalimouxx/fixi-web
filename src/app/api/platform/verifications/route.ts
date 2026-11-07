@@ -45,7 +45,7 @@ export async function POST(req: Request) {
       prisma.auditLog.create({ data: { shopId: shop.id, action: 'VERIFICATION_' + decision, entity: 'Shop', entityId: shop.id, metadata: { by: admin.fullName, note } } }),
     ]);
     if (decision === 'VERIFIED') await notifyShop(shop.id, '✅ Atelier vérifié', 'Fixi a validé votre atelier : le catalogue des fournisseurs est ouvert. Bonnes commandes !', '/app/suppliers', NotificationType.SUCCESS, [UserRole.ADMIN]).catch(() => null);
-    if (decision === 'REJECTED') await notifyShop(shop.id, 'Vérification refusée', `Motif : ${note}. Corrigez puis renvoyez vos documents dans Fournisseurs → Vérification.`, '/app/suppliers', NotificationType.WARNING, [UserRole.ADMIN]).catch(() => null);
+    if (decision === 'REJECTED') await notifyShop(shop.id, 'Vérification refusée', `Motif : ${note}. Corrigez puis renvoyez vos documents dans Commander une pièce → Vérification.`, '/app/suppliers', NotificationType.WARNING, [UserRole.ADMIN]).catch(() => null);
     return ok({ ok: true, status: decision });
   } catch (e: any) { return bad(e.message, e.status || 500); }
 }

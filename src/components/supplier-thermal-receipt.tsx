@@ -1,3 +1,4 @@
+import { payLabel } from '@/lib/labels';
 import {money,dateTime} from '@/lib/format';
 
 type InvoiceReceiptProps={
@@ -36,7 +37,7 @@ export function SupplierThermalReceipt({company,customer,sale,items,payments}:In
     <div className="fixi-thermal-line"><span>Taxes</span><b>{money(sale.tax)}</b></div>
     <div className="fixi-thermal-line total"><span>TOTAL TTC</span><b>{money(sale.total)}</b></div>
     {payments.map(p=><div className="fixi-thermal-line" key={p.id}>
-      <span>Règlement {p.method}</span><b>{money(p.amount)}</b></div>)}
+      <span>Règlement {payLabel(p.method)}</span><b>{money(p.amount)}</b></div>)}
     <div className="fixi-thermal-line"><span>Total payé</span><b>{money(sale.paid)}</b></div>
     <div className="fixi-thermal-line"><span>Reste dû</span><b>{money(due)}</b></div>
     <div className="fixi-thermal-separator"/>

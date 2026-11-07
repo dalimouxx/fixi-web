@@ -26,7 +26,7 @@ export function SupplierReminders() {
     {err && <p className="rm-err">{err}</p>}
     {d.rows.length ? <ul className="rm-list">{d.rows.slice(0, 40).map((r: any) => <li key={r.id}>
       <span className={'rm-age ' + lvl(r.days)}>{r.days} j</span>
-      <div><b>{r.name}{r.blocked && <em><Lock size={11} /> plafond atteint</em>}</b><small>{money(r.due)}{r.creditLimit > 0 ? ` / plafond ${money(r.creditLimit)}` : ''}{r.last ? ` · relancé le ${new Date(r.last.at).toLocaleDateString('fr-TN')}${r.last.auto ? ' (auto)' : ''}` : ''}</small></div>
+      <div><b>{r.name}{r.blocked && <em><Lock size={11} /> plafond atteint</em>}</b><small>{money(r.due)}{r.creditLimit > 0 ? ` / plafond ${money(r.creditLimit)}` : ''}{r.last ? ` · relancé le ${new Date(r.last.at).toLocaleDateString('fr-FR')}${r.last.auto ? ' (auto)' : ''}` : ''}</small></div>
       <Link className="btn btn-ghost btn-sm" href={'/supplier/statements/' + r.id} target="_blank" title="Relevé de compte"><FileText size={14} /></Link>
       {r.wa && <a className="btn btn-ghost btn-sm" href={r.wa} target="_blank" rel="noreferrer" title="Message WhatsApp prêt"><MessageCircle size={14} /></a>}
       {sent[r.id] ? <span className="rm-sent"><Check size={14} /> {sent[r.id]}</span> : <button className="btn btn-soft btn-sm" onClick={() => remind(r)}><Send size={14} /> Relancer</button>}

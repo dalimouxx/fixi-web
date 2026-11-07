@@ -13,8 +13,8 @@ const legacyRoutes = ['/app/dashboard', '/app/repairs/new', '/app/repairs', '/ap
   '/app/community', '/app/expert-call', '/app/academy', '/app/care', '/app/offline', '/app/team', '/app/reports',
   '/app/support', '/app/updates', '/app/referrals', '/app/subscription', '/app/audit', '/app/settings'];
 
-test('le menu Atelier tient en 6 entrées', () => {
-  assert.equal(atelierNav.length, 6);
+test('le menu Atelier tient en 7 entrées', () => {
+  assert.equal(atelierNav.length, 7);
 });
 
 test('chaque ancien écran a exactement une place dans le nouveau menu', () => {
@@ -77,4 +77,31 @@ test("l'aide contextuelle couvre les écrans principaux et a une page par défau
   assert.equal(helpFor('/app/repairs/new').title.fr, 'Nouvelle réparation');
   assert.equal(helpFor('/app/repairs/F-2612345').title.fr, 'Fiche réparation');
   assert.equal(helpFor('/app/inconnu').title.fr, 'Aide');
+});
+
+test('aucun code brut à l’écran : moyens de paiement, statuts et actions en français', async () => {
+  const { payLabel, statusLabel, actionLabel, entityLabel, humanize } = await import('../src/lib/labels');
+  assert.equal(payLabel('CASH'), 'Espèces');
+  assert.equal(payLabel('bank_transfer'), 'Virement');
+  assert.equal(statusLabel('OUT_FOR_DELIVERY'), 'En livraison');
+  assert.equal(actionLabel('REMOVE_PART'), 'Pièce retirée');
+  assert.equal(entityLabel('SUPPLIER'), 'Fournisseur');
+  assert.equal(humanize('NEW_THING'), 'New thing');
+  assert.equal(humanize(''), '—');
+});
+
+test('Fixi Control et les documents imprimables restent en clair', async () => {
+  const { isLightOnly } = await import('../src/lib/theme-scope');
+  assert.ok(isLightOnly('/saas'));
+  assert.ok(isLightOnly('/saas/suppliers'));
+  assert.ok(isLightOnly('/supplier/daily-report'));
+  assert.ok(!isLightOnly('/supplier'));
+  assert.ok(!isLightOnly('/app/dashboard'));
+  assert.ok(!isLightOnly('/saasx'));
+});
+
+test('le menu atelier : Gestion et Aide séparés, rien de plus de 12 entrées', () => {
+  const full = visibleNav('ADMIN', { includeAdvanced: true });
+  for (const s of full) assert.ok(s.items.length <= 12, s.id);
+  assert.deepEqual(full.map(s => s.label), ['Accueil', 'Réparations', 'Clients', 'Caisse', 'Pièces', 'Gestion', 'Aide']);
 });

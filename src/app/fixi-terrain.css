@@ -153,3 +153,25 @@ html[data-theme='dark'] .fx-mnt-blob{opacity:.35}
 .fx-issue-sum{font-weight:700;color:#7c3aed;margin-left:4px}
 .re-add{display:flex;gap:8px;margin-top:6px}.re-add .input{flex:1}
 .ssp{margin-top:12px}.ssp-form{display:grid;grid-template-columns:repeat(4,1fr) auto;gap:8px;margin:8px 0}.ssp-btns{display:flex;gap:6px}.ssp .fx-cap{display:flex;gap:6px;align-items:center}@media(max-width:800px){.ssp-form{grid-template-columns:1fr}}
+
+/* Pied de la barre latérale atelier compact : outils sur une ligne, « Quitter » à côté du nom */
+.fx-side-foot .fx-side-shop { display: flex; align-items: center; gap: 10px; }
+.fx-side-foot .fx-side-shop > div { flex: 1; }
+.fx-side-foot .fx-side-logout { flex: none; width: 34px; height: 34px; }
+.fx-side .fx-side-foot .fx-side-tools { display: flex; flex-wrap: nowrap; gap: 4px; justify-content: space-between; }
+.fx-side .fx-side-foot .fx-side-tools > * { flex: none; }
+.fx-side .fx-side-foot .fx-side-tools :is(.fx-icon-btn, button) { width: 34px; height: 34px; min-width: 0; padding: 0; }
+
+/* Mobile : jamais de défilement horizontal de la page (onglets à bord perdu, en-têtes d'impression) */
+@media (max-width: 760px) {
+  .fx-main, .supplier-os > main { overflow-x: clip; }
+  .supplier-print-page > header { flex-wrap: wrap; gap: 10px; }
+  .supplier-print-page > header .no-print { display: flex; flex-wrap: wrap; gap: 8px; }
+  .supplier-print-page { max-width: 100%; overflow-x: auto; }
+}
+
+/* Barre de recherche des tableaux : le cadre est sur le conteneur, pas sur le champ */
+.global-search input { flex: 1 1 auto; min-width: 0; border: 0 !important; background: transparent !important; box-shadow: none !important; outline: none; color: inherit; height: 100%; padding: 0; }
+.dx-code input { width: 112px; }
+.dx-code input::placeholder { letter-spacing: 0; font-weight: 600; font-size: 13px; }
+.dx-collect-row { flex-wrap: wrap; }

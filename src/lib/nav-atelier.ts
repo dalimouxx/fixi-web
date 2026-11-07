@@ -20,15 +20,15 @@ export type NavItem = {
   /** Libellé spécifique pour un rôle (ex. « Mes réparations » pour le technicien). */
   roleLabel?: Partial<Record<AtelierRole, string>>;
 };
-export type NavSectionId = 'home' | 'repairs' | 'clients' | 'cash' | 'parts' | 'more';
+export type NavSectionId = 'home' | 'repairs' | 'clients' | 'cash' | 'parts' | 'more' | 'help';
 export type NavSection = { id: NavSectionId; label: string; icon: LucideIcon; items: NavItem[] };
 
-// Six entrées au lieu de 38. Chaque ancien écran a une place unique.
+// Sept entrées au lieu de 38. Chaque ancien écran a une place unique.
 export const atelierNav: NavSection[] = [
   { id: 'home', label: 'Accueil', icon: Home, items: [
     { label: 'Accueil', href: '/app/dashboard', icon: Home, roles: ALL },
+    { label: 'Résumé du jour', href: '/app/resume', icon: BarChart3, roles: ['ADMIN'] },
     { label: 'Fin de journée', href: '/app/fin-de-journee', icon: Moon, roles: ['ADMIN', 'CASHIER'] },
-    { label: 'Rapport du mois', href: '/app/rapport-mensuel', icon: BarChart3, roles: ['ADMIN'] },
     { label: 'Vue propriétaire', href: '/app/owner', icon: Eye, roles: ['ADMIN'], advanced: true },
   ] },
   { id: 'repairs', label: 'Réparations', icon: Wrench, items: [
@@ -36,6 +36,7 @@ export const atelierNav: NavSection[] = [
     { label: 'Toutes les réparations', href: '/app/repairs', icon: ListChecks, roles: ALL, roleLabel: { TECHNICIAN: 'Mes réparations' } },
     { label: 'Rendez-vous', href: '/app/appointments', icon: CalendarDays, roles: ['ADMIN', 'RECEPTION'] },
     { label: 'Garanties & retours', href: '/app/warranties', icon: ShieldCheck, roles: ['ADMIN', 'RECEPTION', 'TECHNICIAN'] },
+    { label: 'Réceptions hors ligne', href: '/app/offline', icon: CloudOff, roles: ['ADMIN', 'RECEPTION', 'CASHIER'], advanced: true },
     { label: 'Catalogue appareils', href: '/app/device-catalog', icon: Smartphone, roles: ['ADMIN', 'RECEPTION'], advanced: true },
   ] },
   { id: 'clients', label: 'Clients', icon: Users, items: [
@@ -47,38 +48,39 @@ export const atelierNav: NavSection[] = [
     { label: 'Encaisser', href: '/app/cashier', icon: Banknote, roles: ['ADMIN', 'CASHIER'] },
     { label: 'Devis & factures', href: '/app/documents', icon: ReceiptText, roles: ['ADMIN', 'RECEPTION', 'CASHIER'] },
     { label: 'Paiements reçus', href: '/app/payments', icon: Wallet, roles: ['ADMIN', 'CASHIER'] },
-    { label: 'Téléphones d’occasion', href: '/app/occasion', icon: Smartphone, roles: ['ADMIN', 'RECEPTION', 'CASHIER'] },
     { label: 'Ouverture & clôture', href: '/app/cash-sessions', icon: History, roles: ['ADMIN', 'CASHIER'] },
     { label: 'Dépenses', href: '/app/expenses', icon: HandCoins, roles: ['ADMIN'] },
+    { label: 'Téléphones d’occasion', href: '/app/occasion', icon: Smartphone, roles: ['ADMIN', 'RECEPTION', 'CASHIER'] },
   ] },
   { id: 'parts', label: 'Pièces', icon: Boxes, items: [
     { label: 'Mon stock', href: '/app/stock', icon: Boxes, roles: ['ADMIN', 'TECHNICIAN'] },
     { label: 'Commander une pièce', href: '/app/suppliers', icon: PackageOpen, roles: ['ADMIN', 'RECEPTION'] },
-    { label: 'Ce que je dois', href: '/app/mes-dettes', icon: HandCoins, roles: ['ADMIN', 'RECEPTION', 'CASHIER'] },
-    { label: 'Quelle pièce est compatible ?', href: '/app/compatibility', icon: Link2, roles: ['ADMIN', 'RECEPTION', 'TECHNICIAN'] },
-    { label: 'Achats', href: '/app/purchases', icon: ShoppingBag, roles: ['ADMIN', 'RECEPTION'], advanced: true },
+    { label: 'Mes dettes fournisseurs', href: '/app/mes-dettes', icon: HandCoins, roles: ['ADMIN', 'RECEPTION', 'CASHIER'] },
+    { label: 'Pièce compatible ?', href: '/app/compatibility', icon: Link2, roles: ['ADMIN', 'RECEPTION', 'TECHNICIAN'] },
+    { label: 'Achats hors Fixi', href: '/app/purchases', icon: ShoppingBag, roles: ['ADMIN', 'RECEPTION'], advanced: true },
     { label: 'Entrées & sorties de stock', href: '/app/stock-movements', icon: ArrowLeftRight, roles: ['ADMIN', 'TECHNICIAN'], advanced: true },
     { label: 'Marché entre réparateurs', href: '/app/parts-market', icon: Store, roles: ALL, advanced: true },
   ] },
-  { id: 'more', label: 'Plus', icon: MoreHorizontal, items: [
+  { id: 'more', label: 'Gestion', icon: Settings, items: [
+    { label: 'Rapports', href: '/app/reports', icon: BarChart3, roles: ['ADMIN'] },
+    { label: 'Rapport du mois', href: '/app/rapport-mensuel', icon: ScrollText, roles: ['ADMIN'] },
     { label: 'Équipe', href: '/app/team', icon: UserCog, roles: ['ADMIN'] },
     { label: 'Commissions', href: '/app/team/commissions', icon: HandCoins, roles: ['ADMIN'], advanced: true },
-    { label: 'Résumé du jour', href: '/app/resume', icon: BarChart3, roles: ['ADMIN'] },
-    { label: 'Rapports', href: '/app/reports', icon: BarChart3, roles: ['ADMIN'] },
-    { label: 'Abonnement', href: '/app/subscription', icon: ReceiptText, roles: ['ADMIN'] },
-    { label: 'Aide & support', href: '/app/support', icon: LifeBuoy, roles: ALL },
-    { label: 'Nouveautés', href: '/app/updates', icon: Sparkles, roles: ALL },
-    { label: 'Paramètres', href: '/app/settings', icon: Settings, roles: ['ADMIN'] },
-    { label: 'Conseils', href: '/app/brain', icon: Lightbulb, roles: ['ADMIN'], advanced: true },
     { label: 'Analyses', href: '/app/insights', icon: Activity, roles: ['ADMIN'], advanced: true },
+    { label: 'Conseils', href: '/app/brain', icon: Lightbulb, roles: ['ADMIN'], advanced: true },
     { label: 'Rappels automatiques', href: '/app/automations', icon: BellRing, roles: ['ADMIN'], advanced: true },
     { label: 'Plusieurs boutiques', href: '/app/network', icon: Building2, roles: ['ADMIN'], advanced: true },
-    { label: 'Communauté', href: '/app/community', icon: MessageCircle, roles: ALL, advanced: true },
-    { label: 'Demander de l’aide à un expert', href: '/app/expert-call', icon: PhoneCall, roles: ALL, advanced: true },
-    { label: 'Formation', href: '/app/academy', icon: GraduationCap, roles: ALL, advanced: true },
-    { label: 'Réceptions hors ligne', href: '/app/offline', icon: CloudOff, roles: ['ADMIN', 'RECEPTION', 'CASHIER'], advanced: true },
-    { label: 'Parrainage', href: '/app/referrals', icon: Gift, roles: ['ADMIN'], advanced: true },
     { label: "Journal d'activité", href: '/app/audit', icon: ScrollText, roles: ['ADMIN'], advanced: true },
+    { label: 'Paramètres', href: '/app/settings', icon: Settings, roles: ['ADMIN'] },
+    { label: 'Abonnement', href: '/app/subscription', icon: ReceiptText, roles: ['ADMIN'] },
+    { label: 'Parrainage', href: '/app/referrals', icon: Gift, roles: ['ADMIN'], advanced: true },
+  ] },
+  { id: 'help', label: 'Aide', icon: LifeBuoy, items: [
+    { label: 'Aide & support', href: '/app/support', icon: LifeBuoy, roles: ALL },
+    { label: 'Nouveautés', href: '/app/updates', icon: Sparkles, roles: ALL },
+    { label: 'Formation', href: '/app/academy', icon: GraduationCap, roles: ALL, advanced: true },
+    { label: 'Communauté', href: '/app/community', icon: MessageCircle, roles: ALL, advanced: true },
+    { label: 'Demander à un expert', href: '/app/expert-call', icon: PhoneCall, roles: ALL, advanced: true },
   ] },
 ];
 

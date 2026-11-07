@@ -32,7 +32,7 @@ export function SaasGrowth() {
     </div>
     <div className="gr-three">
       <div className="control-panel"><h3><UserPlus size={16} /> Nouveaux inscrits <small>message de bienvenue</small></h3>{d.newcomers.length ? <ul className="gr-list">{d.newcomers.map((r: any) => <Row key={r.tenantId} r={r} extra={`${ago(r.createdAt)} · ${r.orders} commande(s)`} />)}</ul> : <p className="gr-empty">Personne pour l’instant.</p>}</div>
-      <div className="control-panel"><h3><CalendarClock size={16} /> Essais qui se terminent</h3>{d.trialsEnding.length ? <ul className="gr-list">{d.trialsEnding.map((r: any) => <Row key={r.tenantId} r={r} extra={`fin ${new Date(r.trialEndsAt).toLocaleDateString('fr-TN')}`} />)}</ul> : <p className="gr-empty">Aucun essai ne se termine sous 3 jours.</p>}</div>
+      <div className="control-panel"><h3><CalendarClock size={16} /> Essais qui se terminent</h3>{d.trialsEnding.length ? <ul className="gr-list">{d.trialsEnding.map((r: any) => <Row key={r.tenantId} r={r} extra={`fin ${new Date(r.trialEndsAt).toLocaleDateString('fr-FR')}`} />)}</ul> : <p className="gr-empty">Aucun essai ne se termine sous 3 jours.</p>}</div>
       <div className="control-panel"><h3><TrendingDown size={16} /> Inactifs depuis 7 jours</h3>{d.inactive.length ? <ul className="gr-list">{d.inactive.map((r: any) => <Row key={r.tenantId} r={r} extra={`vu ${ago(r.lastSeenAt)}`} />)}</ul> : <p className="gr-empty">Tous les ateliers sont actifs.</p>}</div>
     </div>
     <div className="control-panel gr-pitch"><h3><MessageCircle size={16} /> Message de présentation <small>à envoyer aux ateliers que vous démarchez</small></h3>

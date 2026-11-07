@@ -1,4 +1,5 @@
 'use client';
+import { payLabel } from '@/lib/labels';
 import {useEffect,useMemo,useState} from 'react';
 import {Search,ShoppingCart,Plus,Minus,Trash2,Banknote,WalletCards,UserRound,ReceiptText,LockKeyhole,UnlockKeyhole,ScanLine,Percent,CheckCircle2,X,Printer,Camera,RefreshCw,History,ClipboardCheck,Calculator,AlertTriangle} from 'lucide-react';
 import {api} from './ui';
@@ -94,7 +95,7 @@ export function SupplierPos({products,customers,cashSessions,methods,warehouses,
  return <div className="supplier-pos">
   <div className="supplier-pos-top">
    <div><span className="smart-kicker"><WalletCards size={13}/> FIXI POS</span><h2>Point de vente</h2><p>Vente comptoir rapide, prix détail/grossiste et règlement multiple.</p></div>
-   <div className={'supplier-register '+(openSession?'open':'closed')}><i/><span><b>{openSession?'Caisse ouverte':'Caisse fermée'}</b><small>{openSession?'Depuis '+new Date(openSession.openedAt).toLocaleTimeString('fr-TN',{hour:'2-digit',minute:'2-digit'}):'Ouvrez une session avant les espèces'}</small></span><button className="btn btn-soft btn-sm" onClick={()=>{setCashNote('');setCashAmount(openSession?'': '0');void refreshCash();setCashModal(openSession?'close':'open')}}>{openSession?<LockKeyhole/>:<UnlockKeyhole/>}{openSession?'Clôturer':'Ouvrir'}</button></div>
+   <div className={'supplier-register '+(openSession?'open':'closed')}><i/><span><b>{openSession?'Caisse ouverte':'Caisse fermée'}</b><small>{openSession?'Depuis '+new Date(openSession.openedAt).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):'Ouvrez une session avant les espèces'}</small></span><button className="btn btn-soft btn-sm" onClick={()=>{setCashNote('');setCashAmount(openSession?'': '0');void refreshCash();setCashModal(openSession?'close':'open')}}>{openSession?<LockKeyhole/>:<UnlockKeyhole/>}{openSession?'Clôturer':'Ouvrir'}</button></div>
   </div>
   {err&&<div className="supplier-pos-alert error"><X/>{err}</div>}{msg&&<div className="supplier-pos-alert success"><CheckCircle2/>{msg}{lastSale&&<><button type="button" onClick={()=>window.open('/supplier/documents/'+lastSale.id,'_blank')}>
      <Printer/> Facture A4</button>
@@ -124,7 +125,7 @@ export function SupplierPos({products,customers,cashSessions,methods,warehouses,
       <h4>Mouvements de la session {cashOverview?.current?.status==='OPEN'?'en cours':'la plus récente'}</h4>
       <div className="fixi-pos-cash-movements">
         {(cashOverview?.movements||[]).map((m:any)=><div key={m.id}>
-          <span><strong>{m.label}</strong><small>{new Date(m.at).toLocaleString('fr-TN')} · {m.method} {m.reference?'· '+m.reference:''}</small></span>
+          <span><strong>{m.label}</strong><small>{new Date(m.at).toLocaleString('fr-FR')} · {payLabel(m.method)} {m.reference?'· '+m.reference:''}</small></span>
           <b className={m.type==='ENCASHMENT'?'plus':'minus'}>{m.type==='ENCASHMENT'?'+':'−'}{money(m.amount)}</b>
         </div>)}
         {!cashOverview?.movements?.length&&<p>Aucun mouvement enregistré sur cette session.</p>}
@@ -132,7 +133,7 @@ export function SupplierPos({products,customers,cashSessions,methods,warehouses,
       <h4>Dernières ouvertures et clôtures</h4>
       <div className="fixi-pos-cash-history">
         {(cashOverview?.recent||[]).map((x:any)=><div key={x.id}>
-          <span>{new Date(x.openedAt).toLocaleString('fr-TN')}</span>
+          <span>{new Date(x.openedAt).toLocaleString('fr-FR')}</span>
           <b>{x.status==='OPEN'?'Ouverte':'Clôturée'}</b>
           <span>Fond {money(x.openingAmount)} · Compte {x.closingAmount==null?'—':money(x.closingAmount)}</span>
           <strong className={Number(x.difference||0)===0?'plus':'minus'}>{x.difference==null?'—':'Écart '+money(x.difference)}</strong>

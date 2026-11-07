@@ -8,7 +8,7 @@ const req = <T,>(method: string, path: string, body?: unknown) => invoke<T>('ate
 type Item = { id: string; sku: string; barcode?: string | null; name: string; quantity: number; purchasePrice: number; salePrice: number };
 type Line = { id: string; qty: number; cost: string };
 const KEY = 'fixi-atelier-stock-in';
-const dt = (n: number) => n.toLocaleString('fr-TN', { minimumFractionDigits: 3, maximumFractionDigits: 3 }) + ' DT';
+const dt = (n: number) => n.toLocaleString('fr-FR', { minimumFractionDigits: 3, maximumFractionDigits: 3 }) + ' DT';
 
 /** Caisse atelier : entrée de stock au scanner (pièces et accessoires reçus). Réservée au gérant. */
 export function AtelierStockIn({ manager, onDone, onError }: { manager: boolean; onDone: (msg: string) => void; onError: (e: unknown) => void }) {

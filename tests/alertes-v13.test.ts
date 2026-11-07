@@ -35,7 +35,9 @@ test('les vidéos d’aide de 30 s et leurs images existent', () => {
 
 test('le mode gros caractères est appliqué avant l’affichage', () => {
   const layout = fs.readFileSync(path.join(root, 'src/app/layout.tsx'), 'utf8');
-  assert.ok(layout.includes("fixi-text-size"));
+  assert.ok(layout.includes('THEME_HEAD_SCRIPT'));
+  const head = fs.readFileSync(path.join(root, 'src/lib/theme-scope.ts'), 'utf8');
+  assert.ok(head.includes("fixi-text-size"));
   const css = fs.readFileSync(path.join(root, 'src/app/fixi-design-system.css'), 'utf8');
   assert.ok(css.includes('html[data-text="large"] body{zoom:1.15}'));
 });

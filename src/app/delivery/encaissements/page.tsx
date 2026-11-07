@@ -30,7 +30,7 @@ type Receipt = {
   remittances: { id: string; amount: string; confirmedAt: string|null }[];
 };
 const format = (v: number) => Number(v||0).toFixed(3)+' DT';
-const date = (v: string) => v ? new Date(v).toLocaleString('fr-TN',{dateStyle:'medium',timeStyle:'short'}) : '—';
+const date = (v: string) => v ? new Date(v).toLocaleString('fr-FR',{dateStyle:'medium',timeStyle:'short'}) : '—';
 
 export default function DriverCollectionsPage() {
   const [orders, setOrders] = useState<Order[]>([]);

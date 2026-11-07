@@ -380,7 +380,7 @@ function App(){
  }
  function showTicket(x:TicketSearch){
   if(!boot)return;
-  setTicket({reference:x.reference,company:boot.companyName,profile:boot.receiptProfile,date:new Date(x.createdAt).toLocaleString('fr-TN'),
+  setTicket({reference:x.reference,company:boot.companyName,profile:boot.receiptProfile,date:new Date(x.createdAt).toLocaleString('fr-FR'),
    customer:x.customer,lines:x.items,total:x.total,paid:x.paid,logo});setPrintRequest(n=>n+1);
   setMessage('Ticket '+x.reference+' prêt à être réimprimé.')
  }
@@ -511,7 +511,7 @@ function App(){
  const current=nav.find(n=>n.id===page);
  if(!boot&&profile===null)return <div className="v7-splash"><FixiLogo size={96}/><b>FIXI Caisse</b><i/></div>;
  if(!boot)return <div className="v5-login">
-  <div className="v5-login-identity"><FixiLogo size={72} className="v7-logo--hero"/><h1>FIXI Caisse</h1><p>Le point de vente Windows de FIXI Supplier.</p>
+  <div className="v5-login-identity"><FixiLogo size={72} className="v7-logo--hero"/><h1>FIXI Caisse</h1><p>La caisse Windows des fournisseurs Fixi.</p>
    <ul><li><ScanBarcode size={18}/> Scanner rapide, panier gardé même après coupure</li><li><Wallet size={18}/> Ventes, dettes clients et retours au même endroit</li><li><Printer size={18}/> Tickets et étiquettes code-barres</li></ul></div>
   <div className="v5-login-panel">{profile?.configured&&!passwordMode?
    <form onSubmit={quickLogin} className="v5-card v5-login-form"><h2>Bonjour 👋</h2>
@@ -721,7 +721,7 @@ const statusMap:Record<string,[string,'ok'|'warning'|'danger'|'info'|'muted'|'br
  PENDING:['Nouvelle','brand'],CONFIRMED:['Confirmée','info'],PREPARING:['En préparation','warning'],READY_FOR_DELIVERY:['Prête','ok'],OUT_FOR_DELIVERY:['En livraison','info'],DELIVERED:['Livrée','ok'],CANCELLED:['Annulée','muted'],RETURNED:['Retournée','muted'],
  PAID:['Payée','ok'],PARTIAL:['Partielle','warning'],UNPAID:['Non payée','danger'],COMPLETED:['Terminée','ok'],REFUNDED:['Remboursé','ok'],ISSUED:['Émis','info'],
  OPEN:['Ouverte','ok'],CLOSED:['Clôturée','muted'],PENDING_CASHIER:['À clôturer','brand'],SUBMITTED:['Déclarée','info']};
-const roleLabel:Record<string,string>={OWNER:'Propriétaire',ADMIN:'Administrateur',MANAGER:'Responsable',SALES:'Vendeur',CASHIER:'Caissier'};
+const roleLabel:Record<string,string>={OWNER:'Propriétaire',ADMIN:'Administrateur',MANAGER:'Responsable',SALES:'Vendeur',CASHIER:'Caissier',STOCK:'Magasinier',ACCOUNTANT:'Comptable',DELIVERY_MANAGER:'Responsable livraison'};
 function Chip({tone,children}:{tone:string;children:React.ReactNode}){return <span className={'v5-chip is-'+tone}>{children}</span>}
 function StatusChip({status}:{status:string}){const [l,t]=statusMap[status]||[status.replace(/_/g,' ').toLowerCase(),'muted'];return <Chip tone={t}>{l}</Chip>}
 function Empty({icon:I,title,text}:{icon:React.ComponentType<{size?:number}>;title:string;text:string}){return <div className="v5-empty"><I size={36}/><h3>{title}</h3><p>{text}</p></div>}

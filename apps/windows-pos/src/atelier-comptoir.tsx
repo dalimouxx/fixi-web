@@ -176,7 +176,7 @@ function Refund({ number, manager, onClose, onDone, onError }: { number: string;
   if (!sale) return <div className="v5-empty"><RotateCcw size={34} /><h3>Recherche du ticket {number}…</h3></div>;
   return <div className="at-cs-refund">
     <div className="at-cs-head"><h2><RotateCcw size={18} /> Retour {sale.number}</h2><button className="v5-icon-btn" aria-label="Fermer" onClick={onClose}><X size={16} /></button></div>
-    <p className="v5-hint">{new Date(sale.createdAt).toLocaleString('fr-TN')} · payé {dt(Number(sale.total))}{Number(sale.refundedTotal) > 0 ? ` · déjà remboursé ${dt(Number(sale.refundedTotal))}` : ''}</p>
+    <p className="v5-hint">{new Date(sale.createdAt).toLocaleString('fr-FR')} · payé {dt(Number(sale.total))}{Number(sale.refundedTotal) > 0 ? ` · déjà remboursé ${dt(Number(sale.refundedTotal))}` : ''}</p>
     <div className="at-cs-lines">{(sale.lines as any[]).map(l => { const left = l.quantity - (l.returnedQuantity || 0); const n = qty[l.id] || 0;
       return <div key={l.id} className={'at-cs-line' + (n ? ' on' : '')}>
         <span><b>{l.name}</b><small>{l.quantity} vendu(s){l.returnedQuantity ? ` · ${l.returnedQuantity} déjà rendu(s)` : ''}</small>

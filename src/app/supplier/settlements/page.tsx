@@ -19,7 +19,7 @@ type Overview = {role:string;metrics:{customerDue:number;atelierDue:number;outst
   pendingCourierCollections:number;openInvoices:number};clients:Client[];invoices:Client['invoices'];
   settlements:Receipt[];deliveryShifts:Shift[];journal:Journal[]};
 const cur = (x:number)=>Number(x||0).toFixed(3)+' DT';
-const date = (x:string|null|undefined)=>x?new Date(x).toLocaleString('fr-TN',{dateStyle:'medium',timeStyle:'short'}):'—';
+const date = (x:string|null|undefined)=>x?new Date(x).toLocaleString('fr-FR',{dateStyle:'medium',timeStyle:'short'}):'—';
 const via = (x:string)=>({CASH:'Espèces',BANK_TRANSFER:'Virement',D17:'D17',FLOUCI:'Flouci',CARD:'Carte',ONLINE:'En ligne'} as Record<string,string>)[x]||x;
 const label = (x:string)=>({PAIEMENT:'Paiement reçu',PAIEMENT_A_VALIDER:'Encaissement déclaré',
   REMISE_LIVREUR:'Livreur → Fournisseur',REMBOURSEMENT:'Remboursement',AVOIR:'Avoir / retour'} as Record<string,string>)[x]||x;
@@ -97,8 +97,8 @@ export default function SupplierFinancialLedger(){
 
  return <main className={st.page}>
    <div className={st.head}>
-     <div><Link href="/supplier" className={st.action}><ArrowLeft size={15}/> Tableau de bord Supplier</Link>
-       <div style={{marginTop:16}} className={st.eyebrow}>FIXI SUPPLIER · FINANCES</div>
+     <div><Link href="/supplier" className={st.action}><ArrowLeft size={15}/> Retour à l’espace fournisseur</Link>
+       <div style={{marginTop:16}} className={st.eyebrow}>FIXI FOURNISSEUR · FINANCES</div>
        <h1>Comptes, dettes & règlements</h1>
        <p>Une vue claire : ce que les ateliers doivent, ce qui a été payé, ce que les livreurs doivent reverser, et les preuves datées.</p>
      </div>

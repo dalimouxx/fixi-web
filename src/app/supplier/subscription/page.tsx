@@ -19,7 +19,7 @@ type Payee={d17Phone?:string|null;bankName?:string|null;bankRib?:string|null;ins
  supportPhone?:string|null;supportEmail?:string|null};
 type RequestsData={requests:RequestRow[];payee:Payee|null};
 const money=(v:number|string|null)=>Number(v||0).toFixed(3)+' DT';
-const date=(v?:string|null)=>v?new Date(v).toLocaleDateString('fr-TN'):'Sans échéance';
+const date=(v?:string|null)=>v?new Date(v).toLocaleDateString('fr-FR'):'Sans échéance';
 const status:Record<string,string>={ACTIVE:'Actif',TRIAL:'Essai',LEGACY:'Accès historique',EXPIRED:'Expiré',
  SUSPENDED:'Suspendu',CANCELLED:'Annulé',PAST_DUE:'Paiement en retard'};
 const requestStatus:Record<string,string>={PENDING:'À vérifier',APPROVED:'Activée',REJECTED:'Refusée'};
@@ -104,8 +104,8 @@ export default function SupplierSubscriptionPage(){
  const active=data?.current,plan=active?.plan;
  return <main className="fixi-supplier-billing fixi-supplier-payment-page">
   <div className="fixi-supplier-billing-head">
-   <Link href="/supplier" className="fixi-supplier-back"><ArrowLeft size={17}/> Retour Supplier</Link>
-   <div className="fixi-supplier-billing-title"><div><span>FIXI SUPPLIER · COMPTE ENTREPRISE</span>
+   <Link href="/supplier" className="fixi-supplier-back"><ArrowLeft size={17}/> Retour à l’espace fournisseur</Link>
+   <div className="fixi-supplier-billing-title"><div><span>FIXI FOURNISSEUR · ABONNEMENT</span>
     <h1>Abonnement fournisseur</h1>
     <p>Choisissez une formule, réglez par D17 ou virement et envoyez votre justificatif pour contrôle manuel.</p></div>
     <button type="button" onClick={()=>void load()} disabled={loading} className="fixi-supplier-back"><RefreshCw size={16}/> Actualiser</button>
@@ -140,7 +140,7 @@ export default function SupplierSubscriptionPage(){
         <strong>{n} / {limits(max)}</strong></div><div className="fixi-billing-track">
         <i style={{width:stats(n,max)+'%'}}/></div></div>)}
     </div></section>}
-   <h2 className="fixi-billing-section-title">Choisir une formule Supplier</h2>
+   <h2 className="fixi-billing-section-title">Choisir une formule</h2>
    <div className="fixi-billing-plans">{data.plans.map(p=>
     <article className={'fixi-billing-card '+(active?.plan.id===p.id?'selected':'')} key={p.id}>
      <span className="fixi-billing-eyebrow">{p.code}</span><h3>{p.name}</h3>

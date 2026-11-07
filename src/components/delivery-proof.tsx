@@ -4,7 +4,7 @@ import { humanError } from '@/lib/human-error';
 import { createPortal } from 'react-dom';
 import { Camera, CheckCircle2, Loader2, PenLine, ShieldCheck, X } from 'lucide-react';
 
-const fmt = (d?: string | null) => d ? new Date(d).toLocaleString('fr-TN', { dateStyle: 'medium', timeStyle: 'short' }) : '—';
+const fmt = (d?: string | null) => d ? new Date(d).toLocaleString('fr-FR', { dateStyle: 'medium', timeStyle: 'short' }) : '—';
 
 /** Bouton « Preuve de livraison » : photo de remise, signature, réceptionnaire et code vérifié. */
 export function ShopDeliveryProof({ order, url, compact }: { order: any; url: string; compact?: boolean }) {
