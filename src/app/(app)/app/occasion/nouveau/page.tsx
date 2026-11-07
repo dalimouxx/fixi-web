@@ -26,6 +26,7 @@ export default function BuyUsedDevice() {
     if (!imei) { setCheck({ state: 'idle' }); return; }
     if (!isImei(imei)) { setCheck({ state: imei.length >= 15 ? 'invalid' : 'idle', text: 'IMEI invalide (15 chiffres)' }); return; }
     setCheck({ state: 'checking' });
+    api<any>(`/api/imei/model?imei=${imei}`).then(g => { if (g?.model) setF((x: any) => x.model ? x : { ...x, brand: BRANDS.includes(g.brand) ? g.brand : x.brand, model: g.model }); }).catch(() => {});
     const t = setTimeout(() => { api<any>(`/api/imei/check?imei=${imei}`).then(x => setCheck(x.flagged ? { state: 'flagged', text: `Signalé ${x.reason === 'LOST' ? 'perdu' : 'volé'} dans le réseau Fixi` } : { state: 'ok', text: 'Aucun signalement dans le réseau Fixi' })).catch(() => setCheck({ state: 'idle' })); }, 300);
     return () => clearTimeout(t);
   }, [imei]);

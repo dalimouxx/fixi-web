@@ -429,6 +429,13 @@ model Shop {
   whatsappTemplateLang         String                   @default("fr")
   /// Envoi automatique du message « reçu » / « prêt » au changement de statut.
   whatsappAutoNotify           Boolean                  @default(true)
+  /// Résumé du soir au gérant (notification + page) à l'heure choisie, heure de Tunis.
+  eveningSummaryEnabled        Boolean                  @default(true)
+  eveningSummaryHour           Int                      @default(20)
+  lastEveningSummary           String?
+  /// Demande d'avis automatique après la remise de l'appareil (WhatsApp Cloud).
+  reviewRequestEnabled         Boolean                  @default(true)
+  whatsappTemplateReview       String?
   countryCode                  String                   @default("216")
   currency                     String                   @default("DT")
   locale                       String                   @default("fr-TN")
@@ -482,6 +489,7 @@ model Shop {
   counterSales                 CounterSale[]
   documentSequences            ShopSequence[]
   usedDevices                  UsedDevice[]
+  selfCheckIns                 SelfCheckIn[]
   inventory                    InventoryItem[]
   suppliers                    Supplier[]
   purchases                    Purchase[]
@@ -551,6 +559,8 @@ model User {
   /// Code de secours du gérant (haché), pour retrouver l'accès sans le PIN.
   recoveryCodeHash       String?
   recoveryCodeAt         DateTime?
+  /// Commission du technicien en % de la marge (prix − pièces) des réparations rendues.
+  commissionRate         Decimal?                @db.Decimal(5, 2)
   isActive               Boolean                 @default(true)
   mustChangePin          Boolean                 @default(false)
   technicianSpecialties  String[]                @default([])
@@ -3043,4 +3053,36 @@ enum UsedDeviceCondition {
   BON
   CORRECT
   POUR_PIECES
+}
+
+/// IMEI → modèle appris dans tout le réseau : les 8 premiers chiffres (TAC) identifient le modèle.
+model TacModel {
+  tac       String   @id
+  brand     String
+  model     String
+  count     Int      @default(1)
+  updatedAt DateTime @default(now()) @updatedAt
+}
+
+/// Arrivée enregistrée par le client lui-même (QR code au comptoir), à valider par l'atelier.
+model SelfCheckIn {
+  id        String            @id @default(cuid())
+  shopId    String
+  shop      Shop              @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  fullName  String
+  phone     String
+  brand     String?
+  model     String?
+  issue     String
+  status    SelfCheckInStatus @default(PENDING)
+  repairId  String?
+  createdAt DateTime          @default(now())
+
+  @@index([shopId, status, createdAt])
+}
+
+enum SelfCheckInStatus {
+  PENDING
+  CONVERTED
+  DISMISSED
 }

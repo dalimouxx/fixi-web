@@ -1,3 +1,4 @@
+import { learnTac } from '@/lib/tac';
 import { notifyRepairClient } from '@/lib/client-messages';
 import { prisma } from '@/lib/prisma';
 import { requireSession } from '@/lib/auth';
@@ -50,7 +51,8 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const s = await requireSession([UserRole.ADMIN, UserRole.RECEPTION, UserRole.CASHIER]);
-    const b = repairCreateSchema.parse(await req.json());
+    const raw = await req.json();
+    const b = repairCreateSchema.parse(raw);
     if (b.technicianId) {
       const technician=await prisma.user.findFirst({where:{id:b.technicianId,shopId:s.shopId,role:UserRole.TECHNICIAN,isActive:true}});
       if(!technician)return bad('Technicien invalide',400);
@@ -91,6 +93,9 @@ export async function POST(req: Request) {
     await audit(s.shopId, s.id, 'CREATE', 'REPAIR', repair.id, { code });
     publish(s.shopId, 'repair.created', { code });
     void notifyRepairClient(repair.id, 'RECEIVED');
+    void learnTac(repair.serialNumber, repair.brand, repair.model);
+    // Arrivée QR prise en charge : on la relie au dossier.
+    if (raw?.selfCheckInId) await prisma.selfCheckIn.updateMany({ where: { id: String(raw.selfCheckInId), shopId: s.shopId, status: 'PENDING' }, data: { status: 'CONVERTED', repairId: repair.id } });
     return ok(plain(repair), { status: 201 });
   } catch (e: any) {
     if (e?.issues) return bad('Formulaire invalide', 400, e.issues);

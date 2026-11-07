@@ -6,6 +6,7 @@ import { BarcodeCamera } from '@/components/barcode-camera';
 import { gs1Valid, normalizeBarcode } from '@/lib/barcode';
 import { api, useApi } from '@/components/ui';
 import { FxSheet } from '@/components/fx-sheet';
+import { RestockPanel } from '@/components/restock-panel';
 import { money } from '@/lib/format';
 
 const empty = { sku: '', barcode: '', name: '', category: '', quantity: 0, minQuantity: 2, purchasePrice: 0, salePrice: 0, supplierId: '' };
@@ -45,6 +46,8 @@ export default function Stock() {
   return <div className="fx-page">
     <div className="fx-hello"><div><h1>Stock</h1><p>Vos pièces, ce qu’il faut racheter, la valeur au coût.</p></div>
       <button className="btn btn-primary" onClick={() => { setEdit(null); setF(empty); setOpen(true); }}><Plus size={18} /> Nouvelle pièce</button></div>
+
+    <RestockPanel />
 
     <section className="fx-kpis" aria-label="Résumé du stock">
       <div className="fx-kpi"><Boxes /><div><span>Pièces</span><strong>{rows.length}</strong></div></div>
