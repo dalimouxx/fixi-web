@@ -1,4 +1,5 @@
 import {LIGHT_DELIVERY,withProofFlags} from '@/lib/delivery-proof';
+import { requireVerifiedShop } from '@/lib/shop-verification';
 import {prisma} from '@/lib/prisma';
 import { whatsappNewOrderAlert } from '@/lib/platform-whatsapp';
 import {requireSession} from '@/lib/auth';
@@ -34,6 +35,7 @@ export async function GET(){
 export async function POST(req:Request){
   try{
     const s=await requireSession([UserRole.ADMIN,UserRole.RECEPTION],'CONNECT');
+    await requireVerifiedShop(s.shopId);
     const b=await req.json(),rawItems=Array.isArray(b.items)?b.items:[];
     if(!rawItems.length)return bad('Panier vide');
 

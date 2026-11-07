@@ -478,6 +478,11 @@ model Shop {
   aiApiKeyEncrypted            String?
   setupCompletedAt             DateTime?
   isActive                     Boolean                  @default(true)
+  /// Vérification de l'atelier (Fixi Control). Les boutiques existantes et celles créées par Fixi sont déjà « VERIFIED » ;
+  /// l'inscription libre démarre à « NONE » : pas de catalogue fournisseurs tant que Fixi n'a pas validé les documents.
+  verificationStatus           String                   @default("VERIFIED")
+  verifiedAt                   DateTime?
+  verificationNote             String?
   lastSeenAt                   DateTime?
   lastLoginAt                  DateTime?
   platformNotes                String?
@@ -644,6 +649,8 @@ model Repair {
   color               String?
   lockCodeEncrypted   String?
   reportedIssue       String
+  /// Pannes détaillées [{ name, price }] ; reportedIssue garde le texte lisible (« Écran + Batterie »).
+  issues              Json?
   diagnosis           String?
   internalNotes       String?
   priority            RepairPriority       @default(NORMAL)
@@ -3136,4 +3143,26 @@ model PlatformAnnouncement {
   createdAt DateTime  @default(now())
 
   @@index([active, startsAt])
+}
+
+/// Documents envoyés par un atelier pour être vérifié (un dossier par boutique, remplacé à chaque envoi).
+model ShopVerification {
+  id            String    @id @default(cuid())
+  shopId        String    @unique
+  legalName     String
+  ownerName     String
+  taxId         String
+  tradeRegister String?
+  address       String
+  city          String?
+  documentUrl   String
+  facadeUrl     String
+  insideUrl     String?
+  submittedAt   DateTime  @default(now())
+  reviewedAt    DateTime?
+  reviewedBy    String?
+  decision      String?
+  note          String?
+
+  @@index([submittedAt])
 }

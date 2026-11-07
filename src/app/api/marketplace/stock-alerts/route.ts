@@ -1,4 +1,5 @@
 import { UserRole } from '@prisma/client';
+import { requireVerifiedShop } from '@/lib/shop-verification';
 import { prisma } from '@/lib/prisma';
 import { requireSession } from '@/lib/auth';
 import { bad, ok } from '@/lib/http';
@@ -16,6 +17,7 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const s = await requireSession(ROLES, 'CONNECT');
+    await requireVerifiedShop(s.shopId);
     const b = await req.json().catch(() => ({}));
     const p = await prisma.supplierProduct.findFirst({ where: { id: String(b.productId || ''), active: true, company: { active: true } }, select: { id: true, companyId: true } });
     if (!p) return bad('Pièce introuvable', 404);

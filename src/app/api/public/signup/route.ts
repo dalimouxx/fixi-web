@@ -42,7 +42,8 @@ export async function POST(req: Request) {
     const pinHash = await bcrypt.hash(pin, 12);
     const { shop, user } = await prisma.$transaction(async tx => {
       const tenant = await tx.tenant.create({ data: { name: shopName } });
-      const shop = await tx.shop.create({ data: { tenantId: tenant.id, name: shopName, slug, region, city, phone } });
+      // Inscription libre : pas encore vérifié (pas de catalogue fournisseurs avant validation dans Fixi Control).
+      const shop = await tx.shop.create({ data: { tenantId: tenant.id, name: shopName, slug, region, city, phone, verificationStatus: 'NONE' } });
       const user = await tx.user.create({ data: { shopId: shop.id, fullName, loginCode: 'gerant', role: UserRole.ADMIN, pinHash, mustChangePin: false, lastSeenAt: now } });
       await tx.subscription.create({ data: { tenantId: tenant.id, planId: plan.id, status: SubscriptionStatus.ACTIVE, endsAt: null, agreedPrice: 0 } });
       return { tenant, shop, user };

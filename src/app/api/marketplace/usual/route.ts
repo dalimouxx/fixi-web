@@ -1,4 +1,5 @@
 import { UserRole } from '@prisma/client';
+import { requireVerifiedShop } from '@/lib/shop-verification';
 import { prisma } from '@/lib/prisma';
 import { requireSession } from '@/lib/auth';
 import { bad, ok } from '@/lib/http';
@@ -12,6 +13,7 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
     const s = await requireSession([UserRole.ADMIN, UserRole.RECEPTION], 'CONNECT');
+    await requireVerifiedShop(s.shopId);
     const items = await prisma.supplierOrderItem.findMany({
       where: { order: { shopId: s.shopId, createdAt: { gte: new Date(Date.now() - 120 * 86400_000) }, status: { notIn: ['CANCELLED'] } } },
       select: { productId: true, quantity: true, orderId: true, order: { select: { createdAt: true } } }, take: 3000,
