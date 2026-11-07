@@ -87,6 +87,8 @@ html[data-theme='dark'] {
   contain: paint;
   isolation: isolate;
   position: relative;
+  display: inline-block;
+  vertical-align: middle;
   width: var(--fxm-logo-size, 128px);
   height: var(--fxm-logo-size, 128px);
   border-radius: calc(var(--fxm-logo-size, 128px) * 0.3);
@@ -1044,4 +1046,169 @@ html[data-theme='dark'] .supplier-os main :is(.supplier-dues-tabs button, .suppl
 @layer fxm-force {
   html[data-theme='dark'] .supplier-os main :is(.supplier-delivery-kpis > div, .supplier-dues-kpis > div, .supplier-dispatch-list article, .supplier-card-grid article) :is(b, strong, span, small, div, code) { color: inherit !important; }
   html[data-theme='dark'] .supplier-os main :is(.supplier-delivery-kpis > div, .supplier-dues-kpis > div, .supplier-dispatch-list article, .supplier-card-grid article) :is(span, small) { color: var(--fxm-tx3) !important; }
+}
+
+/* =====================================================================
+ * Étape 11 — Appli Livreur (mobile)
+ * ===================================================================== */
+.delivery-app.driver-v3 {
+  --dv-bg: var(--fxm-bg); --dv-card: var(--fxm-card2); --dv-line: var(--fxm-line); --dv-brand: #f97316; --dv-brand-deep: #ea580c;
+  --fx-surface: var(--fxm-card2); --fx-line: var(--fxm-line); --fx-ink: var(--fxm-tx); --fx-muted: var(--fxm-tx3);
+  background: var(--fxm-bg) !important; color: var(--fxm-tx); position: relative; isolation: isolate;
+}
+html[data-theme='dark'] .delivery-app.driver-v3 { --dv-card: #17131d; }
+.delivery-app.driver-v3::before { content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none; background: radial-gradient(60% 40% at 0% 0%, rgba(255, 122, 24, 0.22), transparent 70%), radial-gradient(50% 40% at 100% 70%, rgba(139, 92, 246, 0.18), transparent 70%); }
+/* En-tête : verre clair (sombre en mode sombre) */
+html:not([data-theme='dark']) .delivery-app.driver-v3 .dv-top { background: rgba(255, 255, 255, 0.82) !important; color: var(--fxm-tx) !important; backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border-bottom: 1px solid var(--fxm-line); }
+html:not([data-theme='dark']) .delivery-app.driver-v3 .dv-top-title small { color: var(--fxm-tx3) !important; }
+html:not([data-theme='dark']) .delivery-app.driver-v3 .dv-top :is(button, a) { color: var(--fxm-tx) !important; background: var(--fxm-card2) !important; border-color: var(--fxm-line2) !important; }
+html[data-theme='dark'] .delivery-app.driver-v3 .dv-top { background: rgba(20, 16, 28, 0.85) !important; backdrop-filter: blur(18px); }
+/* Bandeau principal : dégradé pastel en clair */
+.delivery-app.driver-v3 .dv-hero { border-radius: 0 0 28px 28px; animation: fxm-up 0.6s var(--fxm-ease) backwards; }
+html:not([data-theme='dark']) .delivery-app.driver-v3 .dv-hero { background: linear-gradient(135deg, #ffe8d8 0%, #ffe2ee 50%, #eee6ff 100%) !important; color: var(--fxm-tx) !important; box-shadow: 0 20px 50px rgba(120, 60, 140, 0.12) !important; }
+html:not([data-theme='dark']) .delivery-app.driver-v3 .dv-hero :is(h1, b, strong) { color: var(--fxm-tx) !important; }
+html:not([data-theme='dark']) .delivery-app.driver-v3 .dv-hero :is(small, span, p) { color: var(--fxm-tx2) !important; }
+html:not([data-theme='dark']) .delivery-app.driver-v3 .dv-hero .dv-chip { background: rgba(255, 255, 255, 0.75) !important; border-color: rgba(24, 16, 40, 0.1) !important; color: var(--fxm-tx) !important; }
+html:not([data-theme='dark']) .delivery-app.driver-v3 .dv-hero .dv-chip.is-on { background: var(--fxm-ok-s) !important; color: var(--fxm-ok) !important; border-color: rgba(15, 138, 95, 0.3) !important; }
+html:not([data-theme='dark']) .delivery-app.driver-v3 .dv-stats div { background: rgba(255, 255, 255, 0.72) !important; border-color: rgba(24, 16, 40, 0.08) !important; }
+html[data-theme='dark'] .delivery-app.driver-v3 .dv-hero { background: radial-gradient(120% 140% at 100% 0%, #8a2b12 0%, #2a1020 45%, #120e18 80%) !important; }
+.delivery-app.driver-v3 .dv-stats b { font-family: var(--fxm-font-display); letter-spacing: -0.02em; }
+/* Cartes, missions, lignes */
+.delivery-app.driver-v3 :is(.dv-offer, .dv-current, .dv-row, .dv-menu-row, .dv-stops > *, .dv-list > *, .dv-empty) { border-radius: 20px !important; background: var(--fxm-card2) !important; border-color: var(--fxm-line) !important; animation: fxm-up 0.5s var(--fxm-ease) backwards; }
+html[data-theme='dark'] .delivery-app.driver-v3 :is(.dv-offer, .dv-current, .dv-row, .dv-menu-row, .dv-stops > *, .dv-list > *, .dv-empty) { background: rgba(255, 255, 255, 0.05) !important; }
+.delivery-app.driver-v3 .dv-offer, .delivery-app.driver-v3 .dv-current { border: 0 !important; box-shadow: inset 0 0 0 2px #ff7a18, 0 16px 40px rgba(255, 61, 119, 0.16) !important; }
+.delivery-app.driver-v3 .dv-offer header strong, .delivery-app.driver-v3 .dv-amount { font-family: var(--fxm-font-display); background: linear-gradient(90deg, #e2560c, #e11d63); -webkit-background-clip: text; background-clip: text; color: transparent !important; }
+.delivery-app.driver-v3 .dv-stop-n { background: var(--fxm-grad) !important; color: #fff !important; box-shadow: 0 6px 16px rgba(255, 61, 119, 0.35); }
+/* Boutons */
+.delivery-app.driver-v3 :is(.btn-primary, .dv-hero-cta) { position: relative; overflow: hidden; border: 0 !important; background: var(--fxm-grad) !important; color: #fff !important; border-radius: 16px !important; box-shadow: 0 12px 30px rgba(255, 61, 119, 0.4) !important; }
+.delivery-app.driver-v3 :is(.btn-primary, .dv-hero-cta)::after { content: ''; position: absolute; top: 0; bottom: 0; width: 30%; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent); animation: fxm-sweep 2.6s ease-in-out infinite; pointer-events: none; }
+.delivery-app.driver-v3 .btn-soft { border-radius: 14px !important; background: var(--fxm-card2) !important; border: 1px solid var(--fxm-line2) !important; color: var(--fxm-tx) !important; }
+.delivery-app.driver-v3 .dv-chip { border-radius: 999px !important; }
+/* Barre d'onglets du bas */
+.delivery-app.driver-v3 .dv-tabs { background: rgba(255, 255, 255, 0.86) !important; backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border-top: 1px solid var(--fxm-line) !important; }
+html[data-theme='dark'] .delivery-app.driver-v3 .dv-tabs { background: rgba(20, 16, 28, 0.88) !important; }
+.delivery-app.driver-v3 .dv-tabs :is(button, a)[aria-current='page'], .delivery-app.driver-v3 .dv-tabs :is(button, a)[aria-selected='true'], .delivery-app.driver-v3 .dv-tabs :is(button, a).active { color: #ea580c !important; }
+.delivery-app.driver-v3 .delivery-modal, .delivery-app.driver-v3 .supplier-modal { border-radius: 24px !important; background: var(--fxm-card2) !important; animation: fxm-pop 0.35s var(--fxm-ease) backwards; }
+@media (prefers-reduced-motion: reduce) {
+  .delivery-app.driver-v3 :is(.dv-hero, .dv-offer, .dv-current, .dv-row, .dv-menu-row, .dv-stops > *, .dv-list > *, .dv-empty), .delivery-app.driver-v3 :is(.btn-primary, .dv-hero-cta)::after { animation: none !important; }
+}
+@layer fxm-force {
+  html:not([data-theme='dark']) .delivery-app.driver-v3 .dv-top .rt-notifications button { color: var(--fxm-tx) !important; background: var(--fxm-card2) !important; border-color: var(--fxm-line2) !important; }
+}
+
+/* =====================================================================
+ * Étape 12 — Suivi client (/track) : garde la couleur de la boutique
+ * ===================================================================== */
+.fx-track {
+  --fx-bg: var(--fxm-bg); --fx-surface: var(--fxm-card2); --fx-line: var(--fxm-line); --fx-ink: var(--fxm-tx); --fx-muted: var(--fxm-tx3);
+  --fx-radius-xl: 24px; --fx-shadow-sm: 0 1px 2px rgba(60, 30, 90, 0.04), 0 10px 30px rgba(60, 30, 90, 0.07);
+  background: radial-gradient(70% 45% at 0% 0%, var(--shop-brand-soft), transparent 70%), radial-gradient(60% 45% at 100% 60%, rgba(139, 92, 246, 0.14), transparent 70%), var(--fxm-bg) !important;
+  background-attachment: fixed;
+}
+html[data-theme='dark'] .fx-track { --fx-surface: #17131d; --fx-shadow-sm: none; }
+.fx-track .fx-track-top > i { box-shadow: 0 8px 20px var(--shop-brand-soft); }
+.fx-track .fx-track-top b { font-family: var(--fxm-font-display); letter-spacing: -0.02em; }
+.fx-track .fx-track-card { backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); animation: fxm-up 0.7s var(--fxm-ease) backwards; }
+.fx-track .fx-track-main > *:nth-child(2) { animation-delay: 0.08s; } .fx-track .fx-track-main > *:nth-child(3) { animation-delay: 0.16s; }
+.fx-track .fx-track-main > *:nth-child(4) { animation-delay: 0.24s; } .fx-track .fx-track-main > *:nth-child(5) { animation-delay: 0.32s; }
+.fx-track .fx-track-hero { background: linear-gradient(135deg, var(--shop-brand-soft), rgba(255, 61, 119, 0.10) 55%, rgba(139, 92, 246, 0.12)) !important; position: relative; overflow: hidden; }
+.fx-track .fx-track-hero-icon { animation: fxm-float 4s ease-in-out infinite; box-shadow: 0 12px 30px var(--shop-brand-soft); }
+.fx-track .fx-track-hero h1, .fx-track .fx-track-hero b { font-family: var(--fxm-font-display); letter-spacing: -0.03em; }
+.fx-track .fx-track-btn { position: relative; overflow: hidden; border-radius: 16px !important; box-shadow: 0 10px 26px var(--shop-brand-soft); transition: transform 0.2s; }
+.fx-track .fx-track-btn:hover { transform: translateY(-2px); }
+.fx-track .fx-track-btn:not(.fx-track-btn-soft)::after { content: ''; position: absolute; top: 0; bottom: 0; width: 30%; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent); animation: fxm-sweep 2.8s ease-in-out infinite; pointer-events: none; }
+.fx-track .fx-track-btn-soft { box-shadow: none; border-radius: 16px !important; }
+.fx-track .fx-track-money b, .fx-track .fx-track-quote b { font-family: var(--fxm-font-display); }
+@media (prefers-reduced-motion: reduce) { .fx-track .fx-track-card, .fx-track .fx-track-hero-icon, .fx-track .fx-track-btn::after { animation: none !important; } .fx-track .fx-track-btn:hover { transform: none; } }
+
+/* =====================================================================
+ * Étape 13 — Écrans de connexion (atelier, fournisseur, livreur)
+ * ===================================================================== */
+.fxm-auth {
+  --fx-bg: var(--fxm-bg); --fx-surface: var(--fxm-card2); --fx-line: var(--fxm-line); --fx-ink: var(--fxm-tx); --fx-muted: var(--fxm-tx3);
+  --panel: var(--fxm-card2); --border: var(--fxm-line); --line: var(--fxm-line); --text: var(--fxm-tx); --muted: var(--fxm-tx3);
+  position: relative; isolation: isolate; overflow: hidden; color: var(--fxm-tx); background: var(--fxm-bg) !important;
+}
+.fxm-auth .fxm-aurora { z-index: -1; }
+.fxm-auth .fxm-blob.b3 { width: 340px; height: 340px; background: #ff3d77; top: 40%; inset-inline-start: 38%; animation: fxm-drift2 26s ease-in-out infinite alternate; }
+.fxm-auth-theme { position: absolute; top: max(14px, env(safe-area-inset-top)); inset-inline-end: 14px; z-index: 5; }
+.fxm-auth-theme .theme-toggle { width: 42px; height: 42px; border-radius: 14px; background: var(--fxm-card) !important; border: 1px solid var(--fxm-line2) !important; color: var(--fxm-tx) !important; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+.fxm-auth :is(.input, .select) { background: var(--fxm-card2) !important; border-color: var(--fxm-line2) !important; color: var(--fxm-tx) !important; border-radius: 14px !important; }
+.fxm-auth :is(.input, .select):focus { border-color: #ff3d77 !important; box-shadow: 0 0 0 4px rgba(255, 61, 119, 0.15) !important; }
+.fxm-auth .label { color: var(--fxm-tx2) !important; }
+.fxm-auth .btn-primary { position: relative; overflow: hidden; border: 0 !important; border-radius: 16px !important; background: var(--fxm-grad) !important; color: #fff !important; box-shadow: 0 12px 30px rgba(255, 61, 119, 0.35) !important; transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s; }
+.fxm-auth .btn-primary:not(:disabled):hover { transform: translateY(-2px); box-shadow: 0 16px 36px rgba(255, 61, 119, 0.45) !important; }
+.fxm-auth .btn-primary:not(:disabled)::after { content: ''; position: absolute; top: 0; bottom: 0; width: 30%; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent); animation: fxm-sweep 2.6s ease-in-out infinite; pointer-events: none; }
+.fxm-auth .btn-primary:disabled { opacity: 0.45; box-shadow: none !important; }
+.fxm-auth .error { border-radius: 12px; background: var(--fxm-bad-s) !important; color: var(--fxm-bad) !important; border: 0 !important; animation: fxm-pop 0.4s var(--fxm-ease) both; }
+.fxm-auth h1, .fxm-auth h2 { font-family: var(--fxm-font-display); letter-spacing: -0.03em; color: var(--fxm-tx); }
+.fxm-auth h1 em, .fxm-auth h2 em { font-style: normal; background: var(--fxm-grad3); -webkit-background-clip: text; background-clip: text; color: transparent; }
+/* Carte vitrée commune */
+.fxm-auth :is(.login-card, .supplier-login-card, .dv-login-card) {
+  position: relative; background: var(--fxm-card) !important; border: 1px solid var(--fxm-line) !important; border-radius: 28px !important;
+  box-shadow: var(--fxm-shadow) !important; backdrop-filter: blur(24px) saturate(1.3); -webkit-backdrop-filter: blur(24px) saturate(1.3);
+  color: var(--fxm-tx); animation: fxm-up 0.7s 0.1s var(--fxm-ease) backwards;
+}
+html:not([data-theme='dark']) .fxm-auth :is(.login-card, .supplier-login-card, .dv-login-card) { background: rgba(255, 255, 255, 0.82) !important; }
+.fxm-auth :is(.login-card, .supplier-login-card, .dv-login-card) :is(p, small, .muted) { color: var(--fxm-tx3); }
+
+/* Atelier : visuel gauche + carte PIN */
+.fxm-auth.auth-page { grid-template-columns: 1.05fr 0.95fr; }
+.fxm-auth .auth-visual { background: transparent !important; border: 0 !important; color: var(--fxm-tx) !important; }
+.fxm-auth .auth-visual::after { background-image: linear-gradient(var(--fxm-line) 1px, transparent 1px), linear-gradient(90deg, var(--fxm-line) 1px, transparent 1px) !important; background-size: 48px 48px; mask-image: radial-gradient(ellipse 70% 60% at 40% 45%, #000 20%, transparent 75%); -webkit-mask-image: radial-gradient(ellipse 70% 60% at 40% 45%, #000 20%, transparent 75%); }
+.fxm-auth .auth-copy > .fxm-logo { display: block; }
+.fxm-auth .auth-copy { animation: fxm-up 0.8s var(--fxm-ease) backwards; }
+.fxm-auth .auth-copy .eyebrow { display: inline-flex; margin-top: 26px; padding: 6px 12px; border-radius: 999px; background: var(--fxm-card); border: 1px solid var(--fxm-line2); color: var(--fxm-acc) !important; font-weight: 800; font-size: 12px; letter-spacing: 0.12em; }
+.fxm-auth .auth-copy h1 { font-size: clamp(38px, 4.6vw, 62px); color: var(--fxm-tx) !important; margin: 18px 0 16px; }
+.fxm-auth .auth-copy p { color: var(--fxm-tx2) !important; font-size: 17px; max-width: 520px; }
+.fxm-auth-points { list-style: none; margin: 26px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 10px; }
+.fxm-auth-points li { display: grid; gap: 2px; padding: 12px 16px; border-radius: 16px; background: var(--fxm-card); border: 1px solid var(--fxm-line); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); font-size: 13px; color: var(--fxm-tx3); animation: fxm-up 0.6s var(--d, 0s) var(--fxm-ease) backwards; }
+.fxm-auth-points b { font-family: var(--fxm-font-display); font-size: 18px; color: var(--fxm-tx); }
+.fxm-auth .auth-panel { background: transparent !important; position: relative; z-index: 1; }
+.fxm-auth .login-v4 .login-logo .fx-brand-logo, .fxm-auth .login-version { color: var(--fxm-tx3) !important; }
+.fxm-auth .login-title h2 { font-size: 28px; }
+.fxm-auth .fx-login-shop, .fxm-auth .pin-welcome { background: var(--fxm-card2) !important; border: 1px solid var(--fxm-line) !important; border-radius: 16px !important; color: var(--fxm-tx) !important; }
+.fxm-auth .profile-option { background: var(--fxm-card2) !important; border: 1px solid var(--fxm-line) !important; border-radius: 16px !important; color: var(--fxm-tx) !important; transition: transform 0.2s var(--fxm-ease), border-color 0.2s, box-shadow 0.2s; }
+.fxm-auth .profile-option:hover { transform: translateY(-2px); }
+.fxm-auth .profile-option > span { background: var(--fxm-grad) !important; color: #fff !important; }
+.fxm-auth .profile-option.selected { border-color: #ff3d77 !important; box-shadow: 0 0 0 4px rgba(255, 61, 119, 0.14) !important; }
+.fxm-auth .pin-dot { border-color: var(--fxm-line2) !important; background: transparent !important; transition: transform 0.25s var(--fxm-ease), background 0.2s; }
+.fxm-auth .pin-dot.filled { background: var(--fxm-grad) !important; border-color: transparent !important; transform: scale(1.15); }
+.fxm-auth .pin-key { background: var(--fxm-card2) !important; border: 1px solid var(--fxm-line) !important; color: var(--fxm-tx) !important; border-radius: 16px !important; font-family: var(--fxm-font-display); transition: transform 0.12s, background 0.2s; }
+.fxm-auth .pin-key:hover { background: var(--fxm-card) !important; }
+.fxm-auth .pin-key:active { transform: scale(0.93); }
+.fxm-auth .login-signup a { color: var(--fxm-acc) !important; font-weight: 700; }
+
+/* Fournisseur : carte centrée */
+.fxm-auth--card { display: grid; place-items: center; min-height: 100dvh; }
+.fxm-auth .supplier-login-logo { display: flex; align-items: center; gap: 12px; }
+.fxm-auth .supplier-login-logo b { font-family: var(--fxm-font-display); color: var(--fxm-tx); }
+.fxm-auth .supplier-login-logo span:not(.fxm-logo, .fxm-logo *) { color: var(--fxm-tx3); }
+.fxm-auth .supplier-login-foot { color: var(--fxm-tx3) !important; border-color: var(--fxm-line) !important; }
+
+/* Livreur : en-tête clair par défaut */
+.fxm-auth--dv { background: var(--fxm-bg) !important; }
+.fxm-auth--dv .dv-login-hero { background: transparent !important; color: var(--fxm-tx); padding-top: calc(56px + env(safe-area-inset-top)); animation: fxm-up 0.7s var(--fxm-ease) backwards; }
+.fxm-auth--dv .dv-login-hero h1 { color: var(--fxm-tx) !important; }
+.fxm-auth--dv .dv-login-hero p, .fxm-auth--dv .dv-login-hero li { color: var(--fxm-tx2) !important; }
+.fxm-auth--dv .dv-login-hero li { padding: 10px 12px; border-radius: 14px; background: var(--fxm-card); border: 1px solid var(--fxm-line); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+.fxm-auth--dv .dv-login-hero li:nth-child(1) { animation: fxm-up 0.6s 0.25s var(--fxm-ease) backwards; }
+.fxm-auth--dv .dv-login-hero li:nth-child(2) { animation: fxm-up 0.6s 0.35s var(--fxm-ease) backwards; }
+.fxm-auth--dv .dv-login-hero li:nth-child(3) { animation: fxm-up 0.6s 0.45s var(--fxm-ease) backwards; }
+.fxm-auth--dv .dv-login-hero li svg { color: #ff3d77 !important; }
+.fxm-auth--dv .dv-login-card { margin-top: -24px; }
+.fxm-auth--dv .dv-login-foot { color: var(--fxm-tx3) !important; }
+@media (min-width: 900px) {
+  .fxm-auth--dv { grid-template-columns: 1fr 440px; align-content: center; gap: 40px; padding: 0 6vw; }
+  .fxm-auth--dv .dv-login-card { margin: 0; }
+}
+@media (max-width: 900px) {
+  .fxm-auth.auth-page { grid-template-columns: 1fr; }
+  .fxm-auth .auth-visual { padding: 64px 20px 8px; }
+  .fxm-auth .auth-copy h1 { font-size: 34px; }
+  .fxm-auth .auth-copy p, .fxm-auth-points { display: none; }
+  .fxm-auth .auth-panel { padding: 12px 14px 32px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fxm-auth *, .fxm-auth .fxm-blob { animation: none !important; transition: none !important; }
 }
