@@ -166,14 +166,27 @@ test('5f · livraison complète : préparation, livreur, arrivée, code, signatu
   const ok = await d.patch('/api/delivery/orders/' + orderId, { data: { status: 'DELIVERED', recipientName: 'Robot', proofCode: mine.deliveryCode, signatureUrl: sig } });
   expect(ok.ok(), await ok.text()).toBeTruthy();
   const after = (await (await atelier.request.get('/api/marketplace/orders')).json()).find((x: any) => x.id === orderId);
-  expect(after.status).toBe('DELIVERED'); expect(after.delivery.signatureUrl).toBe(sig);
+  expect(after.status).toBe('DELIVERED'); expect(after.delivery.hasSignature).toBe(true);
+  expect(after.delivery.signatureUrl, 'les listes ne transportent plus les images').toBeUndefined();
+  // Preuve de remise chargée à la demande : visible par l'atelier, le fournisseur et le livreur ; code jamais renvoyé.
+  for (const [ctx, url] of [[atelier.request, '/api/marketplace/orders/'], [supplier.request, '/api/supplier/orders/'], [d, '/api/delivery/orders/']] as const) {
+    const proof = await (await ctx.get(url + orderId + '/proof')).json();
+    expect(proof.signatureUrl).toBe(sig); expect(proof.recipientName).toBe('Robot'); expect(proof.codeVerified).toBe(true); expect(proof.proofCode).toBeUndefined();
+  }
+  const supList = (await (await supplier.request.get('/api/supplier/orders')).json()).find((x: any) => x.id === orderId);
+  expect(supList.deliveryCode, 'le code secret de l’atelier n’est pas montré au fournisseur').toBeNull();
   // Reprise d'une pièce défectueuse pendant la tournée, puis avoir.
   const ret = await atelier.request.post('/api/marketplace/returns', { data: { orderId, items: [{ itemId: after.items[0].id, quantity: 1 }], reason: 'DEFECTIVE' } });
   expect(ret.status(), await ret.text()).toBe(201);
   const pick = await ret.json();
   expect((await supplier.request.patch('/api/supplier/return-pickups', { data: { id: pick.id, action: 'accept', driverAccountId: did } })).ok()).toBeTruthy();
-  const todo = await (await d.get('/api/delivery/pickups')).json(); expect(todo.some((x: any) => x.id === pick.id)).toBe(true);
-  expect((await d.patch('/api/delivery/pickups', { data: { id: pick.id } })).ok()).toBeTruthy();
+  const todo = await (await d.get('/api/delivery/pickups')).json(); const mineP = todo.find((x: any) => x.id === pick.id);
+  expect(mineP?.needsCode).toBe(true); expect(mineP.handoverCode, 'le livreur ne voit pas le code').toBeUndefined();
+  // Le livreur doit saisir le code que l'atelier lui donne au moment de la remise.
+  expect((await d.patch('/api/delivery/pickups', { data: { id: pick.id, code: pick.handoverCode === '0000' ? '1111' : '0000' } })).status()).toBe(403);
+  const code = (await (await atelier.request.get('/api/marketplace/returns')).json()).find((x: any) => x.id === pick.id).handoverCode;
+  expect(code).toMatch(/^\d{4}$/);
+  expect((await d.patch('/api/delivery/pickups', { data: { id: pick.id, code } })).ok()).toBeTruthy();
   const p2 = (await (await supplier.request.get('/api/supplier/return-pickups')).json()).rows.find((x: any) => x.id === pick.id);
   expect(p2.status).toBe('COLLECTED');
   if (p2.saleId) {

@@ -13,6 +13,7 @@ export function AnnouncementBar() {
   const space = spaceOf(usePathname() || '');
   const [rows, setRows] = useState<any[]>([]);
   const [hidden, setHidden] = useState<string[]>([]);
+  const [mini, setMini] = useState(false);
   useEffect(() => { setHidden(read()); }, []);
   useEffect(() => {
     if (!space) return;
@@ -22,9 +23,12 @@ export function AnnouncementBar() {
     return () => { stop = true; clearInterval(t); };
   }, [space]);
   const a = rows.find(r => !hidden.includes(r.id));
+  // Visible quelques secondes, puis réduite en pastille pour ne jamais cacher un bouton de l'écran.
+  useEffect(() => { if (!a?.id) return; setMini(false); const t = setTimeout(() => setMini(true), 9000); return () => clearTimeout(t); }, [a?.id]);
   if (!space || !a) return null;
   const close = () => { const next = [...hidden, a.id].slice(-50); setHidden(next); try { localStorage.setItem(KEY, JSON.stringify(next)); } catch {} };
   const Icon = a.tone === 'WARNING' ? AlertTriangle : a.tone === 'SUCCESS' ? CheckCircle2 : Megaphone;
+  if (mini) return <button type="button" className={'fx-ann-mini fx-ann--' + String(a.tone).toLowerCase()} onClick={() => setMini(false)} aria-label={'Annonce : ' + a.title}><Icon size={15} /><span>{a.title}</span></button>;
   return <div className={'fx-ann fx-ann--' + String(a.tone).toLowerCase()} role="status">
     <span className="fx-ann-ico"><Icon size={17} /></span>
     <div><b>{a.title}</b><span>{a.message}</span></div>

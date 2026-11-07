@@ -116,3 +116,7 @@ html[data-theme='dark'] .fx-mnt-blob{opacity:.35}
 .fx-ann>button{border:0;background:transparent;color:inherit;opacity:.6;cursor:pointer;padding:6px;border-radius:8px}
 @keyframes fxAnnIn{from{opacity:0;transform:translateY(16px) scale(.97)}}
 @media (prefers-reduced-motion:reduce){.fx-ann{animation:none}}
+.fx-ann-mini{position:fixed;z-index:2147482500;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));display:flex;align-items:center;gap:6px;max-width:220px;padding:8px 12px;border:0;border-radius:99px;color:#fff;font:700 12px/1 inherit;cursor:pointer;background:linear-gradient(135deg,#f0782b,#db2777);box-shadow:0 8px 22px rgba(219,39,119,.3);animation:fxAnnIn .35s ease-out}
+.fx-ann-mini span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fx-ann-mini.fx-ann--warning{background:linear-gradient(135deg,#f59e0b,#ef4444)}.fx-ann-mini.fx-ann--success{background:linear-gradient(135deg,#10b981,#16a34a)}
+@media (max-width:820px){.fx-ann-mini{bottom:calc(92px + env(safe-area-inset-bottom));right:12px}}
