@@ -1,4 +1,5 @@
 import {prisma} from '@/lib/prisma';
+import {resolveBarcode} from '@/lib/supplier-barcode';
 import {requireSupplierRole,requireSupplierSession} from '@/lib/supplier-auth';
 import {bad,ok} from '@/lib/http';
 import {plain} from '@/lib/serializers';
@@ -41,8 +42,8 @@ export async function POST(req:Request){
   const sku=String(b.sku||'').trim().toUpperCase()||await autoSku(s.companyId,name,guess.category);
   // Catégorie déduite : on la relie à la catégorie du fournisseur portant le même nom, si elle existe.
   const linkedCat=!category&&guess.category?await prisma.supplierCategory.findFirst({where:{companyId:s.companyId,active:true,name:{equals:guess.category,mode:'insensitive'}},select:{id:true}}):null;
-  const barcode=String(b.barcode||'').trim()||null;
-  if(barcode&&await prisma.supplierProduct.findFirst({where:{companyId:s.companyId,barcode},select:{id:true}}))return bad('Ce code-barres existe déjà dans votre catalogue',409);
+  // Code-barres : vide → code intelligent (0000A04) ; saisi → jamais le même que chez un autre fournisseur.
+  const barcode=await resolveBarcode(prisma as any,s.companyId,{barcode:b.barcode,name,category:guess.category});
   const x=await prisma.supplierProduct.create({data:{
    companyId:s.companyId,
    sku,barcode,name,
@@ -60,7 +61,7 @@ export async function POST(req:Request){
   }});
   await prisma.supplierAuditEvent.create({data:{companyId:s.companyId,accountId:s.id,action:'CREATE',entity:'PRODUCT',entityId:x.id,metadata:{sku:x.sku,name:x.name,stock:x.stock}}});
   return ok(plain(x),{status:201});
- }catch(e:any){if(e.code==='P2002')return bad('SKU ou code-barres déjà utilisé',409);return bad(e.message,e.status||500)}
+ }catch(e:any){if(e.code==='P2002')return bad('Référence (SKU) déjà utilisée',409);return bad(e.message,e.status||500)}
 }
 
 export async function PATCH(req:Request){
@@ -72,6 +73,7 @@ export async function PATCH(req:Request){
   const data:any={};
   const strFields=['name','description','imageUrl','qualityGrade','barcode','location'];
   for(const k of strFields)if(b[k]!==undefined)data[k]=String(b[k]||'').trim()||null;
+  if(b.barcode!==undefined)data.barcode=await resolveBarcode(prisma as any,s.companyId,{barcode:b.barcode,name:String(b.name||current.name),category:current.category,exceptId:id});
   if(b.sku!==undefined)data.sku=String(b.sku).trim().toUpperCase();
   if(b.categoryId!==undefined){data.categoryId=b.categoryId||null;data.category=category?.name||null}
   if(b.brandId!==undefined){data.brandId=b.brandId||null;data.brand=brand?.name||null}
@@ -83,5 +85,5 @@ export async function PATCH(req:Request){
   const x=await prisma.supplierProduct.update({where:{id},data});
   await prisma.supplierAuditEvent.create({data:{companyId:s.companyId,accountId:s.id,action:'UPDATE',entity:'PRODUCT',entityId:id,metadata:data}});
   return ok(plain(x));
- }catch(e:any){if(e.code==='P2002')return bad('SKU ou code-barres déjà utilisé',409);return bad(e.message,e.status||500)}
+ }catch(e:any){if(e.code==='P2002')return bad('Référence (SKU) déjà utilisée',409);return bad(e.message,e.status||500)}
 }

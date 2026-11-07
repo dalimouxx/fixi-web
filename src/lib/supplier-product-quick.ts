@@ -1,6 +1,8 @@
 import { prisma } from './prisma';
 import { requireSupplierCreationCapacity } from './supplier-saas';
 import { checkRow, guessProduct, nextSku, parseAmount, skuPrefix, type QuickRow } from './product-quick';
+import { resolveBarcode } from './supplier-barcode';
+import { cleanTyped } from './smart-barcode';
 
 /** Rôles qui peuvent créer des produits (web, caisse Windows). */
 export const PRODUCT_EDITORS = ['OWNER', 'ADMIN', 'MANAGER', 'STOCK'] as const;
@@ -30,11 +32,12 @@ export type QuickResult = { line: number; status: 'created' | 'updated' | 'error
  * même code-barres ou même SKU qu'un produit existant → mise à jour du prix/stock ; sinon création avec SKU automatique.
  */
 export async function saveQuickRows(companyId: string, accountId: string, rows: QuickRow[], source: string) {
+  const reserved = new Set<string>();
   const out: QuickResult[] = [];
   for (let i = 0; i < rows.length; i++) {
     const r = rows[i], line = i + 1, err = checkRow(r);
     if (err) { out.push({ line, status: 'error', name: r.name, error: err }); continue; }
-    const name = String(r.name).trim(), barcode = String(r.barcode || '').trim() || null, price = parseAmount(r.price);
+    const name = String(r.name).trim(), barcode = cleanTyped(r.barcode) || null, price = parseAmount(r.price);
     const stock = String(r.stock ?? '').trim() ? Math.trunc(Number(r.stock)) : null;
     const pp = parseAmount(r.purchasePrice), sku = String(r.sku || '').trim().toUpperCase() || null;
     try {
@@ -47,13 +50,15 @@ export async function saveQuickRows(companyId: string, accountId: string, rows: 
       await requireSupplierCreationCapacity(companyId, 'PRODUCT');
       const g = fillGuesses({ name, category: r.category, brand: r.brand, qualityGrade: r.qualityGrade });
       const cost = Number.isFinite(pp) ? pp : 0;
+      // Code-barres unique sur toute la plateforme (généré « 0000A04 » si la case est vide).
+      const code = await resolveBarcode(prisma as any, companyId, { barcode, name, category: g.category }, reserved);
       const x = await prisma.supplierProduct.create({ data: {
-        companyId, sku: sku || await autoSku(companyId, name, g.category), barcode, name, ...g,
+        companyId, sku: sku || await autoSku(companyId, name, g.category), barcode: code, name, ...g,
         price, retailPrice: price, purchasePrice: cost, averageCost: cost, stock: stock ?? 0, reservedStock: 0, minOrderQty: 1, active: true,
       } });
       out.push({ line, status: 'created', id: x.id, sku: x.sku, name });
     } catch (e: any) {
-      out.push({ line, status: 'error', name, error: e?.code === 'P2002' ? 'Code déjà utilisé' : (e?.message || 'Erreur') });
+      out.push({ line, status: 'error', name, error: e?.code === 'P2002' ? 'Référence (SKU) déjà utilisée' : (e?.message || 'Erreur') });
     }
   }
   const created = out.filter(x => x.status === 'created').length, updated = out.filter(x => x.status === 'updated').length;

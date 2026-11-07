@@ -223,3 +223,10 @@ body::after{width:520px;height:520px;bottom:-220px;right:-140px;background:#8b5c
 .at-cs-offline span{color:var(--fx-ink-2)}.at-cs-offline small{grid-column:1/-1;color:var(--fx-danger);font-weight:600}
 .at-cs-offline.is-error{background:var(--fx-danger-soft);color:var(--fx-danger)}
 .at-cs-offline .v5-btn{grid-row:1;grid-column:3}
+/* Entrée de stock (fournisseur + atelier) */
+.v6-in-cost{width:110px;text-align:right}
+.v6-in-src input{margin-top:4px;width:100%;border:1px solid var(--v5-line,#ddd);border-radius:8px;padding:6px 8px;background:transparent;color:inherit;font:inherit}
+.at-in-new{display:grid;gap:10px;border:1.5px dashed rgba(124,58,237,.4)}
+.at-in-new header{display:flex;align-items:center;gap:8px}.at-in-new header b{flex:1}
+.at-in-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:10px}
+@media (max-width:900px){.at-in-grid{grid-template-columns:1fr 1fr}}

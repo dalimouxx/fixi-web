@@ -2,8 +2,9 @@
 // (tiroir-caisse, ticket), fin de journée. Même installateur et même matériel que la caisse fournisseur.
 import { useEffect, useMemo, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
-import { ArrowLeftRight, Banknote, CheckCircle2, ClipboardList, CreditCard, LogOut, MapPin, Moon, Printer, Search, ShoppingBag, Smartphone, Sparkles, Store, UserRound, Wrench } from 'lucide-react';
+import { ArrowLeftRight, PackagePlus, Banknote, CheckCircle2, ClipboardList, CreditCard, LogOut, MapPin, Moon, Printer, Search, ShoppingBag, Smartphone, Sparkles, Store, UserRound, Wrench } from 'lucide-react';
 import { CounterSaleTab, METHOD_LABEL, type SalePrint } from './atelier-comptoir';
+import { AtelierStockIn } from './atelier-stock-in';
 import { FixiLogo, Clock } from './brand';
 import { dt } from './dialogs';
 import { defaultSettings, readJson, SETTINGS_KEY, type Settings } from './storage';
@@ -60,7 +61,7 @@ export function AtelierApp() {
   return <Counter session={session} server={server} onLogout={async () => { await invoke('atelier_logout').catch(() => {}); setSession(null); }} />;
 }
 
-type Tab = 'reception' | 'rendre' | 'comptoir' | 'jour';
+type Tab = 'reception' | 'rendre' | 'comptoir' | 'stock' | 'jour';
 
 function Counter({ session, server, onLogout }: { session: Session; server: string; onLogout: () => void }) {
   const [tab, setTab] = useState<Tab>('reception'); const [msg, setMsg] = useState(''); const [err, setErr] = useState('');
@@ -71,17 +72,18 @@ function Counter({ session, server, onLogout }: { session: Session; server: stri
     <aside className="v5-side">
       <div className="v5-brand"><FixiLogo size={40} /><div className="v5-brand-text"><strong>FIXI</strong><small>Atelier</small></div></div>
       <nav className="v5-nav" aria-label="Menu"><div className="v5-nav-group"><span className="v5-nav-heading">Comptoir</span>
-        {([['reception', ClipboardList, 'Réception'], ['rendre', Wrench, 'À rendre · Encaisser'], ['comptoir', ShoppingBag, 'Vente comptoir'], ['jour', Moon, 'Fin de journée']] as const).map(([k, I, l]) => <button key={k} className="v5-nav-item" aria-current={tab === k ? 'page' : undefined} onClick={() => { setTab(k); setErr(''); setMsg(''); }}><I size={19} /><span>{l}</span></button>)}
+        {([['reception', ClipboardList, 'Réception'], ['rendre', Wrench, 'À rendre · Encaisser'], ['comptoir', ShoppingBag, 'Vente comptoir'], ['stock', PackagePlus, 'Entrée de stock'], ['jour', Moon, 'Fin de journée']] as const).map(([k, I, l]) => <button key={k} className="v5-nav-item" aria-current={tab === k ? 'page' : undefined} onClick={() => { setTab(k); setErr(''); setMsg(''); }}><I size={19} /><span>{l}</span></button>)}
       </div></nav>
       <div className="v5-account"><span className="v5-led" aria-hidden /><div><strong>{session.fullName}</strong><small>{session.roleLabel} · {session.shopName}</small></div>
         <div className="v5-account-actions"><button className="v5-icon-btn" title="Mode fournisseur" aria-label="Mode fournisseur" onClick={() => switchSpace('supplier')}><ArrowLeftRight size={17} /></button><button className="v5-icon-btn" title="Déconnexion" aria-label="Déconnexion" onClick={onLogout}><LogOut size={17} /></button></div></div>
     </aside>
-    <main className="v5-main at-main"><header className="at-head"><Clock /><h1>{tab === 'reception' ? 'Réception' : tab === 'rendre' ? 'À rendre · Encaisser' : tab === 'comptoir' ? 'Vente comptoir' : 'Fin de journée'}</h1></header>
+    <main className="v5-main at-main"><header className="at-head"><Clock /><h1>{tab === 'reception' ? 'Réception' : tab === 'rendre' ? 'À rendre · Encaisser' : tab === 'comptoir' ? 'Vente comptoir' : tab === 'stock' ? 'Entrée de stock' : 'Fin de journée'}</h1></header>
       {msg && <p className="v5-alert v5-alert--info" role="status"><CheckCircle2 size={16} /> <span>{msg}</span></p>}
       {err && <p className="v5-alert v5-alert--danger" role="alert"><span>{err}</span></p>}
       {tab === 'reception' && <Reception onDone={r => { setMsg(`Dossier ${r.code} créé.`); setPrinting({ kind: 'depot', r }); }} onError={fail} />}
       {tab === 'rendre' && <ToReturn onPaid={(r, amount, method) => { setMsg(`${r.code} encaissé : ${dt(amount)}.`); setPrinting({ kind: 'recu', r, amount, method }); }} onError={fail} />}
       {tab === 'comptoir' && <CounterSaleTab manager={session.role === 'ADMIN'} onSold={(p, m) => { setErr(''); setMsg(m); setPrinting({ kind: p.kind, sale: p }); }} onError={fail} />}
+      {tab === 'stock' && <AtelierStockIn manager={session.role === 'ADMIN'} onDone={m => { setErr(''); setMsg(m); }} onError={fail} />}
       {tab === 'jour' && <Day onError={fail} />}
     </main>
     {printing && <AtelierTicket p={printing} shopName={session.shopName} server={server} />}
