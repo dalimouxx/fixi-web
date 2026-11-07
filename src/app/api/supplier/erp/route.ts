@@ -2,6 +2,8 @@ import {prisma} from '@/lib/prisma';
 import {requireSupplierSession,SupplierRole} from '@/lib/supplier-auth';
 import {bad,ok} from '@/lib/http';
 import {plain} from '@/lib/serializers';
+import {can,discountPct} from '@/lib/supplier-permissions';
+import {checkPermOrApproval} from '@/lib/supplier-approval';
 import {notifySupplier,notifySupplierLowStock} from '@/lib/supplier-notifications';
 import {notifyShop} from '@/lib/notifications';
 import {NotificationType} from '@prisma/client';
@@ -108,6 +110,7 @@ export async function POST(req:Request){
     prisma.supplierWarehouseStock.findMany({where:{companyId:s.companyId,productId:{in:ids}},orderBy:{updatedAt:'asc'}})
    ]);
    let subtotal=0;const normalized:any[]=[];
+   const tiers=await prisma.supplierPriceTier.findMany({where:{companyId:s.companyId,productId:{in:items.map((x:any)=>String(x.productId))}},select:{productId:true,minQty:true,unitPrice:true}});const custPct=b.customerId?Number((await prisma.supplierErpCustomer.findFirst({where:{id:String(b.customerId),companyId:s.companyId},select:{discountPct:true}}))?.discountPct||0):0;let refTotal=0,manualOff=0;
    for(const i of items){
     const p=products.find(x=>x.id===String(i.productId));const q=Math.max(1,Math.trunc(Number(i.quantity||1)));
     if(!p)return bad('Produit introuvable',404);
@@ -120,12 +123,23 @@ export async function POST(req:Request){
     if(!warehouseId&&productWarehouseRows.reduce((a,x)=>a+Math.max(0,Number(x.quantity||0)-Number(x.reserved||0)),0)<warehouseConsumption)return bad('Répartition dépôt incohérente pour '+p.name,409);
     const defaultPrice=Number(p.retailPrice??p.price);const price=money(i.unitPrice??defaultPrice);
     const minimum=p.minimumPrice===null?null:Number(p.minimumPrice);
-    if(minimum!==null&&price<minimum&&!allow(s.role,['OWNER','ADMIN','MANAGER']))return bad('Prix inférieur au minimum autorisé pour '+p.name,409);
+    if(minimum!==null&&price<minimum&&!allow(s.role,['OWNER','ADMIN','MANAGER'])&&!(await checkPermOrApproval(s,'discount',b.approval).catch(()=>null)))return bad('Prix inférieur au minimum autorisé pour '+p.name+' : demandez le code gérant.',409);
+    // Prix de référence « normal » (gros / palier / remise client comprises) : ce qui est en dessous compte comme remise manuelle.
+    const tier=tiers.filter(t=>t.productId===p.id&&q>=t.minQty).sort((a,b)=>b.minQty-a.minQty)[0];
+    const refPrice=Math.min(defaultPrice,p.wholesalePrice==null?defaultPrice:Number(p.wholesalePrice),tier?Number(tier.unitPrice):defaultPrice)*(1-custPct/100);
+    refTotal+=refPrice*q;if(price<refPrice)manualOff+=(refPrice-price)*q;
     subtotal+=price*q;normalized.push({p,q,price,warehouseRow,productWarehouseRows,warehouseConsumption});
    }
    for(const c of customLines)subtotal+=c.price*c.q;
    const discount=Math.max(0,money(b.discount||0)),tax=Math.max(0,money(b.tax||0)),total=Math.max(0,money(subtotal-discount+tax));
    if(discount>money(subtotal))return bad('Remise supérieure au montant de la vente',409);
+   // Vendeur / caissier : au-delà de la limite de remise de l'entreprise, il faut le code gérant.
+   let approval:any=null;
+   if(!can(s.role,'discount')){
+    const company=await prisma.supplierCompany.findUnique({where:{id:s.companyId},select:{staffDiscountLimitPct:true}});
+    const pct=discountPct(refTotal+customLines.reduce((a,c)=>a+c.price*c.q,0),manualOff+discount);
+    if(pct>(company?.staffDiscountLimitPct??10)+0.001)approval=await checkPermOrApproval(s,'discount',b.approval);
+   }
    const rawPayments=Array.isArray(b.payments)&&b.payments.length?b.payments:(Number(b.paid||0)>0?[{method:String(b.method||'CASH'),amount:Number(b.paid)}]:[]);
    const payments=rawPayments.map((x:any)=>({method:String(x.method||'CASH').toUpperCase(),amount:Math.max(0,money(x.amount||0)),reference:x.reference||null})).filter((x:any)=>x.amount>0);
    const paid=money(payments.reduce((a:number,x:any)=>a+x.amount,0));
@@ -158,14 +172,14 @@ export async function POST(req:Request){
     throw e;
    });
    if((sale as any).__replayed){delete (sale as any).__replayed;return ok(plain(sale))}
-   await audit(s.companyId,s.id,'CREATE','SALE',sale.id,{reference:ref,total,paid,itemCount:normalized.length+customLines.length});
+   await audit(s.companyId,s.id,'CREATE','SALE',sale.id,{reference:ref,total,paid,itemCount:normalized.length+customLines.length,...(approval?{discountApprovedBy:approval.approverName}:{})});
    await Promise.allSettled(normalized.map((x:any)=>notifySupplierLowStock(s.companyId,x.p.id)));
    if(paid<total)await notifySupplier(s.companyId,'Vente avec reste à payer',`${ref} · reste ${money(total-paid).toFixed(3)} DT`,{href:'/supplier?tab=dues',kind:'PAYMENT',priority:'NORMAL',roles:['OWNER','ADMIN','MANAGER','ACCOUNTANT'],metadata:{saleId:sale.id,reference:ref,total,paid,due:money(total-paid)}});
    return ok(plain(sale),{status:201});
   }
 
   if(action==='PURCHASE'){
-   if(!allow(s.role,['OWNER','ADMIN','MANAGER','STOCK']))return bad('FORBIDDEN',403);
+   if(!can(s.role,'purchases'))return bad('FORBIDDEN',403);
    const items=Array.isArray(b.items)&&b.items.length?b.items:[{productId:b.productId,quantity:b.quantity,unitCost:b.unitCost}];
    const ids:string[]=[...new Set<string>(items.map((i:any)=>String(i.productId||'')).filter((x:string)=>Boolean(x)))];if(!ids.length)return bad('Aucun article');
    const warehouseId=String(b.warehouseId||'')||null;
@@ -213,7 +227,7 @@ export async function POST(req:Request){
   }
 
   if(action==='EXPENSE'){
-   if(!allow(s.role,['OWNER','ADMIN','MANAGER','CASHIER','ACCOUNTANT']))return bad('FORBIDDEN',403);
+   if(!can(s.role,'expenses'))return bad('FORBIDDEN',403);
    const amount=money(b.amount),method=String(b.method||'CASH').toUpperCase();if(!b.label||!(amount>0))return bad('Dépense invalide');
    const cs=await cashLike(s.companyId,method)?await openCash(s.companyId,s.id):null;if(await cashLike(s.companyId,method)&&!cs)return bad('Ouvrez votre caisse pour enregistrer une dépense espèces',409);
    const x=await prisma.supplierErpExpense.create({data:{companyId:s.companyId,cashSessionId:cs?.id||null,category:String(b.category||'Général'),label:String(b.label),amount,method,note:b.note||null,createdById:s.id}});
@@ -268,7 +282,7 @@ export async function POST(req:Request){
   }
 
   if(action==='PURCHASE_PAYMENT'){
-   if(!allow(s.role,['OWNER','ADMIN','MANAGER','ACCOUNTANT']))return bad('FORBIDDEN',403);
+   if(!can(s.role,'vendorPay'))return bad('FORBIDDEN',403);
    const purchaseId=String(b.purchaseId||''),amount=money(b.amount),method=String(b.method||'CASH').toUpperCase();
    if(!purchaseId||!(amount>0))return bad('Règlement fournisseur invalide');
    const purchase=await prisma.supplierErpPurchase.findFirst({where:{id:purchaseId,companyId:s.companyId,status:{not:'CANCELLED'}}});if(!purchase)return bad('Achat introuvable',404);

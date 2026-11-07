@@ -1,5 +1,6 @@
 import {prisma} from '@/lib/prisma';
 import {SUPPLIER_COST_ROLES,stripCosts} from '@/lib/stock-delete';
+import {can} from '@/lib/supplier-permissions';
 import {resolveBarcode} from '@/lib/supplier-barcode';
 import {requireSupplierRole,requireSupplierSession} from '@/lib/supplier-auth';
 import {bad,ok} from '@/lib/http';
@@ -73,6 +74,8 @@ export async function PATCH(req:Request){
   const b=await req.json();const id=String(b.id||'');if(!id)return bad('Produit requis');
   const current=await prisma.supplierProduct.findFirst({where:{id,companyId:s.companyId}});if(!current)return bad('Produit introuvable',404);
   const {category,brand}=await resolveMaster(s.companyId,b.categoryId??current.categoryId,b.brandId??current.brandId,b.unitId??current.unitId);
+  // Le magasinier modifie les fiches mais pas les prix de vente (table des droits).
+  if(!can(s.role,'productPrice')&&['price','retailPrice','wholesalePrice','minimumPrice'].some(k=>b[k]!==undefined&&Number(b[k])!==Number((current as any)[k])))return bad('Les prix de vente sont réservés au gérant.',403);
   const data:any={};
   const strFields=['name','description','imageUrl','qualityGrade','barcode','location'];
   for(const k of strFields)if(b[k]!==undefined)data[k]=String(b[k]||'').trim()||null;

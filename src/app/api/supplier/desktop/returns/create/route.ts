@@ -1,5 +1,6 @@
 import {prisma} from '@/lib/prisma';
 import {requireSupplierRole} from '@/lib/supplier-auth';
+import {checkPermOrApproval} from '@/lib/supplier-approval';
 import {bad,ok} from '@/lib/http';
 import {POST as advancedPost} from '@/app/api/supplier/advanced/route';
 
@@ -8,9 +9,12 @@ import {POST as advancedPost} from '@/app/api/supplier/advanced/route';
  */
 export async function POST(req:Request){
  try{
-  const s=await requireSupplierRole(['OWNER','ADMIN','MANAGER']);
+  // Vendeur / caissier : remboursement possible avec le code gérant saisi sur la caisse.
+  const s=await requireSupplierRole(['OWNER','ADMIN','MANAGER','SALES','CASHIER']);
   if(process.env.FIXI_WINDOWS_RETURNS_ENABLED!=='true')return bad('Retours Windows non activés sur FIXI Cloud',403);
   const body=await req.json();
+  const approval=await checkPermOrApproval(s,'refund',body?.approval);
+  if(approval)await prisma.supplierAuditEvent.create({data:{companyId:s.companyId,accountId:s.id,action:'REFUND_APPROVED',entity:'RETURN',metadata:{by:approval.approverName,sourceSaleId:body?.sourceSaleId||body?.saleId||null}}}).catch(()=>null);
   const sourceSaleId=String(body.sourceSaleId||'');
   const reference=String(body.reference||'');
   if(!/^WINRET-[a-f0-9-]{36}$/i.test(reference))return bad('Référence de retour Windows invalide',400);

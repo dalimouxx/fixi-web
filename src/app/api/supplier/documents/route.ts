@@ -1,3 +1,4 @@
+import {can} from '@/lib/supplier-permissions';
 import {prisma} from '@/lib/prisma';
 import {requireSupplierSession} from '@/lib/supplier-auth';
 import {bad,ok} from '@/lib/http';
@@ -20,7 +21,8 @@ export async function POST(req:Request){
  try{
   const s=await requireSupplierSession();const b=await req.json();const type=String(b.type||'');
   if(!TYPES.includes(type as any))return bad('Type de document invalide');
-  if(!['OWNER','ADMIN','MANAGER','SALES','CASHIER','ACCOUNTANT','STOCK'].includes(s.role))return bad('FORBIDDEN',403);
+  // Devis : vendeur aussi ; autres documents : gérant, responsable, comptable ; magasinier : bons de commande / livraison.
+  if(!(type==='QUOTE'?can(s.role,'quotes'):can(s.role,'documents')||(s.role==='STOCK'&&['PURCHASE_ORDER','DELIVERY_NOTE'].includes(type))))return bad('FORBIDDEN',403);
 
   const raw=Array.isArray(b.items)?b.items:[];
   if(!raw.length)return bad('Aucune ligne');

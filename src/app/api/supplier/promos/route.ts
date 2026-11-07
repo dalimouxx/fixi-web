@@ -6,7 +6,8 @@ import { plain } from '@/lib/serializers';
 import { notifyShop } from '@/lib/notifications';
 import { parseAmount } from '@/lib/product-quick';
 
-const EDITORS = ['OWNER', 'ADMIN', 'MANAGER', 'SALES'] as const;
+// Promotions = prix : propriétaire, administrateur et responsable (table des droits).
+const EDITORS = ['OWNER', 'ADMIN', 'MANAGER'] as const;
 const MAX_NOTIFY_PER_DAY = 5;
 
 export async function GET() {

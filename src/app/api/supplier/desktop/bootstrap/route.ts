@@ -1,5 +1,6 @@
 import {prisma} from '@/lib/prisma';
 import {requireSupplierRole} from '@/lib/supplier-auth';
+import {DESKTOP_ROLES,permsOf} from '@/lib/supplier-permissions';
 import {bad,ok} from '@/lib/http';
 
 /** Minimal read-only payload for connected Windows POS clients.
@@ -7,7 +8,8 @@ import {bad,ok} from '@/lib/http';
  */
 export async function GET(){
  try{
-  const s=await requireSupplierRole(['OWNER','ADMIN','MANAGER','SALES','CASHIER']);
+  // Magasinier et comptable ouvrent aussi la caisse : leurs menus suivent la table des droits.
+  const s=await requireSupplierRole(DESKTOP_ROLES);
   const since=new Date(Date.now()-30*86400000);
   const [products,customers,profile,sold]=await Promise.all([
    prisma.supplierProduct.findMany({
@@ -34,7 +36,8 @@ export async function GET(){
   const tiersBy=new Map<string,{minQty:number;unitPrice:number}[]>();for(const t of tiers){const l=tiersBy.get(t.productId)||[];l.push({minQty:t.minQty,unitPrice:Number(t.unitPrice)});tiersBy.set(t.productId,l)}
   const dueBy=new Map<string,number>((dues as any[]).map(d=>[String(d.customerId),Math.max(0,Number(d._sum?.total||0)-Number(d._sum?.paid||0))]));
   const soldBy=new Map<string,number>((sold as any[]).map(x=>[String(x.productId),Number(x._sum?.quantity||0)]));
-  return ok({connected:true,companyName:s.companyName,role:s.role,account:{id:s.id,fullName:s.fullName},receiptProfile:profile,products:products.map(p=>({
+  const company=await prisma.supplierCompany.findUnique({where:{id:s.companyId},select:{staffDiscountLimitPct:true}});
+  return ok({connected:true,companyName:s.companyName,role:s.role,perms:permsOf(s.role),discountLimitPct:company?.staffDiscountLimitPct??10,account:{id:s.id,fullName:s.fullName},receiptProfile:profile,products:products.map(p=>({
    id:p.id,name:p.name,sku:p.sku,barcode:p.barcode,category:p.category,brand:p.brand,
    price:Number(p.retailPrice??p.price),wholesalePrice:p.wholesalePrice===null?null:Number(p.wholesalePrice),minStock:p.minStock,stock:Math.max(0,p.stock-p.reservedStock),
    updatedAt:p.updatedAt,sold30:soldBy.get(p.id)||0,onHand:p.stock,tiers:tiersBy.get(p.id)||[]
