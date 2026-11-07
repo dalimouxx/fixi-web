@@ -1,4 +1,5 @@
 import {prisma} from '@/lib/prisma';
+import {resolveBarcode} from '@/lib/supplier-barcode';
 import {requireSupplierRole} from '@/lib/supplier-auth';
 import {bad,ok} from '@/lib/http';
 import {requireSupplierCreationCapacity} from '@/lib/supplier-saas';
@@ -27,7 +28,7 @@ export async function POST(req:Request){
   };
   const idx=(field:string)=>{const a=aliases[field]||[field];return headers.findIndex(h=>a.includes(h))};
   if(idx('sku')<0||idx('name')<0)return bad('Colonnes obligatoires : SKU/référence et nom');
-  let created=0,updated=0,skipped=0;const errors:any[]=[];
+  let created=0,updated=0,skipped=0;const errors:any[]=[];const reserved=new Set<string>();
   for(let n=1;n<lines.length;n++){
    const cols=parseLine(lines[n],sep),get=(f:string)=>{const i=idx(f);return i>=0?(cols[i]??'').trim():''};
    const sku=get('sku').toUpperCase(),name=get('name');if(!sku||!name){skipped++;errors.push({line:n+1,error:'SKU ou nom manquant'});continue}
@@ -40,6 +41,8 @@ export async function POST(req:Request){
     if(get('stock')!=='')data.stock=Math.max(0,Math.trunc(num(get('stock'))));
     if(get('minStock')!=='')data.minStock=Math.max(0,Math.trunc(num(get('minStock'))));
     if(get('warrantyDays')!=='')data.warrantyDays=Math.max(0,Math.trunc(num(get('warrantyDays'))));
+    // Code-barres : jamais le même que chez un autre fournisseur ; vide à la création → code intelligent.
+    if(data.barcode||!existing)data.barcode=await resolveBarcode(prisma as any,s.companyId,{barcode:data.barcode,name,category:data.category,exceptId:existing?.id||null},reserved);else delete data.barcode;
     if(existing){await prisma.supplierProduct.update({where:{id:existing.id},data});updated++}
     else{
      await requireSupplierCreationCapacity(s.companyId,'PRODUCT');

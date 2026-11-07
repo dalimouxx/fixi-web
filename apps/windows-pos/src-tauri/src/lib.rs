@@ -425,6 +425,27 @@ async fn supplier_stock_count(state: State<'_,Arc<DesktopState>>, request:serde_
  v4_request(&state,"/api/supplier/advanced",Some(request)).await
 }
 
+/// Entrée de stock au scanner : coûts d'achat (gérant) puis validation. Seuls ces champs sont relayés.
+#[tauri::command]
+async fn supplier_stock_in_costs(state: State<'_,Arc<DesktopState>>) -> Result<serde_json::Value,String>{
+ v4_request(&state,"/api/supplier/stock-in",None).await
+}
+
+#[tauri::command]
+async fn supplier_stock_in(state: State<'_,Arc<DesktopState>>, request:serde_json::Value) -> Result<serde_json::Value,String>{
+ let items=request.get("items").and_then(|v|v.as_array()).ok_or("Aucun article")?;
+ if items.is_empty()||items.len()>300{return Err("Entrée de stock invalide".into())}
+ let mut clean=Vec::new();
+ for it in items{
+  let id=it.get("productId").and_then(|v|v.as_str()).unwrap_or("");
+  let q=it.get("quantity").and_then(|v|v.as_i64()).unwrap_or(0);
+  if id.is_empty()||id.len()>40||q<=0||q>100000{return Err("Ligne d’entrée invalide".into())}
+  clean.push(serde_json::json!({"productId":id,"quantity":q,"unitCost":it.get("unitCost").cloned().unwrap_or(serde_json::Value::Null)}));
+ }
+ let text=|k:&str,max:usize|request.get(k).and_then(|v|v.as_str()).map(|v|v.chars().take(max).collect::<String>()).unwrap_or_default();
+ v4_request(&state,"/api/supplier/stock-in",Some(serde_json::json!({"items":clean,"source":text("source",120),"reference":text("reference",60)}))).await
+}
+
 #[tauri::command]
 async fn supplier_open_stock_counts(state: State<'_,Arc<DesktopState>>) -> Result<serde_json::Value,String>{
  let data=v4_request(&state,"/api/supplier/advanced",None).await?;
@@ -552,7 +573,7 @@ pub fn run() {
     tauri::Builder::default()
         .manage(Arc::new(DesktopState{connection:Mutex::new(None),pin:Mutex::new(None)}))
         .manage(Arc::new(atelier::AtelierState::new()))
-        .invoke_handler(tauri::generate_handler![supplier_login,supplier_refresh,supplier_logout,supplier_checkout,supplier_history,supplier_cash_action,supplier_orders,supplier_order_transition,supplier_debts,supplier_debt_payment,supplier_returns,supplier_return_create,pin_setup,pin_lock,pin_unlock,supplier_saved_profile,supplier_pin_login,supplier_operation_status,supplier_find_tickets,supplier_return_source,supplier_customer_debts,supplier_customer_payment,supplier_create_customer,supplier_delivery_shifts,supplier_delivery_close,supplier_switch_user,supplier_cash_summary,app_version,open_external,hardware::list_printers,hardware::cash_drawer_open,hardware::open_customer_display,hardware::close_customer_display,updater::check_update,updater::install_update,supplier_invoice,supplier_update_customer,supplier_stock_count,supplier_open_stock_counts,supplier_report_problem,supplier_create_product,supplier_lookup_barcode,atelier::atelier_options,atelier::atelier_login,atelier::atelier_request,atelier::atelier_logout])
+        .invoke_handler(tauri::generate_handler![supplier_stock_in_costs,supplier_stock_in,supplier_login,supplier_refresh,supplier_logout,supplier_checkout,supplier_history,supplier_cash_action,supplier_orders,supplier_order_transition,supplier_debts,supplier_debt_payment,supplier_returns,supplier_return_create,pin_setup,pin_lock,pin_unlock,supplier_saved_profile,supplier_pin_login,supplier_operation_status,supplier_find_tickets,supplier_return_source,supplier_customer_debts,supplier_customer_payment,supplier_create_customer,supplier_delivery_shifts,supplier_delivery_close,supplier_switch_user,supplier_cash_summary,app_version,open_external,hardware::list_printers,hardware::cash_drawer_open,hardware::open_customer_display,hardware::close_customer_display,updater::check_update,updater::install_update,supplier_invoice,supplier_update_customer,supplier_stock_count,supplier_open_stock_counts,supplier_report_problem,supplier_create_product,supplier_lookup_barcode,atelier::atelier_options,atelier::atelier_login,atelier::atelier_request,atelier::atelier_logout])
         .run(tauri::generate_context!())
         .expect("error while running FIXI Caisse Windows");
 }

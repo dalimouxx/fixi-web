@@ -2,6 +2,7 @@ import React,{useEffect,useMemo,useRef,useState} from 'react';
 import {invoke} from '@tauri-apps/api/core';
 import {Check,ClipboardList,Minus,Plus,ScanBarcode,Trash2} from 'lucide-react';
 import {readJson,writeJson} from './storage';
+import {findByCode} from './stock-in';
 
 type P={id:string;name:string;sku:string;barcode?:string|null;stock:number;onHand?:number};
 type Session={countId:string;reference:string;counts:Record<string,number>;startedAt:string};
@@ -28,7 +29,7 @@ export function InventoryPage({products,storageKey,canClose,demo,onDone,onError,
    setSession({countId:c.id,reference:c.reference,counts:{},startedAt:new Date().toISOString()})
   }catch(e){onError(String(e))}finally{setBusy(false)}}
  function onScan(){const v=scan.trim().toLowerCase();setScan('');if(!v||!session)return;
-  const p=products.find(x=>[x.barcode,x.sku].some(c=>c?.trim().toLowerCase()===v));
+  const p=findByCode(products,v);
   if(!p){onError('Code-barres introuvable : '+v);return}
   setCount(p.id,(session.counts[p.id]||0)+1);setLast(p.id)}
  async function close(){if(!session)return;const changes=rows.filter(r=>r.diff!==0);
