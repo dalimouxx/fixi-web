@@ -176,6 +176,7 @@ function SaleTicket({ s, shopName }: { s: SalePrint; shopName: string }) {
     <p><span>{refund ? 'Rendu au client' : 'Total'}</span><b>{refund ? '− ' : ''}{dt(s.total)}</b></p>
     <p><span>Moyen</span><b>{METHOD_LABEL[s.method] || s.method}</b></p>
     {!refund && s.received != null && s.method === 'CASH' && <><p><span>Reçu</span><b>{dt(s.received)}</b></p><p><span>Monnaie</span><b>{dt(s.change || 0)}</b></p></>}
+    {s.offline && <p><span>Vente enregistrée hors ligne</span><b>envoi automatique</b></p>}
     <footer>{refund ? 'Remboursement enregistré' : 'Merci pour votre achat'} · Fixi</footer>
   </div>;
 }

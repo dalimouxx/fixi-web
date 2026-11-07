@@ -12,8 +12,26 @@ const METHODS = [['CASH', Banknote, 'Espèces'], ['CARD', CreditCard, 'Carte'], 
 export const METHOD_LABEL: Record<string, string> = { CASH: 'Espèces', CARD: 'Carte', D17: 'D17', FLOUCI: 'Flouci', BANK_TRANSFER: 'Virement', OTHER: 'Autre' };
 const REASONS = ['Article défectueux', 'Ne convient pas', 'Erreur de caisse'];
 
+// ---- Hors ligne : catalogue en cache + file des ventes à envoyer (référence unique = jamais de doublon) ----
+const ITEMS_KEY = 'fixi-atelier-cs-items', QUEUE_KEY = 'fixi-atelier-cs-queue';
+export type QueuedSale = { clientRef: string; createdAt: string; body: any; total: number; label: string; error?: string };
+export const isNetworkError = (e: unknown) => /^Erreur réseau|error sending request|dns|timed? ?out|connect/i.test(String(e));
+export function newClientRef() { return 'W' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+export function readQueue(): QueuedSale[] { try { return JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]'); } catch { return []; } }
+function writeQueue(q: QueuedSale[]) { try { localStorage.setItem(QUEUE_KEY, JSON.stringify(q)); } catch {} }
+/** Envoie les ventes en attente ; garde celles refusées par le serveur avec la raison (stock, caisse fermée…). */
+export async function flushQueue(): Promise<{ sent: number; left: number }> {
+  let q = readQueue(); let sent = 0;
+  for (const item of q) {
+    try { await req('POST', '/api/counter-sales', { ...item.body, clientRef: item.clientRef }); q = q.filter(x => x.clientRef !== item.clientRef); sent++; }
+    catch (e) { if (isNetworkError(e)) break; q = q.map(x => x.clientRef === item.clientRef ? { ...x, error: String(e).replace(/ \(HTTP \d+\)$/, '') } : x); }
+    writeQueue(q);
+  }
+  return { sent, left: q.length };
+}
+
 type Item = { id: string; sku: string; barcode?: string | null; name: string; category: string | null; quantity: number; minQuantity: number; salePrice: number };
-export type SalePrint = { kind: 'vente' | 'retour'; number: string; lines: { name: string; quantity: number; total: number }[]; total: number; discount?: number; method: string; received?: number; change?: number };
+export type SalePrint = { kind: 'vente' | 'retour'; number: string; lines: { name: string; quantity: number; total: number }[]; total: number; discount?: number; method: string; received?: number; change?: number; offline?: boolean };
 
 /** Numéro de ticket : « 42 » devient « V-000042 ». */
 export function ticketNumber(raw: string) { const t = raw.trim().toUpperCase(); return /^\d+$/.test(t) ? 'V-' + t.padStart(6, '0') : t; }
@@ -38,7 +56,14 @@ export function CounterSaleTab({ manager, onSold, onError }: { manager: boolean;
   const scanRef = useRef<HTMLInputElement>(null);
   const settings = useMemo(() => ({ ...defaultSettings, ...readJson<Partial<Settings>>(SETTINGS_KEY, {}) }), []);
 
-  useEffect(() => { const t = setTimeout(() => { req<any>('GET', '/api/counter-sales?q=' + encodeURIComponent(q)).then(setData).catch(onError); }, 200); return () => clearTimeout(t); }, [q, n]);
+  const [offline, setOffline] = useState(false); const [queue, setQueue] = useState<QueuedSale[]>(() => readQueue());
+  useEffect(() => { const t = setTimeout(() => {
+    req<any>('GET', '/api/counter-sales?q=' + encodeURIComponent(q)).then(d => { setData(d); setOffline(false); if (!q) try { localStorage.setItem(ITEMS_KEY, JSON.stringify({ items: d.items, shop: d.shop, role: d.role })); } catch {} })
+      .catch(e => { if (!isNetworkError(e)) { onError(e); return; } setOffline(true); try { const c = JSON.parse(localStorage.getItem(ITEMS_KEY) || 'null'); if (c) { const words = q.toLowerCase(); setData({ ...c, sales: [], items: c.items.filter((i: any) => !words || `${i.name} ${i.sku} ${i.barcode || ''} ${i.category || ''}`.toLowerCase().includes(words)) }); } } catch {} });
+  }, 200); return () => clearTimeout(t); }, [q, n]);
+  // Retour d'Internet : envoi automatique des ventes en attente (toutes les 30 s et dès que le réseau revient).
+  useEffect(() => { const run = () => { if (!readQueue().length) return; void flushQueue().then(r => { setQueue(readQueue()); if (r.sent) { setOffline(false); setN(x => x + 1); } }); };
+    run(); const t = setInterval(run, 30_000); window.addEventListener('online', run); return () => { clearInterval(t); window.removeEventListener('online', run); }; }, []);
   const items: Item[] = useMemo(() => (data?.items || []).map((x: any) => ({ ...x, salePrice: Number(x.salePrice) })), [data]);
   const lines = Object.values(cart);
   const count = lines.reduce((a, l) => a + l.qty, 0);
@@ -58,7 +83,7 @@ export function CounterSaleTab({ manager, onSold, onError }: { manager: boolean;
     const code = q.trim(); if (!code) return;
     const exact = (list: Item[]) => list.find(i => (i.barcode || '').toUpperCase() === code.toUpperCase()) || list.find(i => i.sku.toUpperCase() === code.toUpperCase());
     let hit = exact(items);
-    if (!hit) { try { const r = await req<any>('GET', '/api/counter-sales?q=' + encodeURIComponent(code)); const list = (r.items || []).map((x: any) => ({ ...x, salePrice: Number(x.salePrice) })); hit = exact(list) || (list.length === 1 ? list[0] : undefined); } catch (x) { onError(x); return; } }
+    if (!hit) { try { const r = await req<any>('GET', '/api/counter-sales?q=' + encodeURIComponent(code)); const list = (r.items || []).map((x: any) => ({ ...x, salePrice: Number(x.salePrice) })); hit = exact(list) || (list.length === 1 ? list[0] : undefined); } catch (x) { if (!isNetworkError(x)) { onError(x); return; } setOffline(true); try { const c = JSON.parse(localStorage.getItem(ITEMS_KEY) || 'null'); hit = c ? exact((c.items || []).map((x: any) => ({ ...x, salePrice: Number(x.salePrice) }))) : undefined; } catch {} } }
     if (hit && hit.quantity > 0) { add(hit); setQ(''); }
     else if (hit) onError(`${hit.name} : rupture de stock`);
   }
@@ -67,15 +92,30 @@ export function CounterSaleTab({ manager, onSold, onError }: { manager: boolean;
   async function sell() {
     if (!lines.length || busy || short || needSession) return; setBusy(true);
     try {
-      const r = await req<any>('POST', '/api/counter-sales', { lines: lines.map(l => ({ itemId: l.item.id, quantity: l.qty })), discount: disc, splits: [{ method, amount: total, receivedAmount: method === 'CASH' ? got : total }] });
+      const body = { lines: lines.map(l => ({ itemId: l.item.id, quantity: l.qty })), discount: disc, splits: [{ method, amount: total, receivedAmount: method === 'CASH' ? got : total }], clientRef: newClientRef() };
+      let r: any;
+      try { r = await req<any>('POST', '/api/counter-sales', body); }
+      catch (e) {
+        if (!isNetworkError(e) || method !== 'CASH') throw e; // hors ligne : espèces seulement (la carte/D17 doivent être confirmées en ligne)
+        const ticket = 'HL-' + body.clientRef.slice(-6).toUpperCase();
+        const qd: QueuedSale = { clientRef: body.clientRef, createdAt: new Date().toISOString(), body, total, label: lines.map(l => `${l.qty}× ${l.item.name}`).join(', ') };
+        writeQueue([...readQueue(), qd]); setQueue(readQueue()); setOffline(true);
+        r = { number: ticket, lines: lines.map(l => ({ name: l.item.name, quantity: l.qty, total: l.item.salePrice * l.qty })), total, discount: disc, change, offline: true };
+      }
       if (method === 'CASH' && settings.drawerPrinter) void invoke('cash_drawer_open', { printer: settings.drawerPrinter }).catch(() => {});
-      onSold({ kind: 'vente', number: r.number, lines: r.lines.map((l: any) => ({ name: l.name, quantity: l.quantity, total: Number(l.total) })), total: Number(r.total), discount: Number(r.discount), method, received: method === 'CASH' ? got : undefined, change: Number(r.change) }, `Vente ${r.number} encaissée : ${dt(Number(r.total))}${Number(r.change) > 0 ? ` · monnaie ${dt(Number(r.change))}` : ''}.`);
+      onSold({ kind: 'vente', number: r.number, lines: r.lines.map((l: any) => ({ name: l.name, quantity: l.quantity, total: Number(l.total) })), total: Number(r.total), discount: Number(r.discount), method, received: method === 'CASH' ? got : undefined, change: Number(r.change), offline: !!r.offline }, r.offline ? `Hors ligne : vente ${r.number} gardée sur ce PC (${dt(Number(r.total))}). Elle sera envoyée dès le retour d’Internet.` : `Vente ${r.number} encaissée : ${dt(Number(r.total))}${Number(r.change) > 0 ? ` · monnaie ${dt(Number(r.change))}` : ''}.`);
       reset(); setN(x => x + 1);
     } catch (x) { onError(x); setN(x => x + 1); } finally { setBusy(false); }
   }
 
   return <div className="at-split at-cs">
     <section className="v5-card at-list">
+      {(offline || queue.length > 0) && <div className={'at-cs-offline' + (queue.some(x => x.error) ? ' is-error' : '')} role="status">
+        <b>{offline ? 'Hors ligne' : 'Ventes à envoyer'}</b>
+        <span>{offline ? 'Catalogue en mémoire · ventes en espèces gardées sur ce PC' : ''}{queue.length ? `${offline ? ' · ' : ''}${queue.length} vente(s) en attente (${dt(queue.reduce((a, x) => a + x.total, 0))})` : ''}</span>
+        {queue.some(x => x.error) && <small>{queue.filter(x => x.error).map(x => `${x.label} : ${x.error}`).join(' · ')}</small>}
+        {queue.length > 0 && <button type="button" className="v5-btn v5-btn--ghost v5-btn--sm" onClick={() => void flushQueue().then(() => { setQueue(readQueue()); setN(x => x + 1); })}>Envoyer maintenant</button>}
+      </div>}
       <div className="v5-search"><ScanBarcode size={17} /><input ref={scanRef} autoFocus value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') void scan(); if (e.key === 'Escape') setQ(''); }} placeholder="Scannez ou cherchez : coque, câble, code-barres…" /></div>
       <div className="at-cs-grid">
         {items.map(it => { const inCart = cart[it.id]?.qty || 0; const out = it.quantity <= 0;

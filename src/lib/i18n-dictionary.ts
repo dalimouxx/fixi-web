@@ -1,5 +1,6 @@
 import { arV15, translateArPattern, translateArDate } from './i18n-v15';
 import { arV17 } from './i18n-v17';
+import { arV19 } from './i18n-v19';
 export const ar:Record<string,string>={
 'Gérant':'المدير','Réception':'الاستقبال','Technicien':'الفني','Caissier':'أمين الصندوق','Reçu':'مستلم','En réparation':'قيد الإصلاح','Attente pièce':'بانتظار قطعة','Prêt':'جاهز',
 'Livré':'تم التسليم','Annulé':'ملغى','Diagnostic':'التشخيص','Normal':'عادي','Urgent':'عاجل','Dashboard':'لوحة التحكم','Fixi Brain':'عقل Fixi','Smart Insights':'الرؤى الذكية',
@@ -440,11 +441,11 @@ Object.assign(ar,{
 });
 
 export function translateAr(input:string){
-  const clean=input.trim();if(!clean)return input;let out:string|undefined=ar[clean]??arV15[clean]??arV17[clean];
+  const clean=input.trim();if(!clean)return input;let out:string|undefined=ar[clean]??arV15[clean]??arV17[clean]??arV19[clean];
   if(!out)out=translateArPattern(clean);
   if(!out)out=translateArDate(clean);
-  if(!out){const m=clean.match(/^· (.+)$/);const t=m&&(ar[m[1]]??arV15[m[1]]??arV17[m[1]]);if(t)out=`· ${t}`}
-  if(!out){const m=clean.match(/^([^:]{2,40}): (.+)$/);const t=m&&(ar[m[1]]??arV15[m[1]]??arV17[m[1]]);if(t)out=`${t}: ${m![2]}`}
+  if(!out){const m=clean.match(/^· (.+)$/);const t=m&&(ar[m[1]]??arV15[m[1]]??arV17[m[1]]??arV19[m[1]]);if(t)out=`· ${t}`}
+  if(!out){const m=clean.match(/^([^:]{2,40}): (.+)$/);const t=m&&(ar[m[1]]??arV15[m[1]]??arV17[m[1]]??arV19[m[1]]);if(t)out=`${t}: ${m![2]}`}
   if(!out){
     let m=clean.match(/^(\d+) jours?$/i);if(m)out=`${m[1]} يوم`;
     m=clean.match(/^(\d+) réponses?$/i);if(!out&&m)out=`${m[1]} رد`;

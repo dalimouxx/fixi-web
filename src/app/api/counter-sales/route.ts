@@ -34,6 +34,12 @@ export async function POST(req: Request) {
   try {
     const s = await requireSession([UserRole.ADMIN, UserRole.CASHIER]);
     const b = await req.json();
+    // Vente faite hors ligne par la caisse Windows : la même référence renvoyée ne crée pas de doublon.
+    const clientRef = /^[A-Za-z0-9_-]{6,40}$/.test(String(b.clientRef || '')) ? String(b.clientRef) : null;
+    if (clientRef) {
+      const prev = await prisma.counterSale.findFirst({ where: { shopId: s.shopId, clientRef }, include: { lines: true, payments: true } });
+      if (prev) return ok(plain({ id: prev.id, number: prev.number, total: Number(prev.total), discount: Number(prev.discount), paid: Number(prev.total), change: prev.payments.reduce((a, p) => a + Number(p.changeAmount || 0), 0), lines: prev.lines.map(l => ({ name: l.name, quantity: l.quantity, total: Number(l.total) })), duplicate: true }), { status: 200 });
+    }
     const result = await prisma.$transaction(async tx => {
       const shop = await tx.shop.findUniqueOrThrow({ where: { id: s.shopId }, select: { currency: true, cashierMaxDiscount: true, cashRequireSession: true } });
       const ids = (Array.isArray(b.lines) ? b.lines : []).map((l: any) => String(l?.itemId || '')).filter(Boolean);
@@ -60,7 +66,7 @@ export async function POST(req: Request) {
       const count = await tx.counterSale.count({ where: { shopId: s.shopId } });
       const number = saleNumber(count + 1);
       const sale = await tx.counterSale.create({ data: {
-        shopId: s.shopId, number, clientId, userId: s.id, subtotal: priced.subtotal, discount: priced.discount, total: priced.total,
+        shopId: s.shopId, number, clientId, userId: s.id, subtotal: priced.subtotal, discount: priced.discount, total: priced.total, clientRef,
         note: String(b.note || '').slice(0, 300) || null,
         lines: { create: priced.lines.map(l => ({ inventoryItemId: l.itemId, name: l.name, quantity: l.quantity, unitCost: l.unitCost, unitPrice: l.unitPrice, total: l.total })) },
       } });
