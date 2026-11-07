@@ -5,7 +5,10 @@ import { ArrowRight, BellRing, Boxes, Check, CheckCircle2, ChevronsRight, Credit
 import { AdSlot } from '@/components/ad-slot';
 import { LandingFaq } from '@/components/landing-faq';
 import { LandingFlowDemo, LandingPricing, LandingStores } from '@/components/landing-sections';
+import { FixiAnimatedLogo } from '@/components/fixi-animated-logo';
+import { ThemeToggle } from '@/components/theme-toggle';
 import './landing-v17.css';
+import './landing-fxm.css';
 
 const WINDOWS_URL = 'https://github.com/dalimouxx/fixi-web/releases/download/windows-latest/FIXI-Caisse-Setup.exe';
 
@@ -83,14 +86,14 @@ export default function Landing() {
   function parallax(e: React.PointerEvent) { const el = hero.current; if (!el || e.pointerType !== 'mouse') return; const r = el.getBoundingClientRect(); el.style.setProperty('--px', ((e.clientX - r.left) / r.width - .5).toFixed(3)); el.style.setProperty('--py', ((e.clientY - r.top) / r.height - .5).toFixed(3)); }
   const name = brand?.appName || 'Fixi';
 
-  return <div className="lp">
+  return <div className="lp fxm-lp">
     <nav className={'lp-nav' + (scrolled ? ' is-solid' : '')}>
-      <a href="#top" className="lp-brand">{brand?.logoDataUrl ? <img src={brand.logoDataUrl} alt="" /> : <Logo />}<span>{name}</span></a>
+      <a href="#top" className="lp-brand">{brand?.logoDataUrl ? <img src={brand.logoDataUrl} alt="" /> : <FixiAnimatedLogo size={36} />}<span>{name}</span></a>
       <div className={'lp-links' + (menu ? ' is-open' : '')} onClick={() => setMenu(false)}>
         <a href="#apps">Applications</a><a href="#comment">Comment ça marche</a><a href="#demo">Démo</a><a href="#tarifs">Tarifs</a><Link href="/stores">Boutiques</Link><a href="#faq">FAQ</a>
         <Link className="lp-btn lp-btn--ghost lp-only-mobile" href="/login">Connexion</Link>
       </div>
-      <div className="lp-nav-cta"><Link className="lp-btn lp-btn--ghost lp-hide-mobile" href="/login">Connexion</Link><Link className="lp-btn lp-btn--primary" href="/inscription">Commencer <ArrowRight size={16} /></Link>
+      <div className="lp-nav-cta"><span className="lp-theme"><ThemeToggle /></span><Link className="lp-btn lp-btn--ghost lp-hide-mobile" href="/login">Connexion</Link><Link className="lp-btn lp-btn--primary" href="/inscription">Commencer <ArrowRight size={16} /></Link>
         <button className="lp-burger" aria-label={menu ? 'Fermer le menu' : 'Ouvrir le menu'} aria-expanded={menu} onClick={() => setMenu(v => !v)}>{menu ? <X size={22} /> : <Menu size={22} />}</button></div>
     </nav>
 
@@ -187,7 +190,7 @@ export default function Landing() {
     {/* ---------- Appel final ---------- */}
     <section className="lp-final">
       <Reveal className="lp-final-card"><div className="lp-aurora small"><i /><i /></div>
-        <Logo size={64} />
+        <FixiAnimatedLogo size={72} />
         <h2>Prêt à passer à <em>{name}</em> ?</h2>
         <p>Créez votre atelier en 2 minutes. 30 jours pour essayer, sans engagement.</p>
         <div className="lp-hero-actions center"><Link className="lp-btn lp-btn--primary lp-btn--lg lp-shine" href="/inscription">Créer mon atelier <ArrowRight size={18} /></Link><Link className="lp-btn lp-btn--glass lp-btn--lg" href="/android"><Smartphone size={18} /> Application Android</Link><a className="lp-btn lp-btn--glass lp-btn--lg" href={WINDOWS_URL}><Monitor size={18} /> Caisse Windows</a></div>
