@@ -7,6 +7,7 @@ import { plain } from '@/lib/serializers';
 import { encryptSecret } from '@/lib/crypto';
 import { cleanImei, isImei } from '@/lib/imei';
 import { nextShopNumber } from '@/lib/tn-invoice';
+import { learnTac } from '@/lib/tac';
 import { publicRow, purchaseIssues, validateSellerId } from '@/lib/used-devices';
 
 const ROLES = [UserRole.ADMIN, UserRole.RECEPTION, UserRole.CASHIER];
@@ -78,6 +79,7 @@ export async function POST(req: Request) {
       return d;
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
     await audit(s.shopId, s.id, 'PURCHASE', 'USED_DEVICE', device.id, { number: device.number, imei, price });
+    void learnTac(imei, device.brand, device.model);
     return ok(plain(publicRow(device)), { status: 201 });
   } catch (e: any) {
     if (e?.code === 'P2034' || e?.code === 'P2002') return bad('Opération concurrente détectée. Réessayez.', 409);

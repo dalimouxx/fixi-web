@@ -62,6 +62,8 @@ export const atelierNav: NavSection[] = [
   ] },
   { id: 'more', label: 'Plus', icon: MoreHorizontal, items: [
     { label: 'Équipe', href: '/app/team', icon: UserCog, roles: ['ADMIN'] },
+    { label: 'Commissions', href: '/app/team/commissions', icon: HandCoins, roles: ['ADMIN'], advanced: true },
+    { label: 'Résumé du jour', href: '/app/resume', icon: BarChart3, roles: ['ADMIN'] },
     { label: 'Rapports', href: '/app/reports', icon: BarChart3, roles: ['ADMIN'] },
     { label: 'Abonnement', href: '/app/subscription', icon: ReceiptText, roles: ['ADMIN'] },
     { label: 'Aide & support', href: '/app/support', icon: LifeBuoy, roles: ALL },

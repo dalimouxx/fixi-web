@@ -9,7 +9,7 @@ export async function register() {
   const port = process.env.PORT || '3000';
   const call = (path: string) => fetch(`http://127.0.0.1:${port}${path}`, { method: 'POST', headers: { 'x-cron-secret': String(process.env.CRON_SECRET) } }).catch(() => {});
   // Automatisations + surveillance (sauvegarde récente, erreurs) toutes les heures.
-  const run = () => { void call('/api/system/automations/run'); void call('/api/system/watchdog'); };
+  const run = () => { void call('/api/system/automations/run'); void call('/api/system/watchdog'); void call('/api/system/daily'); };
   g.__fixiCron = { first: setTimeout(run, 2 * 60_000), every: setInterval(run, 60 * 60_000) };
 }
 
