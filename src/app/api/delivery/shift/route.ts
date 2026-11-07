@@ -2,6 +2,7 @@ import {prisma} from '@/lib/prisma';
 import {requireDeliverySession} from '@/lib/delivery-auth';
 import {bad,ok} from '@/lib/http';
 import {plain} from '@/lib/serializers';
+import {driverCash} from '@/lib/driver-cash';
 
 export async function GET(){
  try{
@@ -11,7 +12,17 @@ export async function GET(){
    prisma.supplierDeliveryShift.findFirst({where:{companyId:s.companyId,driverAccountId:s.id,status:'PENDING_CASHIER'},orderBy:{submittedAt:'desc'}}),
    prisma.supplierDeliveryShift.findMany({where:{companyId:s.companyId,driverAccountId:s.id},orderBy:{openedAt:'desc'},take:15})
   ]);
-  return ok(plain({current,pendingCashier,recent}));
+  // Caisse de la journée en cours (ou de la remise en attente) : même calcul que le caissier.
+  const ref=current||pendingCashier;
+  let cash=null;
+  if(ref){
+   const c=await driverCash(prisma,s.companyId,s.id,ref.openedAt,ref.submittedAt||new Date());
+   const ids=[...new Set(c.lines.map(l=>l.orderId).filter(Boolean) as string[])];
+   const orders=ids.length?await prisma.supplierOrder.findMany({where:{id:{in:ids}},select:{id:true,reference:true,shop:{select:{name:true}}}}):[];
+   const map=new Map(orders.map(o=>[o.id,o]));
+   cash={...c,startCash:Number(ref.startCash||0),shiftId:ref.id,lines:c.lines.map(l=>({...l,orderReference:map.get(l.orderId||'')?.reference||l.reference,shopName:map.get(l.orderId||'')?.shop.name||null}))};
+  }
+  return ok(plain({current,pendingCashier,recent,cash}));
  }catch(e:any){return bad(e.message,e.status||500)}
 }
 
@@ -38,15 +49,16 @@ export async function POST(req:Request){
   if(action==='CLOSE'){
    const x=await prisma.supplierDeliveryShift.findFirst({where:{companyId:s.companyId,driverAccountId:s.id,status:'OPEN'},orderBy:{openedAt:'desc'}});if(!x)return bad('Aucune journée ouverte',404);
    const active=await prisma.supplierOrder.count({where:{companyId:s.companyId,delivery:{is:{driverAccountId:s.id}},status:{in:['OUT_FOR_DELIVERY','RETURNING'] as any}}});if(active>0)return bad('Terminez ou retournez toutes les livraisons actives avant la remise caisse.',409);
-   const cod=await prisma.supplierDeliveryEvent.aggregate({where:{companyId:s.companyId,accountId:s.id,type:{in:['COD_COLLECTED','DUE_COLLECTED']},createdAt:{gte:x.openedAt}},_sum:{amount:true}});
-   const collected=Number(cod._sum.amount||0),declared=Math.max(0,Number(b.remittedCod||0));
+   // Attendu = encaissements à la livraison + anciens dûs + encaissements saisis dans « Ma caisse » pendant la journée.
+   const cash=await driverCash(prisma,s.companyId,s.id,x.openedAt);
+   const collected=cash.total,declared=Math.round(Math.max(0,Number(b.remittedCod||0))*1000)/1000;
    const endMileage=b.endMileage==null||b.endMileage===''?null:Number(b.endMileage);
    if(endMileage!==null&&(!Number.isSafeInteger(endMileage)||endMileage<0))return bad('Kilométrage de fin invalide',400);
    if(!Number.isFinite(Number(b.remittedCod))||Number(b.remittedCod)<0)return bad('Remise caisse invalide',400);if(endMileage!==null&&x.startMileage!==null&&endMileage<x.startMileage)return bad('Kilométrage de fin invalide',409);
    const updated=await prisma.supplierDeliveryShift.update({where:{id:x.id},data:{status:'PENDING_CASHIER',collectedCod:collected,expectedCod:collected,declaredRemit:declared,endMileage,submittedAt:new Date(),note:b.note||x.note}});
    const auditResults=await Promise.allSettled([
-     prisma.supplierDeliveryEvent.create({data:{companyId:s.companyId,orderId:'SHIFT:'+x.id,accountId:s.id,type:'CASH_REMIT_SUBMITTED',amount:declared,note:'Attendu '+collected.toFixed(3)+' DT · déclaré '+declared.toFixed(3)+' DT'}}),
-     prisma.supplierAuditEvent.create({data:{companyId:s.companyId,accountId:s.id,action:'DRIVER_CASH_SUBMIT',entity:'DELIVERY_SHIFT',entityId:x.id,metadata:{expected:collected,declared,endMileage}}})
+     prisma.supplierDeliveryEvent.create({data:{companyId:s.companyId,orderId:'SHIFT:'+x.id,accountId:s.id,type:'CASH_REMIT_SUBMITTED',amount:declared,note:'Attendu '+collected.toFixed(3)+' DT (livraisons '+cash.cod.toFixed(3)+' · anciens dûs '+cash.dues.toFixed(3)+' · Ma caisse '+cash.receipts.toFixed(3)+') · déclaré '+declared.toFixed(3)+' DT'}}),
+     prisma.supplierAuditEvent.create({data:{companyId:s.companyId,accountId:s.id,action:'DRIVER_CASH_SUBMIT',entity:'DELIVERY_SHIFT',entityId:x.id,metadata:{expected:collected,cod:cash.cod,dues:cash.dues,receipts:cash.receipts,declared,endMileage}}})
    ]);
    if(auditResults.some(x=>x.status==='rejected'))
      console.error('Delivery cash handover audit event failed',auditResults.filter(x=>x.status==='rejected'));

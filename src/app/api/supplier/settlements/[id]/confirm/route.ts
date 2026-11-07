@@ -11,9 +11,9 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
     const receipt = await prisma.$transaction(async tx => {
       const record = await tx.supplierSettlement.findFirst({ where: { id, companyId: s.companyId } });
       if (!record) throw Object.assign(new Error('Encaissement introuvable'), { status: 404 });
-      if (record.status !== 'PENDING' || !record.orderId) throw Object.assign(new Error('Encaissement non confirmable'), { status: 409 });
+      if (record.status !== 'PENDING' || !record.orderId) throw Object.assign(new Error('Encaissement déjà traité'), { status: 409 });
       const { remaining } = await orderBalance(tx, s.companyId, record.orderId);
-      if (record.amount.greaterThan(remaining)) throw Object.assign(new Error('Dette deja reglee ou insuffisante'), { status: 409 });
+      if (record.amount.greaterThan(remaining)) throw Object.assign(new Error('Cette commande est déjà réglée (ou le reste à payer est inférieur à ce montant)'), { status: 409 });
       const saved = await tx.supplierSettlement.update({ where: { id }, data: { status: 'CONFIRMED', confirmedAt: new Date() } });
       await mirrorSettlementToErp(tx, { companyId: s.companyId, orderId: record.orderId, amount: record.amount, reference: record.reference, method: record.method, accountId: s.id });
       await tx.supplierAuditEvent.create({ data: { companyId: s.companyId, accountId: s.id,

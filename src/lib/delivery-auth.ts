@@ -1,4 +1,5 @@
 import {SignJWT,jwtVerify} from 'jose';
+import {apiGuard} from './maintenance';
 import {cookies} from 'next/headers';
 import {prisma} from './prisma';
 
@@ -15,6 +16,7 @@ export async function destroyDeliverySession(){const c=await cookies();c.set(COO
 export async function getDeliverySession():Promise<DeliverySession|null>{const c=await cookies();const t=c.get(COOKIE)?.value;if(!t)return null;try{const{payload}=await jwtVerify(t,secret());return payload as unknown as DeliverySession}catch{return null}}
 export async function requireDeliverySession(){
  const s=await getDeliverySession();if(!s)throw Object.assign(new Error('UNAUTHENTICATED'),{status:401});
+ await apiGuard(null);
  const a=await prisma.supplierAccount.findFirst({where:{id:s.id,companyId:s.companyId,isActive:true,role:'DRIVER'},include:{company:true}});
  if(!a||!a.company.active||a.deliverySessionVersion!==s.sessionVersion)throw Object.assign(new Error('UNAUTHENTICATED'),{status:401});
  return s;

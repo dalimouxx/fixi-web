@@ -57,9 +57,9 @@ test('Recherche Control : téléphone tunisien normalisé', () => {
 test('Prêt pour la mise en ligne : bloquants et conseils', () => {
   const facts = { backupAgeHours: 3, restoreOkAgeDays: 2, errors24h: 0, platformAdmins: 1, platformAdminsWithout2fa: 0, shops: 2, shopsWithoutRecovery: 0, openProblems: 0 };
   const k = (n: string) => n.repeat(40);
-  const env = { AUTH_SECRET: k('a'), PLATFORM_AUTH_SECRET: k('b'), SUPPLIER_AUTH_SECRET: k('c'), DELIVERY_AUTH_SECRET: k('d'), DATA_ENCRYPTION_KEY: k('e'), CRON_SECRET: k('f'), NEXT_PUBLIC_APP_URL: 'https://fixi.example.tn', TELEGRAM_BOT_TOKEN: 'x', TELEGRAM_CHAT_ID: '1' };
-  assert.deepEqual(launchScore(launchChecks(env, facts)), { ready: true, bad: 0, warn: 0, done: 11, total: 11 });
+  const env = { AUTH_SECRET: k('a'), PLATFORM_AUTH_SECRET: k('b'), SUPPLIER_AUTH_SECRET: k('c'), DELIVERY_AUTH_SECRET: k('d'), DATA_ENCRYPTION_KEY: k('e'), CRON_SECRET: k('f'), NEXT_PUBLIC_APP_URL: 'https://fixi.atelier.tn', TELEGRAM_BOT_TOKEN: 'x', TELEGRAM_CHAT_ID: '1' };
+  assert.deepEqual(launchScore(launchChecks(env, facts)), { ready: true, bad: 0, warn: 0, done: 13, total: 13 });
   const weak = launchChecks({ ...env, AUTH_SECRET: 'dev-secret-change-this-immediately-123456', NEXT_PUBLIC_APP_URL: 'http://localhost:3000' }, { ...facts, backupAgeHours: null });
-  assert.deepEqual(weak.filter(c => !c.ok).map(c => c.key), ['secrets', 'https', 'backup']);
+  assert.deepEqual(weak.filter(c => !c.ok).map(c => c.key), ['secrets', 'https', 'domain', 'backup']);
   assert.equal(launchScore(launchChecks({ ...env, PLATFORM_AUTH_SECRET: env.AUTH_SECRET }, facts)).ready, false, 'clés identiques refusées');
 });

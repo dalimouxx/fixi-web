@@ -6,6 +6,7 @@ import { ArrowLeft, Banknote, CheckCircle2, Clock3, RefreshCw, ReceiptText, Wall
 import { DriverTabs } from '@/components/driver-tabs';
 import { FinanceSelectionSummary } from '@/components/finance-selection-summary';
 import st from '@/components/finance-ledger.module.css';
+import { DriverDayCash } from '@/components/driver-day-cash';
 
 type Order = {
   id: string;
@@ -108,12 +109,13 @@ export default function DriverCollectionsPage() {
       <h1>Encaisser une commande</h1>
       <p>Choisissez une commande. Son montant, les sommes déjà réglées et le reste s’affichent automatiquement.</p>
     </div>
+    <DriverDayCash refresh={receipts.length} />
     <div className={st.cards}>
       <div className={st.card+' '+st.highlight}><span>Commandes attribuées</span><strong>{orders.length}</strong><small>Soldées ou encore à régler</small></div>
       <div className={st.card}><span>Encaissements à confirmer</span><strong>{receiptCount}</strong><small>En attente du fournisseur</small></div>
-      <div className={st.card}><span>Reste à reverser au supplier</span>
+      <div className={st.card}><span>Confirmés, pas encore remis</span>
         <strong>{format(receipts.filter(r=>r.status==='CONFIRMED').reduce((n,r)=>n+Number(r.amount)-(r.remittances||[]).filter(x=>x.confirmedAt).reduce((a,x)=>a+Number(x.amount),0),0))}</strong>
-        <small>Encaissements confirmés, non encore remis</small>
+        <small>Saisis ici · remis à la prochaine fin de journée</small>
       </div>
     </div>
     <section className={st.paymentPanel}>

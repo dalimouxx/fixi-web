@@ -1,12 +1,13 @@
+import {LIGHT_DELIVERY,withProofFlags} from '@/lib/delivery-proof';
 import {prisma} from '@/lib/prisma';import {requireDeliverySession} from '@/lib/delivery-auth';import {bad,ok} from '@/lib/http';import {plain} from '@/lib/serializers';import {SupplierOrderStatus} from '@prisma/client';
 export async function GET(){try{
  const s=await requireDeliverySession();
  const activeStatuses:[SupplierOrderStatus,...SupplierOrderStatus[]]=[SupplierOrderStatus.READY_FOR_DELIVERY,SupplierOrderStatus.OUT_FOR_DELIVERY,SupplierOrderStatus.RETURNING,SupplierOrderStatus.RETURNED];
  const [liveRows,historyRows]=await Promise.all([
-  prisma.supplierOrder.findMany({where:{OR:[{companyId:s.companyId,OR:[{delivery:{is:{driverAccountId:s.id}},status:{in:activeStatuses}},{status:SupplierOrderStatus.READY_FOR_DELIVERY,delivery:{is:{driverAccountId:null}}}]},{delivery:{is:{driverAccountId:s.id,partnerCompanyId:s.companyId}},status:{in:activeStatuses}}]},include:{company:{select:{name:true}},shop:{select:{name:true,region:true,address:true,phone:true,latitude:true,longitude:true}},items:{include:{product:{select:{id:true,name:true,sku:true,barcode:true,brand:true,qualityGrade:true}}}},delivery:true},orderBy:{createdAt:'desc'},take:100}),
-  prisma.supplierOrder.findMany({where:{delivery:{is:{driverAccountId:s.id}},OR:[{companyId:s.companyId},{delivery:{is:{partnerCompanyId:s.companyId}}}],status:{in:[SupplierOrderStatus.DELIVERED,SupplierOrderStatus.CANCELLED]}},include:{shop:{select:{name:true,region:true,address:true,phone:true,latitude:true,longitude:true}},items:{include:{product:{select:{id:true,name:true,sku:true,barcode:true,brand:true,qualityGrade:true}}}},delivery:true},orderBy:{updatedAt:'desc'},take:20})
+  prisma.supplierOrder.findMany({where:{OR:[{companyId:s.companyId,OR:[{delivery:{is:{driverAccountId:s.id}},status:{in:activeStatuses}},{status:SupplierOrderStatus.READY_FOR_DELIVERY,delivery:{is:{driverAccountId:null}}}]},{delivery:{is:{driverAccountId:s.id,partnerCompanyId:s.companyId}},status:{in:activeStatuses}}]},include:{company:{select:{name:true}},shop:{select:{name:true,region:true,address:true,phone:true,latitude:true,longitude:true}},items:{include:{product:{select:{id:true,name:true,sku:true,barcode:true,brand:true,qualityGrade:true}}}},delivery:LIGHT_DELIVERY},orderBy:{createdAt:'desc'},take:100}),
+  prisma.supplierOrder.findMany({where:{delivery:{is:{driverAccountId:s.id}},OR:[{companyId:s.companyId},{delivery:{is:{partnerCompanyId:s.companyId}}}],status:{in:[SupplierOrderStatus.DELIVERED,SupplierOrderStatus.CANCELLED]}},include:{shop:{select:{name:true,region:true,address:true,phone:true,latitude:true,longitude:true}},items:{include:{product:{select:{id:true,name:true,sku:true,barcode:true,brand:true,qualityGrade:true}}}},delivery:LIGHT_DELIVERY},orderBy:{updatedAt:'desc'},take:20})
  ]);
- const rows=[...liveRows,...historyRows.filter(h=>!liveRows.some(x=>x.id===h.id))];
+ const rows=await withProofFlags([...liveRows,...historyRows.filter(h=>!liveRows.some(x=>x.id===h.id))]);
  const shopIds=[...new Set(liveRows.filter(x=>x.delivery?.driverAccountId===s.id).map(x=>x.shopId))];
  const customers=shopIds.length?await prisma.supplierErpCustomer.findMany({where:{companyId:s.companyId,shopId:{in:shopIds}},select:{id:true,shopId:true}}):[];
  const customerIds=customers.map(x=>x.id);

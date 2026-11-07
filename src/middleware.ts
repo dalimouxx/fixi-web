@@ -17,6 +17,13 @@ export function middleware(req: NextRequest) {
       }
     }
   }
+  if (req.nextUrl.pathname.startsWith('/api/')) {
+    // Repères posés par le serveur (jamais ceux du client) : maintenance et support en lecture seule.
+    const headers = new Headers(req.headers);
+    headers.set('x-fixi-api', '1');
+    headers.set('x-fixi-method', req.method);
+    return NextResponse.next({ request: { headers } });
+  }
   if (req.nextUrl.pathname.startsWith('/app/')) {
     // Recompute the route in the server layout rather than trusting a client header.
     const headers = new Headers(req.headers);

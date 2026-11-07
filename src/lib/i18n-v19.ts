@@ -41,4 +41,21 @@ export const arV19: Record<string, string> = {
   // Export du stock fournisseur et mode support
   'Exporter en Excel': 'تصدير إلى Excel', 'Mode support': 'وضع الدعم', 'Quitter le mode support': 'الخروج من وضع الدعم',
   'Le support Fixi a ouvert votre espace': 'فتح دعم Fixi فضاءكم', 'Accéder': 'دخول', 'Accès support': 'دخول الدعم',
+  // Maintenance, annonces, reprises, preuves, caisse livreur
+  'On améliore Fixi pour vous': 'نحسّن Fixi من أجلكم', 'Retour dans quelques instants…': 'العودة بعد لحظات…',
+  'Vos données sont en sécurité.': 'بياناتكم في أمان.', 'Aucune vente ni réparation n’est perdue.': 'لا تضيع أي عملية بيع أو إصلاح.',
+  'Cette page se rouvre toute seule dès que c’est prêt.': 'ستفتح هذه الصفحة تلقائيا عند الجاهزية.',
+  'Masquer l’annonce': 'إخفاء الإعلان', 'Voir': 'عرض',
+  'Mes reprises': 'المرتجعات', 'Code de reprise': 'رمز الإرجاع', 'Annuler': 'إلغاء', 'Pièce reprise': 'تم استلام القطعة',
+  'Le livreur la récupère': 'الموزع يستلمها', 'Je la dépose moi-même': 'أوصلها بنفسي', 'Qui apporte la pièce ?': 'من يوصل القطعة؟',
+  'Reprise à faire ici': 'استرجاع قطعة هنا', 'Code atelier': 'رمز الورشة', 'Photo': 'صورة',
+  'Preuve de livraison': 'إثبات التسليم', 'Remise confirmée': 'تم تأكيد التسليم', 'Livré le': 'تاريخ التسليم', 'Livreur': 'الموزع', 'Reçu par': 'استلمها',
+  'Code de remise': 'رمز التسليم', 'Photo à la remise': 'صورة عند التسليم', 'Signature': 'الإمضاء', 'Pas de photo prise à la remise.': 'لم تؤخذ صورة عند التسليم.',
+  'Ma journée': 'يومي', 'Livraisons': 'التوصيلات', 'Anciens dûs': 'الديون القديمة', 'Ma caisse': 'صندوقي',
+  'Paiement à la livraison': 'الدفع عند التسليم', 'Ancien dû': 'دين قديم', 'Saisi dans Ma caisse': 'مسجل في صندوقي',
+  'À remettre au caissier': 'للتسليم إلى أمين الصندوق', 'Paiements à la livraison': 'الدفع عند التسليم', 'Anciens dûs encaissés': 'ديون قديمة محصلة',
+  'Saisis dans « Ma caisse »': 'مسجلة في « صندوقي »', 'Montant que vous remettez réellement': 'المبلغ الذي تسلمه فعلا',
+  'Nous contacter': 'اتصل بنا', 'Lecture seule': 'قراءة فقط',
+  'Retour prévu dans': 'العودة المتوقعة خلال', 'MISE À JOUR EN COURS': 'تحديث جار', 'Merci pour votre patience 💜': 'شكرا على صبركم 💜',
+  'Fixi revient dans quelques minutes, encore plus rapide.': 'يعود Fixi بعد دقائق، أسرع من قبل.',
 };

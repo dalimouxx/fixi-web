@@ -21,7 +21,8 @@ export async function POST(req:Request){
   if(type==='COD_COLLECTED'){
    const n=Number(b.amount);if(!(n>0))return bad('Montant COD invalide');
    const prev=await prisma.supplierDeliveryEvent.aggregate({where:{companyId:o.companyId,orderId,type:'COD_COLLECTED'},_sum:{amount:true}});
-   const total=Number(prev._sum.amount||0)+n;if(total>Number(o.total)+0.001)return bad('Le COD encaissé dépasse le montant de la commande',409);amount=n;
+   const receipts=await prisma.supplierSettlement.aggregate({where:{companyId:o.companyId,orderId,status:{in:['PENDING','CONFIRMED']}},_sum:{amount:true}});
+   const total=Number(prev._sum.amount||0)+Number(receipts._sum.amount||0)+n;if(total>Number(o.total)+0.001)return bad('Montant trop élevé : il reste '+Math.max(0,Number(o.total)-Number(prev._sum.amount||0)-Number(receipts._sum.amount||0)).toFixed(3)+' DT à encaisser sur cette commande.',409);amount=n;
   }
   if(type==='DUE_COLLECTED'){
    const n=Number(b.amount);if(!(n>0))return bad('Montant du règlement invalide');

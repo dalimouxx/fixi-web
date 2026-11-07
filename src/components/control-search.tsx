@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Factory, Search, Smartphone, Store, User, UserCog, Wrench } from 'lucide-react';
 import { SupportAccessButton, SupportJournal } from './support-access';
+import { AnnouncementsPanel, MaintenancePanel, WatchlistPanel } from './control-ops';
 import type { SearchHit } from '@/lib/platform-search';
 
 const META: Record<SearchHit['kind'], [string, any]> = {
@@ -29,7 +30,7 @@ export function ControlSearch() {
     return () => clearTimeout(t);
   }, [q]);
   return <section className="control-content fx-control-search">
-    <div className="section-toolbar"><div><h2>Recherche & support</h2><p>Boutique, fournisseur, utilisateur, téléphone d’un client, code ou IMEI d’une réparation… puis « Accéder » pour régler le problème.</p></div></div>
+    <div className="section-toolbar"><div><h2>Support, suivi & diffusion</h2><p>Boutique, fournisseur, utilisateur, téléphone d’un client, code ou IMEI d’une réparation… puis « Accéder » pour régler le problème.</p></div></div>
     <div className="global-search fx-control-search-box"><Search /><input autoFocus value={q} onChange={e => setQ(e.target.value)} placeholder="Ex. : 22 123 456, Atelier Gabès, REP-2026-0042, 3569…" aria-label="Recherche globale" />{busy && <span className="fx-control-search-busy" aria-hidden />}</div>
     {hits && <div className="fx-control-hits">{hits.length === 0 ? <p className="muted">Aucun résultat pour « {q.trim()} ».</p> : hits.map(h => {
       const [label, Icon] = META[h.kind];
@@ -41,6 +42,6 @@ export function ControlSearch() {
         {target && <SupportAccessButton kind={kind} id={target} name={h.targetName || h.title} compact defaultReason={h.kind === 'REPAIR' ? `Réparation ${h.title.split(' · ')[0]}` : undefined} />}
       </article>;
     })}</div>}
-    <div className="control-grid"><SupportJournal /></div>
+    <div className="control-grid"><WatchlistPanel /><MaintenancePanel /><AnnouncementsPanel /><SupportJournal /></div>
   </section>;
 }

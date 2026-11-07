@@ -1,12 +1,12 @@
 'use client';
 import { useState } from 'react';
 import { AlertTriangle, CheckCircle2, RefreshCw, Rocket, XCircle } from 'lucide-react';
-import { useApi } from './ui';
+import { useOnce } from './use-once';
 
 /** Fixi Control → Santé : liste « Prêt pour la mise en ligne ? ». */
 export function LaunchCheckPanel() {
   const [n, setN] = useState(0);
-  const { data } = useApi<any>('/api/platform/launch-check', n);
+  const { data } = useOnce<any>('/api/platform/launch-check', n);
   if (!data) return null;
   const s = data.score;
   return <div className={'control-panel fx-launch ' + (s.ready ? (s.warn ? 'warn' : 'ok') : 'bad')}>
