@@ -20,7 +20,7 @@ test('Caisse Windows atelier : vente comptoir, douchette, tiroir, ticket et reto
   assert.ok(at.includes('p.counterSale?.number'), 'fin de journée : ventes comptoir affichées');
   assert.ok(at.includes('function SaleTicket') && at.includes("'REMBOURSEMENT'"));
   const cs = readFileSync('apps/windows-pos/src/atelier-comptoir.tsx', 'utf8');
-  for (const k of ["'/api/counter-sales'", '/refund`', "cash_drawer_open", "e.key === 'Enter') scan()", 'managerPin: manager ? undefined : pin', "r !== 'Article défectueux'", 'needSession']) assert.ok(cs.includes(k), k);
+  for (const k of ["'/api/counter-sales'", '/refund`', "cash_drawer_open", "e.key === 'Enter') void scan()", 'managerPin: manager ? undefined : pin', "r !== 'Article défectueux'", 'needSession']) assert.ok(cs.includes(k), k);
   const rs = readFileSync('apps/windows-pos/src-tauri/src/atelier.rs', 'utf8');
   assert.ok(rs.includes('("POST", ["api", "counter-sales", id, "refund"]) => id_ok(id)') && rs.includes('assert!(!allowed("GET", "/api/counter-sales/../users"));'));
 });

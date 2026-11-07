@@ -12,7 +12,7 @@ const METHODS = [['CASH', Banknote, 'Espèces'], ['CARD', CreditCard, 'Carte'], 
 export const METHOD_LABEL: Record<string, string> = { CASH: 'Espèces', CARD: 'Carte', D17: 'D17', FLOUCI: 'Flouci', BANK_TRANSFER: 'Virement', OTHER: 'Autre' };
 const REASONS = ['Article défectueux', 'Ne convient pas', 'Erreur de caisse'];
 
-type Item = { id: string; sku: string; name: string; category: string | null; quantity: number; minQuantity: number; salePrice: number };
+type Item = { id: string; sku: string; barcode?: string | null; name: string; category: string | null; quantity: number; minQuantity: number; salePrice: number };
 export type SalePrint = { kind: 'vente' | 'retour'; number: string; lines: { name: string; quantity: number; total: number }[]; total: number; discount?: number; method: string; received?: number; change?: number };
 
 /** Numéro de ticket : « 42 » devient « V-000042 ». */
@@ -53,10 +53,14 @@ export function CounterSaleTab({ manager, onSold, onError }: { manager: boolean;
 
   function add(it: Item, d = 1) { setCart(c => { const next = Math.max(0, Math.min(it.quantity, (c[it.id]?.qty || 0) + d)); const x = { ...c }; if (next) x[it.id] = { item: it, qty: next }; else delete x[it.id]; return x; }); }
   // Douchette : la référence (code-barres) exacte ajoute l'article ; sinon, la liste filtrée reste affichée.
-  function scan() {
-    const code = q.trim().toLowerCase(); if (!code) return;
-    const hit = items.find(i => i.sku.toLowerCase() === code) || (items.length === 1 ? items[0] : undefined);
+  // La douchette tape plus vite que la recherche : on interroge le serveur avec le code exact.
+  async function scan() {
+    const code = q.trim(); if (!code) return;
+    const exact = (list: Item[]) => list.find(i => (i.barcode || '').toUpperCase() === code.toUpperCase()) || list.find(i => i.sku.toUpperCase() === code.toUpperCase());
+    let hit = exact(items);
+    if (!hit) { try { const r = await req<any>('GET', '/api/counter-sales?q=' + encodeURIComponent(code)); const list = (r.items || []).map((x: any) => ({ ...x, salePrice: Number(x.salePrice) })); hit = exact(list) || (list.length === 1 ? list[0] : undefined); } catch (x) { onError(x); return; } }
     if (hit && hit.quantity > 0) { add(hit); setQ(''); }
+    else if (hit) onError(`${hit.name} : rupture de stock`);
   }
   function reset() { setCart({}); setDiscount(''); setReceived(''); requestAnimationFrame(() => scanRef.current?.focus()); }
 
@@ -72,7 +76,7 @@ export function CounterSaleTab({ manager, onSold, onError }: { manager: boolean;
 
   return <div className="at-split at-cs">
     <section className="v5-card at-list">
-      <div className="v5-search"><ScanBarcode size={17} /><input ref={scanRef} autoFocus value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') scan(); if (e.key === 'Escape') setQ(''); }} placeholder="Scannez ou cherchez : coque, câble, référence…" /></div>
+      <div className="v5-search"><ScanBarcode size={17} /><input ref={scanRef} autoFocus value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') void scan(); if (e.key === 'Escape') setQ(''); }} placeholder="Scannez ou cherchez : coque, câble, code-barres…" /></div>
       <div className="at-cs-grid">
         {items.map(it => { const inCart = cart[it.id]?.qty || 0; const out = it.quantity <= 0;
           return <button key={it.id} className={'v5-product' + (inCart ? ' is-in-cart' : '')} disabled={out || inCart >= it.quantity} onClick={() => add(it)}>
