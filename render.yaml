@@ -62,6 +62,16 @@ services:
         value: fr
       - key: VAPID_SUBJECT  # ex. mailto:votre-adresse@domaine.tn
         sync: false
+      # Alertes techniques sur votre téléphone (erreurs, sauvegardes) : Telegram et/ou webhook (Discord, Slack…)
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_CHAT_ID
+        sync: false
+      - key: ALERT_WEBHOOK_URL
+        sync: false
+      # Mettre "on" une fois la sauvegarde nocturne GitHub configurée : alerte si aucune sauvegarde depuis 26 h.
+      - key: BACKUP_EXPECTED
+        value: "off"
       - key: DEFAULT_SHOP_SLUG
         value: atelier-principal
       - key: INITIAL_SHOP_SLUG
