@@ -1702,6 +1702,8 @@ model SupplierCompany {
   bankName               String?
   bankRib                String?
   documentFooter         String?
+  /// Remise maximale (%) qu'un vendeur ou caissier peut faire sans le code gérant.
+  staffDiscountLimitPct  Int                        @default(10)
   invoiceTerms           String?
   deliveryInstructions   String?
   receiptMessage         String?
@@ -1750,6 +1752,8 @@ model SupplierAccount {
   sessionVersion         Int             @default(0)
   sharedCourier          Boolean         @default(false)
   courierFee             Decimal         @default(0) @db.Decimal(12, 3)
+  /// « Code gérant » (4 à 6 chiffres) : autorise sur place une action réservée à la caisse (remise, remboursement).
+  approvalPinHash        String?
   createdAt              DateTime        @default(now())
 }
 

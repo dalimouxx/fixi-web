@@ -5,7 +5,7 @@ import {bad,ok} from '@/lib/http';
 /** Restricted, paginated-ish recent sales view for Windows POS. */
 export async function GET(){
  try{
-  const s=await requireSupplierRole(['OWNER','ADMIN','MANAGER','SALES','CASHIER']);
+  const s=await requireSupplierRole(['OWNER','ADMIN','MANAGER','SALES','CASHIER','ACCOUNTANT']);
   const own=s.role==='CASHIER';
   const [sales,sessions]=await Promise.all([
    prisma.supplierErpSale.findMany({where:{companyId:s.companyId,...(own?{createdById:s.id}:{})},

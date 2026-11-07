@@ -15,6 +15,8 @@ import {useArabic} from './i18n';
 import {InvoiceDialog,InvoicePrint,PaymentSlip,type InvoiceData,type PaymentSlipData} from './invoice';
 import {InventoryPage} from './inventory';
 import {StockInPage,findByCode} from './stock-in';
+import {ManageModule,ApprovalDialog,ALL_PERMS,pageAllowed,type Perm,type ManagePage} from './manage';
+import {BadgePercent as NavPrice,ShoppingBasket as NavBuy,Receipt as NavExpense,FileText as NavDoc,Route as NavRoute,ChartColumn as NavChart,UsersRound as NavTeam,Warehouse as NavDepot,ShieldCheck as NavShield} from 'lucide-react';
 import {ReportDialog} from './report';
 import {Banknote,BookOpen,Boxes,Check,ChevronRight,CircleAlert,CircleCheck,CreditCard,Delete,HandCoins,Inbox,KeyRound,Landmark,Lock,LockOpen,LogIn,Minus,PackageOpen,PackageSearch,PanelLeftClose,PanelLeftOpen,Plus,Power,Printer,ReceiptText,RefreshCw,ScanBarcode,Search,ShieldCheck,ShoppingCart,Tags,Trash2,TriangleAlert,Truck,Undo2,UserPlus,UserRound,UserRoundCog,Users,Wallet,X,PencilLine,Percent,PauseCircle,PlayCircle,Settings2,WifiOff,CloudUpload,MessageCircle,Download,Flame,ClipboardList,FileText,type LucideIcon,PackagePlus,Wrench} from 'lucide-react';
 import '@fontsource-variable/manrope';
@@ -26,7 +28,7 @@ import './fixi-max.css';
 
 type Product={id:string;name:string;sku:string;barcode?:string|null;category:string|null;price:number;wholesalePrice?:number|null;minStock?:number;stock:number;sold30?:number;onHand?:number;tiers?:{minQty:number;unitPrice:number}[]};
 type Customer={id:string;name:string;phone?:string|null;taxId?:string|null;address?:string|null;creditLimit?:number;priceMode?:string;discountPct?:number;due?:number};
-type Boot={companyName:string;role:string;products:Product[];customers:Customer[];pinConfigured?:boolean;receiptProfile?:import('./TicketV4').ReceiptBusinessProfile|null;account?:{id:string;fullName:string}};
+type Boot={companyName:string;role:string;perms?:Perm[];discountLimitPct?:number;products:Product[];customers:Customer[];pinConfigured?:boolean;receiptProfile?:import('./TicketV4').ReceiptBusinessProfile|null;account?:{id:string;fullName:string}};
 type CustomLine={id:string;name:string;price:number;quantity:number};
 type SaleItem={productId:string;quantity:number;unitPrice:number}|{custom:true;name:string;quantity:number;unitPrice:number};
 type QueuedSale={reference:string;createdAt:string;payload:{reference:string;items:SaleItem[];customerId:string|null;paid:number;method:string;discount:number};ticket:ReceiptData;stock:Record<string,number>;error?:string};
@@ -45,7 +47,8 @@ type Draft={cart:Record<string,number>;customerId:string;amount:string;method:st
 type DebtRequest={saleId?:string;customerId?:string;amount:number;method:string;reference:string};
 type ReturnRequest={sourceSaleId:string;items:{saleItemId:string;quantity:number;restock:boolean;condition:string;reason:string}[];refund:number;refundMethod:string;note:string;reference:string};
 type Result={exists:boolean;reference:string;record?:{reference?:string;remaining?:number}|null};
-type Page='caisse'|'produits'|'stock'|'clients'|'commandes'|'dettes'|'retours'|'historique'|'session'|'livreurs'|'inventaire'|'entree';
+type Page='caisse'|'produits'|'stock'|'clients'|'commandes'|'dettes'|'retours'|'historique'|'session'|'livreurs'|'inventaire'|'entree'|ManagePage;
+const MANAGE_PAGES:Page[]=['gestion','achats','depenses','documents','livraison','rapports','equipe','depots','droits'];
 // Isolé (\u2066…\u2069) pour que « 185,000 DT » reste lisible en arabe.
 const money=(n:number)=>'\u2066'+new Intl.NumberFormat('fr-TN',{minimumFractionDigits:3,maximumFractionDigits:3}).format(n)+' DT\u2069';
 const initialServer='https://fixi-web.onrender.com';
@@ -63,12 +66,23 @@ const nav:NavItem[]=[
  {id:'stock',icon:Boxes,label:'Stock',hint:'Les ruptures d’abord.'},
  {id:'inventaire',icon:ClipboardList,label:'Inventaire',hint:'Scannez les articles du rayon, comparez avec le stock FIXI, corrigez.'},
  {id:'entree',icon:PackagePlus,label:'Entrée de stock',hint:'Scannez la marchandise reçue : 1 scan = +1 pièce, puis validez.'},
+ {id:'gestion',icon:NavPrice,label:'Produits & prix',hint:'Modifier, archiver, promotions, prix par quantité, catégories.'},
+ {id:'achats',icon:NavBuy,label:'Achats & fournisseurs',hint:'Vos achats chez les grossistes, ce que vous leur devez.'},
+ {id:'depenses',icon:NavExpense,label:'Dépenses',hint:'Loyer, transport, salaires… pour connaître le vrai bénéfice.'},
+ {id:'documents',icon:NavDoc,label:'Factures & devis',hint:'Devis, proformas, bons de livraison : créer, imprimer, transformer.'},
+ {id:'livraison',icon:NavRoute,label:'Attribuer les livraisons',hint:'Confiez chaque commande prête à un livreur.'},
+ {id:'rapports',icon:NavChart,label:'Rapports & bénéfice',hint:'Chiffre d’affaires, marge, meilleures ventes, stock.'},
+ {id:'equipe',icon:NavTeam,label:'Équipe',hint:'Employés, rôles, mots de passe.'},
+ {id:'depots',icon:NavDepot,label:'Dépôts',hint:'Stock par dépôt et transferts.'},
+ {id:'droits',icon:NavShield,label:'Rôles & code gérant',hint:'Ce que votre rôle permet, code gérant, limite de remise.'},
 ];
 const navGroups:{label:string;items:Page[]}[]=[
  {label:'Vente',items:['caisse','historique','retours','session']},
  {label:'Clients',items:['clients','dettes']},
- {label:'Livraison',items:['commandes','livreurs']},
- {label:'Articles',items:['produits','stock','entree','inventaire']},
+ {label:'Livraison',items:['commandes','livraison','livreurs']},
+ {label:'Articles',items:['produits','stock','entree','inventaire','gestion','depots']},
+ {label:'Gestion',items:['achats','depenses','documents','rapports']},
+ {label:'Compte',items:['equipe','droits']},
 ];
 const demo:Boot={companyName:'Mode démonstration',role:'DEMO',products:[
  {id:'d1',name:'Écran Samsung A04',sku:'A04-LCD',price:89,stock:12,category:'Afficheurs'},
@@ -78,6 +92,13 @@ function App(){
  const [profile,setProfile]=useState<SavedProfile|null>(null);
  const [server,setServer]=useState(initialServer),[login,setLogin]=useState(''),[password,setPassword]=useState(''),[pin,setPin]=useState(''),[passwordMode,setPasswordMode]=useState(false);
  const [boot,setBoot]=useState<Boot|null>(null),[page,setPage]=useState<Page>('caisse'),[busy,setBusy]=useState(false),[message,setMessage]=useState(''),[error,setError]=useState('');
+ // Droits du rôle connecté (envoyés par le serveur) : menus et boutons affichés en conséquence. Le serveur revérifie tout.
+ const perms:Perm[]=!boot?[]:boot.role==='DEMO'||!boot.perms?ALL_PERMS:boot.perms;
+ // Code gérant : une action réservée (remise au-delà de la limite, remboursement) est autorisée sur place.
+ const [approval,setApproval]=useState<{perm:'discount'|'refund';reason:string;resolve:(t:string|null)=>void}|null>(null);
+ const askApproval=(perm:'discount'|'refund',reason:string)=>new Promise<string|null>(resolve=>setApproval({perm,reason,resolve}));
+ const needsApproval=(msg:string)=>/code gérant/i.test(msg);
+ useEffect(()=>{if(boot&&!pageAllowed(page,perms)){const first=navGroups.flatMap(g=>g.items).find(id=>pageAllowed(id,perms));if(first)setPage(first)}},[boot?.role,perms.join()]);// eslint-disable-line react-hooks/exhaustive-deps
  const [draftKey,setDraftKey]=useState(''),[cart,setCart]=useState<Record<string,number>>({}),[customerId,setCustomerId]=useState(''),[paid,setPaid]=useState(''),[method,setMethod]=useState('CASH'),[saleRef,setSaleRef]=useState('');
  const [scan,setScan]=useState(''),[search,setSearch]=useState(''),[category,setCategory]=useState('Tous'),[labels,setLabels]=useState(false);
  const [setupPin,setSetupPin]=useState(''),[lockPin,setLockPin]=useState(''),[locked,setLocked]=useState(false),[pinConfigured,setPinConfigured]=useState(false);
@@ -260,7 +281,7 @@ function App(){
   catch{setError('Impossible de protéger le panier localement : vente non envoyée.');return}
   const payload={reference,items:saleItems(),customerId:customerId||null,paid:Math.min(amount,total),method,discount:discountValue};
   setSaleRef(reference);setBusy(true);setError('');setMessage('');
-  try{const result=await invoke<{reference?:string}>('supplier_checkout',{sale:payload});
+  try{const result=await invoke<{reference?:string}>('supplier_checkout',{sale:payload}).catch(async e=>{const m=String(e);if(!needsApproval(m))throw e;const token=await askApproval('discount',m);if(!token)throw Error('Vente annulée : remise non autorisée.');return invoke<{reference?:string}>('supplier_checkout',{sale:{...payload,approval:token}})});
    await afterSale(receipt(result.reference||reference),method==='CASH'&&amount>0);
    setOffline(false);setMessage('Vente enregistrée : '+(result.reference||reference));localClearSale();await refresh();focusScan()
   }catch(e){const msg=String(e);
@@ -414,7 +435,7 @@ function App(){
    setReturnPending(request)
   }
   setBusy(true);setError('');
-  try{await invoke('supplier_return_create',{request});localStorage.removeItem(draftKey+':return');setReturnPending(null);setReturnSale('');setReturnQty({});setMessage('Retour enregistré : '+request.reference);await load('retours')}
+  try{await invoke('supplier_return_create',{request}).catch(async e=>{const m=String(e);if(!needsApproval(m))throw e;const token=await askApproval('refund',m);if(!token)throw Error('Retour annulé : remboursement non autorisé.');return invoke('supplier_return_create',{request:{...request,approval:token}})});localStorage.removeItem(draftKey+':return');setReturnPending(null);setReturnSale('');setReturnQty({});setMessage('Retour enregistré : '+request.reference);await load('retours')}
   catch(e){const msg=String(e);setError(msg);if(/HTTP 40[1349]|Retour refusé/i.test(msg)){localStorage.removeItem(draftKey+':return');setReturnPending(null)}}
   finally{setBusy(false)}
  }
@@ -513,7 +534,7 @@ function App(){
   <aside className="v5-side">
    <div className="v5-brand"><FixiLogo size={40}/><div className="v5-brand-text"><strong>FIXI</strong><small>Caisse</small></div>
     <button className="v5-icon-btn v5-side-toggle" title={compact?'Agrandir le menu':'Réduire le menu'} aria-label={compact?'Agrandir le menu':'Réduire le menu'} onClick={()=>setCompact(v=>!v)}>{compact?<PanelLeftOpen size={18}/>:<PanelLeftClose size={18}/>}</button></div>
-   <nav className="v5-nav" aria-label="Menu">{navGroups.map(g=><div key={g.label} className="v5-nav-group"><span className="v5-nav-heading">{g.label}</span>
+   <nav className="v5-nav" aria-label="Menu">{navGroups.map(g=>({...g,items:g.items.filter(id=>pageAllowed(id,perms))})).filter(g=>g.items.length).map(g=><div key={g.label} className="v5-nav-group"><span className="v5-nav-heading">{g.label}</span>
     {g.items.map(id=>{const item=nav.find(n=>n.id===id)!;const I=item.icon;return <button key={id} title={item.label} aria-current={page===id?'page':undefined} className="v5-nav-item" onClick={()=>navigate(id)}><I size={19}/><span>{item.label}</span>{id==='commandes'&&pendingOrders>0&&<b>{pendingOrders}</b>}</button>})}</div>)}</nav>
    <div className="v5-account"><span className="v5-led" aria-hidden/><div><strong>{cashier||boot.companyName}</strong><small>{boot.role==='DEMO'?'Démonstration':(roleLabel[boot.role]||boot.role)+' · '+boot.companyName}</small></div>
     <div className="v5-account-actions"><button className="v5-icon-btn" title="Changer de caissier" aria-label="Changer de caissier" disabled={boot.role==='DEMO'} onClick={()=>void switchCashier()}><UserRoundCog size={17}/></button><button className="v5-icon-btn" title="Réglages" aria-label="Réglages" onClick={()=>setDialog('settings')}><Settings2 size={17}/></button><button className="v5-icon-btn" title="Fermer FIXI Caisse" aria-label="Fermer FIXI Caisse" onClick={()=>void getCurrentWindow().close()}><Power size={17}/></button></div></div>
@@ -633,6 +654,7 @@ function App(){
     <div className="v5-card"><h2 className="v5-card-title">Remises livreurs</h2>{courierShifts.length===0?<Empty icon={Truck} title="Aucune remise" text="L’historique des remises apparaîtra ici."/>:<div className="v5-table-wrap"><table className="v5-table"><thead><tr><th>Livreur</th><th className="num">Déclaré</th><th className="num">Attendu</th><th>État</th></tr></thead><tbody>{courierShifts.map(x=><tr key={x.id}><td><b>{x.driver?.fullName||'Livreur'}</b></td>
     <td className="num">{money(Number(x.declaredRemit||0))}</td><td className="num">{money(Number(x.expectedCod||0))}</td><td><StatusChip status={x.status}/></td></tr>)}</tbody></table></div>}</div>
    </section>}
+   {MANAGE_PAGES.includes(page)&&<ManageModule page={page as ManagePage} perms={perms} products={products} customers={boot.customers||[]} demo={boot.role==='DEMO'} onError={setError} onMessage={setMessage} onCatalogChanged={()=>void refresh()}/>}
    {page==='entree'&&<StockInPage products={products} storageKey={(draftKey||'demo')+':stock-in'} demo={boot.role==='DEMO'} canEnter={['OWNER','ADMIN','MANAGER','DEMO'].includes(boot.role)} onDone={()=>void refresh()} onError={setError} onMessage={setMessage} onUnknown={code=>{setNewCode(code);setDialog('product')}}/>}
    {page==='inventaire'&&<InventoryPage products={products} storageKey={(draftKey||'demo')+':inventory'} demo={boot.role==='DEMO'} canClose={['OWNER','ADMIN','MANAGER','DEMO'].includes(boot.role)} onDone={()=>void refresh()} onError={setError} onMessage={setMessage}/>}
   </main>
@@ -676,6 +698,7 @@ function App(){
   <InvoicePrint data={invoiceData} logo={logo}/>
   {invoiceFor&&<InvoiceDialog reference={invoiceFor.reference} customer={invoiceFor.customer} onClose={()=>setInvoiceFor(null)} onDone={printInvoice}/>}
   {reportOpen&&<ReportDialog page={page} onClose={()=>setReportOpen(false)} onSent={()=>setMessage('Merci, le problème est envoyé à l’équipe Fixi.')}/>}
+  {approval&&<ApprovalDialog perm={approval.perm} reason={approval.reason} onDone={t=>{approval.resolve(t);setApproval(null)}}/>}
   {dialog==='product'&&<NewProductDialog stockIn={page==='entree'} barcode={newCode} onClose={()=>{setDialog('');focusScan()}} onCreate={createProduct}/>}
   {dialog==='free'&&<FreeItemDialog onClose={()=>{setDialog('');focusScan()}} onAdd={x=>setCustom(list=>[...list,{id:crypto.randomUUID(),...x}])}/>}
   {dialog==='discount'&&<DiscountDialog subtotal={subtotal} discount={cartDiscount} onClose={()=>setDialog('')}

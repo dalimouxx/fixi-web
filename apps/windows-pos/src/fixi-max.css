@@ -230,3 +230,27 @@ body::after{width:520px;height:520px;bottom:-220px;right:-140px;background:#8b5c
 .at-in-new header{display:flex;align-items:center;gap:8px}.at-in-new header b{flex:1}
 .at-in-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:10px}
 @media (max-width:900px){.at-in-grid{grid-template-columns:1fr 1fr}}
+/* ===== Écrans de gestion (droits par rôle) ===== */
+.v5-input{min-height:38px;border:1px solid var(--fx-line,#e5e5ea);border-radius:10px;padding:0 10px;background:var(--fx-surface,#fff);color:var(--fx-ink,inherit);font:500 14px var(--fx-font,inherit);width:100%}
+.v5-input:focus{outline:2px solid color-mix(in srgb,var(--fx-brand,#f0782b) 45%,transparent);outline-offset:1px}
+.v5-table td.v6-row-actions{white-space:nowrap;text-align:right;width:1%}.v6-row-actions>*{display:inline-flex;vertical-align:middle;margin-left:4px}
+.v6-grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;align-items:end}
+.v6-grid4{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:10px;align-items:center}
+.v6-span3{grid-column:1/-1}
+.v6-inline{display:flex;gap:8px;align-items:center}
+.v6-inline .v5-input,.v6-inline select{flex:1}
+.v6-chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+.v6-chips .v5-chip{cursor:default}button.v5-chip{cursor:pointer;border:0}
+.v5-chip.is-muted{opacity:.45}
+.v6-h3{display:flex;align-items:center;gap:8px;margin:0 0 10px;font-size:15px}
+.v6-h3 small{opacity:.6;font-weight:600}
+.v6-stack{display:grid;gap:10px}
+.v6-masters summary{cursor:pointer;display:flex;gap:10px;align-items:baseline}.v6-masters summary small{opacity:.65}
+.v6-masters[open] summary{margin-bottom:10px}
+.v5-table tr.is-muted{opacity:.6}
+.v6-doc-print{display:none}
+@media print{body[data-print-mode=doc] .v6-doc-print{display:block;position:fixed;inset:0;background:#fff;color:#000;padding:18mm;font:12pt/1.4 Arial,sans-serif}
+ body[data-print-mode=doc] .v6-doc-print table{width:100%;border-collapse:collapse;margin:10mm 0}
+ body[data-print-mode=doc] .v6-doc-print th,body[data-print-mode=doc] .v6-doc-print td{border-bottom:1px solid #ccc;padding:4px;text-align:left}
+ body[data-print-mode=doc] .v5-app>*:not(.v5-main){display:none!important}}
+@media (max-width:900px){.v6-grid3,.v6-grid4{grid-template-columns:1fr}}

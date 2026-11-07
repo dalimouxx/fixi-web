@@ -4,7 +4,7 @@ import {bad,ok} from '@/lib/http';
 
 export async function GET(){
  try{
-  const s=await requireSupplierRole(['OWNER','ADMIN','MANAGER','SALES','CASHIER']);
+  const s=await requireSupplierRole(['OWNER','ADMIN','MANAGER','SALES','CASHIER','STOCK']);
   const orders=await prisma.supplierOrder.findMany({
    where:{companyId:s.companyId,status:{in:['PENDING','CONFIRMED','PREPARING','READY_FOR_DELIVERY']}},
    orderBy:{createdAt:'desc'},take:100,

@@ -10,6 +10,7 @@ use device_auth::{SavedDevice, list_profiles, find_profile, read_profile, write_
 mod hardware;
 mod updater;
 mod atelier;
+mod supplier_api;
 
 struct Connection {
     origin: String,
@@ -425,6 +426,30 @@ async fn supplier_stock_count(state: State<'_,Arc<DesktopState>>, request:serde_
  v4_request(&state,"/api/supplier/advanced",Some(request)).await
 }
 
+/// Écrans de gestion de la caisse fournisseur (produits, achats, dépenses, factures, livraison, rapports, équipe, dépôts).
+/// Seuls les chemins et actions de supplier_api::allowed passent ; le serveur applique ensuite la table des droits.
+#[tauri::command]
+async fn supplier_api(state: State<'_,Arc<DesktopState>>, method:String, path:String, body:Option<serde_json::Value>) -> Result<serde_json::Value,String>{
+ let m=method.to_uppercase();
+ let action=body.as_ref().and_then(|b|b.get("action")).and_then(|v|v.as_str()).map(|s|s.to_string());
+ if !supplier_api::allowed(&m,&path,action.as_deref()){return Err("Action non autorisée depuis la caisse".into())}
+ unlocked(&state).await?;
+ let guard=state.connection.lock().await;
+ let session=guard.as_ref().ok_or("Connectez-vous à FIXI Supplier")?;
+ let url=format!("{}{}",session.origin,path);
+ let req=match m.as_str(){"GET"=>session.client.get(url),"POST"=>session.client.post(url),"PATCH"=>session.client.patch(url),"DELETE"=>session.client.delete(url),_=>return Err("Méthode refusée".into())};
+ let req=if let Some(b)=body{req.json(&b)}else{req};
+ let response=req.send().await.map_err(connection_error)?;
+ let code=response.status();
+ let result:serde_json::Value=response.json().await.map_err(|_|format!("Réponse non JSON du serveur (HTTP {}).",code.as_u16()))?;
+ if code.as_u16()==401{return Err("Session fournisseur expirée (HTTP 401) : reconnectez-vous.".into())}
+ if !code.is_success(){
+  let reason=result.get("error").and_then(|v|v.as_str()).unwrap_or("Opération refusée");
+  return Err(format!("{} (HTTP {})",reason,code.as_u16()))
+ }
+ Ok(result)
+}
+
 /// Entrée de stock au scanner : coûts d'achat (gérant) puis validation. Seuls ces champs sont relayés.
 #[tauri::command]
 async fn supplier_stock_in_costs(state: State<'_,Arc<DesktopState>>) -> Result<serde_json::Value,String>{
@@ -573,7 +598,7 @@ pub fn run() {
     tauri::Builder::default()
         .manage(Arc::new(DesktopState{connection:Mutex::new(None),pin:Mutex::new(None)}))
         .manage(Arc::new(atelier::AtelierState::new()))
-        .invoke_handler(tauri::generate_handler![supplier_stock_in_costs,supplier_stock_in,supplier_login,supplier_refresh,supplier_logout,supplier_checkout,supplier_history,supplier_cash_action,supplier_orders,supplier_order_transition,supplier_debts,supplier_debt_payment,supplier_returns,supplier_return_create,pin_setup,pin_lock,pin_unlock,supplier_saved_profile,supplier_pin_login,supplier_operation_status,supplier_find_tickets,supplier_return_source,supplier_customer_debts,supplier_customer_payment,supplier_create_customer,supplier_delivery_shifts,supplier_delivery_close,supplier_switch_user,supplier_cash_summary,app_version,open_external,hardware::list_printers,hardware::cash_drawer_open,hardware::open_customer_display,hardware::close_customer_display,updater::check_update,updater::install_update,supplier_invoice,supplier_update_customer,supplier_stock_count,supplier_open_stock_counts,supplier_report_problem,supplier_create_product,supplier_lookup_barcode,atelier::atelier_options,atelier::atelier_login,atelier::atelier_request,atelier::atelier_logout])
+        .invoke_handler(tauri::generate_handler![supplier_api,supplier_stock_in_costs,supplier_stock_in,supplier_login,supplier_refresh,supplier_logout,supplier_checkout,supplier_history,supplier_cash_action,supplier_orders,supplier_order_transition,supplier_debts,supplier_debt_payment,supplier_returns,supplier_return_create,pin_setup,pin_lock,pin_unlock,supplier_saved_profile,supplier_pin_login,supplier_operation_status,supplier_find_tickets,supplier_return_source,supplier_customer_debts,supplier_customer_payment,supplier_create_customer,supplier_delivery_shifts,supplier_delivery_close,supplier_switch_user,supplier_cash_summary,app_version,open_external,hardware::list_printers,hardware::cash_drawer_open,hardware::open_customer_display,hardware::close_customer_display,updater::check_update,updater::install_update,supplier_invoice,supplier_update_customer,supplier_stock_count,supplier_open_stock_counts,supplier_report_problem,supplier_create_product,supplier_lookup_barcode,atelier::atelier_options,atelier::atelier_login,atelier::atelier_request,atelier::atelier_logout])
         .run(tauri::generate_context!())
         .expect("error while running FIXI Caisse Windows");
 }
