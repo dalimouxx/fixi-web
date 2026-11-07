@@ -1,13 +1,15 @@
 'use client';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
-import { Plus, Search, Minus, Boxes, TriangleAlert, Wallet, PackageOpen } from 'lucide-react';
+import { Plus, Search, Minus, Boxes, TriangleAlert, Wallet, PackageOpen, ScanBarcode } from 'lucide-react';
+import { BarcodeCamera } from '@/components/barcode-camera';
+import { gs1Valid, normalizeBarcode } from '@/lib/barcode';
 import { api, useApi } from '@/components/ui';
 import { FxSheet } from '@/components/fx-sheet';
 import { RestockPanel } from '@/components/restock-panel';
 import { money } from '@/lib/format';
 
-const empty = { sku: '', name: '', category: '', quantity: 0, minQuantity: 2, purchasePrice: 0, salePrice: 0, supplierId: '' };
+const empty = { sku: '', barcode: '', name: '', category: '', quantity: 0, minQuantity: 2, purchasePrice: 0, salePrice: 0, supplierId: '' };
 
 // Stock : ce qui reste, ce qu'il faut racheter, et un ajustement en un toucher.
 export default function Stock() {
@@ -20,6 +22,8 @@ export default function Stock() {
   const { data, loading, error } = useApi<any[]>(`/api/stock?q=${encodeURIComponent(q)}`, refresh);
   const suppliers = useApi<any[]>('/api/suppliers').data || [];
   const [f, setF] = useState<any>(empty);
+  const [scan, setScan] = useState<'field' | 'search' | null>(null);
+  const code = normalizeBarcode(f.barcode); const codeOk = code ? gs1Valid(code) : null;
   const rows = data || [];
   const low = rows.filter(x => x.quantity <= x.minQuantity);
   const value = rows.reduce((a, x) => a + Number(x.quantity) * Number(x.purchasePrice || 0), 0);
@@ -37,7 +41,7 @@ export default function Stock() {
   async function adjust(x: any, d: number) {
     try { await api(`/api/stock/${x.id}`, { method: 'PATCH', body: JSON.stringify({ quantity: Math.max(0, x.quantity + d) }) }); setRefresh(v => v + 1); } catch (err: any) { alert(err.message); }
   }
-  function openEdit(x: any) { setEdit(x); setF({ sku: x.sku, name: x.name, category: x.category || '', quantity: x.quantity, minQuantity: x.minQuantity, purchasePrice: Number(x.purchasePrice || 0), salePrice: Number(x.salePrice || 0), supplierId: x.supplierId || '' }); setOpen(true); }
+  function openEdit(x: any) { setEdit(x); setF({ sku: x.sku, barcode: x.barcode || '', name: x.name, category: x.category || '', quantity: x.quantity, minQuantity: x.minQuantity, purchasePrice: Number(x.purchasePrice || 0), salePrice: Number(x.salePrice || 0), supplierId: x.supplierId || '' }); setOpen(true); }
 
   return <div className="fx-page">
     <div className="fx-hello"><div><h1>Stock</h1><p>Vos pièces, ce qu’il faut racheter, la valeur au coût.</p></div>
@@ -52,7 +56,7 @@ export default function Stock() {
     </section>
 
     <div className="fx-toolbar">
-      <div className="fx-searchbar"><Search size={18} /><input value={q} onChange={e => setQ(e.target.value)} placeholder="Nom ou référence de la pièce…" aria-label="Rechercher une pièce" /></div>
+      <div className="fx-searchbar"><Search size={18} /><input value={q} onChange={e => setQ(e.target.value)} placeholder="Nom, référence ou code-barres…" aria-label="Rechercher une pièce" /><button type="button" className="fx-searchbar-scan" onClick={() => setScan('search')} aria-label="Scanner un code-barres"><ScanBarcode size={18} /></button></div>
       <div className="fx-filter-chips" role="group" aria-label="Filtrer">
         <button type="button" aria-pressed={filter === 'all'} onClick={() => setFilter('all')}>Tout</button>
         <button type="button" aria-pressed={filter === 'low'} onClick={() => setFilter('low')} data-tone="danger">À racheter {low.length > 0 && <b>{low.length}</b>}</button>
@@ -64,7 +68,7 @@ export default function Stock() {
     {loading && !data ? <div className="card card-pad fx-skeleton" role="status" aria-label="Chargement"><i /><i /><i /></div> :
       <div className="fx-list fx-stock-list">
         {shown.map(x => { const isLow = x.quantity <= x.minQuantity; return <div key={x.id} className={`fx-row fx-stock-row ${isLow ? 'fx-row--danger' : ''}`}>
-          <button type="button" className="fx-row-main" onClick={() => openEdit(x)}><b>{x.name}</b><small><span className="mono">{x.sku}</span>{x.category ? ` · ${x.category}` : ''} · vente {money(x.salePrice)}{x.supplier?.name ? ` · ${x.supplier.name}` : ''}</small></button>
+          <button type="button" className="fx-row-main" onClick={() => openEdit(x)}><b>{x.name}</b><small><span className="mono">{x.sku}</span>{x.barcode ? <span className="mono"> · {x.barcode}</span> : null}{x.category ? ` · ${x.category}` : ''} · vente {money(x.salePrice)}{x.supplier?.name ? ` · ${x.supplier.name}` : ''}</small></button>
           <div className="fx-stepper-qty" role="group" aria-label={`Quantité de ${x.name}`}>
             <button type="button" onClick={() => adjust(x, -1)} disabled={x.quantity <= 0} aria-label="Retirer une pièce"><Minus size={16} /></button>
             <b className={isLow ? 'is-low' : ''}>{x.quantity}</b>
@@ -79,6 +83,8 @@ export default function Stock() {
       <form onSubmit={save} className="fx-form-grid">
         <label className="field span-2"><span className="label">Nom *</span><input className="input" required value={f.name} onChange={e => setF({ ...f, name: e.target.value })} placeholder="Écran Galaxy A54 OLED" /></label>
         <label className="field"><span className="label">Référence *</span><input className="input" required value={f.sku} onChange={e => setF({ ...f, sku: e.target.value })} /></label>
+        <label className="field"><span className="label">Code-barres</span><span className="fx-input-scan"><input className="input" inputMode="numeric" value={f.barcode} onChange={e => setF({ ...f, barcode: e.target.value })} placeholder="Scannez l’emballage" /><button type="button" className="btn btn-soft btn-sm" onClick={() => setScan('field')} aria-label="Scanner avec la caméra"><ScanBarcode size={17} /></button></span>
+          {codeOk === false && <small className="fx-form-hint warn">Clé de contrôle incorrecte : vérifiez le code (il sera quand même enregistré).</small>}</label>
         <label className="field"><span className="label">Catégorie</span><input className="input" list="fx-stock-cats" value={f.category} onChange={e => setF({ ...f, category: e.target.value })} /><datalist id="fx-stock-cats">{cats.map(c => <option key={c} value={c} />)}</datalist></label>
         <label className="field"><span className="label">Quantité</span><input className="input" type="number" min="0" value={f.quantity} onChange={e => setF({ ...f, quantity: Number(e.target.value) })} /></label>
         <label className="field"><span className="label">Alerte à partir de</span><input className="input" type="number" min="0" value={f.minQuantity} onChange={e => setF({ ...f, minQuantity: Number(e.target.value) })} /></label>
@@ -89,5 +95,6 @@ export default function Stock() {
         <button className="btn btn-primary btn-block span-2">{edit ? 'Enregistrer' : 'Ajouter la pièce'}</button>
       </form>
     </FxSheet>
+  {scan && <BarcodeCamera kicker="STOCK" title={scan === 'field' ? 'Scanner le code-barres' : 'Retrouver une pièce'} text="Présentez le code-barres de l’emballage devant la caméra." submitLabel={scan === 'field' ? 'Utiliser ce code' : 'Chercher'} onDetected={(c: string) => { if (scan === 'field') setF((x: any) => ({ ...x, barcode: c })); else setQ(c); setScan(null); }} onClose={() => setScan(null)} />}
   </div>;
 }

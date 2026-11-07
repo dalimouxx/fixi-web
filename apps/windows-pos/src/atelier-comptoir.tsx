@@ -30,7 +30,7 @@ export async function flushQueue(): Promise<{ sent: number; left: number }> {
   return { sent, left: q.length };
 }
 
-type Item = { id: string; sku: string; name: string; category: string | null; quantity: number; minQuantity: number; salePrice: number };
+type Item = { id: string; sku: string; barcode?: string | null; name: string; category: string | null; quantity: number; minQuantity: number; salePrice: number };
 export type SalePrint = { kind: 'vente' | 'retour'; number: string; lines: { name: string; quantity: number; total: number }[]; total: number; discount?: number; method: string; received?: number; change?: number; offline?: boolean };
 
 /** Numéro de ticket : « 42 » devient « V-000042 ». */
@@ -78,10 +78,14 @@ export function CounterSaleTab({ manager, onSold, onError }: { manager: boolean;
 
   function add(it: Item, d = 1) { setCart(c => { const next = Math.max(0, Math.min(it.quantity, (c[it.id]?.qty || 0) + d)); const x = { ...c }; if (next) x[it.id] = { item: it, qty: next }; else delete x[it.id]; return x; }); }
   // Douchette : la référence (code-barres) exacte ajoute l'article ; sinon, la liste filtrée reste affichée.
-  function scan() {
-    const code = q.trim().toLowerCase(); if (!code) return;
-    const hit = items.find(i => i.sku.toLowerCase() === code) || (items.length === 1 ? items[0] : undefined);
+  // La douchette tape plus vite que la recherche : on interroge le serveur avec le code exact.
+  async function scan() {
+    const code = q.trim(); if (!code) return;
+    const exact = (list: Item[]) => list.find(i => (i.barcode || '').toUpperCase() === code.toUpperCase()) || list.find(i => i.sku.toUpperCase() === code.toUpperCase());
+    let hit = exact(items);
+    if (!hit) { try { const r = await req<any>('GET', '/api/counter-sales?q=' + encodeURIComponent(code)); const list = (r.items || []).map((x: any) => ({ ...x, salePrice: Number(x.salePrice) })); hit = exact(list) || (list.length === 1 ? list[0] : undefined); } catch (x) { if (!isNetworkError(x)) { onError(x); return; } setOffline(true); try { const c = JSON.parse(localStorage.getItem(ITEMS_KEY) || 'null'); hit = c ? exact((c.items || []).map((x: any) => ({ ...x, salePrice: Number(x.salePrice) }))) : undefined; } catch {} } }
     if (hit && hit.quantity > 0) { add(hit); setQ(''); }
+    else if (hit) onError(`${hit.name} : rupture de stock`);
   }
   function reset() { setCart({}); setDiscount(''); setReceived(''); requestAnimationFrame(() => scanRef.current?.focus()); }
 
@@ -112,7 +116,7 @@ export function CounterSaleTab({ manager, onSold, onError }: { manager: boolean;
         {queue.some(x => x.error) && <small>{queue.filter(x => x.error).map(x => `${x.label} : ${x.error}`).join(' · ')}</small>}
         {queue.length > 0 && <button type="button" className="v5-btn v5-btn--ghost v5-btn--sm" onClick={() => void flushQueue().then(() => { setQueue(readQueue()); setN(x => x + 1); })}>Envoyer maintenant</button>}
       </div>}
-      <div className="v5-search"><ScanBarcode size={17} /><input ref={scanRef} autoFocus value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') scan(); if (e.key === 'Escape') setQ(''); }} placeholder="Scannez ou cherchez : coque, câble, référence…" /></div>
+      <div className="v5-search"><ScanBarcode size={17} /><input ref={scanRef} autoFocus value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') void scan(); if (e.key === 'Escape') setQ(''); }} placeholder="Scannez ou cherchez : coque, câble, code-barres…" /></div>
       <div className="at-cs-grid">
         {items.map(it => { const inCart = cart[it.id]?.qty || 0; const out = it.quantity <= 0;
           return <button key={it.id} className={'v5-product' + (inCart ? ' is-in-cart' : '')} disabled={out || inCart >= it.quantity} onClick={() => add(it)}>

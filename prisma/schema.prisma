@@ -703,6 +703,8 @@ model InventoryItem {
   shopId           String
   shop             Shop                @relation(fields: [shopId], references: [id], onDelete: Cascade)
   sku              String
+  /// Code-barres fabricant (EAN/UPC) ou interne, lu par la douchette ou la caméra.
+  barcode          String?
   name             String
   category         String?
   quantity         Int                 @default(0)
@@ -722,6 +724,7 @@ model InventoryItem {
   marketListings   PartMarketListing[]
 
   @@unique([shopId, sku])
+  @@index([shopId, barcode])
   @@index([shopId, name])
 }
 

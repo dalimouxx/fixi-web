@@ -5,6 +5,7 @@ import { CashSessionStatus, PaymentMethod, Prisma, StockMovementType, UserRole }
 import { audit } from '@/lib/audit';
 import { publish } from '@/lib/realtime';
 import { plain } from '@/lib/serializers';
+import { normalizeBarcode } from '@/lib/barcode';
 import { checkSplits, maxDiscountFor, priceSale, round3, saleNumber } from '@/lib/counter-sale';
 
 const methods = new Set<string>(Object.values(PaymentMethod));
@@ -17,9 +18,9 @@ export async function GET(req: Request) {
     const q = (new URL(req.url).searchParams.get('q') || '').trim();
     const start = new Date(); start.setHours(0, 0, 0, 0);
     const where: Prisma.InventoryItemWhereInput = { shopId: s.shopId, active: true, salePrice: { gt: 0 } };
-    if (q) where.OR = [{ name: { contains: q, mode: 'insensitive' } }, { sku: { contains: q, mode: 'insensitive' } }, { category: { contains: q, mode: 'insensitive' } }];
+    if (q) where.OR = [{ name: { contains: q, mode: 'insensitive' } }, { sku: { contains: q, mode: 'insensitive' } }, { barcode: { equals: normalizeBarcode(q) || '', mode: 'insensitive' } }, { category: { contains: q, mode: 'insensitive' } }];
     const [items, sales, shop, session] = await Promise.all([
-      prisma.inventoryItem.findMany({ where, select: { id: true, sku: true, name: true, category: true, quantity: true, minQuantity: true, salePrice: true }, orderBy: [{ category: 'asc' }, { name: 'asc' }], take: 120 }),
+      prisma.inventoryItem.findMany({ where, select: { id: true, sku: true, barcode: true, name: true, category: true, quantity: true, minQuantity: true, salePrice: true }, orderBy: [{ category: 'asc' }, { name: 'asc' }], take: 120 }),
       prisma.counterSale.findMany({ where: { shopId: s.shopId, createdAt: { gte: start } }, include: { lines: { select: { name: true, quantity: true } }, payments: { select: { method: true, amount: true } }, client: { select: { fullName: true } }, user: { select: { fullName: true } } }, orderBy: { createdAt: 'desc' }, take: 30 }),
       prisma.shop.findUniqueOrThrow({ where: { id: s.shopId }, select: { currency: true, cashierMaxDiscount: true, cashRequireSession: true } }),
       prisma.cashSession.findFirst({ where: { shopId: s.shopId, status: CashSessionStatus.OPEN }, select: { id: true } }),
