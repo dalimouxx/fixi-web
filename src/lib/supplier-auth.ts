@@ -7,11 +7,11 @@ const secret=()=>new TextEncoder().encode(process.env.SUPPLIER_AUTH_SECRET||proc
 
 export const supplierRoles=['OWNER','ADMIN','MANAGER','STOCK','SALES','CASHIER','ACCOUNTANT','DELIVERY_MANAGER','DRIVER'] as const;
 export type SupplierRole=(typeof supplierRoles)[number];
-export type SupplierSession={id:string;companyId:string;fullName:string;companyName:string;role:SupplierRole;sv?:number};
+export type SupplierSession={id:string;companyId:string;fullName:string;companyName:string;role:SupplierRole;sv?:number;support?:string};
 
-export async function createSupplierSession(v:SupplierSession){
- const t=await new SignJWT(v).setProtectedHeader({alg:'HS256'}).setIssuedAt().setExpirationTime('12h').sign(secret());
- const c=await cookies();c.set(COOKIE,t,{httpOnly:true,sameSite:'lax',secure:process.env.NODE_ENV==='production',path:'/',maxAge:43200});
+export async function createSupplierSession(v:SupplierSession,ttlSeconds=43200){
+ const t=await new SignJWT(v).setProtectedHeader({alg:'HS256'}).setIssuedAt().setExpirationTime(Math.floor(Date.now()/1000)+ttlSeconds).sign(secret());
+ const c=await cookies();c.set(COOKIE,t,{httpOnly:true,sameSite:'lax',secure:process.env.NODE_ENV==='production',path:'/',maxAge:ttlSeconds});
 }
 export async function destroySupplierSession(){const c=await cookies();c.set(COOKIE,'',{httpOnly:true,path:'/',maxAge:0})}
 export async function getSupplierSession():Promise<SupplierSession|null>{

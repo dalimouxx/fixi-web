@@ -38,4 +38,7 @@ export const arV19: Record<string, string> = {
   'Total HT': 'المجموع دون أداءات', 'Total TTC': 'المجموع بكل الأداءات', 'Timbre fiscal': 'الطابع الجبائي', 'Désignation': 'البيان', 'Facturation': 'الفوترة',
   'Matricule fiscal': 'المعرف الجبائي', 'Client professionnel (adresse, matricule fiscal)': 'زبون مهني (العنوان، المعرف الجبائي)', 'Code-barres': 'الرمز الشريطي',
   'Oups, cette page a rencontré un problème': 'عذرا، حدث خلل في هذه الصفحة', 'Réessayer': 'إعادة المحاولة', 'Accueil': 'الرئيسية',
+  // Export du stock fournisseur et mode support
+  'Exporter en Excel': 'تصدير إلى Excel', 'Mode support': 'وضع الدعم', 'Quitter le mode support': 'الخروج من وضع الدعم',
+  'Le support Fixi a ouvert votre espace': 'فتح دعم Fixi فضاءكم', 'Accéder': 'دخول', 'Accès support': 'دخول الدعم',
 };

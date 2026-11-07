@@ -12,7 +12,10 @@ export async function GET(req:Request){
   const withShot=await prisma.problemReport.findMany({where:{id:{in:rows.map(r=>r.id)},screenshot:{not:null}},select:{id:true}});
   const shots=new Set(withShot.map(x=>x.id));
   const open=await prisma.problemReport.count({where:{status:'OPEN'}});
-  return ok({open,rows:rows.map(r=>({...r,hasScreenshot:shots.has(r.id)}))});
+  const ids=(k:'shopId'|'companyId')=>[...new Set(rows.map(r=>r[k]).filter(Boolean) as string[])];
+  const [shops,companies]=await Promise.all([prisma.shop.findMany({where:{id:{in:ids('shopId')}},select:{id:true,name:true}}),prisma.supplierCompany.findMany({where:{id:{in:ids('companyId')}},select:{id:true,name:true}})]);
+  const names=new Map([...shops,...companies].map(x=>[x.id,x.name]));
+  return ok({open,rows:rows.map(r=>({...r,hasScreenshot:shots.has(r.id),targetName:names.get(r.shopId||r.companyId||'')||null}))});
  }catch(e:any){return bad(e.message,e.status||500)}
 }
 

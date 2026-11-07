@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { AlertTriangle, BellRing, CheckCircle2, DatabaseBackup, History, RefreshCw, ShieldCheck } from 'lucide-react';
 import { api, useApi } from './ui';
 import { dateTime } from '@/lib/format';
+import { LaunchCheckPanel } from './launch-check';
 
 const KIND: Record<string, string> = { SERVER_ERROR: 'Serveur', CLIENT_ERROR: 'Navigateur', BACKUP_FAIL: 'Sauvegarde', BACKUP_MISSING: 'Sauvegarde', RESTORE_TEST_FAIL: 'Restauration' };
 const ago = (d?: string) => { if (!d) return '—'; const h = (Date.now() - new Date(d).getTime()) / 3600_000; return h < 1 ? `il y a ${Math.max(1, Math.round(h * 60))} min` : h < 48 ? `il y a ${Math.round(h)} h` : `il y a ${Math.round(h / 24)} j`; };
@@ -18,6 +19,7 @@ export function PlatformHealth() {
   const rOk = data.restore?.kind === 'RESTORE_TEST_OK';
   const ch = data.channels || {};
   return <section className="control-content ph">
+    <LaunchCheckPanel />
     <div className="ph-cards">
       <div className={'ph-card ' + (bOk ? 'ok' : 'bad')}><DatabaseBackup /><div><span>Dernière sauvegarde</span><b>{data.backup ? ago(data.backup.lastAt) : 'Aucune'}</b><small>{data.backupFail ? `Échec ${ago(data.backupFail.lastAt)}` : data.backup?.message || (data.backupExpected ? 'Attendue chaque nuit' : 'Sauvegarde non configurée (voir deploy/vps/README.md)')}</small></div></div>
       <div className={'ph-card ' + (rOk ? 'ok' : data.restore ? 'bad' : 'warn')}><History /><div><span>Test de restauration</span><b>{data.restore ? ago(data.restore.lastAt) : 'Jamais'}</b><small>{data.restore?.message || 'Lancé chaque semaine par le service de sauvegarde'}</small></div></div>

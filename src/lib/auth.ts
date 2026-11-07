@@ -5,8 +5,8 @@ import { UserRole } from '@prisma/client';
 import { resolveFixiAccess, type FixiAccessTier } from './freemium';
 const COOKIE='fixi_session';
 const secret=()=>{const v=process.env.AUTH_SECRET;if(!v&&process.env.NODE_ENV==='production')throw new Error('AUTH_SECRET manquant');return new TextEncoder().encode(v||'dev-secret-change-this-immediately-123456')};
-export type SessionUser={ id:string; shopId:string; tenantId:string; role:UserRole; fullName:string; shopName:string; shopSlug:string; };
-export async function createSession(user: SessionUser) {const token=await new SignJWT(user).setProtectedHeader({alg:'HS256'}).setIssuedAt().setExpirationTime('12h').sign(secret());const c=await cookies(); c.set(COOKIE,token,{httpOnly:true,sameSite:'lax',secure:process.env.NODE_ENV==='production',path:'/',maxAge:60*60*12});}
+export type SessionUser={ id:string; shopId:string; tenantId:string; role:UserRole; fullName:string; shopName:string; shopSlug:string; support?:string; };
+export async function createSession(user: SessionUser, ttlSeconds=60*60*12) {const token=await new SignJWT(user).setProtectedHeader({alg:'HS256'}).setIssuedAt().setExpirationTime(Math.floor(Date.now()/1000)+ttlSeconds).sign(secret());const c=await cookies(); c.set(COOKIE,token,{httpOnly:true,sameSite:'lax',secure:process.env.NODE_ENV==='production',path:'/',maxAge:ttlSeconds});}
 export async function destroySession(){ const c=await cookies(); c.set(COOKIE,'',{httpOnly:true,path:'/',maxAge:0}); }
 export async function getSession():Promise<SessionUser|null>{const c=await cookies(); const token=c.get(COOKIE)?.value; if(!token) return null;try { const {payload}=await jwtVerify(token,secret()); return payload as unknown as SessionUser; } catch { return null; }}
 export async function requireSession(roles?: UserRole[], minimumAccess: FixiAccessTier = 'PRO') {
