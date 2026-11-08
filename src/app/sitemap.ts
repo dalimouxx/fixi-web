@@ -1,6 +1,9 @@
 import type { MetadataRoute } from 'next';
 import { prisma } from '@/lib/prisma';
 
+// Lu à chaque requête : l'adresse publique (NEXT_PUBLIC_APP_URL) n'est connue qu'au démarrage du serveur, pas à la construction.
+export const dynamic='force-dynamic';
+
 export default async function sitemap():Promise<MetadataRoute.Sitemap>{
  const base=(process.env.NEXT_PUBLIC_APP_URL||'http://localhost:3000').replace(/\/$/,'');
  let shops:{slug:string;createdAt:Date}[]=[];
