@@ -1,3 +1,4 @@
+import {checkLineId} from '@/lib/supplier-lines';
 import {prisma} from '@/lib/prisma';
 import {requireSupplierSession,requireSupplierRole} from '@/lib/supplier-auth';
 import {bad,ok} from '@/lib/http';
@@ -39,7 +40,7 @@ export async function POST(req:Request){
   if(deliveryActions.includes(action))await requireSupplierRole(['OWNER','ADMIN','MANAGER','DELIVERY_MANAGER']);
   if(action==='WAREHOUSE'){
    if(!b.name||!b.code)return bad('Nom et code requis');
-   return ok(plain(await prisma.supplierWarehouse.create({data:{companyId:s.companyId,name:String(b.name),code:String(b.code).toUpperCase(),address:b.address||null,region:b.region||null}})),{status:201});
+   return ok(plain(await prisma.supplierWarehouse.create({data:{companyId:s.companyId,name:String(b.name),code:String(b.code).toUpperCase(),address:b.address||null,region:b.region||null,lineId:await checkLineId(s.companyId,b.lineId)}})),{status:201});
   }
   if(action==='VENDOR'){
    if(!b.name)return bad('Nom fournisseur requis');

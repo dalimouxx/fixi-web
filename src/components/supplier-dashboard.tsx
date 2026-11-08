@@ -6,7 +6,7 @@ import Link from 'next/link';
 import {
   Boxes,ClipboardList,LogOut,PackagePlus,Truck,CheckCircle2,Plus,RefreshCw,LayoutDashboard,Users,
   ReceiptText,WalletCards,BadgeDollarSign,Warehouse,Search,ArrowDownToLine,AlertTriangle,TrendingUp,
-  Banknote,MapPinned,ShoppingCart,FileText,History,X,MoreHorizontal,Moon,ScanBarcode,Columns3,List,Copy,Tag,
+  Banknote,MapPinned,ShoppingCart,FileText,Layers,History,X,MoreHorizontal,Moon,ScanBarcode,Columns3,List,Copy,Tag,
   FileSpreadsheet as FxExportIcon,Pencil,
 } from 'lucide-react';
 import {GuidedTour} from './guided-tour';
@@ -41,6 +41,8 @@ import {SupplierDeliveryCenter} from './supplier-delivery-center';
 import {SupplierActionModal} from './supplier-action-modal';
 import {SupplierTeam} from './supplier-team';
 import {SupplierReports} from './supplier-reports';
+import {SupplierLines} from './supplier-lines';
+import {can} from '@/lib/supplier-permissions';
 import {SupplierInventory} from './supplier-inventory';
 import {SupplierWarehouses} from './supplier-warehouses';
 import {SupplierReturns} from './supplier-returns';
@@ -60,7 +62,7 @@ const stageOf:Record<string,string[]>={CONFIRM:['PENDING'],PREPARE:['CONFIRMED',
 const stageLabels:[string,string][]=[['ALL','Tout'],['CONFIRM','À confirmer'],['PREPARE','À préparer'],['READY','Prêtes'],['ROAD','En livraison']];
 const actionLabels:Record<string,string>={CONFIRMED:'Confirmer la commande',PREPARING:'Commencer la préparation',READY_FOR_DELIVERY:'Marquer prête'};
 const labels:Record<string,string>={PENDING:'Nouvelle',CONFIRMED:'Confirmée',PREPARING:'Préparation',READY_FOR_DELIVERY:'Disponible livreurs',OUT_FOR_DELIVERY:'En livraison',RETURNING:'Retour fournisseur',RETURNED:'Retour reçu à traiter',DELIVERED:'Livrée',CANCELLED:'Annulée'};
-type Tab='dashboard'|'orders'|'products'|'masters'|'purchases'|'vendors'|'clients'|'invoices'|'returns'|'warehouses'|'inventory'|'pricing'|'dues'|'finance'|'reports'|'cashier'|'delivery'|'team';
+type Tab='dashboard'|'orders'|'products'|'masters'|'purchases'|'vendors'|'clients'|'invoices'|'returns'|'warehouses'|'inventory'|'pricing'|'dues'|'finance'|'reports'|'cashier'|'delivery'|'team'|'lines';
 
 export function SupplierDashboard({session}:{session:any}){
   const[showArchived,setShowArchived]=useState(false);const[editProduct,setEditProduct]=useState<any>(null);
@@ -114,19 +116,19 @@ export function SupplierDashboard({session}:{session:any}){
 
   const role=String(session.role||'ADMIN');
   const access:Record<string,string[]>={
-    OWNER:['dashboard','cashier','orders','products','masters','purchases','vendors','clients','invoices','returns','warehouses','inventory','pricing','dues','finance','reports','delivery','team'],
-    ADMIN:['dashboard','cashier','orders','products','masters','purchases','vendors','clients','invoices','returns','warehouses','inventory','pricing','dues','finance','reports','delivery','team'],
-    MANAGER:['dashboard','cashier','orders','products','masters','purchases','vendors','clients','invoices','returns','warehouses','inventory','pricing','dues','finance','reports','delivery','team'],
+    OWNER:['dashboard','cashier','orders','products','masters','purchases','vendors','clients','invoices','returns','warehouses','inventory','pricing','dues','finance','reports','delivery','team','lines'],
+    ADMIN:['dashboard','cashier','orders','products','masters','purchases','vendors','clients','invoices','returns','warehouses','inventory','pricing','dues','finance','reports','delivery','team','lines'],
+    MANAGER:['dashboard','cashier','orders','products','masters','purchases','vendors','clients','invoices','returns','warehouses','inventory','pricing','dues','finance','reports','delivery','team','lines'],
     STOCK:['dashboard','products','masters','purchases','vendors','returns','warehouses','inventory','pricing','reports'],
     SALES:['dashboard','cashier','orders','products','clients','invoices','pricing','dues','reports'],
     CASHIER:['dashboard','cashier','clients','invoices','delivery'],
-    ACCOUNTANT:['dashboard','clients','invoices','dues','finance','reports','purchases','vendors'],
+    ACCOUNTANT:['dashboard','clients','invoices','dues','finance','reports','purchases','vendors','lines'],
     DELIVERY_MANAGER:['dashboard','orders','delivery']
   };
   const navAll=[
     ['dashboard','Accueil',LayoutDashboard],['cashier','Caisse',WalletCards],['orders','Commandes',ClipboardList],['products','Produits',Warehouse],['masters','Catégories & marques',Boxes],['purchases','Achats',ArrowDownToLine],['vendors','Mes fournisseurs',Users],
     ['clients','Clients',Users],['invoices','Factures',ReceiptText],['returns','Retours',RefreshCw],['warehouses','Dépôts',Warehouse],['inventory','Comptage du stock',Boxes],['pricing','Prix par quantité',BadgeDollarSign],['dues','Qui me doit / Je dois',Banknote],
-    ['finance','Bénéfice',TrendingUp],['reports','Rapports',FileText],['delivery','Livraison',Truck],['team','Équipe',Users]
+    ['finance','Bénéfice',TrendingUp],['reports','Rapports',FileText],['delivery','Livraison',Truck],['lines','Lignes (ex. MG)',Layers],['team','Équipe',Users]
   ] as const;
   const nav=navAll.filter(([key])=>(access[role]||access.ADMIN).includes(key));
   // 18 modules regroupés en 7 entrées ; les modules experts n'apparaissent qu'en Mode Avancé.
@@ -139,7 +141,7 @@ export function SupplierDashboard({session}:{session:any}){
     {id:'buy',label:'Achats',icon:ArrowDownToLine,tabs:['purchases','vendors']},
     {id:'money',label:'Clients & argent',icon:Banknote,tabs:['clients','invoices','dues','returns','finance']},
     {id:'delivery',label:'Livraison',icon:Truck,tabs:['delivery']},
-    {id:'more',label:'Gestion',icon:FileText,tabs:['reports','team']},
+    {id:'more',label:'Gestion',icon:FileText,tabs:['reports','lines','team']},
   ] as const;
   const groups=groupDefs.map(g=>({...g,items:g.tabs.map(t=>nav.find(([key])=>key===t)).filter((x):x is (typeof nav)[number]=>!!x&&(advancedMode||!advancedTabs.includes(x[0])||tab===x[0]))})).filter(g=>g.items.length>0);
   const currentGroup=groups.find(g=>g.items.some(([key])=>key===tab));
@@ -277,6 +279,7 @@ export function SupplierDashboard({session}:{session:any}){
       {tab==='dues'&&<SupplierReminders/>}{tab==='dues'&&<SupplierDues saleItems={erp.saleItems||[]} sales={erp.sales||[]} purchases={erp.purchases||[]} returns={erp.returns||advanced.returns||[]} customers={erp.customers||[]} methods={master.paymentMethods||[]} onChanged={()=>setRefresh(x=>x+1)}/>} 
 
       {tab==='reports'&&<SupplierReports/>}
+      {tab==='lines'&&<SupplierLines canEdit={['OWNER','ADMIN','MANAGER'].includes(role)} canPay={can(role,'vendorPay')}/>}
 
 {tab==='delivery'&&<SupplierDriverBoard/>}{tab==='delivery'&&<SupplierPartnerCouriers orders={orders} onChanged={()=>setRefresh(x=>x+1)}/>}{tab==='delivery'&&<SupplierDeliveryCenter orders={orders} drivers={drivers} onChanged={()=>setRefresh(x=>x+1)}/>}
       {tab==='team'&&<SecurityPanel endpoint="/api/supplier/security" loginHref="/supplier/login"/>}{tab==='team'&&<SupplierTeam session={session}/>} 

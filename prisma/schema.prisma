@@ -1787,6 +1787,10 @@ model SupplierProduct {
   minOrderQty    Int                 @default(1)
   warrantyDays   Int                 @default(0)
   serialTracked  Boolean             @default(false)
+  /// Ligne de produits (ex. « MG », produits d'un importateur en dépôt-vente). Vide = produits du fournisseur.
+  lineId         String?
+  /// Date à laquelle le produit a été rangé dans sa ligne : seules les ventes à partir de cette date comptent pour la ligne.
+  lineSince      DateTime?
   active         Boolean             @default(true)
   createdAt      DateTime            @default(now())
   updatedAt      DateTime            @default(now()) @updatedAt
@@ -1800,6 +1804,7 @@ model SupplierProduct {
   @@index([barcode])
   @@index([companyId, categoryId])
   @@index([companyId, brandId])
+  @@index([companyId, lineId])
 }
 
 model SupplierOrder {
@@ -2314,6 +2319,8 @@ model SupplierErpPayment {
   reference     String?
   note          String?
   accountId     String?
+  /// Paiement versé au propriétaire d'une ligne en dépôt-vente (ex. paiement à MG).
+  lineId        String?
   createdAt     DateTime @default(now())
 
   @@index([companyId, createdAt])
@@ -2550,6 +2557,8 @@ model SupplierWarehouse {
   companyId String
   name      String
   code      String
+  /// Dépôt réservé à une ligne de produits (ex. dépôt MG). Vide = dépôt général.
+  lineId    String?
   address   String?
   region    String?
   active    Boolean  @default(true)
@@ -3169,4 +3178,20 @@ model ShopVerification {
   note          String?
 
   @@index([submittedAt])
+}
+
+/// Ligne de produits d'un fournisseur : chaque fournisseur crée ses étiquettes (ex. « MG » pour les produits
+/// d'un importateur). Ventes, bénéfice, dû des clients et rapports peuvent être vus ligne par ligne.
+model SupplierProductLine {
+  id          String   @id @default(cuid())
+  companyId   String
+  name        String
+  /// Étiquette courte affichée sur les produits et les étiquettes imprimées (ex. MG).
+  tag         String
+  /// Dépôt-vente : le fournisseur paie au propriétaire de la ligne seulement ce qu'il vend (au prix d'achat convenu).
+  consignment Boolean  @default(false)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  @@index([companyId])
 }

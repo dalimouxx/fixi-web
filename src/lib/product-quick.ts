@@ -69,7 +69,7 @@ export function parseAmount(v: unknown) {
   return Number.isFinite(n) && n >= 0 ? Math.round(n * 1000) / 1000 : NaN;
 }
 
-export type QuickRow = { barcode?: string; name?: string; price?: unknown; stock?: unknown; purchasePrice?: unknown; sku?: string; category?: string; brand?: string; qualityGrade?: string };
+export type QuickRow = { barcode?: string; name?: string; price?: unknown; stock?: unknown; purchasePrice?: unknown; sku?: string; category?: string; brand?: string; qualityGrade?: string; line?: string };
 
 /** Valide une ligne (ajout rapide, saisie en série, import Excel). */
 export function checkRow(r: QuickRow): string | null {
@@ -106,6 +106,7 @@ const HEAD: Record<keyof QuickRow, string[]> = {
   sku: ['sku', 'reference', 'ref'],
   category: ['categorie', 'category', 'famille'],
   brand: ['marque', 'brand'],
+  line: ['ligne', 'line', 'etiquette', 'tag', 'proprietaire'],
   qualityGrade: ['qualite', 'quality', 'grade'],
 };
 

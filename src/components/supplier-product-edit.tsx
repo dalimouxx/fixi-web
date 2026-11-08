@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Pencil, Save, Trash2, X } from 'lucide-react';
 import { humanError } from '@/lib/human-error';
@@ -12,9 +12,12 @@ export function SupplierProductEditDialog({ product, canSeeCost, onClose, onSave
     name: product.name || '', barcode: product.barcode || '', sku: product.sku || '', category: product.category || '', brand: product.brand || '', qualityGrade: product.qualityGrade || '',
     retailPrice: num(product.retailPrice ?? product.price), wholesalePrice: num(product.wholesalePrice), minimumPrice: num(product.minimumPrice), purchasePrice: num(product.purchasePrice),
     location: product.location || '', minStock: num(product.minStock), warrantyDays: num(product.warrantyDays), minOrderQty: num(product.minOrderQty || 1),
+    lineId: product.lineId || 'own',
   });
+  const [lines, setLines] = useState<any[]>([]);
+  useEffect(() => { fetch('/api/supplier/lines').then(r => r.ok ? r.json() : null).then(j => setLines(j?.lines || [])).catch(() => {}); }, []);
   const [busy, setBusy] = useState(false); const [err, setErr] = useState('');
-  const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement>) => setF({ ...f, [k]: e.target.value });
+  const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setF({ ...f, [k]: e.target.value });
   const money = (v: string) => v.trim() === '' ? null : Number(v.replace(',', '.'));
   async function save(e: React.FormEvent) {
     e.preventDefault(); setBusy(true); setErr('');
@@ -27,7 +30,7 @@ export function SupplierProductEditDialog({ product, canSeeCost, onClose, onSave
       if (body.price === null || !(body.price >= 0)) throw new Error('Prix de vente requis');
       const r = await fetch('/api/supplier/products', { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
       const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error);
-      const r2 = await fetch('/api/supplier/products/' + product.id, { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ category: f.category, brand: f.brand }) });
+      const r2 = await fetch('/api/supplier/products/' + product.id, { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ category: f.category, brand: f.brand, ...(lines.length ? { lineId: f.lineId } : {}) }) });
       if (!r2.ok) throw new Error((await r2.json().catch(() => ({}))).error);
       onSaved(`« ${f.name} » enregistré.`);
     } catch (x) { setErr(humanError(x)); setBusy(false); }
@@ -55,6 +58,7 @@ export function SupplierProductEditDialog({ product, canSeeCost, onClose, onSave
         <label className="field"><span className="label">Emplacement</span><input className="input" value={f.location} onChange={set('location')} placeholder="Rayon A2" /></label>
         <label className="field"><span className="label">Stock d’alerte</span><input className="input" type="number" min={0} value={f.minStock} onChange={set('minStock')} /></label>
         <label className="field"><span className="label">Garantie (jours)</span><input className="input" type="number" min={0} value={f.warrantyDays} onChange={set('warrantyDays')} /></label>
+        {lines.length > 0 && <label className="field"><span className="label">Ligne de produits</span><select className="input" value={f.lineId} onChange={set('lineId')}><option value="own">Mes produits</option>{lines.filter(l => l.active || l.id === f.lineId).map(l => <option key={l.id} value={l.id}>{l.tag} · {l.name}{l.consignment ? ' (dépôt-vente)' : ''}</option>)}</select></label>}
         <label className="field"><span className="label">Commande minimum</span><input className="input" type="number" min={1} value={f.minOrderQty} onChange={set('minOrderQty')} /></label>
       </div>
       {err && <p className="error" role="alert">{err}</p>}
