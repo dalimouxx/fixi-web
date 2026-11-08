@@ -2280,6 +2280,8 @@ model SupplierErpSale {
   tax           Decimal   @default(0) @db.Decimal(12, 3)
   total         Decimal   @default(0) @db.Decimal(12, 3)
   paid          Decimal   @default(0) @db.Decimal(12, 3)
+  /// Total des suppléments « passager » de la vente (déjà compris dans le total, tracé pour le rapport de caisse).
+  walkInExtra   Decimal   @default(0) @db.Decimal(12, 3)
   dueAt         DateTime?
   note          String?
   createdById   String?
@@ -2302,6 +2304,8 @@ model SupplierErpSaleItem {
   unitCost  Decimal @default(0) @db.Decimal(12, 3)
   unitPrice Decimal @db.Decimal(12, 3)
   discount  Decimal @default(0) @db.Decimal(12, 3)
+  /// Supplément « passager » par unité, déjà compris dans unitPrice (jamais affiché sur le ticket).
+  extra     Decimal @default(0) @db.Decimal(12, 3)
 
   @@index([saleId])
   @@index([productId])

@@ -3,11 +3,11 @@ import {money,dateTime} from '@/lib/format';
 
 type InvoiceReceiptProps={
   company:any;customer:any;sale:any;
-  items:any[];payments:any[];
+  items:any[];payments:any[];cashier?:string|null;
 };
 
 /** Thermal 80-mm ticket, printed directly from a stored ERP sale. */
-export function SupplierThermalReceipt({company,customer,sale,items,payments}:InvoiceReceiptProps){
+export function SupplierThermalReceipt({company,customer,sale,items,payments,cashier}:InvoiceReceiptProps){
   const due=Math.max(0,Number(sale.total)-Number(sale.paid));
   return <article className="fixi-thermal-ticket" aria-label="Ticket de caisse">
     <header>
@@ -24,6 +24,7 @@ export function SupplierThermalReceipt({company,customer,sale,items,payments}:In
     <div className="fixi-thermal-line"><span>TICKET / VENTE</span><strong>{sale.reference}</strong></div>
     <div className="fixi-thermal-line"><span>Date</span><span>{dateTime(sale.createdAt)}</span></div>
     <div className="fixi-thermal-line"><span>Client</span><span>{customer?.name||'Client comptoir'}</span></div>
+    {cashier&&<div className="fixi-thermal-line"><span>Caissier</span><span>{cashier}</span></div>}
     <div className="fixi-thermal-separator"/>
     <div className="fixi-thermal-head"><span>Désignation / Qté × PU</span><b>Montant</b></div>
     {items.map(x=><div className="fixi-thermal-item" key={x.id}>
