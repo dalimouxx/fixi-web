@@ -121,14 +121,17 @@ export async function POST(req:Request){
     const allocatedTotal=productWarehouseRows.reduce((a,x)=>a+Number(x.quantity||0),0),unallocated=Math.max(0,p.stock-allocatedTotal);
     const warehouseConsumption=warehouseId?0:Math.max(0,q-unallocated);
     if(!warehouseId&&productWarehouseRows.reduce((a,x)=>a+Math.max(0,Number(x.quantity||0)-Number(x.reserved||0)),0)<warehouseConsumption)return bad('Répartition dépôt incohérente pour '+p.name,409);
-    const defaultPrice=Number(p.retailPrice??p.price);const price=money(i.unitPrice??defaultPrice);
+    const defaultPrice=Number(p.retailPrice??p.price);const base=money(i.unitPrice??defaultPrice);
+    // Supplément « passager » (par unité) : ajouté au prix, tracé à part, jamais visible sur le ticket. Remise et prix minimum se contrôlent sur le prix de base.
+    const extra=Math.max(0,money(i.extra||0));if(!Number.isFinite(extra)||extra>1000000)return bad('Supplément invalide',400);
+    const price=money(base+extra);
     const minimum=p.minimumPrice===null?null:Number(p.minimumPrice);
-    if(minimum!==null&&price<minimum&&!allow(s.role,['OWNER','ADMIN','MANAGER'])&&!(await checkPermOrApproval(s,'discount',b.approval).catch(()=>null)))return bad('Prix inférieur au minimum autorisé pour '+p.name+' : demandez le code gérant.',409);
+    if(minimum!==null&&base<minimum&&!allow(s.role,['OWNER','ADMIN','MANAGER'])&&!(await checkPermOrApproval(s,'discount',b.approval).catch(()=>null)))return bad('Prix inférieur au minimum autorisé pour '+p.name+' : demandez le code gérant.',409);
     // Prix de référence « normal » (gros / palier / remise client comprises) : ce qui est en dessous compte comme remise manuelle.
     const tier=tiers.filter(t=>t.productId===p.id&&q>=t.minQty).sort((a,b)=>b.minQty-a.minQty)[0];
     const refPrice=Math.min(defaultPrice,p.wholesalePrice==null?defaultPrice:Number(p.wholesalePrice),tier?Number(tier.unitPrice):defaultPrice)*(1-custPct/100);
-    refTotal+=refPrice*q;if(price<refPrice)manualOff+=(refPrice-price)*q;
-    subtotal+=price*q;normalized.push({p,q,price,warehouseRow,productWarehouseRows,warehouseConsumption});
+    refTotal+=refPrice*q;if(base<refPrice)manualOff+=(refPrice-base)*q;
+    subtotal+=price*q;normalized.push({p,q,price,extra,warehouseRow,productWarehouseRows,warehouseConsumption});
    }
    for(const c of customLines)subtotal+=c.price*c.q;
    const discount=Math.max(0,money(b.discount||0)),tax=Math.max(0,money(b.tax||0)),total=Math.max(0,money(subtotal-discount+tax));
@@ -150,9 +153,9 @@ export async function POST(req:Request){
    for(const p of payments)if(await cashLike(s.companyId,p.method)){cashSession=await openCash(s.companyId,s.id);if(!cashSession)return bad('Ouvrez votre caisse avant un encaissement espèces',409);break}
    const ref=String(b.reference||('V-'+Date.now()));
    const sale=await prisma.$transaction(async tx=>{
-    const sale=await tx.supplierErpSale.create({data:{companyId:s.companyId,customerId:b.customerId||null,warehouseId,cashSessionId:cashSession?.id||null,reference:ref,status:paid>=total?'PAID':paid>0?'PARTIALLY_PAID':'CREDIT',subtotal:money(subtotal),discount,tax,total,paid,dueAt:b.dueAt?new Date(b.dueAt):null,note:b.note||null,createdById:s.id}});
+    const sale=await tx.supplierErpSale.create({data:{walkInExtra:money(normalized.reduce((a:number,x:any)=>a+(x.extra||0)*x.q,0)),companyId:s.companyId,customerId:b.customerId||null,warehouseId,cashSessionId:cashSession?.id||null,reference:ref,status:paid>=total?'PAID':paid>0?'PARTIALLY_PAID':'CREDIT',subtotal:money(subtotal),discount,tax,total,paid,dueAt:b.dueAt?new Date(b.dueAt):null,note:b.note||null,createdById:s.id}});
     for(const x of normalized){
-     await tx.supplierErpSaleItem.create({data:{saleId:sale.id,productId:x.p.id,sku:x.p.sku,name:x.p.name,quantity:x.q,unitCost:Number(x.p.averageCost||x.p.purchasePrice||0),unitPrice:x.price}});
+     await tx.supplierErpSaleItem.create({data:{saleId:sale.id,productId:x.p.id,sku:x.p.sku,name:x.p.name,quantity:x.q,unitCost:Number(x.p.averageCost||x.p.purchasePrice||0),unitPrice:x.price,extra:x.extra||0}});
      const before=x.p.stock,after=before-x.q;
      const updated=await tx.supplierProduct.updateMany({where:{id:x.p.id,companyId:s.companyId,stock:{gte:x.q+Number(x.p.reservedStock||0)}},data:{stock:{decrement:x.q}}});
      if(updated.count!==1)throw Object.assign(new Error('Stock modifié entre-temps pour '+x.p.name+'. Actualisez avant de valider.'),{status:409});

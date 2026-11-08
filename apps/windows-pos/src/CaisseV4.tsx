@@ -30,7 +30,7 @@ type Product={id:string;name:string;sku:string;barcode?:string|null;category:str
 type Customer={id:string;name:string;phone?:string|null;taxId?:string|null;address?:string|null;creditLimit?:number;priceMode?:string;discountPct?:number;due?:number};
 type Boot={companyName:string;role:string;perms?:Perm[];discountLimitPct?:number;products:Product[];customers:Customer[];pinConfigured?:boolean;receiptProfile?:import('./TicketV4').ReceiptBusinessProfile|null;account?:{id:string;fullName:string}};
 type CustomLine={id:string;name:string;price:number;quantity:number};
-type SaleItem={productId:string;quantity:number;unitPrice:number}|{custom:true;name:string;quantity:number;unitPrice:number};
+type SaleItem={productId:string;quantity:number;unitPrice:number;extra?:number}|{custom:true;name:string;quantity:number;unitPrice:number};
 type QueuedSale={reference:string;createdAt:string;payload:{reference:string;items:SaleItem[];customerId:string|null;paid:number;method:string;discount:number};ticket:ReceiptData;stock:Record<string,number>;error?:string};
 type Parked={id:string;at:string;label:string;cart:Record<string,number>;custom:CustomLine[];linePrice:Record<string,number>;discount:number;customerId:string;priceMode:'RETAIL'|'WHOLESALE'};
 type SavedProfile={configured:boolean;server?:string;login?:string;profiles?:{login:string;name:string;server:string}[]};
@@ -116,6 +116,8 @@ function App(){
  const [courierShifts,setCourierShifts]=useState<CourierShift[]>([]),[selectedShift,setSelectedShift]=useState(''),[courierAmount,setCourierAmount]=useState(''),[courierNote,setCourierNote]=useState('');
  const [givenCash,setGivenCash]=useState('');
  const [compact,setCompact]=useState(()=>{try{return localStorage.getItem('fixi:v5:compact')==='1'}catch{return false}});
+ // Supplément « passager » : ajouté au prix atelier, tracé au serveur, jamais visible sur le ticket.
+ const [walkIn,setWalkIn]=useState(false),[extra,setExtra]=useState<Record<string,number>>({}),[sugg,setSugg]=useState<{byProduct:Record<string,number>;byCategory:Record<string,number>}>({byProduct:{},byCategory:{}});
  const [custom,setCustom]=useState<CustomLine[]>([]),[linePrice,setLinePrice]=useState<Record<string,number>>({}),[cartDiscount,setCartDiscount]=useState(0);
  const [totp,setTotp]=useState('');const [needTotp,setNeedTotp]=useState(false);
  const [dialog,setDialog]=useState<''|'free'|'discount'|'settings'|'parked'|'product'>('');const [newCode,setNewCode]=useState('');
@@ -140,8 +142,13 @@ function App(){
   const pct=Math.min(50,Math.max(0,Number(cust?.discountPct||0)));
   return Math.round(v*(1-pct/100)*1000)/1000;
  };
+ const suggestFor=(p:Product)=>sugg.byProduct[p.id]??(p.category?sugg.byCategory[p.category]:undefined)??0;
+ const extraFor=(p:Product)=>walkIn?Math.max(0,extra[p.id]??suggestFor(p)):0;
  const priceFor=(p:Product)=>linePrice[p.id]!==undefined&&linePrice[p.id]>0?linePrice[p.id]:basePrice(p);
- const subtotal=useMemo(()=>Math.round((entries.reduce((v,x)=>v+x.quantity*priceFor(x.product),0)+custom.reduce((v,c)=>v+c.price*c.quantity,0))*1000)/1000,[entries,custom,priceMode,linePrice]);
+ const subtotal=useMemo(()=>Math.round((entries.reduce((v,x)=>v+x.quantity*(priceFor(x.product)+extraFor(x.product)),0)+custom.reduce((v,c)=>v+c.price*c.quantity,0))*1000)/1000,[entries,custom,priceMode,linePrice,walkIn,extra,sugg]);
+ const walkInTotal=Math.round(entries.reduce((v,x)=>v+x.quantity*extraFor(x.product),0)*1000)/1000;
+ useEffect(()=>{if(!entries.length&&!custom.length){setExtra({});setWalkIn(false)}},[entries.length,custom.length]);
+ useEffect(()=>{if(!walkIn||!boot||boot.role==='DEMO')return;void invoke<any>('supplier_api',{method:'GET',path:'/api/supplier/walk-in-suggestions',body:null}).then(j=>j&&setSugg({byProduct:j.byProduct||{},byCategory:j.byCategory||{}})).catch(()=>{})},[walkIn]);
  const discountValue=Math.min(subtotal,Math.max(0,cartDiscount));
  const total=Math.round((subtotal-discountValue)*1000)/1000;
  const lineCount=entries.length+custom.length;
@@ -263,8 +270,8 @@ function App(){
  }
  function localClearSale(){setGivenCash('');setCart({});setCustom([]);setLinePrice({});setCartDiscount(0);setCustomerId('');setPaid('');setSaleRef('');setSearch('')}
  const isOffline=(msg:string)=>/Connexion interrompue|HTTP 50[234]|Délai dépassé|Serveur inaccessible|Connexion HTTPS impossible|Erreur réseau/i.test(msg);
- function saleItems():SaleItem[]{return [...entries.map(e=>({productId:e.product.id,quantity:e.quantity,unitPrice:priceFor(e.product)})),...custom.map(c=>({custom:true as const,name:c.name,quantity:c.quantity,unitPrice:c.price}))]}
- function receipt(reference:string,offlineSale=false):ReceiptData{return {reference,lines:[...entries.map(x=>({name:x.product.name,quantity:x.quantity,price:priceFor(x.product)})),...custom.map(c=>({name:c.name,quantity:c.quantity,price:c.price}))],
+ function saleItems():SaleItem[]{return [...entries.map(e=>({productId:e.product.id,quantity:e.quantity,unitPrice:priceFor(e.product),...(extraFor(e.product)>0?{extra:extraFor(e.product)}:{})})),...custom.map(c=>({custom:true as const,name:c.name,quantity:c.quantity,unitPrice:c.price}))]}
+ function receipt(reference:string,offlineSale=false):ReceiptData{return {reference,lines:[...entries.map(x=>({name:x.product.name,quantity:x.quantity,price:priceFor(x.product)+extraFor(x.product)})),...custom.map(c=>({name:c.name,quantity:c.quantity,price:c.price}))],
   paid:amount,total,discount:discountValue||undefined,company:boot!.companyName,profile:boot!.receiptProfile,date:new Date().toLocaleString('fr-FR'),customer:boot!.customers.find(x=>x.id===customerId)?.name,cashier,offline:offlineSale,logo}}
  async function afterSale(t:ReceiptData,cashSale:boolean){
   setTicket(t);setPrintRequest(n=>n+1);
@@ -479,7 +486,7 @@ function App(){
  useEffect(()=>{const el=gridEnd.current;if(!el)return;const io=new IntersectionObserver(e=>{if(e[0]?.isIntersecting)setGridLimit(n=>n+120)},{rootMargin:'400px'});io.observe(el);return()=>io.disconnect()},[visible.length,gridLimit,page]);
  useEffect(()=>{if(!message)return;const t=window.setTimeout(()=>setMessage(''),5000);return()=>window.clearTimeout(t)},[message]);
  useEffect(()=>{if(!boot||!settings.customerDisplay||!lineCount)return;const g=Number(givenCash.replace(',','.'));const hasGiven=givenCash.trim()!==''&&Number.isFinite(g);
-  publishDisplay({company:boot.companyName,logo,lines:[...entries.map(x=>({name:x.product.name,quantity:x.quantity,price:priceFor(x.product)})),...custom.map(c=>({name:c.name,quantity:c.quantity,price:c.price}))],discount:discountValue,total,given:hasGiven?g:null,change:hasGiven?Math.round((g-total)*1000)/1000:null})
+  publishDisplay({company:boot.companyName,logo,lines:[...entries.map(x=>({name:x.product.name,quantity:x.quantity,price:priceFor(x.product)+extraFor(x.product)})),...custom.map(c=>({name:c.name,quantity:c.quantity,price:c.price}))],discount:discountValue,total,given:hasGiven?g:null,change:hasGiven?Math.round((g-total)*1000)/1000:null})
  },[cart,custom,linePrice,cartDiscount,total,givenCash,settings.customerDisplay,boot]);
  useEffect(()=>{if(boot&&boot.role!=='DEMO'&&settings.customerDisplay)void invoke('open_customer_display').catch(()=>{})},[boot?.companyName]);
  useEffect(()=>{if(boot&&!pinConfigured&&boot.role!=='DEMO'&&cashier)setMessage('Activez un code PIN (en haut) pour ouvrir la caisse en 2 secondes la prochaine fois.')},[boot?.companyName]);
@@ -555,7 +562,8 @@ function App(){
     <div className="v5-filters"><label className="v5-search"><Search size={17}/><input placeholder="Chercher un produit…" value={search} onChange={e=>setSearch(e.target.value)}/>{search&&<button aria-label="Effacer" onClick={()=>setSearch('')}><X size={15}/></button>}</label>
      <div className="v5-seg" role="group" aria-label="Tarif" title={entries.length>0?'Videz le panier pour changer de tarif':'Tarif appliqué au panier'}>
       <button aria-pressed={priceMode==='RETAIL'} disabled={busy||!!saleRef||entries.length>0} onClick={()=>setPriceMode('RETAIL')}>Détail</button>
-      <button aria-pressed={priceMode==='WHOLESALE'} disabled={busy||!!saleRef||entries.length>0} onClick={()=>setPriceMode('WHOLESALE')}>Gros</button></div></div>
+      <button aria-pressed={priceMode==='WHOLESALE'} disabled={busy||!!saleRef||entries.length>0} onClick={()=>setPriceMode('WHOLESALE')}>Gros</button></div>
+     <button type="button" className={'v5-btn v5-btn--sm '+(walkIn?'v5-btn--primary':'v5-btn--ghost')} aria-pressed={walkIn} disabled={busy||!!saleRef} onClick={()=>setWalkIn(v=>!v)} title="Client de passage : ajouter un supplément au prix atelier (non visible sur le ticket)">Passager{walkIn&&walkInTotal>0?' +'+money(walkInTotal):''}</button></div>
     <div className="v5-chips">{hasTop&&<button aria-pressed={category==='Top'} onClick={()=>setCategory('Top')}><Flame size={14}/> Les plus vendus</button>}{categories.map(x=><button key={x} aria-pressed={x===category} onClick={()=>setCategory(x)}>{x}<small>{x==='Tous'?products.length:products.filter(p=>(p.category||'Autres')===x).length}</small></button>)}</div>
     {visible.length===0?<div className="v5-empty"><PackageSearch size={40}/><h3>Aucun produit</h3><p>Essayez un autre mot ou une autre catégorie.</p></div>:
     <section className="v5-products">{visible.slice(0,gridLimit).map(p=>{const inCart=cart[p.id]||0;return <button key={p.id} disabled={p.stock<=0||busy||!!saleRef} className={'v5-product'+(inCart?' is-in-cart':'')} style={{['--cat' as any]:categoryLook(p.category,p.name).color}} onClick={()=>add(p.id,1)}>
@@ -666,9 +674,9 @@ function App(){
     <button className="v5-btn v5-btn--ghost v5-btn--sm" disabled={busy||!!saleRef||!lineCount} onClick={park}><PauseCircle size={15}/> En attente</button></div>
    {parked.length>0&&<div className="v6-parked" aria-label="Paniers en attente">{parked.map(x=><button key={x.id} disabled={busy||!!saleRef} onClick={()=>resume(x.id)} title={'Reprendre · '+new Date(x.at).toLocaleTimeString('fr-FR',{timeStyle:'short'})}><PlayCircle size={14}/> {x.label}<small>{Object.values(x.cart).reduce((a,b)=>a+b,0)+(x.custom||[]).reduce((a,c)=>a+c.quantity,0)}</small></button>)}</div>}
    {saleRef&&<Risk title="Vente à vérifier" text={saleRef}><button className="v5-btn v5-btn--soft v5-btn--sm" disabled={busy} onClick={()=>void verify('sale',saleRef)}>Vérifier la vente</button><button className="v5-btn v5-btn--ghost v5-btn--sm" disabled={busy} onClick={()=>void sale(true)}>Renvoyer</button></Risk>}
-   <div className="v5-basket-items">{lineCount?entries.map(e=><div className="v5-line" key={e.product.id}><div className="v5-line-info"><strong>{e.product.name}</strong><small>{money(priceFor(e.product))} l’unité</small></div>
+   <div className="v5-basket-items">{lineCount?entries.map(e=><div className="v5-line" key={e.product.id}><div className="v5-line-info"><strong>{e.product.name}</strong><small>{money(priceFor(e.product))} l’unité{walkIn&&<label className="v6-extra" onClick={ev=>ev.stopPropagation()}> + <input inputMode="decimal" aria-label={'Supplément passager pour '+e.product.name} value={extra[e.product.id]??(suggestFor(e.product)||'')} placeholder="0" disabled={busy||!!saleRef} onChange={ev=>{const v=ev.target.value.replace(',','.');setExtra(x=>({...x,[e.product.id]:v===''?0:Math.max(0,Number(v)||0)}))}}/> DT</label>}</small></div>
     <Stepper value={e.quantity} max={e.product.stock} disabled={busy||!!saleRef} onChange={v=>add(e.product.id,v-e.quantity)}/>
-    <b className="v5-line-total">{linePrice[e.product.id]!==undefined&&linePrice[e.product.id]<basePrice(e.product)&&<s>{money(e.quantity*basePrice(e.product))}</s>}{money(e.quantity*priceFor(e.product))}</b></div>).concat(custom.map(c=><div className="v5-line is-custom" key={c.id}><div className="v5-line-info"><strong>{c.name}</strong><small>Article libre · {money(c.price)} l’unité</small></div>
+    <b className="v5-line-total">{linePrice[e.product.id]!==undefined&&linePrice[e.product.id]<basePrice(e.product)&&<s>{money(e.quantity*basePrice(e.product))}</s>}{money(e.quantity*(priceFor(e.product)+extraFor(e.product)))}</b></div>).concat(custom.map(c=><div className="v5-line is-custom" key={c.id}><div className="v5-line-info"><strong>{c.name}</strong><small>Article libre · {money(c.price)} l’unité</small></div>
     <Stepper value={c.quantity} max={1000} disabled={busy||!!saleRef} onChange={v=>setCustom(list=>v<=0?list.filter(x=>x.id!==c.id):list.map(x=>x.id===c.id?{...x,quantity:v}:x))}/>
     <b className="v5-line-total">{money(c.quantity*c.price)}</b></div>)):<div className="v5-empty v5-empty--basket"><ScanBarcode size={40}/><h3>Panier vide</h3><p>Scannez un article ou touchez un produit.</p></div>}</div>
    <div className="v5-basket-foot">

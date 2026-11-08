@@ -19,6 +19,7 @@ pub fn allowed(method: &str, path: &str, action: Option<&str>) -> bool {
     match (method, seg.as_slice()) {
         ("GET" | "PATCH", ["api", "supplier", "permissions"]) => true,
         ("POST", ["api", "supplier", "approval"]) => true,
+        ("GET", ["api", "supplier", "walk-in-suggestions"]) => true,
         ("GET" | "POST" | "PATCH", ["api", "supplier", "products"]) => true,
         ("PATCH" | "DELETE", ["api", "supplier", "products", id]) => id_ok(id),
         ("POST", ["api", "supplier", "products", "barcodes"]) => true,
@@ -60,6 +61,8 @@ mod tests {
         assert!(!allowed("GET", "/api/platform/shops", None));
         assert!(!allowed("GET", "/api/supplier/security", None));
         assert!(!allowed("POST", "/api/supplier/subscription", None));
+        assert!(allowed("GET", "/api/supplier/walk-in-suggestions", None));
+        assert!(!allowed("POST", "/api/supplier/walk-in-suggestions", None));
         assert!(!allowed("GET", "https://evil.example/api/supplier/products", None));
     }
 }

@@ -24,7 +24,7 @@ export default async function SupplierDocumentPage({params,searchParams}:{
  return <div className={'supplier-document-page'+(fmt==='ticket'?' fixi-thermal-page':'')}>
   <SupplierDocumentActions invoiceHref={base} ticketHref={base+'?format=ticket'} selected={fmt}/>
   {fmt==='ticket'?<SupplierThermalReceipt company={company} customer={client} sale={sale}
-     items={items} payments={payments}/>:<>
+     items={items} payments={payments} cashier={sale.createdById?(await prisma.supplierAccount.findFirst({where:{id:sale.createdById,companyId:s.companyId},select:{fullName:true}}))?.fullName:null}/>:<>
   <article className="supplier-invoice-sheet">
    <header><div className="supplier-invoice-brand">{company?.logoUrl?<img src={company.logoUrl} alt=""/>:<i>F</i>}<div><h1>{company?.name||s.companyName}</h1><p>{company?.address||''}{company?.region?' · '+company.region:''}</p><p>{company?.phone||''}{company?.secondaryPhone?' · '+company.secondaryPhone:''}</p>
   <p>{company?.email||''}{company?.website?' · '+company.website:''}</p>

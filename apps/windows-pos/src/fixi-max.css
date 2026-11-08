@@ -254,3 +254,7 @@ body::after{width:520px;height:520px;bottom:-220px;right:-140px;background:#8b5c
  body[data-print-mode=doc] .v6-doc-print th,body[data-print-mode=doc] .v6-doc-print td{border-bottom:1px solid #ccc;padding:4px;text-align:left}
  body[data-print-mode=doc] .v5-app>*:not(.v5-main){display:none!important}}
 @media (max-width:900px){.v6-grid3,.v6-grid4{grid-template-columns:1fr}}
+
+/* Supplément « passager » sur une ligne du panier */
+.v6-extra { display: inline-flex; align-items: center; gap: 3px; margin-left: 8px; font-weight: 700; color: var(--v5-brand, #f0782b); }
+.v6-extra input { width: 58px; padding: 2px 6px; border: 1px solid currentColor; border-radius: 8px; background: transparent; color: inherit; font: inherit; text-align: right; }
