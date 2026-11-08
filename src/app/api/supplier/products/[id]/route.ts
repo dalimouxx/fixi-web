@@ -1,3 +1,4 @@
+import { checkLineId } from '@/lib/supplier-lines';
 import { prisma } from '@/lib/prisma';
 import { requireSupplierRole } from '@/lib/supplier-auth';
 import { bad, ok } from '@/lib/http';
@@ -18,6 +19,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     if (data.name === null) return bad('Nom du produit requis');
     if (b.active !== undefined) data.active = !!b.active;
     if (b.price !== undefined) { data.price = Math.max(0, Number(b.price) || 0); data.retailPrice = data.price; }
+    if (b.lineId !== undefined) { const lineId = await checkLineId(s.companyId, b.lineId); if (lineId !== existing.lineId) { data.lineId = lineId; data.lineSince = new Date(); } }
     if (b.minOrderQty !== undefined) data.minOrderQty = Math.max(1, Math.trunc(Number(b.minOrderQty)) || 1);
     const x = await prisma.supplierProduct.update({ where: { id }, data });
     await prisma.supplierAuditEvent.create({ data: { companyId: s.companyId, accountId: s.id, action: 'UPDATE', entity: 'PRODUCT', entityId: id, metadata: data } }).catch(() => null);

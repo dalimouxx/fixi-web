@@ -22,15 +22,15 @@ export class BarcodeConflict extends Error { status = 409; }
 /**
  * Code-barres d'un produit fournisseur :
  *  - vide → code intelligent généré ;
- *  - saisi → refusé s'il appartient déjà à un autre produit (même chez un autre fournisseur).
+ *  - saisi → refusé seulement s'il existe déjà dans le même catalogue (les codes d'un importateur sont partagés).
  */
 export async function resolveBarcode(db: Db, companyId: string, input: { barcode?: unknown; name: string; category?: string | null; exceptId?: string | null }, reserved?: Set<string>) {
   const typed = cleanTyped(input.barcode);
   if (!typed) return generateBarcode(db, input.name, input.category, reserved);
-  const owner = await barcodeOwner(db, typed, input.exceptId);
-  if (owner) throw new BarcodeConflict(owner.companyId === companyId
-    ? `Ce code-barres est déjà utilisé dans votre catalogue (${owner.name}).`
-    : 'Ce code-barres est déjà utilisé par un autre fournisseur. Laissez le champ vide : Fixi crée un code unique.');
+  // Un code saisi (ex. code collé par l'importateur MG) peut exister chez plusieurs fournisseurs,
+  // mais jamais deux fois dans le même catalogue. Les codes Fixi générés restent uniques sur toute la plateforme.
+  const owner = await db.supplierProduct.findFirst({ where: { companyId, barcode: { equals: typed, mode: 'insensitive' }, ...(input.exceptId ? { id: { not: input.exceptId } } : {}) }, select: { id: true, companyId: true, name: true } });
+  if (owner) throw new BarcodeConflict(`Ce code-barres est déjà utilisé dans votre catalogue (${owner.name}).`);
   if (reserved?.has(typed)) throw new BarcodeConflict('Ce code-barres apparaît deux fois dans le fichier.');
   reserved?.add(typed);
   return typed;

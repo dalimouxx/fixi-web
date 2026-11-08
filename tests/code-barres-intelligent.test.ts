@@ -21,7 +21,7 @@ test('Code intelligent : 4 chiffres du type + modèle (afficheur A04 → 0000A04
   assert.equal(typeCode('X', 'Batteries'), '0001', 'la catégorie choisie prime');
 });
 
-test('Jamais deux fois le même code (même entre fournisseurs)', () => {
+test('Codes Fixi générés uniques sur toute la plateforme ; code saisi (ex. code de l’importateur MG) unique dans un même catalogue', () => {
   assert.equal(nextFreeCode('0000A04', []), '0000A04');
   assert.equal(nextFreeCode('0000A04', ['0000A04']), '0000A04-2');
   assert.equal(nextFreeCode('0000A04', ['0000a04', '0000A04-2']), '0000A04-3', 'casse ignorée');
@@ -29,7 +29,12 @@ test('Jamais deux fois le même code (même entre fournisseurs)', () => {
   assert.equal(nextFreeCode('0009', ['00090001']), '00090002');
   const lib = read('src/lib/supplier-barcode.ts');
   assert.match(lib, /barcode: \{ equals: code, mode: 'insensitive' \}/); assert.doesNotMatch(lib.split('export async function barcodeOwner')[1].split('}')[0], /companyId/, 'recherche sur TOUS les fournisseurs');
-  assert.match(lib, /déjà utilisé par un autre fournisseur/);
+  // Code généré : recherche des codes déjà pris sur TOUTE la plateforme.
+  assert.match(lib.split('export async function generateBarcode')[1].split('return code')[0], /barcode: \{ startsWith: base/);
+  // Code saisi : refusé seulement s'il existe déjà dans le même catalogue (MG colle le même code chez plusieurs fournisseurs).
+  const resolve = lib.split('export async function resolveBarcode')[1];
+  assert.match(resolve, /where: \{ companyId, barcode: \{ equals: typed, mode: 'insensitive' \}/);
+  assert.match(resolve, /déjà utilisé dans votre catalogue/);
   for (const p of ['src/app/api/supplier/products/route.ts', 'src/lib/supplier-product-quick.ts', 'src/app/api/supplier/products/import/route.ts']) assert.match(read(p), /resolveBarcode\(/, p);
   assert.match(read('prisma/schema.prisma'), /@@index\(\[barcode\]\)/);
   assert.doesNotMatch(read('prisma/schema.prisma'), /@@unique\(\[barcode\]\)/, 'pas de contrainte unique (db push sans perte)');

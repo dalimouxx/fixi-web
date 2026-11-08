@@ -1,3 +1,4 @@
+import { lineIdFromTag } from './supplier-lines';
 import { prisma } from './prisma';
 import { requireSupplierCreationCapacity } from './supplier-saas';
 import { checkRow, guessProduct, nextSku, parseAmount, skuPrefix, type QuickRow } from './product-quick';
@@ -33,6 +34,7 @@ export type QuickResult = { line: number; status: 'created' | 'updated' | 'error
  */
 export async function saveQuickRows(companyId: string, accountId: string, rows: QuickRow[], source: string) {
   const reserved = new Set<string>();
+  const lineCache = new Map<string, string | null>();
   const out: QuickResult[] = [];
   for (let i = 0; i < rows.length; i++) {
     const r = rows[i], line = i + 1, err = checkRow(r);
@@ -41,9 +43,12 @@ export async function saveQuickRows(companyId: string, accountId: string, rows: 
     const stock = String(r.stock ?? '').trim() ? Math.trunc(Number(r.stock)) : null;
     const pp = parseAmount(r.purchasePrice), sku = String(r.sku || '').trim().toUpperCase() || null;
     try {
+      // Colonne « Ligne » (ex. MG) : la ligne est créée si elle n'existe pas. Vide = produits du fournisseur.
+      const hasLine = String(r.line ?? '').trim() !== '';
+      const lineId = hasLine ? await lineIdFromTag(companyId, r.line, lineCache) : null;
       const existing = (barcode || sku) ? await prisma.supplierProduct.findFirst({ where: { companyId, OR: [...(barcode ? [{ barcode }] : []), ...(sku ? [{ sku }] : [])] } }) : null;
       if (existing) {
-        const x = await prisma.supplierProduct.update({ where: { id: existing.id }, data: { name, price, retailPrice: price, ...(stock !== null ? { stock } : {}), ...(Number.isFinite(pp) ? { purchasePrice: pp } : {}) } });
+        const x = await prisma.supplierProduct.update({ where: { id: existing.id }, data: { name, price, retailPrice: price, ...(hasLine && lineId !== existing.lineId ? { lineId, lineSince: new Date() } : {}), ...(stock !== null ? { stock } : {}), ...(Number.isFinite(pp) ? { purchasePrice: pp } : {}) } });
         out.push({ line, status: 'updated', id: x.id, sku: x.sku, name });
         continue;
       }
@@ -54,7 +59,7 @@ export async function saveQuickRows(companyId: string, accountId: string, rows: 
       const code = await resolveBarcode(prisma as any, companyId, { barcode, name, category: g.category }, reserved);
       const x = await prisma.supplierProduct.create({ data: {
         companyId, sku: sku || await autoSku(companyId, name, g.category), barcode: code, name, ...g,
-        price, retailPrice: price, purchasePrice: cost, averageCost: cost, stock: stock ?? 0, reservedStock: 0, minOrderQty: 1, active: true,
+        price, retailPrice: price, purchasePrice: cost, averageCost: cost, lineId, lineSince: lineId ? new Date() : null, stock: stock ?? 0, reservedStock: 0, minOrderQty: 1, active: true,
       } });
       out.push({ line, status: 'created', id: x.id, sku: x.sku, name });
     } catch (e: any) {
