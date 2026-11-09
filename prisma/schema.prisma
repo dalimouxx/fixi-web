@@ -1733,6 +1733,8 @@ model SupplierCompany {
   partQuotes             SupplierPartQuote[]
   driverBonusPerDelivery Decimal                    @default(0) @db.Decimal(12, 3)
   returnPickups          SupplierReturnPickup[]
+  /// Nom affiché pour les produits du fournisseur lui-même dans les lignes (ex. « SL »). Vide = « Mes produits ».
+  ownLineTag             String?
 }
 
 model SupplierAccount {
@@ -2651,6 +2653,8 @@ model SupplierStockCount {
   id          String    @id @default(cuid())
   companyId   String
   warehouseId String?
+  /// Inventaire limité à une ligne de produits (id de la ligne, ou « own » pour les produits du fournisseur).
+  lineId      String?
   reference   String
   status      String    @default("OPEN")
   note        String?
@@ -3194,6 +3198,8 @@ model SupplierProductLine {
   tag         String
   /// Dépôt-vente : le fournisseur paie au propriétaire de la ligne seulement ce qu'il vend (au prix d'achat convenu).
   consignment Boolean  @default(false)
+  /// Bénéfice du fournisseur par pièce vendue, par catégorie (ex. { "Écrans": 2 }). Ce qui reste du prix revient au propriétaire.
+  commissions Json?
   active      Boolean  @default(true)
   createdAt   DateTime @default(now())
 

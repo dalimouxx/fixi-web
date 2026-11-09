@@ -404,7 +404,7 @@ async fn supplier_create_product(state: State<'_,Arc<DesktopState>>, product:ser
  let name=o.get("name").and_then(|v|v.as_str()).unwrap_or("").trim();
  if name.chars().count()<2||name.chars().count()>160{return Err("Nom du produit requis".into())}
  let mut clean=serde_json::Map::new();
- for k in ["name","barcode","price","stock","purchasePrice","category","brand","qualityGrade","wholesalePrice","minStock","location"]{
+ for k in ["name","barcode","price","stock","purchasePrice","category","brand","qualityGrade","wholesalePrice","minStock","location","lineId"]{
   if let Some(v)=o.get(k){clean.insert(k.into(),v.clone());}
  }
  v4_request(&state,"/api/supplier/products",Some(serde_json::Value::Object(clean))).await

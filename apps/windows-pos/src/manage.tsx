@@ -91,6 +91,8 @@ function ProductEdit({ p, c, onClose, onSaved }: { p: any; c: Ctx; onClose: () =
   const s = (v: unknown) => v == null ? '' : String(v);
   const [f, setF] = useState({ name: s(p.name), barcode: s(p.barcode), sku: s(p.sku), qualityGrade: s(p.qualityGrade), location: s(p.location), retailPrice: s(p.retailPrice ?? p.price), wholesalePrice: s(p.wholesalePrice), minimumPrice: s(p.minimumPrice), purchasePrice: s(p.purchasePrice), minStock: s(p.minStock), warrantyDays: s(p.warrantyDays), category: s(p.category), brand: s(p.brand) });
   const [busy, setBusy] = useState(false); const [err, setErr] = useState('');
+  const [lines, setLines] = useState<any[]>([]), [lineId, setLineId] = useState<string>(p.lineId || 'own');
+  useEffect(() => { api('GET', '/api/supplier/lines').then((j: any) => setLines(j?.lines || [])).catch(() => {}); }, []);
   const price = has(c, 'productPrice');
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement>) => setF({ ...f, [k]: e.target.value });
   async function save(e: React.FormEvent) {
@@ -100,7 +102,7 @@ function ProductEdit({ p, c, onClose, onSaved }: { p: any; c: Ctx; onClose: () =
       if (price) { const r = num(f.retailPrice); if (!(r >= 0)) throw new Error('Prix de détail requis'); Object.assign(body, { price: r, retailPrice: r, wholesalePrice: f.wholesalePrice === '' ? null : num(f.wholesalePrice), minimumPrice: f.minimumPrice === '' ? null : num(f.minimumPrice) }); }
       if (has(c, 'seeCost') && f.purchasePrice !== '') body.purchasePrice = num(f.purchasePrice);
       await api('PATCH', '/api/supplier/products', body);
-      await api('PATCH', '/api/supplier/products/' + p.id, { category: f.category, brand: f.brand });
+      await api('PATCH', '/api/supplier/products/' + p.id, { category: f.category, brand: f.brand, ...(lines.length ? { lineId } : {}) });
       onSaved(`« ${f.name} » enregistré.`);
     } catch (x) { setErr(String(x).replace(/^Error: /, '')); setBusy(false); }
   }
@@ -113,6 +115,7 @@ function ProductEdit({ p, c, onClose, onSaved }: { p: any; c: Ctx; onClose: () =
       <label className="v5-field"><span>Qualité</span><input value={f.qualityGrade} onChange={set('qualityGrade')} /></label>
       <label className="v5-field"><span>Catégorie</span><input value={f.category} onChange={set('category')} /></label>
       <label className="v5-field"><span>Marque</span><input value={f.brand} onChange={set('brand')} /></label>
+      {lines.length > 0 && <label className="v5-field"><span>Ligne de produits</span><select className="v5-input" value={lineId} onChange={e => setLineId(e.target.value)}><option value="own">Mes produits</option>{lines.filter((l: any) => l.active || l.id === lineId).map((l: any) => <option key={l.id} value={l.id}>{l.tag} · {l.name}</option>)}</select></label>}
       <label className="v5-field"><span>Emplacement</span><input value={f.location} onChange={set('location')} /></label>
       <label className="v5-field"><span>Prix détail (DT)</span><input disabled={!price} inputMode="decimal" value={f.retailPrice} onChange={set('retailPrice')} /></label>
       <label className="v5-field"><span>Prix gros (DT)</span><input disabled={!price} inputMode="decimal" value={f.wholesalePrice} onChange={set('wholesalePrice')} /></label>

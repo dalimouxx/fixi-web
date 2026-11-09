@@ -30,9 +30,10 @@ export function FreeItemDialog({onAdd,onClose}:{onAdd:(x:{name:string;price:numb
   </form></Modal>;
 }
 
-export type NewProduct={name:string;barcode:string;price:number;stock:number;purchasePrice:number};
+export type NewProduct={name:string;barcode:string;price:number;stock:number;purchasePrice:number;lineId?:string};
 /** Création d'une pièce depuis la caisse (gérant / stock). Le serveur ajoute SKU, catégorie et marque. */
-export function NewProductDialog({barcode:initial,onCreate,onClose,stockIn}:{barcode:string;onCreate:(p:NewProduct,addToCart:boolean)=>Promise<void>;onClose:()=>void;stockIn?:boolean}){
+export function NewProductDialog({barcode:initial,onCreate,onClose,stockIn,lines=[],ownTag=null}:{barcode:string;onCreate:(p:NewProduct,addToCart:boolean)=>Promise<void>;onClose:()=>void;stockIn?:boolean;lines?:{id:string;tag:string;name:string}[];ownTag?:string|null}){
+ const [lineId,setLineId]=useState('');
  const [barcode,setBarcode]=useState(initial),[name,setName]=useState(''),[price,setPrice]=useState(''),[stock,setStock]=useState('1'),[cost,setCost]=useState('');
  const [cart,setCart]=useState(!stockIn),[busy,setBusy]=useState(false),[err,setErr]=useState(''),[hint,setHint]=useState('');
  useEffect(()=>{const b=initial.trim();if(!/^[A-Za-z0-9._-]{3,64}$/.test(b))return;let live=true;
@@ -41,11 +42,12 @@ export function NewProductDialog({barcode:initial,onCreate,onClose,stockIn}:{bar
  const p=Number(price.replace(',','.')),q=Math.trunc(Number(stock||0)),c=cost.trim()?Number(cost.replace(',','.')):0;
  const ok=name.trim().length>=2&&Number.isFinite(p)&&p>=0&&price.trim()!==''&&Number.isFinite(q)&&q>=0&&q<=100000&&Number.isFinite(c)&&c>=0;
  async function submit(e:React.FormEvent){e.preventDefault();if(!ok||busy)return;setBusy(true);setErr('');
-  try{await onCreate({name:name.trim(),barcode:barcode.trim(),price:Math.round(p*1000)/1000,stock:q,purchasePrice:Math.round(c*1000)/1000},cart&&q>0);onClose()}catch(x){setErr(String(x));setBusy(false)}}
+  try{await onCreate({name:name.trim(),barcode:barcode.trim(),price:Math.round(p*1000)/1000,stock:q,purchasePrice:Math.round(c*1000)/1000,...(lineId?{lineId}:{})},cart&&q>0);onClose()}catch(x){setErr(String(x));setBusy(false)}}
  return <Modal title="Nouvelle pièce" icon={<PackagePlus size={19}/>} onClose={onClose}>
   <p className="v5-hint">{hint?<><Sparkles size={14}/> {hint}</>:'La pièce est ajoutée à votre catalogue FIXI. SKU, catégorie et marque sont remplis automatiquement.'}</p>
   <form className="v6-form" onSubmit={submit}>
    <label className="v5-field"><span>Code-barres</span><input value={barcode} maxLength={64} onChange={e=>setBarcode(e.target.value)} placeholder="Vide = code court automatique (ex. 0000A04)"/></label>
+   {lines.length>0&&<label className="v5-field"><span>Ligne de produits</span><select value={lineId} onChange={e=>setLineId(e.target.value)}><option value="">{ownTag||'Mes produits'}</option>{lines.map(l=><option key={l.id} value={l.id}>{l.tag} · {l.name}</option>)}</select></label>}
    <label className="v5-field"><span>Nom</span><input autoFocus value={name} maxLength={160} onChange={e=>setName(e.target.value)} placeholder="Ex. Écran iPhone 13 OLED"/></label>
    <div className="v6-form-2"><label className="v5-field"><span>Prix de vente (DT)</span><input inputMode="decimal" value={price} onChange={e=>setPrice(e.target.value)} placeholder="0,000"/></label>
     <label className="v5-field"><span>{stockIn?'Quantité reçue':'Stock'}</span><input type="number" min="0" step="1" value={stock} onChange={e=>setStock(e.target.value)}/></label></div>

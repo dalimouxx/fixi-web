@@ -1,13 +1,14 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
-import { Layers, Loader2, Plus, Printer, Search, Wallet } from 'lucide-react';
+import { ClipboardCheck, Layers, Loader2, Plus, Printer, Search, Wallet } from 'lucide-react';
 import { money } from '@/lib/format';
 import { humanError } from '@/lib/human-error';
 
 /**
- * Lignes de produits (ex. « MG » : produits d'un importateur en dépôt-vente).
- * Chaque ligne a ses ventes, son bénéfice, sa recette par jour, le dû de ses clients et, en dépôt-vente,
- * ce que le fournisseur doit au propriétaire. Un panier mélangé est séparé automatiquement.
+ * Lignes de produits (ex. « SL » = produits du fournisseur, « MG » = produits d'un importateur en dépôt-vente).
+ * Pour chaque ligne seule : ventes, pièces vendues, encaissé, dû des clients, rapport par jour et par dates,
+ * stock (liste, quantités, valeur au coût), inventaire de la ligne. Bénéfice : seulement le barème par catégorie
+ * saisi par le fournisseur (jamais prix − coût). Un panier mélangé est séparé automatiquement.
  */
 const today = () => new Intl.DateTimeFormat('fr-CA', { timeZone: 'Africa/Tunis' }).format(new Date());
 const shift = (d: string, days: number) => new Date(new Date(d + 'T12:00:00Z').getTime() + days * 86400000).toISOString().slice(0, 10);
@@ -20,44 +21,44 @@ async function call(url: string, init?: RequestInit) {
   return j;
 }
 
-export function SupplierLines({ canEdit, canPay }: { canEdit: boolean; canPay: boolean }) {
-  const [data, setData] = useState<{ ownProducts: number; lines: any[] } | null>(null);
+export function SupplierLines({ canEdit, canPay, onOpenInventory }: { canEdit: boolean; canPay: boolean; onOpenInventory?: () => void }) {
+  const [data, setData] = useState<{ ownTag: string | null; ownProducts: number; lines: any[] } | null>(null);
   const [line, setLine] = useState('all');
   const [from, setFrom] = useState(today()), [to, setTo] = useState(today());
   const [rep, setRep] = useState<any>(null), [busy, setBusy] = useState(false), [err, setErr] = useState(''), [msg, setMsg] = useState('');
   const [n, setN] = useState(0);
   const [form, setForm] = useState({ name: '', tag: '', consignment: true });
   const [pay, setPay] = useState({ amount: '', method: 'CASH', note: '' });
+  const [ownTag, setOwnTag] = useState('');
+  const [scale, setScale] = useState<Record<string, string>>({});
+  const [q, setQ] = useState('');
 
-  useEffect(() => { call('/api/supplier/lines').then(setData).catch(e => setErr(humanError(e))); }, [n]);
+  useEffect(() => { call('/api/supplier/lines').then(j => { setData(j); setOwnTag(j.ownTag || ''); }).catch(e => setErr(humanError(e))); }, [n]);
   useEffect(() => {
     setBusy(true); setErr('');
     call(`/api/supplier/lines/report?line=${encodeURIComponent(line)}&from=${from}&to=${to}`).then(setRep).catch(e => { setRep(null); setErr(humanError(e)); }).finally(() => setBusy(false));
   }, [line, from, to, n]);
 
   const current = data?.lines.find(l => l.id === line);
-  const label = line === 'all' ? 'Toutes les lignes' : line === 'own' ? 'Mes produits' : current ? `${current.tag} · ${current.name}` : '';
+  const ownName = data?.ownTag || 'Mes produits';
+  const label = line === 'all' ? 'Toutes les lignes' : line === 'own' ? ownName : current ? `${current.tag} · ${current.name}` : '';
+  useEffect(() => { const c = current?.commissions || {}; setScale(Object.fromEntries((current?.categories || []).map((k: string) => [k, c[k] === undefined ? '' : String(c[k])]))); }, [current?.id, n]);
+  const stockRows = useMemo(() => { const t = q.trim().toLowerCase(); return (rep?.stock?.items || []).filter((p: any) => !t || [p.name, p.barcode, p.sku, p.category].some(v => String(v || '').toLowerCase().includes(t))); }, [rep, q]);
+  const showProfit = !!rep?.hasScale;
 
-  async function createLine(e: React.FormEvent) {
-    e.preventDefault(); setErr(''); setMsg('');
-    try { const x = await call('/api/supplier/lines', { method: 'POST', body: JSON.stringify(form) }); setForm({ name: '', tag: '', consignment: true }); setMsg(`Ligne ${x.tag} créée. Rangez-y ses produits ci-dessous.`); setLine(x.id); setN(v => v + 1); }
-    catch (x) { setErr(humanError(x)); }
-  }
-  async function payOwner(e: React.FormEvent) {
-    e.preventDefault(); if (!current) return; setErr(''); setMsg('');
-    try {
-      const x = await call(`/api/supplier/lines/${current.id}/payment`, { method: 'POST', body: JSON.stringify(pay) });
-      setPay({ amount: '', method: 'CASH', note: '' });
-      setMsg(`Paiement de ${money(x.amount)} à ${current.tag} enregistré${x.fromCash ? ' (sorti de la caisse ouverte)' : ''}.`); setN(v => v + 1);
-    } catch (x) { setErr(humanError(x)); }
-  }
+  const act = async (f: () => Promise<string>) => { setErr(''); setMsg(''); try { setMsg(await f()); setN(v => v + 1); } catch (x) { setErr(humanError(x)); } };
+  const createLine = (e: React.FormEvent) => { e.preventDefault(); act(async () => { const x = await call('/api/supplier/lines', { method: 'POST', body: JSON.stringify(form) }); setForm({ name: '', tag: '', consignment: true }); setLine(x.id); return `Ligne ${x.tag} créée. Rangez-y ses produits ci-dessous.`; }); };
+  const saveOwn = (e: React.FormEvent) => { e.preventDefault(); act(async () => { const x = await call('/api/supplier/lines', { method: 'PATCH', body: JSON.stringify({ ownTag }) }); return `Vos propres produits s’appellent maintenant « ${x.ownTag || 'Mes produits'} ».`; }); };
+  const saveScale = (e: React.FormEvent) => { e.preventDefault(); if (!current) return; act(async () => { await call(`/api/supplier/lines/${current.id}`, { method: 'PATCH', body: JSON.stringify({ commissions: scale }) }); return `Barème de ${current.tag} enregistré.`; }); };
+  const payOwner = (e: React.FormEvent) => { e.preventDefault(); if (!current) return; act(async () => { const x = await call(`/api/supplier/lines/${current.id}/payment`, { method: 'POST', body: JSON.stringify(pay) }); setPay({ amount: '', method: 'CASH', note: '' }); return `Paiement de ${money(x.amount)} à ${current.tag} enregistré${x.fromCash ? ' (sorti de la caisse ouverte)' : ''}.`; }); };
+  const startCount = () => act(async () => { await call('/api/supplier/advanced', { method: 'POST', body: JSON.stringify({ action: 'STOCK_COUNT_START', lineId: line, reference: 'INV-' + (line === 'own' ? (data?.ownTag || 'MOI') : current?.tag || 'L') + '-' + Date.now() }) }); onOpenInventory?.(); return `Inventaire de ${label} démarré : comptez les produits dans « Comptage du stock ».`; });
 
   return <section className="supplier-panel sl-lines">
-    <div className="supplier-section-head"><div><b><Layers size={16} /> Lignes de produits</b><span>Vos produits et ceux d’un importateur (ex. MG) séparés : ventes, bénéfice, recette du jour, dû des clients. Un panier mélangé est séparé automatiquement.</span></div>
+    <div className="supplier-section-head"><div><b><Layers size={16} /> Lignes de produits</b><span>Chaque partie seule ({ownName}, MG…) : ventes, pièces vendues, encaissé, dû des clients, stock et inventaire. Un panier mélangé est séparé automatiquement.</span></div>
       <button type="button" className="btn btn-soft btn-sm no-print" onClick={() => window.print()}><Printer size={15} /> Imprimer</button></div>
 
     <div className="sl-chips no-print" role="tablist" aria-label="Choisir la ligne">
-      {[['all', 'Tout'], ['own', `Mes produits${data ? ' · ' + data.ownProducts : ''}`], ...(data?.lines || []).map(l => [l.id, `${l.tag} · ${l.products}${l.consignment ? ' · dépôt-vente' : ''}${l.active ? '' : ' (inactive)'}`])].map(([id, t]) =>
+      {[['all', 'Tout'], ['own', `${ownName}${data ? ' · ' + data.ownProducts : ''}`], ...(data?.lines || []).map(l => [l.id, `${l.tag} · ${l.products}${l.consignment ? ' · dépôt-vente' : ''}${l.active ? '' : ' (inactive)'}`])].map(([id, t]) =>
         <button key={id} type="button" role="tab" aria-selected={line === id} className={line === id ? 'active' : ''} onClick={() => setLine(id)}>{t}</button>)}
     </div>
 
@@ -76,14 +77,15 @@ export function SupplierLines({ canEdit, canPay }: { canEdit: boolean; canPay: b
     {rep && <>
       <div className="sl-kpis">
         <div><span>Ventes</span><b>{money(rep.totals.sales)}</b><small>{rep.totals.count} vente(s)</small></div>
+        <div><span>Pièces vendues</span><b>{rep.totals.units}</b><small>sur la période</small></div>
         <div><span>Encaissé (recette)</span><b>{money(rep.totals.collected)}</b><small>règlements de dettes compris</small></div>
-        <div><span>Bénéfice</span><b>{money(rep.totals.profit)}</b><small>coût {money(rep.totals.cost)}</small></div>
         <div><span>Dû des clients</span><b>{money(rep.totals.due)}</b><small>aujourd’hui, toutes dates</small></div>
+        {showProfit && <div><span>Bénéfice (barème)</span><b>{money(rep.totals.profit)}</b><small>pièces × votre barème</small></div>}
       </div>
 
       {rep.consignment && current && <div className="sl-owed">
         <div><Wallet size={18} /><div><b>À payer à {current.tag} : {money(rep.consignment.owed)}</b>
-          <small>Vendu depuis le début au prix convenu : {money(rep.consignment.soldCost)} · déjà payé : {money(rep.consignment.paid)} · sur la période : {money(rep.consignment.periodCost)}</small></div></div>
+          <small>Dû sur les pièces vendues : {money(rep.consignment.sold)} · retours : − {money(rep.consignment.returned)} · déjà payé : − {money(rep.consignment.paid)}{showProfit ? ' · calcul : prix de vente − votre barème' : ' · calcul : prix convenu (coût) de chaque pièce'}</small></div></div>
         {canPay && <form className="sl-pay no-print" onSubmit={payOwner}>
           <input className="input" inputMode="decimal" placeholder="Montant (DT)" value={pay.amount} onChange={e => setPay({ ...pay, amount: e.target.value })} required />
           <select className="input" value={pay.method} onChange={e => setPay({ ...pay, method: e.target.value })}><option value="CASH">Espèces (sort de la caisse)</option><option value="TRANSFER">Virement</option><option value="CHEQUE">Chèque</option><option value="D17">D17</option></select>
@@ -93,32 +95,58 @@ export function SupplierLines({ canEdit, canPay }: { canEdit: boolean; canPay: b
       </div>}
 
       <div className="sl-grid">
-        <div className="table-wrap"><table className="table"><thead><tr><th>Jour</th><th className="num">Ventes</th><th className="num">Encaissé</th><th className="num">Bénéfice</th></tr></thead>
-          <tbody>{rep.days.length ? rep.days.map((d: any) => <tr key={d.date}><td>{frDay(d.date)}</td><td className="num">{money(d.sales)}</td><td className="num">{money(d.collected)}</td><td className="num">{money(d.profit)}</td></tr>)
-            : <tr><td colSpan={4} className="muted">Aucune vente ni encaissement sur la période.</td></tr>}</tbody></table></div>
+        <div className="table-wrap"><table className="table"><thead><tr><th>Jour</th><th className="num">Ventes</th><th className="num">Pièces</th><th className="num">Encaissé</th>{showProfit && <th className="num">Bénéfice</th>}</tr></thead>
+          <tbody>{rep.days.length ? rep.days.map((d: any) => <tr key={d.date}><td>{frDay(d.date)}</td><td className="num">{money(d.sales)}</td><td className="num">{d.units}</td><td className="num">{money(d.collected)}</td>{showProfit && <td className="num">{money(d.profit)}</td>}</tr>)
+            : <tr><td colSpan={showProfit ? 5 : 4} className="muted">Aucune vente ni encaissement sur la période.</td></tr>}</tbody></table></div>
         <div className="table-wrap"><table className="table"><thead><tr><th>Client qui doit</th><th className="num">Dû</th></tr></thead>
-          <tbody>{rep.customers.length ? rep.customers.slice(0, 30).map((c: any) => <tr key={c.id || 'comptoir'}><td>{c.name}</td><td className="num">{money(c.due)}</td></tr>)
+          <tbody>{rep.customers.length ? rep.customers.slice(0, 50).map((c: any) => <tr key={c.id || 'comptoir'}><td>{c.name}</td><td className="num">{money(c.due)}</td></tr>)
             : <tr><td colSpan={2} className="muted">Aucun client ne doit rien sur cette ligne.</td></tr>}</tbody></table></div>
+      </div>
+
+      <div className="sl-stock">
+        <div className="sl-stock-head">
+          <b>Stock — {label}</b>
+          <span>{rep.stock.products} produit(s) · {rep.stock.quantity} pièce(s) · valeur au coût {money(rep.stock.value)}</span>
+          {canEdit && line !== 'all' && <button type="button" className="btn btn-soft btn-sm no-print" onClick={startCount}><ClipboardCheck size={15} /> Inventaire de cette ligne</button>}
+        </div>
+        <label className="global-search no-print"><Search size={15} /><input value={q} onChange={e => setQ(e.target.value)} placeholder="Chercher un produit de la ligne…" /></label>
+        <div className="table-wrap"><table className="table"><thead><tr><th>Produit</th><th>Catégorie</th><th className="num">Stock</th><th className="num">Prix</th><th className="num">Coût</th><th className="num">Valeur</th></tr></thead>
+          <tbody>{stockRows.length ? stockRows.slice(0, 300).map((p: any) => <tr key={p.id}><td>{p.name}<small className="muted sl-code">{[p.barcode, p.sku].filter(Boolean).join(' · ')}</small></td><td>{p.category || '—'}</td><td className="num">{p.stock}</td><td className="num">{money(p.price)}</td><td className="num">{money(p.cost)}</td><td className="num">{money(p.value)}</td></tr>)
+            : <tr><td colSpan={6} className="muted">Aucun produit.</td></tr>}</tbody></table></div>
       </div>
     </>}
 
+    {canEdit && current && (current.categories || []).length > 0 && <form className="sl-scale no-print" onSubmit={saveScale}>
+      <b>Barème de bénéfice — {current.tag}</b>
+      <small>Votre bénéfice par pièce vendue, par catégorie (ex. Écrans : 2 DT). Laissez vide pour utiliser le prix convenu (coût) de chaque produit.{current.consignment ? ` Le reste du prix de vente revient à ${current.tag}.` : ''}</small>
+      <div className="sl-scale-grid">{(current.categories || []).map((k: string) => <label key={k}><span>{k}</span><input className="input" inputMode="decimal" placeholder="—" value={scale[k] ?? ''} onChange={e => setScale({ ...scale, [k]: e.target.value })} /> DT</label>)}</div>
+      <button className="btn btn-primary btn-sm">Enregistrer le barème</button>
+    </form>}
+
     {canEdit && <div className="sl-manage no-print">
-      <AssignProducts lines={data?.lines || []} onDone={(t: string) => { setMsg(t); setN(v => v + 1); }} onError={(t: string) => setErr(t)} />
-      <form className="sl-new" onSubmit={createLine}>
-        <b><Plus size={15} /> Nouvelle ligne</b>
-        <input className="input" placeholder="Nom (ex. Importateur MG)" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required />
-        <input className="input" placeholder="Étiquette (ex. MG)" maxLength={12} value={form.tag} onChange={e => setForm({ ...form, tag: e.target.value.toUpperCase() })} required />
-        <label className="sl-check"><input type="checkbox" checked={form.consignment} onChange={e => setForm({ ...form, consignment: e.target.checked })} /> Dépôt-vente : je paie seulement ce que je vends</label>
-        <button className="btn btn-primary btn-sm">Créer la ligne</button>
-      </form>
+      <AssignProducts lines={data?.lines || []} ownName={ownName} onDone={(t: string) => { setMsg(t); setN(v => v + 1); }} onError={(t: string) => setErr(t)} />
+      <div className="sl-side">
+        <form className="sl-new" onSubmit={saveOwn}>
+          <b>Nom de vos propres produits</b>
+          <input className="input" placeholder="Ex. SL" maxLength={12} value={ownTag} onChange={e => setOwnTag(e.target.value.toUpperCase())} />
+          <button className="btn btn-soft btn-sm">Enregistrer</button>
+        </form>
+        <form className="sl-new" onSubmit={createLine}>
+          <b><Plus size={15} /> Nouvelle ligne</b>
+          <input className="input" placeholder="Nom (ex. Importateur MG)" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required />
+          <input className="input" placeholder="Étiquette (ex. MG)" maxLength={12} value={form.tag} onChange={e => setForm({ ...form, tag: e.target.value.toUpperCase() })} required />
+          <label className="sl-check"><input type="checkbox" checked={form.consignment} onChange={e => setForm({ ...form, consignment: e.target.checked })} /> Dépôt-vente : je paie seulement ce que je vends</label>
+          <button className="btn btn-primary btn-sm">Créer la ligne</button>
+        </form>
+      </div>
     </div>}
   </section>;
 }
 
 /** Ranger des produits dans une ligne : recherche par nom, code-barres ou référence, puis cases à cocher. */
-function AssignProducts({ lines, onDone, onError }: { lines: any[]; onDone: (t: string) => void; onError: (t: string) => void }) {
+function AssignProducts({ lines, ownName, onDone, onError }: { lines: any[]; ownName: string; onDone: (t: string) => void; onError: (t: string) => void }) {
   const [products, setProducts] = useState<any[]>([]), [q, setQ] = useState(''), [sel, setSel] = useState<Set<string>>(new Set()), [target, setTarget] = useState('');
-  useEffect(() => { fetch('/api/supplier/products').then(r => r.ok ? r.json() : []).then(j => setProducts(Array.isArray(j) ? j : j.rows || j.products || [])).catch(() => {}); }, []);
+  useEffect(() => { fetch('/api/supplier/products').then(r => r.ok ? r.json() : []).then(j => setProducts(Array.isArray(j) ? j : [])).catch(() => {}); }, []);
   const tagOf = useMemo(() => new Map(lines.map(l => [l.id, l.tag])), [lines]);
   const list = useMemo(() => { const t = q.trim().toLowerCase(); return products.filter(p => p.active !== false && (!t || [p.name, p.barcode, p.sku].some(v => String(v || '').toLowerCase().includes(t)))).slice(0, 60); }, [products, q]);
   async function apply() {
@@ -126,20 +154,21 @@ function AssignProducts({ lines, onDone, onError }: { lines: any[]; onDone: (t: 
     try {
       const j = await call('/api/supplier/lines/assign', { method: 'POST', body: JSON.stringify({ productIds: [...sel], lineId: target }) });
       setProducts(ps => ps.map(p => sel.has(p.id) ? { ...p, lineId: target === 'own' ? null : target } : p)); setSel(new Set());
-      onDone(`${j.updated} produit(s) rangé(s) dans ${target === 'own' ? 'Mes produits' : tagOf.get(target)}.`);
+      onDone(`${j.updated} produit(s) rangé(s) dans ${target === 'own' ? ownName : tagOf.get(target)}.`);
     } catch (x) { onError(humanError(x)); }
   }
   return <div className="sl-assign">
     <b>Ranger des produits dans une ligne</b>
+    <small className="muted">À faire avant de vendre : un produit compte dans sa ligne à partir du jour où il y est rangé.</small>
     <div className="sl-assign-bar">
       <label className="global-search"><Search size={15} /><input value={q} onChange={e => setQ(e.target.value)} placeholder="Nom, code-barres ou référence…" /></label>
-      <select className="input" value={target} onChange={e => setTarget(e.target.value)}><option value="">Ranger dans…</option><option value="own">Mes produits</option>{lines.filter(l => l.active).map(l => <option key={l.id} value={l.id}>{l.tag} · {l.name}</option>)}</select>
+      <select className="input" value={target} onChange={e => setTarget(e.target.value)}><option value="">Ranger dans…</option><option value="own">{ownName}</option>{lines.filter(l => l.active).map(l => <option key={l.id} value={l.id}>{l.tag} · {l.name}</option>)}</select>
       <button type="button" className="btn btn-primary btn-sm" disabled={!sel.size || !target} onClick={apply}>Ranger {sel.size || ''}</button>
     </div>
     <div className="sl-assign-list">{list.map(p => <label key={p.id} className={sel.has(p.id) ? 'on' : ''}>
       <input type="checkbox" checked={sel.has(p.id)} onChange={() => setSel(s => { const x = new Set(s); x.has(p.id) ? x.delete(p.id) : x.add(p.id); return x; })} />
       <span>{p.name}<small>{[p.barcode, p.sku].filter(Boolean).join(' · ')}</small></span>
-      <em>{p.lineId ? tagOf.get(p.lineId) || '?' : 'Mes produits'}</em>
+      <em>{p.lineId ? tagOf.get(p.lineId) || '?' : ownName}</em>
     </label>)}{!list.length && <p className="muted">Aucun produit trouvé.</p>}</div>
   </div>;
 }

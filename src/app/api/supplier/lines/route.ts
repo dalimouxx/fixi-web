@@ -11,13 +11,16 @@ const EDIT = ['OWNER', 'ADMIN', 'MANAGER'] as const;
 export async function GET() {
   try {
     const s = await requireSupplierRole(VIEW);
-    const [lines, counts, own] = await Promise.all([
+    const [lines, counts, own, company, cats] = await Promise.all([
       companyLines(s.companyId),
       prisma.supplierProduct.groupBy({ by: ['lineId'], where: { companyId: s.companyId, active: true, lineId: { not: null } }, _count: { _all: true } }),
       prisma.supplierProduct.count({ where: { companyId: s.companyId, active: true, lineId: null } }),
+      prisma.supplierCompany.findUnique({ where: { id: s.companyId }, select: { ownLineTag: true } }),
+      prisma.supplierProduct.groupBy({ by: ['lineId', 'category'], where: { companyId: s.companyId, active: true, lineId: { not: null } } }),
     ]);
     const n = new Map(counts.map(c => [c.lineId, c._count._all]));
-    return ok({ ownProducts: own, lines: lines.map(l => ({ ...l, products: n.get(l.id) || 0 })) });
+    const categories = (id: string) => cats.filter(c => c.lineId === id).map(c => c.category || '').filter(Boolean).sort((a, b) => a.localeCompare(b, 'fr'));
+    return ok({ ownTag: company?.ownLineTag || null, ownProducts: own, lines: lines.map(l => ({ ...l, products: n.get(l.id) || 0, categories: categories(l.id) })) });
   } catch (e: any) { return bad(e.message, e.status || 500); }
 }
 
@@ -34,5 +37,17 @@ export async function POST(req: Request) {
     const x = await prisma.supplierProductLine.create({ data: { companyId: s.companyId, name, tag, consignment: b.consignment !== false } });
     await prisma.supplierAuditEvent.create({ data: { companyId: s.companyId, accountId: s.id, action: 'CREATE', entity: 'PRODUCT_LINE', entityId: x.id, metadata: { name, tag, consignment: x.consignment } } }).catch(() => null);
     return ok(x, { status: 201 });
+  } catch (e: any) { return bad(e.message, e.status || 500); }
+}
+
+/** Nom affiché pour les produits du fournisseur lui-même (ex. « SL »). Vide = « Mes produits ». */
+export async function PATCH(req: Request) {
+  try {
+    const s = await requireSupplierRole(EDIT);
+    const b = await req.json().catch(() => ({}));
+    const tag = String(b.ownTag ?? '').trim().toUpperCase().replace(/\s+/g, '').slice(0, 12) || null;
+    if (tag && await prisma.supplierProductLine.findFirst({ where: { companyId: s.companyId, tag: { equals: tag, mode: 'insensitive' } } })) return bad(`L’étiquette ${tag} est déjà celle d’une autre ligne`);
+    await prisma.supplierCompany.update({ where: { id: s.companyId }, data: { ownLineTag: tag } });
+    return ok({ ownTag: tag });
   } catch (e: any) { return bad(e.message, e.status || 500); }
 }

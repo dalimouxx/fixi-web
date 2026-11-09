@@ -1,3 +1,4 @@
+import { cleanCommissions } from '@/lib/supplier-lines';
 import { prisma } from '@/lib/prisma';
 import { requireSupplierRole } from '@/lib/supplier-auth';
 import { bad, ok } from '@/lib/http';
@@ -19,6 +20,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       if (dup) return bad(`L’étiquette ${data.tag} existe déjà`);
     }
     if (b.consignment !== undefined) data.consignment = !!b.consignment;
+    if (b.commissions !== undefined) data.commissions = cleanCommissions(b.commissions);
     if (b.active !== undefined) data.active = !!b.active;
     const x = await prisma.supplierProductLine.update({ where: { id }, data });
     await prisma.supplierAuditEvent.create({ data: { companyId: s.companyId, accountId: s.id, action: 'UPDATE', entity: 'PRODUCT_LINE', entityId: id, metadata: data } }).catch(() => null);

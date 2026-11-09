@@ -279,7 +279,7 @@ export function SupplierDashboard({session}:{session:any}){
       {tab==='dues'&&<SupplierReminders/>}{tab==='dues'&&<SupplierDues saleItems={erp.saleItems||[]} sales={erp.sales||[]} purchases={erp.purchases||[]} returns={erp.returns||advanced.returns||[]} customers={erp.customers||[]} methods={master.paymentMethods||[]} onChanged={()=>setRefresh(x=>x+1)}/>} 
 
       {tab==='reports'&&<SupplierReports/>}
-      {tab==='lines'&&<SupplierLines canEdit={['OWNER','ADMIN','MANAGER'].includes(role)} canPay={can(role,'vendorPay')}/>}
+      {tab==='lines'&&<SupplierLines canEdit={['OWNER','ADMIN','MANAGER'].includes(role)} canPay={can(role,'vendorPay')} onOpenInventory={()=>setTab('inventory' as Tab)}/>}
 
 {tab==='delivery'&&<SupplierDriverBoard/>}{tab==='delivery'&&<SupplierPartnerCouriers orders={orders} onChanged={()=>setRefresh(x=>x+1)}/>}{tab==='delivery'&&<SupplierDeliveryCenter orders={orders} drivers={drivers} onChanged={()=>setRefresh(x=>x+1)}/>}
       {tab==='team'&&<SecurityPanel endpoint="/api/supplier/security" loginHref="/supplier/login"/>}{tab==='team'&&<SupplierTeam session={session}/>} 
