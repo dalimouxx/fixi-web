@@ -12,6 +12,9 @@ type Session={countId:string;reference:string;counts:Record<string,number>;start
 export function InventoryPage({products,storageKey,canClose,demo,onDone,onError,onMessage}:{products:P[];storageKey:string;canClose:boolean;demo:boolean;onDone:()=>void;onError:(m:string)=>void;onMessage:(m:string)=>void}){
  const [session,setSession]=useState<Session|null>(()=>readJson<Session|null>(storageKey,null));
  const [scan,setScan]=useState(''),[busy,setBusy]=useState(false),[last,setLast]=useState('');
+ // Inventaire d'une seule ligne (ex. MG) ou de tout le stock.
+ const [lineScope,setLineScope]=useState(''),[lineOpts,setLineOpts]=useState<{id:string;tag:string;name:string}[]>([]),[ownTag,setOwnTag]=useState('');
+ useEffect(()=>{if(demo)return;invoke<any>('supplier_api',{method:'GET',path:'/api/supplier/lines',body:null}).then(j=>{setLineOpts((j?.lines||[]).filter((l:any)=>l.active));setOwnTag(j?.ownTag||'')}).catch(()=>{})},[]);
  const ref=useRef<HTMLInputElement>(null);
  const pending=useRef<Record<string,number>>({});
  const timer=useRef<number|undefined>(undefined);
@@ -24,7 +27,7 @@ export function InventoryPage({products,storageKey,canClose,demo,onDone,onError,
  function setCount(id:string,n:number){if(!session)return;const v=Math.max(0,Math.trunc(n));setSession({...session,counts:{...session.counts,[id]:v}});pending.current[id]=v;window.clearTimeout(timer.current);timer.current=window.setTimeout(flush,800)}
  async function start(){setBusy(true);
   try{if(demo){setSession({countId:'demo',reference:'INV-DEMO',counts:{},startedAt:new Date().toISOString()});return}
-   let c:any;try{c=await invoke('supplier_stock_count',{request:{action:'STOCK_COUNT_START',reference:'INV-WIN-'+Date.now(),note:'Inventaire depuis FIXI Caisse'}})}
+   let c:any;try{c=await invoke('supplier_stock_count',{request:{action:'STOCK_COUNT_START',reference:'INV-WIN-'+Date.now(),note:'Inventaire depuis FIXI Caisse',...(lineScope?{lineId:lineScope}:{})}})}
    catch(e){if(!/déjà ouvert/i.test(String(e)))throw e;const open=await invoke<{counts:any[]}>('supplier_open_stock_counts');c=open.counts.find(x=>!x.warehouseId)||open.counts[0];if(!c)throw e;onMessage('Inventaire déjà ouvert repris : '+c.reference)}
    setSession({countId:c.id,reference:c.reference,counts:{},startedAt:new Date().toISOString()})
   }catch(e){onError(String(e))}finally{setBusy(false)}}
@@ -41,6 +44,7 @@ export function InventoryPage({products,storageKey,canClose,demo,onDone,onError,
    setSession(null);onDone()}catch(e){onError(String(e))}finally{setBusy(false)}}
  if(!session)return <section className="v5-card v6-inv-start"><ClipboardList size={36}/><h2>Inventaire au scanner</h2>
   <p className="v5-hint">Scannez chaque article du rayon : la caisse compte et montre l’écart avec le stock FIXI. À la fin, le gérant valide et le stock est corrigé.</p>
+  {lineOpts.length>0&&<label className="v5-field"><span>Ligne à compter</span><select className="v5-input" value={lineScope} onChange={e=>setLineScope(e.target.value)}><option value="">Tout le stock</option><option value="own">{ownTag||'Mes produits'}</option>{lineOpts.map(l=><option key={l.id} value={l.id}>{l.tag} · {l.name}</option>)}</select></label>}
   <button className="v5-btn v5-btn--primary v5-btn--lg" disabled={busy} onClick={()=>void start()}><ScanBarcode size={18}/> Commencer un inventaire</button></section>;
  const counted=rows.reduce((a,r)=>a+r.n,0),gaps=rows.filter(r=>r.diff!==0).length;
  return <section className="v5-stack">

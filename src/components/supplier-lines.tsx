@@ -32,6 +32,8 @@ export function SupplierLines({ canEdit, canPay, onOpenInventory }: { canEdit: b
   const [ownTag, setOwnTag] = useState('');
   const [scale, setScale] = useState<Record<string, string>>({});
   const [q, setQ] = useState('');
+  const [split, setSplit] = useState<any[] | null>(null);
+  useEffect(() => { if (line !== 'all') { setSplit(null); return; } call(`/api/supplier/lines/report?line=split&from=${from}&to=${to}`).then(j => setSplit(j.split)).catch(() => setSplit(null)); }, [line, from, to, n]);
 
   useEffect(() => { call('/api/supplier/lines').then(j => { setData(j); setOwnTag(j.ownTag || ''); }).catch(e => setErr(humanError(e))); }, [n]);
   useEffect(() => {
@@ -74,6 +76,8 @@ export function SupplierLines({ canEdit, canPay, onOpenInventory }: { canEdit: b
     {msg && <p className="sl-ok" role="status">{msg}</p>}
 
     <h3 className="sl-title">{label} — {from === to ? frDay(from) : `du ${frDay(from)} au ${frDay(to)}`} {busy && <Loader2 size={15} className="ps-spin" />}</h3>
+    {split && split.length > 1 && <div className="table-wrap sl-split"><table className="table"><caption>Chaque partie seule</caption><thead><tr><th>Ligne</th><th className="num">Ventes</th><th className="num">Pièces</th><th className="num">Encaissé</th><th className="num">Dû des clients</th><th className="num">Stock</th><th className="num">Valeur du stock</th><th className="num">À payer</th></tr></thead>
+      <tbody>{split.map((r: any) => <tr key={r.id}><td><button type="button" className="sl-split-tag" onClick={() => setLine(r.id)}>{r.id === 'own' ? (r.ownTag || 'Mes produits') : r.tag}</button></td><td className="num">{money(r.totals.sales)}</td><td className="num">{r.totals.units}</td><td className="num">{money(r.totals.collected)}</td><td className="num">{money(r.totals.due)}</td><td className="num">{r.stock.quantity}</td><td className="num">{money(r.stock.value)}</td><td className="num">{r.owed === null ? '—' : money(r.owed)}</td></tr>)}</tbody></table></div>}
     {rep && <>
       <div className="sl-kpis">
         <div><span>Ventes</span><b>{money(rep.totals.sales)}</b><small>{rep.totals.count} vente(s)</small></div>

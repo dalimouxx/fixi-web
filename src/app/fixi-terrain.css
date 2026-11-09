@@ -233,3 +233,7 @@ html[data-theme='dark'] .fx-mnt-blob{opacity:.35}
 .fx-pos-extra { display: inline-flex; align-items: center; gap: 3px; font-weight: 700; color: var(--fx-brand, #f0782b); }
 .fx-pos-extra input { width: 64px; border: 1px solid currentColor; border-radius: 8px; padding: 3px 6px; background: transparent; color: inherit; text-align: right; }
 .fx-pos-tools button.is-on { background: var(--fx-brand, #f0782b); color: #fff; border-color: transparent; }
+.sl-split .table { min-width: 0 !important; width: 100%; }
+.sl-split caption { text-align: left; font-weight: 800; padding: 0 0 8px; }
+.sl-split td.num, .sl-split th.num { text-align: right; white-space: nowrap; }
+.sl-split-tag { border: 0; background: var(--fx-brand, #f0782b); color: #fff; font-weight: 800; border-radius: 999px; padding: 3px 12px; cursor: pointer; }

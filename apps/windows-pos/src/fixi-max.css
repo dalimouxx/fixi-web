@@ -258,3 +258,21 @@ body::after{width:520px;height:520px;bottom:-220px;right:-140px;background:#8b5c
 /* Supplément « passager » sur une ligne du panier */
 .v6-extra { display: inline-flex; align-items: center; gap: 3px; margin-left: 8px; font-weight: 700; color: var(--v5-brand, #f0782b); }
 .v6-extra input { width: 58px; padding: 2px 6px; border: 1px solid currentColor; border-radius: 8px; background: transparent; color: inherit; font: inherit; text-align: right; }
+
+/* Lignes SL / MG */
+.v7-line-tag { display: inline-block; font-style: normal; font-size: 10px; font-weight: 900; letter-spacing: .04em; padding: 1px 6px; margin-right: 6px; border-radius: 999px; background: var(--v5-brand, #f0782b); color: #fff; vertical-align: middle; }
+.v7-line-tag.is-own { background: #475569; }
+.v6-lines { display: grid; gap: 14px; }
+.v6-lines-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; }
+.v6-lines-head h2 { display: flex; gap: 8px; align-items: center; margin: 0; }
+.v6-line-tag { border: 0; border-radius: 999px; padding: 4px 12px; font-weight: 900; background: var(--v5-brand, #f0782b); color: #fff; cursor: pointer; }
+.v6-line-tag.is-own { background: #475569; }
+.v6-line-tag.is-all { background: transparent; color: inherit; border: 1px solid currentColor; }
+.v6-lines-split tr.is-on td { background: rgba(240, 120, 43, .1); }
+.v6-lines .num { text-align: right; white-space: nowrap; }
+.v6-grid2 { display: grid; grid-template-columns: 1.4fr 1fr; gap: 12px; }
+.v5-stat.is-owed { border-color: rgba(240, 120, 43, .5); background: rgba(240, 120, 43, .08); }
+.v6-lines .v5-stat { border: 1px solid var(--v5-line, rgba(127,127,127,.25)); border-radius: 14px; padding: 10px 12px; display: grid; gap: 2px; }
+.v6-lines .v5-stat span, .v6-lines .v5-stat small { opacity: .75; font-size: 12px; }
+.v6-lines .v5-stat b { font-size: 18px; }
+@media print { .v6-lines button, .v6-lines input { display: none !important; } }

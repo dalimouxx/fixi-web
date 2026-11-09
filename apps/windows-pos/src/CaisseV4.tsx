@@ -48,7 +48,7 @@ type DebtRequest={saleId?:string;customerId?:string;amount:number;method:string;
 type ReturnRequest={sourceSaleId:string;items:{saleItemId:string;quantity:number;restock:boolean;condition:string;reason:string}[];refund:number;refundMethod:string;note:string;reference:string};
 type Result={exists:boolean;reference:string;record?:{reference?:string;remaining?:number}|null};
 type Page='caisse'|'produits'|'stock'|'clients'|'commandes'|'dettes'|'retours'|'historique'|'session'|'livreurs'|'inventaire'|'entree'|ManagePage;
-const MANAGE_PAGES:Page[]=['gestion','achats','depenses','documents','livraison','rapports','equipe','depots','droits'];
+const MANAGE_PAGES:Page[]=['gestion','achats','depenses','documents','livraison','rapports','lignes','equipe','depots','droits'];
 // Isolé (\u2066…\u2069) pour que « 185,000 DT » reste lisible en arabe.
 const money=(n:number)=>'\u2066'+new Intl.NumberFormat('fr-TN',{minimumFractionDigits:3,maximumFractionDigits:3}).format(n)+' DT\u2069';
 /** Adresse du serveur proposée à la connexion : fixée à la construction (variable FIXI_PUBLIC_URL de GitHub), modifiable dans l'écran de connexion. */
@@ -72,6 +72,7 @@ const nav:NavItem[]=[
  {id:'depenses',icon:NavExpense,label:'Dépenses',hint:'Loyer, transport, salaires… pour connaître le vrai bénéfice.'},
  {id:'documents',icon:NavDoc,label:'Factures & devis',hint:'Devis, proformas, bons de livraison : créer, imprimer, transformer.'},
  {id:'livraison',icon:NavRoute,label:'Attribuer les livraisons',hint:'Confiez chaque commande prête à un livreur.'},
+ {id:'lignes',icon:NavChart,label:'Lignes SL / MG',hint:'Chaque partie seule : ventes, dû des clients, stock, inventaire.'},
  {id:'rapports',icon:NavChart,label:'Rapports & bénéfice',hint:'Chiffre d’affaires, marge, meilleures ventes, stock.'},
  {id:'equipe',icon:NavTeam,label:'Équipe',hint:'Employés, rôles, mots de passe.'},
  {id:'depots',icon:NavDepot,label:'Dépôts',hint:'Stock par dépôt et transferts.'},
@@ -82,7 +83,7 @@ const navGroups:{label:string;items:Page[]}[]=[
  {label:'Clients',items:['clients','dettes']},
  {label:'Livraison',items:['commandes','livraison','livreurs']},
  {label:'Articles',items:['produits','stock','entree','inventaire','gestion','depots']},
- {label:'Gestion',items:['achats','depenses','documents','rapports']},
+ {label:'Gestion',items:['achats','depenses','documents','rapports','lignes']},
  {label:'Compte',items:['equipe','droits']},
 ];
 const demo:Boot={companyName:'Mode démonstration',role:'DEMO',products:[
@@ -144,6 +145,7 @@ function App(){
  };
  const suggestFor=(p:Product)=>sugg.byProduct[p.id]??(p.category?sugg.byCategory[p.category]:undefined)??0;
  const extraFor=(p:Product)=>walkIn?Math.max(0,extra[p.id]??suggestFor(p)):0;
+ const lineTag=(p:Product)=>p.tag||((boot?.lines?.length||0)>0?boot?.ownTag||null:null);
  const priceFor=(p:Product)=>linePrice[p.id]!==undefined&&linePrice[p.id]>0?linePrice[p.id]:basePrice(p);
  const subtotal=useMemo(()=>Math.round((entries.reduce((v,x)=>v+x.quantity*(priceFor(x.product)+extraFor(x.product)),0)+custom.reduce((v,c)=>v+c.price*c.quantity,0))*1000)/1000,[entries,custom,priceMode,linePrice,walkIn,extra,sugg]);
  const walkInTotal=Math.round(entries.reduce((v,x)=>v+x.quantity*extraFor(x.product),0)*1000)/1000;
@@ -568,7 +570,7 @@ function App(){
     {visible.length===0?<div className="v5-empty"><PackageSearch size={40}/><h3>Aucun produit</h3><p>Essayez un autre mot ou une autre catégorie.</p></div>:
     <section className="v5-products">{visible.slice(0,gridLimit).map(p=>{const inCart=cart[p.id]||0;return <button key={p.id} disabled={p.stock<=0||busy||!!saleRef} className={'v5-product'+(inCart?' is-in-cart':'')} style={{['--cat' as any]:categoryLook(p.category,p.name).color}} onClick={()=>add(p.id,1)}>
      {inCart>0&&<span className="v5-product-qty">{inCart}</span>}
-     {(()=>{const {Icon,color}=categoryLook(p.category,p.name);return <span className="v7-cat" style={{['--cat' as any]:color}}><Icon size={15}/>{p.category||'Autres'}</span>})()}<strong>{p.name}</strong><small className="v5-mono">{p.sku}</small>
+     {(()=>{const {Icon,color}=categoryLook(p.category,p.name);return <span className="v7-cat" style={{['--cat' as any]:color}}><Icon size={15}/>{p.category||'Autres'}</span>})()}<strong>{p.name}</strong><small className="v5-mono">{lineTag(p)&&<em className={'v7-line-tag'+(p.tag?'':' is-own')}>{lineTag(p)}</em>}{p.sku}</small>
      <span className="v5-product-foot"><b>{money(priceFor(p))}</b><span className={'v5-stock '+(p.stock===0?'is-out':p.stock<=(p.minStock??5)?'is-low':'')}>{p.stock===0?'Rupture':p.stock}</span></span>
      {priceMode==='RETAIL'&&p.wholesalePrice!=null&&<small className="v5-product-alt">Gros {money(p.wholesalePrice)}</small>}{priceMode==='WHOLESALE'&&<small className="v5-product-alt">Détail {money(p.price)}</small>}
     </button>})}</section>}
@@ -663,7 +665,7 @@ function App(){
     <div className="v5-card"><h2 className="v5-card-title">Remises livreurs</h2>{courierShifts.length===0?<Empty icon={Truck} title="Aucune remise" text="L’historique des remises apparaîtra ici."/>:<div className="v5-table-wrap"><table className="v5-table"><thead><tr><th>Livreur</th><th className="num">Déclaré</th><th className="num">Attendu</th><th>État</th></tr></thead><tbody>{courierShifts.map(x=><tr key={x.id}><td><b>{x.driver?.fullName||'Livreur'}</b></td>
     <td className="num">{money(Number(x.declaredRemit||0))}</td><td className="num">{money(Number(x.expectedCod||0))}</td><td><StatusChip status={x.status}/></td></tr>)}</tbody></table></div>}</div>
    </section>}
-   {MANAGE_PAGES.includes(page)&&<ManageModule page={page as ManagePage} perms={perms} products={products} customers={boot.customers||[]} demo={boot.role==='DEMO'} onError={setError} onMessage={setMessage} onCatalogChanged={()=>void refresh()}/>}
+   {MANAGE_PAGES.includes(page)&&<ManageModule page={page as ManagePage} onOpenPage={p=>setPage(p as Page)} perms={perms} products={products} customers={boot.customers||[]} demo={boot.role==='DEMO'} onError={setError} onMessage={setMessage} onCatalogChanged={()=>void refresh()}/>}
    {page==='entree'&&<StockInPage products={products} storageKey={(draftKey||'demo')+':stock-in'} demo={boot.role==='DEMO'} canEnter={['OWNER','ADMIN','MANAGER','DEMO'].includes(boot.role)} onDone={()=>void refresh()} onError={setError} onMessage={setMessage} onUnknown={code=>{setNewCode(code);setDialog('product')}}/>}
    {page==='inventaire'&&<InventoryPage products={products} storageKey={(draftKey||'demo')+':inventory'} demo={boot.role==='DEMO'} canClose={['OWNER','ADMIN','MANAGER','DEMO'].includes(boot.role)} onDone={()=>void refresh()} onError={setError} onMessage={setMessage}/>}
   </main>
@@ -674,7 +676,7 @@ function App(){
     <button className="v5-btn v5-btn--ghost v5-btn--sm" disabled={busy||!!saleRef||!lineCount} onClick={park}><PauseCircle size={15}/> En attente</button></div>
    {parked.length>0&&<div className="v6-parked" aria-label="Paniers en attente">{parked.map(x=><button key={x.id} disabled={busy||!!saleRef} onClick={()=>resume(x.id)} title={'Reprendre · '+new Date(x.at).toLocaleTimeString('fr-FR',{timeStyle:'short'})}><PlayCircle size={14}/> {x.label}<small>{Object.values(x.cart).reduce((a,b)=>a+b,0)+(x.custom||[]).reduce((a,c)=>a+c.quantity,0)}</small></button>)}</div>}
    {saleRef&&<Risk title="Vente à vérifier" text={saleRef}><button className="v5-btn v5-btn--soft v5-btn--sm" disabled={busy} onClick={()=>void verify('sale',saleRef)}>Vérifier la vente</button><button className="v5-btn v5-btn--ghost v5-btn--sm" disabled={busy} onClick={()=>void sale(true)}>Renvoyer</button></Risk>}
-   <div className="v5-basket-items">{lineCount?entries.map(e=><div className="v5-line" key={e.product.id}><div className="v5-line-info"><strong>{e.product.name}</strong><small>{money(priceFor(e.product))} l’unité{walkIn&&<label className="v6-extra" onClick={ev=>ev.stopPropagation()}> + <input inputMode="decimal" aria-label={'Supplément passager pour '+e.product.name} value={extra[e.product.id]??(suggestFor(e.product)||'')} placeholder="0" disabled={busy||!!saleRef} onChange={ev=>{const v=ev.target.value.replace(',','.');setExtra(x=>({...x,[e.product.id]:v===''?0:Math.max(0,Number(v)||0)}))}}/> DT</label>}</small></div>
+   <div className="v5-basket-items">{lineCount?entries.map(e=><div className="v5-line" key={e.product.id}><div className="v5-line-info"><strong>{lineTag(e.product)&&<em className={'v7-line-tag'+(e.product.tag?'':' is-own')}>{lineTag(e.product)}</em>}{e.product.name}</strong><small>{money(priceFor(e.product))} l’unité{walkIn&&<label className="v6-extra" onClick={ev=>ev.stopPropagation()}> + <input inputMode="decimal" aria-label={'Supplément passager pour '+e.product.name} value={extra[e.product.id]??(suggestFor(e.product)||'')} placeholder="0" disabled={busy||!!saleRef} onChange={ev=>{const v=ev.target.value.replace(',','.');setExtra(x=>({...x,[e.product.id]:v===''?0:Math.max(0,Number(v)||0)}))}}/> DT</label>}</small></div>
     <Stepper value={e.quantity} max={e.product.stock} disabled={busy||!!saleRef} onChange={v=>add(e.product.id,v-e.quantity)}/>
     <b className="v5-line-total">{linePrice[e.product.id]!==undefined&&linePrice[e.product.id]<basePrice(e.product)&&<s>{money(e.quantity*basePrice(e.product))}</s>}{money(e.quantity*(priceFor(e.product)+extraFor(e.product)))}</b></div>).concat(custom.map(c=><div className="v5-line is-custom" key={c.id}><div className="v5-line-info"><strong>{c.name}</strong><small>Article libre · {money(c.price)} l’unité</small></div>
     <Stepper value={c.quantity} max={1000} disabled={busy||!!saleRef} onChange={v=>setCustom(list=>v<=0?list.filter(x=>x.id!==c.id):list.map(x=>x.id===c.id?{...x,quantity:v}:x))}/>
