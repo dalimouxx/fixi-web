@@ -54,12 +54,12 @@ export function SupplierLines({ canEdit, canPay, onOpenInventory }: { canEdit: b
   const startCount = () => act(async () => { await call('/api/supplier/advanced', { method: 'POST', body: JSON.stringify({ action: 'STOCK_COUNT_START', lineId: line, reference: 'INV-' + (line === 'own' ? (data?.ownTag || 'MOI') : current?.tag || 'L') + '-' + Date.now() }) }); onOpenInventory?.(); return `Inventaire de ${label} démarré : comptez les produits dans « Comptage du stock ».`; });
 
   return <section className="supplier-panel sl-lines">
-    <div className="supplier-section-head"><div><b><Layers size={16} /> Lignes de produits</b><span>Chaque partie seule ({ownName}, MG…) : ventes, pièces vendues, encaissé, dû des clients, stock et inventaire. Un panier mélangé est séparé automatiquement.</span></div>
+    <div className="supplier-section-head"><div><b><Layers size={16} /> Lignes de produits</b><span>Chaque partie seule : ventes, pièces vendues, encaissé, dû des clients, stock et inventaire. Un panier mélangé est séparé automatiquement.</span></div>
       <button type="button" className="btn btn-soft btn-sm no-print" onClick={() => window.print()}><Printer size={15} /> Imprimer</button></div>
 
     <div className="sl-chips no-print" role="tablist" aria-label="Choisir la ligne">
-      {[['all', 'Tout'], ['own', `${ownName}${data ? ' · ' + data.ownProducts : ''}`], ...(data?.lines || []).map(l => [l.id, `${l.tag} · ${l.products}${l.consignment ? ' · dépôt-vente' : ''}${l.active ? '' : ' (inactive)'}`])].map(([id, t]) =>
-        <button key={id} type="button" role="tab" aria-selected={line === id} className={line === id ? 'active' : ''} onClick={() => setLine(id)}>{t}</button>)}
+      {([['all', 'Tout', null, false, true], ['own', ownName, data ? data.ownProducts : null, false, true], ...(data?.lines || []).map(l => [l.id, l.tag, l.products, l.consignment, l.active])] as [string, string, number | null, boolean, boolean][]).map(([id, t, count, consignment, active]) =>
+        <button key={id} type="button" role="tab" aria-selected={line === id} className={line === id ? 'active' : ''} onClick={() => setLine(id)}><span>{t}</span>{count !== null && <span> · {count}</span>}{consignment && <span> · <span>dépôt-vente</span></span>}{!active && <span> <span>(inactive)</span></span>}</button>)}
     </div>
 
     <div className="sl-period no-print">
@@ -85,7 +85,7 @@ export function SupplierLines({ canEdit, canPay, onOpenInventory }: { canEdit: b
 
       {rep.consignment && current && <div className="sl-owed">
         <div><Wallet size={18} /><div><b>À payer à {current.tag} : {money(rep.consignment.owed)}</b>
-          <small>Dû sur les pièces vendues : {money(rep.consignment.sold)} · retours : − {money(rep.consignment.returned)} · déjà payé : − {money(rep.consignment.paid)}{showProfit ? ' · calcul : prix de vente − votre barème' : ' · calcul : prix convenu (coût) de chaque pièce'}</small></div></div>
+          <small>Dû sur les pièces vendues : {money(rep.consignment.sold)} · retours : − {money(rep.consignment.returned)} · déjà payé : − {money(rep.consignment.paid)}<span>{showProfit ? ' · calcul : prix de vente − votre barème' : ' · calcul : prix convenu (coût) de chaque pièce'}</span></small></div></div>
         {canPay && <form className="sl-pay no-print" onSubmit={payOwner}>
           <input className="input" inputMode="decimal" placeholder="Montant (DT)" value={pay.amount} onChange={e => setPay({ ...pay, amount: e.target.value })} required />
           <select className="input" value={pay.method} onChange={e => setPay({ ...pay, method: e.target.value })}><option value="CASH">Espèces (sort de la caisse)</option><option value="TRANSFER">Virement</option><option value="CHEQUE">Chèque</option><option value="D17">D17</option></select>
@@ -118,7 +118,7 @@ export function SupplierLines({ canEdit, canPay, onOpenInventory }: { canEdit: b
 
     {canEdit && current && (current.categories || []).length > 0 && <form className="sl-scale no-print" onSubmit={saveScale}>
       <b>Barème de bénéfice — {current.tag}</b>
-      <small>Votre bénéfice par pièce vendue, par catégorie (ex. Écrans : 2 DT). Laissez vide pour utiliser le prix convenu (coût) de chaque produit.{current.consignment ? ` Le reste du prix de vente revient à ${current.tag}.` : ''}</small>
+      <small><span>Votre bénéfice par pièce vendue, par catégorie (ex. Écrans : 2 DT). Laissez vide pour utiliser le prix convenu (coût) de chaque produit.</span>{current.consignment && <> <span>Le reste du prix de vente revient à</span> {current.tag}.</>}</small>
       <div className="sl-scale-grid">{(current.categories || []).map((k: string) => <label key={k}><span>{k}</span><input className="input" inputMode="decimal" placeholder="—" value={scale[k] ?? ''} onChange={e => setScale({ ...scale, [k]: e.target.value })} /> DT</label>)}</div>
       <button className="btn btn-primary btn-sm">Enregistrer le barème</button>
     </form>}

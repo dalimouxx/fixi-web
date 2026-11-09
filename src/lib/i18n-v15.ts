@@ -133,6 +133,9 @@ export const arV15: Record<string, string> = {
 
 /** Textes construits avec des nombres : traduits par motif. */
 export function translateArPattern(clean: string): string | undefined {
+  { const p = clean.match(/^Supplément passager pour (.+)$/); if (p) return `زيادة الزبون العابر لـ ${p[1]}`; }
+  { const p = clean.match(/^Depuis (\d{1,2}:\d{2})$/); if (p) return `منذ ${p[1]}`; }
+  { const p = clean.match(/^Notifications — (\d+) non lues?$/); if (p) return `الإشعارات — ${p[1]} غير مقروءة`; }
   let m = clean.match(/^(\d+) j sans changement$/); if (m) return `${m[1]} أيام دون تغيير`;
   m = clean.match(/^(\d+) relance\(s\) faite\(s\)$/); if (m) return `${m[1]} تذكير(ات)`;
   m = clean.match(/^rupture dans ~(\d+) j$/); if (m) return `نفاد خلال ~${m[1]} يوم`;
