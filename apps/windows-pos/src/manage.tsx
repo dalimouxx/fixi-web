@@ -4,25 +4,26 @@ import { invoke } from '@tauri-apps/api/core';
 import { Archive, BadgePercent, Ban, Boxes, Check, FileText, KeyRound, Pencil, Plus, Printer, RefreshCw, RotateCcw, Search, ShieldCheck, Trash2, Truck, UserPlus, Warehouse } from 'lucide-react';
 import { Modal, dt } from './dialogs';
 import { findByCode } from './stock-in';
+import { LinesPage } from './lines';
 import { payFr, statusFr } from './codes';
 
 export type Perm = 'sell' | 'cash' | 'discount' | 'refund' | 'customers' | 'customerPay' | 'customerView' | 'productCreate' | 'stockIn' | 'inventory' | 'productEdit' | 'productPrice' | 'productArchive' | 'promo' | 'masters' | 'priceTiers' | 'seeCost' | 'purchases' | 'vendors' | 'vendorPay' | 'expenses' | 'documents' | 'quotes' | 'orders' | 'ordersPrepare' | 'deliveryAssign' | 'driverCash' | 'reports' | 'reportsStock' | 'reportsOwnCash' | 'team' | 'warehouses';
 export const ALL_PERMS: Perm[] = ['sell', 'cash', 'discount', 'refund', 'customers', 'customerPay', 'customerView', 'productCreate', 'stockIn', 'inventory', 'productEdit', 'productPrice', 'productArchive', 'promo', 'masters', 'priceTiers', 'seeCost', 'purchases', 'vendors', 'vendorPay', 'expenses', 'documents', 'quotes', 'orders', 'ordersPrepare', 'deliveryAssign', 'driverCash', 'reports', 'reportsStock', 'reportsOwnCash', 'team', 'warehouses'];
-export type ManagePage = 'gestion' | 'achats' | 'depenses' | 'documents' | 'livraison' | 'rapports' | 'equipe' | 'depots' | 'droits';
+export type ManagePage = 'gestion' | 'achats' | 'depenses' | 'documents' | 'livraison' | 'rapports' | 'lignes' | 'equipe' | 'depots' | 'droits';
 
 /** Page → droits (au moins un) pour l'afficher dans le menu. */
 export const PAGE_PERMS: Record<string, Perm[] | null> = {
   caisse: ['sell'], historique: ['sell', 'reports'], retours: ['sell'], session: ['cash'], clients: ['customers', 'customerView'], dettes: ['customerPay', 'customerView'],
   commandes: ['orders'], livreurs: ['driverCash'], produits: null, stock: null, inventaire: ['inventory'], entree: ['stockIn'],
   gestion: ['productEdit', 'promo', 'masters'], achats: ['purchases', 'vendorPay'], depenses: ['expenses'], documents: ['documents', 'quotes'], livraison: ['deliveryAssign'],
-  rapports: ['reports', 'reportsStock'], equipe: ['team'], depots: ['warehouses'], droits: null,
+  rapports: ['reports', 'reportsStock'], lignes: ['reports'], equipe: ['team'], depots: ['warehouses'], droits: null,
 };
 export const pageAllowed = (page: string, perms: Perm[]) => { const need = PAGE_PERMS[page]; return !need || need.some(p => perms.includes(p)); };
 
 const api = <T = any,>(method: string, path: string, body?: unknown) => invoke<T>('supplier_api', { method, path, body: body ?? null });
 const num = (v: string) => { const n = Number(String(v).replace(',', '.')); return Number.isFinite(n) ? n : NaN; };
 const date = (v: string) => v ? new Date(v).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' }) : '—';
-type Ctx = { perms: Perm[]; products: any[]; customers: any[]; demo: boolean; onError: (m: string) => void; onMessage: (m: string) => void; onCatalogChanged: () => void };
+type Ctx = { perms: Perm[]; products: any[]; customers: any[]; demo: boolean; onError: (m: string) => void; onMessage: (m: string) => void; onCatalogChanged: () => void; onOpenPage?: (p: string) => void };
 const has = (c: Ctx, p: Perm) => c.perms.includes(p);
 function DemoNote() { return <section className="v5-card v6-inv-start"><ShieldCheck size={34} /><h2>Disponible une fois connecté</h2><p className="v5-hint">Ce module lit et modifie vos vraies données FIXI : connectez la caisse à votre compte fournisseur.</p></section>; }
 function useLoad<T>(path: string | null, deps: unknown[] = []) {
@@ -417,6 +418,7 @@ export function ManageModule({ page, ...c }: Ctx & { page: ManagePage }) {
     case 'documents': return <Documents {...c} />;
     case 'livraison': return <Delivery {...c} />;
     case 'rapports': return <Reports {...c} />;
+    case 'lignes': return <LinesPage canCount={has(c, 'inventory')} onError={c.onError} onMessage={c.onMessage} onOpenInventory={() => c.onOpenPage?.('inventaire')} />;
     case 'equipe': return <Team {...c} />;
     case 'depots': return <Warehouses {...c} />;
     case 'droits': return c.demo ? <DemoNote /> : <Rights {...c} />;

@@ -3,6 +3,7 @@ import {useEffect} from 'react';
 // Traduction arabe de l'interface : on traduit les textes affichés (et placeholder/title/aria-label)
 // sans toucher au code des écrans. Les tickets et étiquettes imprimés restent en français.
 const AR:Record<string,string>={
+ 'Lignes SL / MG':'الخطوط SL / MG', 'Chaque partie seule : ventes, dû des clients, stock, inventaire.':'كل جزء على حدة: المبيعات، ديون الحرفاء، المخزون، الجرد.', 'Lignes de produits':'خطوط المنتجات', 'Ligne':'الخط', 'Pièces vendues':'القطع المباعة', 'Dû des clients':'ديون الحرفاء', 'Valeur du stock':'قيمة المخزون', 'À payer':'المستحق', 'Tout':'الكل', 'Bénéfice (barème)':'الربح (حسب السلّم)', 'Jour':'اليوم', 'Client qui doit':'الحريف المدين', 'Dû':'المستحق', 'Aucune vente sur la période.':'لا مبيعات خلال الفترة.', 'Aucun client ne doit rien.':'لا يوجد حريف مدين.', 'Inventaire de cette ligne':'جرد هذا الخط', 'Prix':'السعر', 'Coût':'الكلفة', 'Valeur':'القيمة', 'Ligne à compter':'الخط المراد جرده', 'Tout le stock':'كل المخزون', 'Toutes les lignes':'كل الخطوط', 'Imprimer':'طباعة',
  'Client de passage : ajouter un supplément au prix atelier (non visible sur le ticket)':'زبون عابر: إضافة زيادة على سعر الورشة (لا تظهر في التذكرة)',
  'Passager':'زبون عابر', 'Ligne de produits':'خط المنتجات', 'Mes produits':'منتجاتي',
  'Caisse':'الصندوق','Vente':'البيع','Clients':'الحرفاء','Livraison':'التوصيل','Articles':'السلع','Menu':'القائمة',
