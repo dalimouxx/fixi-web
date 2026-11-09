@@ -3,6 +3,7 @@ import {useEffect} from 'react';
 // Traduction arabe de l'interface : on traduit les textes affichés (et placeholder/title/aria-label)
 // sans toucher au code des écrans. Les tickets et étiquettes imprimés restent en français.
 const AR:Record<string,string>={
+ 'Passager':'زبون عابر', 'Ligne de produits':'خط المنتجات', 'Mes produits':'منتجاتي',
  'Caisse':'الصندوق','Vente':'البيع','Clients':'الحرفاء','Livraison':'التوصيل','Articles':'السلع','Menu':'القائمة',
  'Tickets & ventes':'التذاكر والمبيعات','Retours & avoirs':'المرتجعات والأرصدة','Session de caisse':'جلسة الصندوق','Dettes clients':'ديون الحرفاء',
  'Commandes en ligne':'الطلبات عبر الإنترنت','Recettes livreurs':'مداخيل الموزعين','Catalogue':'الكتالوج','Stock':'المخزون',

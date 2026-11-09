@@ -1,7 +1,7 @@
 import {useEffect,useMemo,useRef,useState} from 'react';
 import JsBarcode from 'jsbarcode';
 
-export type LabelProduct={id:string;name:string;sku:string;barcode?:string|null;price:number};
+export type LabelProduct={id:string;name:string;sku:string;barcode?:string|null;price:number;tag?:string|null};
 type Props={products:LabelProduct[];companyName:string;onClose:()=>void};
 const escapeCode=(p:LabelProduct)=>String(p.barcode||p.sku||'').trim();
 type LabelFormat='40x20'|'50x30'|'60x40';
@@ -46,5 +46,5 @@ export function WindowsLabelStudio({products,companyName,onClose}:Props){
    <div className="v5-stepper"><button type="button" aria-label="Moins" disabled={!n} onClick={()=>setCopies(p.id,n-1)}>−</button><input type="number" min={0} max={300} value={n} onChange={e=>setCopies(p.id,Number(e.target.value))} aria-label={'Copies '+p.name}/><button type="button" aria-label="Plus" onClick={()=>setCopies(p.id,n+1)}>+</button></div></div>})}</div>
   {error&&<p role="alert" className="v5-alert v5-alert--danger">{error}</p>}
   <div className="v6-labels-foot"><b>{lines.length} produit(s), {total} étiquette(s)</b><button className="v5-btn v5-btn--primary print-action" onClick={print} disabled={!total}>Imprimer les étiquettes</button></div>
-  <p className="v5-hint">Réglez aussi ce format dans le pilote de l’imprimante Windows : {format.replace('x',' × ')} mm, horizontal, marges 0, échelle 100 %.</p></div><div className="labels-print-area">{selected.map(({p,i})=><article key={p.id+'-'+i} className="fixi-label"><header><b>{p.name}</b><strong>FIXI</strong></header><small>{supplier}</small><Barcode code={compactCode(p,format)||escapeCode(p)} compact={format==='40x20'}/><footer><span>{p.sku}</span><b>{p.price.toFixed(3)} DT</b></footer></article>)}</div></div>;
+  <p className="v5-hint">Réglez aussi ce format dans le pilote de l’imprimante Windows : {format.replace('x',' × ')} mm, horizontal, marges 0, échelle 100 %.</p></div><div className="labels-print-area">{selected.map(({p,i})=><article key={p.id+'-'+i} className="fixi-label"><header><b>{p.name}</b><strong>{p.tag||'FIXI'}</strong></header><small>{supplier}</small><Barcode code={compactCode(p,format)||escapeCode(p)} compact={format==='40x20'}/><footer><span>{p.sku}</span><b>{p.price.toFixed(3)} DT</b></footer></article>)}</div></div>;
 }

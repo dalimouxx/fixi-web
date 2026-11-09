@@ -10,6 +10,8 @@ export function SupplierInventory({products,warehouses,counts,countItems,onChang
  const[selected,setSelected]=useState('');
  const[showStart,setShowStart]=useState(false);
  const[warehouseId,setWarehouseId]=useState('');
+ const[lineId,setLineId]=useState(''),[lineOpts,setLineOpts]=useState<{own:string;lines:any[]}>({own:'Mes produits',lines:[]});
+ useEffect(()=>{fetch('/api/supplier/lines').then(r=>r.ok?r.json():null).then(j=>j&&setLineOpts({own:j.ownTag||'Mes produits',lines:(j.lines||[]).filter((l:any)=>l.active)})).catch(()=>{})},[]);
  const[q,setQ]=useState('');
  const[values,setValues]=useState<Record<string,string>>({});
  const[busy,setBusy]=useState('');
@@ -26,7 +28,7 @@ export function SupplierInventory({products,warehouses,counts,countItems,onChang
  const absDiff=items.reduce((a,i)=>a+Math.abs(Number(i.difference||0)),0);
 
  async function action(payload:any){setBusy(payload.action+(payload.productId||''));setErr('');setMsg('');try{await api('/api/supplier/advanced',{method:'POST',body:JSON.stringify(payload)});onChanged();return true}catch(e:any){setErr(e.message);return false}finally{setBusy('')}}
- async function start(e:any){e.preventDefault();if(await action({action:'STOCK_COUNT_START',warehouseId:warehouseId||null,reference:'INV-'+Date.now()})){setShowStart(false);setMsg('Inventaire démarré. Les quantités attendues ont été figées.')} }
+ async function start(e:any){e.preventDefault();if(await action({action:'STOCK_COUNT_START',warehouseId:warehouseId||null,lineId:lineId||null,reference:'INV-'+Date.now()})){setShowStart(false);setMsg('Inventaire démarré. Les quantités attendues ont été figées.')} }
  async function save(item:any){
   const raw=values[item.productId];if(raw===''||!Number.isFinite(Number(raw)))return;
   const n=Math.max(0,Math.trunc(Number(raw)));const ok=await action({action:'STOCK_COUNT_ITEM',stockCountId:active.id,productId:item.productId,countedQty:n});if(ok)setMsg('Comptage enregistré.');
@@ -46,6 +48,6 @@ export function SupplierInventory({products,warehouses,counts,countItems,onChang
     </>:<div className="rt-empty"><ClipboardCheck/><b>Sélectionnez un inventaire</b></div>}
    </section>
   </div>
-  {showStart&&<div className="supplier-modal-backdrop"><form className="supplier-modal" onSubmit={start}><button type="button" className="supplier-modal-x" onClick={()=>setShowStart(false)}><X/></button><span className="smart-kicker"><Warehouse size={13}/> NOUVEL INVENTAIRE</span><h2>Figer le stock attendu</h2><p>Choisissez un dépôt précis ou le stock global. Les mouvements réalisés ensuite ne modifieront pas les quantités attendues de cette session.</p><label className="label">Périmètre</label><select className="input" value={warehouseId} onChange={e=>setWarehouseId(e.target.value)}><option value="">Stock global</option>{warehouses.filter(w=>w.active).map(w=><option key={w.id} value={w.id}>{w.code} · {w.name}</option>)}</select><button disabled={busy!==''} className="btn btn-primary btn-block"><Plus/> Démarrer l’inventaire</button></form></div>}
+  {showStart&&<div className="supplier-modal-backdrop"><form className="supplier-modal" onSubmit={start}><button type="button" className="supplier-modal-x" onClick={()=>setShowStart(false)}><X/></button><span className="smart-kicker"><Warehouse size={13}/> NOUVEL INVENTAIRE</span><h2>Figer le stock attendu</h2><p>Choisissez un dépôt précis ou le stock global. Les mouvements réalisés ensuite ne modifieront pas les quantités attendues de cette session.</p><label className="label">Périmètre</label><select className="input" value={warehouseId} onChange={e=>setWarehouseId(e.target.value)}><option value="">Stock global</option>{warehouses.filter(w=>w.active).map(w=><option key={w.id} value={w.id}>{w.code} · {w.name}</option>)}</select>{lineOpts.lines.length>0&&<><label className="label">Ligne de produits</label><select className="input" value={lineId} onChange={e=>setLineId(e.target.value)}><option value="">Toutes les lignes</option><option value="own">{lineOpts.own}</option>{lineOpts.lines.map((l:any)=><option key={l.id} value={l.id}>{l.tag} · {l.name}</option>)}</select></>}<button disabled={busy!==''} className="btn btn-primary btn-block"><Plus/> Démarrer l’inventaire</button></form></div>}
  </div>
 }

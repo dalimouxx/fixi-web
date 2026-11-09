@@ -20,6 +20,7 @@ pub fn allowed(method: &str, path: &str, action: Option<&str>) -> bool {
         ("GET" | "PATCH", ["api", "supplier", "permissions"]) => true,
         ("POST", ["api", "supplier", "approval"]) => true,
         ("GET", ["api", "supplier", "walk-in-suggestions"]) => true,
+        ("GET", ["api", "supplier", "lines"]) => true,
         ("GET" | "POST" | "PATCH", ["api", "supplier", "products"]) => true,
         ("PATCH" | "DELETE", ["api", "supplier", "products", id]) => id_ok(id),
         ("POST", ["api", "supplier", "products", "barcodes"]) => true,
@@ -61,6 +62,8 @@ mod tests {
         assert!(!allowed("GET", "/api/platform/shops", None));
         assert!(!allowed("GET", "/api/supplier/security", None));
         assert!(!allowed("POST", "/api/supplier/subscription", None));
+        assert!(allowed("GET", "/api/supplier/lines", None));
+        assert!(!allowed("POST", "/api/supplier/lines", None));
         assert!(allowed("GET", "/api/supplier/walk-in-suggestions", None));
         assert!(!allowed("POST", "/api/supplier/walk-in-suggestions", None));
         assert!(!allowed("GET", "https://evil.example/api/supplier/products", None));

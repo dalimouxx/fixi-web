@@ -1,3 +1,4 @@
+import {checkLineId} from '@/lib/supplier-lines';
 import {prisma} from '@/lib/prisma';
 import {SUPPLIER_COST_ROLES,stripCosts} from '@/lib/stock-delete';
 import {can} from '@/lib/supplier-permissions';
@@ -48,8 +49,9 @@ export async function POST(req:Request){
   const linkedCat=!category&&guess.category?await prisma.supplierCategory.findFirst({where:{companyId:s.companyId,active:true,name:{equals:guess.category,mode:'insensitive'}},select:{id:true}}):null;
   // Code-barres : vide → code intelligent (0000A04) ; saisi → jamais le même que chez un autre fournisseur.
   const barcode=await resolveBarcode(prisma as any,s.companyId,{barcode:b.barcode,name,category:guess.category});
+  const lineId=await checkLineId(s.companyId,b.lineId);
   const x=await prisma.supplierProduct.create({data:{
-   companyId:s.companyId,
+   companyId:s.companyId,lineId,lineSince:lineId?new Date():null,
    sku,barcode,name,
    brand:guess.brand,category:guess.category,
    brandId:b.brandId||null,categoryId:b.categoryId||linkedCat?.id||null,unitId:b.unitId||null,

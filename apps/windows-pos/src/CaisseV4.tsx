@@ -26,9 +26,9 @@ import './v4.css';
 import './v5.css';
 import './fixi-max.css';
 
-type Product={id:string;name:string;sku:string;barcode?:string|null;category:string|null;price:number;wholesalePrice?:number|null;minStock?:number;stock:number;sold30?:number;onHand?:number;tiers?:{minQty:number;unitPrice:number}[]};
+type Product={id:string;name:string;sku:string;barcode?:string|null;category:string|null;lineId?:string|null;tag?:string|null;price:number;wholesalePrice?:number|null;minStock?:number;stock:number;sold30?:number;onHand?:number;tiers?:{minQty:number;unitPrice:number}[]};
 type Customer={id:string;name:string;phone?:string|null;taxId?:string|null;address?:string|null;creditLimit?:number;priceMode?:string;discountPct?:number;due?:number};
-type Boot={companyName:string;role:string;perms?:Perm[];discountLimitPct?:number;products:Product[];customers:Customer[];pinConfigured?:boolean;receiptProfile?:import('./TicketV4').ReceiptBusinessProfile|null;account?:{id:string;fullName:string}};
+type Boot={lines?:{id:string;tag:string;name:string}[];ownTag?:string|null;companyName:string;role:string;perms?:Perm[];discountLimitPct?:number;products:Product[];customers:Customer[];pinConfigured?:boolean;receiptProfile?:import('./TicketV4').ReceiptBusinessProfile|null;account?:{id:string;fullName:string}};
 type CustomLine={id:string;name:string;price:number;quantity:number};
 type SaleItem={productId:string;quantity:number;unitPrice:number;extra?:number}|{custom:true;name:string;quantity:number;unitPrice:number};
 type QueuedSale={reference:string;createdAt:string;payload:{reference:string;items:SaleItem[];customerId:string|null;paid:number;method:string;discount:number};ticket:ReceiptData;stock:Record<string,number>;error?:string};
@@ -708,7 +708,7 @@ function App(){
   {invoiceFor&&<InvoiceDialog reference={invoiceFor.reference} customer={invoiceFor.customer} onClose={()=>setInvoiceFor(null)} onDone={printInvoice}/>}
   {reportOpen&&<ReportDialog page={page} onClose={()=>setReportOpen(false)} onSent={()=>setMessage('Merci, le problème est envoyé à l’équipe Fixi.')}/>}
   {approval&&<ApprovalDialog perm={approval.perm} reason={approval.reason} onDone={t=>{approval.resolve(t);setApproval(null)}}/>}
-  {dialog==='product'&&<NewProductDialog stockIn={page==='entree'} barcode={newCode} onClose={()=>{setDialog('');focusScan()}} onCreate={createProduct}/>}
+  {dialog==='product'&&<NewProductDialog stockIn={page==='entree'} barcode={newCode} onClose={()=>{setDialog('');focusScan()}} onCreate={createProduct} lines={boot.lines||[]} ownTag={boot.ownTag||null}/>}
   {dialog==='free'&&<FreeItemDialog onClose={()=>{setDialog('');focusScan()}} onAdd={x=>setCustom(list=>[...list,{id:crypto.randomUUID(),...x}])}/>}
   {dialog==='discount'&&<DiscountDialog subtotal={subtotal} discount={cartDiscount} onClose={()=>setDialog('')}
    lines={entries.map(e=>({key:e.product.id,name:e.product.name,quantity:e.quantity,base:basePrice(e.product),price:priceFor(e.product)} as DiscountLine))}

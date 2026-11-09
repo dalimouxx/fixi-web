@@ -124,14 +124,16 @@ export async function POST(req:Request){
   if(action==='STOCK_COUNT_START'){
    const warehouseId=String(b.warehouseId||'')||null;
    if(warehouseId){const w=await prisma.supplierWarehouse.findFirst({where:{id:warehouseId,companyId:s.companyId,active:true}});if(!w)return bad('Dépôt invalide',404)}
-   const existing=await prisma.supplierStockCount.findFirst({where:{companyId:s.companyId,warehouseId,status:'OPEN'}});
+   // Inventaire d'une seule ligne (ex. MG) : b.lineId = id de la ligne, ou « own » pour les produits du fournisseur.
+   const lineScope=b.lineId?String(b.lineId)==='own'?'own':await checkLineId(s.companyId,b.lineId):null;
+   const existing=await prisma.supplierStockCount.findFirst({where:{companyId:s.companyId,warehouseId,lineId:lineScope,status:'OPEN'}});
    if(existing)return bad('Un inventaire est déjà ouvert pour ce périmètre',409);
    const ref=String(b.reference||('INV-'+Date.now()));
-   const products=await prisma.supplierProduct.findMany({where:{companyId:s.companyId,active:true},select:{id:true,stock:true}});
+   const products=await prisma.supplierProduct.findMany({where:{companyId:s.companyId,active:true,...(lineScope?{lineId:lineScope==='own'?null:lineScope}:{})},select:{id:true,stock:true}});
    const wh=warehouseId?await prisma.supplierWarehouseStock.findMany({where:{companyId:s.companyId,warehouseId},select:{productId:true,quantity:true}}):[];
    const whMap=new Map(wh.map(x=>[x.productId,x.quantity]));
    const count=await prisma.$transaction(async tx=>{
-    const row=await tx.supplierStockCount.create({data:{companyId:s.companyId,warehouseId,reference:ref,note:b.note||null,createdById:s.id}});
+    const row=await tx.supplierStockCount.create({data:{companyId:s.companyId,warehouseId,lineId:lineScope,reference:ref,note:b.note||null,createdById:s.id}});
     if(products.length)await tx.supplierStockCountItem.createMany({data:products.map(p=>({stockCountId:row.id,productId:p.id,expectedQty:warehouseId?(whMap.get(p.id)||0):p.stock}))});
     return row;
    });
