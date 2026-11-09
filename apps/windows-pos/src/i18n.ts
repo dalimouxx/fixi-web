@@ -3,6 +3,7 @@ import {useEffect} from 'react';
 // Traduction arabe de l'interface : on traduit les textes affichés (et placeholder/title/aria-label)
 // sans toucher au code des écrans. Les tickets et étiquettes imprimés restent en français.
 const AR:Record<string,string>={
+ 'Client de passage : ajouter un supplément au prix atelier (non visible sur le ticket)':'زبون عابر: إضافة زيادة على سعر الورشة (لا تظهر في التذكرة)',
  'Passager':'زبون عابر', 'Ligne de produits':'خط المنتجات', 'Mes produits':'منتجاتي',
  'Caisse':'الصندوق','Vente':'البيع','Clients':'الحرفاء','Livraison':'التوصيل','Articles':'السلع','Menu':'القائمة',
  'Tickets & ventes':'التذاكر والمبيعات','Retours & avoirs':'المرتجعات والأرصدة','Session de caisse':'جلسة الصندوق','Dettes clients':'ديون الحرفاء',
@@ -75,6 +76,7 @@ const AR:Record<string,string>={
  '— choisissez un client':'— اختر حريفًا','(crédit client)':'(دين على الحريف)','Remis en stock':'يُعاد إلى المخزون','Mis de côté, hors stock':'يوضع جانبًا خارج المخزون',
 };
 const PATTERNS:[RegExp,(m:RegExpMatchArray)=>string][]=[
+ [/^Supplément passager pour (.+)$/,m=>`زيادة الزبون العابر لـ ${m[1]}`],
  [/^(\d+) articles?$/,m=>`${m[1]} سلعة`],
  [/^Encaisser (.+)$/,m=>`استلام ${m[1]}`],
  [/^Ajouter (.+ DT\u2069?)$/,m=>`إضافة ${m[1]}`],
