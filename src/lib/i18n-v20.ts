@@ -145,4 +145,6 @@ export const arV20: Record<string, string> = {
   'Panier': 'السلة',
   'Signaler un problème': 'الإبلاغ عن مشكلة',
   'Ex. garantie 3 mois, livraison prévue, référence client…': 'مثلاً ضمان 3 أشهر، توصيل مبرمج، مرجع الحريف…',
+  'Supprimer la ligne': 'حذف الخط',
+  'Ligne créée par erreur ? Ses produits reviennent dans « ': 'خط أُنشئ بالخطأ؟ تعود منتجاته إلى « ',
 };

@@ -27,3 +27,23 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     return ok(x);
   } catch (e: any) { return bad(e.message, e.status || 500); }
 }
+
+/**
+ * Supprimer une ligne créée par erreur (ex. « DS ») : ses produits reviennent dans les produits du fournisseur.
+ * Si des paiements ont déjà été versés au propriétaire de la ligne, elle est seulement désactivée (historique gardé).
+ */
+export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const s = await requireSupplierRole(['OWNER', 'ADMIN', 'MANAGER']);
+    const { id } = await params;
+    const line = await prisma.supplierProductLine.findFirst({ where: { id, companyId: s.companyId } });
+    if (!line) return bad('Ligne introuvable', 404);
+    const moved = await prisma.supplierProduct.updateMany({ where: { companyId: s.companyId, lineId: id }, data: { lineId: null, lineSince: new Date() } });
+    await prisma.supplierWarehouse.updateMany({ where: { companyId: s.companyId, lineId: id }, data: { lineId: null } });
+    const payments = await prisma.supplierErpPayment.count({ where: { companyId: s.companyId, lineId: id } });
+    if (payments) await prisma.supplierProductLine.update({ where: { id }, data: { active: false } });
+    else await prisma.supplierProductLine.delete({ where: { id } });
+    await prisma.supplierAuditEvent.create({ data: { companyId: s.companyId, accountId: s.id, action: payments ? 'ARCHIVE' : 'DELETE', entity: 'PRODUCT_LINE', entityId: id, metadata: { tag: line.tag, productsMoved: moved.count } } }).catch(() => null);
+    return ok({ deleted: !payments, archived: !!payments, productsMoved: moved.count, tag: line.tag });
+  } catch (e: any) { return bad(e.message, e.status || 500); }
+}

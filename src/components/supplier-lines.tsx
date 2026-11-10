@@ -53,6 +53,7 @@ export function SupplierLines({ canEdit, canPay, onOpenInventory }: { canEdit: b
   const saveOwn = (e: React.FormEvent) => { e.preventDefault(); act(async () => { const x = await call('/api/supplier/lines', { method: 'PATCH', body: JSON.stringify({ ownTag }) }); return `Vos propres produits s’appellent maintenant « ${x.ownTag || 'Mes produits'} ».`; }); };
   const saveScale = (e: React.FormEvent) => { e.preventDefault(); if (!current) return; act(async () => { await call(`/api/supplier/lines/${current.id}`, { method: 'PATCH', body: JSON.stringify({ commissions: scale }) }); return `Barème de ${current.tag} enregistré.`; }); };
   const payOwner = (e: React.FormEvent) => { e.preventDefault(); if (!current) return; act(async () => { const x = await call(`/api/supplier/lines/${current.id}/payment`, { method: 'POST', body: JSON.stringify(pay) }); setPay({ amount: '', method: 'CASH', note: '' }); return `Paiement de ${money(x.amount)} à ${current.tag} enregistré${x.fromCash ? ' (sorti de la caisse ouverte)' : ''}.`; }); };
+  const removeLine = () => { if (!current || !window.confirm(`Supprimer la ligne ${current.tag} ? Ses produits reviennent dans « ${ownName} ».`)) return; act(async () => { const x = await call(`/api/supplier/lines/${current.id}`, { method: 'DELETE' }); setLine('all'); return x.deleted ? `Ligne ${x.tag} supprimée (${x.productsMoved} produit(s) remis dans ${ownName}).` : `Ligne ${x.tag} désactivée : des paiements lui ont déjà été versés (historique gardé). ${x.productsMoved} produit(s) remis dans ${ownName}.`; }); };
   const startCount = () => act(async () => { await call('/api/supplier/advanced', { method: 'POST', body: JSON.stringify({ action: 'STOCK_COUNT_START', lineId: line, reference: 'INV-' + (line === 'own' ? (data?.ownTag || 'MOI') : current?.tag || 'L') + '-' + Date.now() }) }); onOpenInventory?.(); return `Inventaire de ${label} démarré : comptez les produits dans « Comptage du stock ».`; });
 
   return <section className="supplier-panel sl-lines">
@@ -120,6 +121,7 @@ export function SupplierLines({ canEdit, canPay, onOpenInventory }: { canEdit: b
       </div>
     </>}
 
+    {canEdit && current && <div className="sl-remove no-print"><button type="button" className="btn btn-ghost btn-sm" onClick={removeLine}>Supprimer la ligne {current.tag}</button><small className="muted">Ligne créée par erreur ? Ses produits reviennent dans « {ownName} ».</small></div>}
     {canEdit && current && (current.categories || []).length > 0 && <form className="sl-scale no-print" onSubmit={saveScale}>
       <b>Barème de bénéfice — {current.tag}</b>
       <small><span>Votre bénéfice par pièce vendue, par catégorie (ex. Écrans : 2 DT). Laissez vide pour utiliser le prix convenu (coût) de chaque produit.</span>{current.consignment && <> <span>Le reste du prix de vente revient à</span> {current.tag}.</>}</small>

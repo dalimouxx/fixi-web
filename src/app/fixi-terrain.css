@@ -237,3 +237,4 @@ html[data-theme='dark'] .fx-mnt-blob{opacity:.35}
 .sl-split caption { text-align: left; font-weight: 800; padding: 0 0 8px; }
 .sl-split td.num, .sl-split th.num { text-align: right; white-space: nowrap; }
 .sl-split-tag { border: 0; background: var(--fx-brand, #f0782b); color: #fff; font-weight: 800; border-radius: 999px; padding: 3px 12px; cursor: pointer; }
+.sl-remove { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; } .sl-remove .btn { color: var(--fx-danger, #dc2626); }
