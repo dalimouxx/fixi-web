@@ -18,7 +18,7 @@ export async function GET(){
    }),
    prisma.supplierErpCustomer.findMany({
     where:{companyId:s.companyId,active:true},orderBy:{name:'asc'},take:2000,
-    select:{id:true,name:true,phone:true,taxId:true,address:true,creditLimit:true,priceMode:true,discountPct:true}
+    select:{id:true,name:true,phone:true,taxId:true,address:true,creditLimit:true,monthlyMin:true,priceMode:true,discountPct:true}
    }),
    prisma.supplierCompany.findUnique({where:{id:s.companyId},select:{
     legalName:true,phone:true,address:true,taxId:true,receiptMessage:true,tradeRegister:true,logoUrl:true
@@ -45,7 +45,7 @@ export async function GET(){
    price:Number(p.retailPrice??p.price),wholesalePrice:p.wholesalePrice===null?null:Number(p.wholesalePrice),minStock:p.minStock,stock:Math.max(0,p.stock-p.reservedStock),
    updatedAt:p.updatedAt,sold30:soldBy.get(p.id)||0,onHand:p.stock,tiers:tiersBy.get(p.id)||[],
    lineId:p.lineId,tag:p.lineId?lineTag.get(p.lineId)||null:null
-  })),lines:lineRows.filter(l=>l.active).map(l=>({id:l.id,tag:l.tag,name:l.name})),ownTag:company?.ownLineTag||null,customers:customers.map(c=>({id:c.id,name:c.name,phone:c.phone,taxId:c.taxId,address:c.address,creditLimit:Number(c.creditLimit||0),priceMode:c.priceMode,discountPct:Number(c.discountPct||0),
+  })),lines:lineRows.filter(l=>l.active).map(l=>({id:l.id,tag:l.tag,name:l.name})),ownTag:company?.ownLineTag||null,customers:customers.map(c=>({id:c.id,name:c.name,phone:c.phone,taxId:c.taxId,address:c.address,creditLimit:Number(c.creditLimit||0),monthlyMin:Number(c.monthlyMin||0),priceMode:c.priceMode,discountPct:Number(c.discountPct||0),
    due:Math.round((dueBy.get(c.id)||0)*1000)/1000}))});
  }catch(e:any){return bad(e.message,e.status||500)}
 }

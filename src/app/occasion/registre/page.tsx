@@ -21,7 +21,7 @@ export default async function UsedRegister({ searchParams }: { searchParams: Pro
   ]);
   await audit(s.shopId, s.id, 'VIEW_REGISTER', 'USED_DEVICE', undefined, { count: rows.length });
   const q = `from=${from.toISOString().slice(0, 10)}&to=${to.toISOString().slice(0, 10)}`;
-  return <div className="occ-reg-page">
+  return <div className="occ-reg-page"><style>{'@media print{@page{size:A4 landscape;margin:10mm}}'}</style>
     <div className="no-print occ-att-tools"><form><label>Du <input type="date" name="from" defaultValue={from.toISOString().slice(0, 10)} /></label><label>au <input type="date" name="to" defaultValue={to.toISOString().slice(0, 10)} /></label><button>Afficher</button></form><a href={`/api/used-devices/register?${q}&format=csv`}>Excel (CSV)</a><PrintButton label="Imprimer le registre" /></div>
     <h1>Registre des téléphones d’occasion</h1>
     <p className="occ-reg-sub">{shop.name}{shop.address ? ` · ${shop.address}` : ''}{shop.taxId ? ` · MF ${shop.taxId}` : ''} — du {dateOnly(from)} au {dateOnly(to)} · {rows.length} achat(s)</p>

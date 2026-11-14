@@ -1,4 +1,5 @@
 import {prisma} from '@/lib/prisma';
+import {customerMonthly} from '@/lib/supplier-collections';
 import {requireSupplierSession,SupplierRole} from '@/lib/supplier-auth';
 import {bad,ok} from '@/lib/http';
 import {plain} from '@/lib/serializers';
@@ -148,7 +149,7 @@ export async function POST(req:Request){
    const paid=money(payments.reduce((a:number,x:any)=>a+x.amount,0));
    if(paid>total+0.001)return bad('Les paiements dépassent le total de la vente',409);
    if(paid<total&& !b.customerId)return bad('Sélectionnez un client pour une vente à crédit',409);
-   if(b.customerId){const customer=await prisma.supplierErpCustomer.findFirst({where:{id:String(b.customerId),companyId:s.companyId,active:true}});if(!customer)return bad('Client invalide',404);const existing=await prisma.supplierErpSale.aggregate({where:{companyId:s.companyId,customerId:customer.id,status:{not:'CANCELLED'}},_sum:{total:true,paid:true}});const due=Number(existing._sum.total||0)-Number(existing._sum.paid||0)+(total-paid);if(Number(customer.creditLimit)>0&&due>Number(customer.creditLimit))return bad('Plafond crédit client dépassé',409)}
+   if(b.customerId){const customer=await prisma.supplierErpCustomer.findFirst({where:{id:String(b.customerId),companyId:s.companyId,active:true}});if(!customer)return bad('Client invalide',404);const existing=await prisma.supplierErpSale.aggregate({where:{companyId:s.companyId,customerId:customer.id,status:{not:'CANCELLED'}},_sum:{total:true,paid:true}});const due=Number(existing._sum.total||0)-Number(existing._sum.paid||0)+(total-paid);if(Number(customer.creditLimit)>0&&due>Number(customer.creditLimit))return bad('Plafond crédit client dépassé',409);if(paid<total-0.0005){const m=await customerMonthly(s.companyId,customer.id);if(m.late)return bad(`Vente à crédit bloquée : ${customer.name} doit encore régler ${m.missing.toFixed(3)} DT ce mois-ci (minimum ${m.required.toFixed(3)} DT, déjà réglé ${m.paid.toFixed(3)} DT). Encaissez ce règlement ou faites une vente payée en entier.`,409)}}
    let cashSession:any=null;
    for(const p of payments)if(await cashLike(s.companyId,p.method)){cashSession=await openCash(s.companyId,s.id);if(!cashSession)return bad('Ouvrez votre caisse avant un encaissement espèces',409);break}
    const ref=String(b.reference||('V-'+Date.now()));
@@ -213,7 +214,7 @@ export async function POST(req:Request){
    if(!allow(s.role,['OWNER','ADMIN','MANAGER','SALES','CASHIER','ACCOUNTANT']))return bad('FORBIDDEN',403);
    if(!b.name)return bad('Nom client requis');
    const pricing=customerPricing(b,allow(s.role,['OWNER','ADMIN','MANAGER']));
-   const x=await prisma.supplierErpCustomer.create({data:{companyId:s.companyId,name:String(b.name).trim(),phone:b.phone||null,email:b.email||null,address:b.address||null,region:b.region||null,taxId:b.taxId||null,creditLimit:Number(b.creditLimit||0),notes:b.notes||null,...pricing}});
+   const x=await prisma.supplierErpCustomer.create({data:{companyId:s.companyId,name:String(b.name).trim(),phone:b.phone||null,email:b.email||null,address:b.address||null,region:b.region||null,taxId:b.taxId||null,creditLimit:Number(b.creditLimit||0),monthlyMin:Math.max(0,Number(b.monthlyMin||0))||0,notes:b.notes||null,...pricing}});
    await audit(s.companyId,s.id,'CREATE','CUSTOMER',x.id,{name:x.name});return ok(plain(x),{status:201});
   }
 
@@ -224,6 +225,7 @@ export async function POST(req:Request){
    const data:any={...customerPricing(b,true)};
    for(const k of ['phone','email','address','region','taxId','notes'])if(typeof b[k]==='string')data[k]=b[k].trim().slice(0,240)||null;
    if(typeof b.name==='string'&&b.name.trim().length>=2)data.name=b.name.trim().slice(0,160);
+   if(b.monthlyMin!==undefined){const v=Number(b.monthlyMin);if(!Number.isFinite(v)||v<0)return bad('Montant mensuel invalide',400);data.monthlyMin=money(v)}
    if(b.creditLimit!==undefined){const v=Number(b.creditLimit);if(!Number.isFinite(v)||v<0)return bad('Plafond invalide',400);data.creditLimit=money(v)}
    const x=await prisma.supplierErpCustomer.update({where:{id:c.id},data});
    await audit(s.companyId,s.id,'UPDATE','CUSTOMER',x.id,{fields:Object.keys(data)});return ok(plain(x));

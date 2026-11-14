@@ -9,6 +9,7 @@ import {plain} from '@/lib/serializers';
 import {audit} from '@/lib/audit';
 import {activePromos} from '@/lib/promos';
 import {aging,creditOverflow} from '@/lib/field-ops';
+import {customerMonthly} from '@/lib/supplier-collections';
 import {notifySupplier,notifySupplierLowStock} from '@/lib/supplier-notifications';
 
 function ref(){
@@ -52,6 +53,7 @@ export async function POST(req:Request){
     const pre=await prisma.supplierProduct.findMany({where:{id:{in:ids}},select:{id:true,companyId:true,price:true,minOrderQty:true,company:{select:{name:true}}}});
     if(pre.length&&pre.every(p=>p.companyId===pre[0].companyId)){
       const cust=await prisma.supplierErpCustomer.findFirst({where:{companyId:pre[0].companyId,shopId:s.shopId,active:true},select:{id:true,creditLimit:true}});
+      if(cust){const m=await customerMonthly(pre[0].companyId,cust.id);if(m.late)return bad(`Commande bloquée chez ${pre[0].company.name} : votre règlement mensuel est en retard. Réglez au moins ${m.missing.toFixed(3)} DT (minimum du mois ${m.required.toFixed(3)} DT, déjà réglé ${m.paid.toFixed(3)} DT) pour pouvoir commander à nouveau.`,409)}
       if(cust&&Number(cust.creditLimit)>0){
         const [sales,promosPre]=await Promise.all([prisma.supplierErpSale.findMany({where:{companyId:pre[0].companyId,customerId:cust.id,status:{not:'CANCELLED'}},select:{id:true,total:true,paid:true,createdAt:true,dueAt:true}}),activePromos(ids)]);
         const current=aging(sales.map(x=>({id:x.id,total:Number(x.total),paid:Number(x.paid),createdAt:x.createdAt,dueAt:x.dueAt}))).due;

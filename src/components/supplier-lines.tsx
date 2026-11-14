@@ -21,6 +21,22 @@ async function call(url: string, init?: RequestInit) {
   return j;
 }
 
+const METHODS: Record<string, string> = { CASH: 'Espèces', CARD: 'Carte', BANK_TRANSFER: 'Virement', CHEQUE: 'Chèque', CHECK: 'Chèque', D17: 'D17', FLOUCI: 'Flouci', ONLINE: 'En ligne' };
+const hour = (v: string) => new Date(v).toLocaleString('fr-FR', { timeZone: 'Africa/Tunis', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+
+/** Recette et journal d'une ligne : ce qui a été vendu (article par article) et ce qui a été encaissé, par moyen de paiement. */
+function LineJournal({ title, totals, methods, journal, more }: { title: string; totals: any; methods: any[]; journal: any[]; more: number }) {
+  return <div className="sl-journal">
+    <h4>Recette et journal — {title}</h4>
+    <p className="sl-journal-sum"><span>Ventes <b>{money(totals.sales)}</b></span><span>Pièces <b>{totals.units}</b></span><span>Recette encaissée <b>{money(totals.collected)}</b></span>
+      {(methods || []).map(m => <span key={m.method}>{METHODS[m.method] || m.method} <b>{money(m.amount)}</b></span>)}<span>Dû des clients <b>{money(totals.due)}</b></span></p>
+    <div className="table-wrap"><table className="table"><thead><tr><th>Heure</th><th>Ticket</th><th>Article</th><th className="num">Qté</th><th className="num">Prix</th><th className="num">Total</th></tr></thead>
+      <tbody>{(journal || []).length ? journal.map((j: any, i: number) => <tr key={i}><td>{hour(j.at)}</td><td>{j.reference}</td><td>{j.name}</td><td className="num">{j.quantity}</td><td className="num">{money(j.unitPrice)}</td><td className="num">{money(j.total)}</td></tr>)
+        : <tr><td colSpan={6} className="muted">Aucun article vendu sur la période.</td></tr>}</tbody></table></div>
+    {more > 0 && <small className="muted">… et {more} autre(s) article(s). Réduisez la période pour tout voir.</small>}
+  </div>;
+}
+
 export function SupplierLines({ canEdit, canPay, onOpenInventory }: { canEdit: boolean; canPay: boolean; onOpenInventory?: () => void }) {
   const [data, setData] = useState<{ ownTag: string | null; ownProducts: number; lines: any[] } | null>(null);
   const [line, setLine] = useState('all');
@@ -107,6 +123,10 @@ export function SupplierLines({ canEdit, canPay, onOpenInventory }: { canEdit: b
           <tbody>{rep.customers.length ? rep.customers.slice(0, 50).map((c: any) => <tr key={c.id || 'comptoir'}><td>{c.name}</td><td className="num">{money(c.due)}</td></tr>)
             : <tr><td colSpan={2} className="muted">Aucun client ne doit rien sur cette ligne.</td></tr>}</tbody></table></div>
       </div>
+
+      {line === 'all' && split && split.length > 1
+        ? split.map((r: any) => <LineJournal key={r.id} title={r.id === 'own' ? (r.ownTag || 'Mes produits') : r.tag} totals={r.totals} methods={r.methods} journal={r.journal} more={r.journalMore} />)
+        : <LineJournal title={label} totals={rep.totals} methods={rep.methods} journal={rep.journal} more={rep.journalMore} />}
 
       <div className="sl-stock">
         <div className="sl-stock-head">

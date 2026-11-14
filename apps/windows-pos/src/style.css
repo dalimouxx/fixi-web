@@ -18,7 +18,6 @@
  body[data-print-mode="ticket"] .app,body[data-print-mode="ticket"] .connection,body[data-print-mode="ticket"] .label-studio{display:none!important}
  body[data-print-mode="ticket"] .receipt-print-area{display:block}
 }
-@page{margin:0}
 
 /* Supplier reference layout, fully functional sidebar and quick scanning */
 .nav .nav-item{width:100%;display:block;text-align:left;border:0;background:transparent;font-size:16px;cursor:pointer}

@@ -121,7 +121,7 @@ html[data-label='a4'] .occ-lbl-bar { height: 10mm; } html[data-label='a4'] .occ-
 .occ-reg { width: 100%; border-collapse: collapse; }
 .occ-reg th, .occ-reg td { border: 1px solid #ccc; padding: 4px 6px; text-align: start; vertical-align: top; }
 .occ-reg th { background: #f3f1f6; font-size: 8.5pt; }
-@media print { @page { size: A4 landscape; margin: 10mm; } .occ-reg-page { padding: 0; } }
+@media print { .occ-reg-page { padding: 0; } }
 @media (prefers-reduced-motion: reduce) { .fxm-occ-card, .fxm-occ-modal { animation: none !important; transition: none !important; } }
 .fxm-occ > .btn { justify-self: start; }
 .fxm-occ-pricebox { display: flex !important; gap: 6px; align-items: center; }
