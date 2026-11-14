@@ -16,8 +16,8 @@ export async function GET() {
     const autoSent = await runAutoReminders(s.companyId).catch(() => 0);
     const { company, rows } = await customerDues(s.companyId);
     return ok({
-      autoReminders: !!company?.autoReminders, autoSent,
-      totals: { due: Math.round(rows.reduce((a, r) => a + r.due, 0) * 1000) / 1000, late30: rows.filter(r => r.days >= 30).reduce((a, r) => a + r.due, 0), customers: rows.length, blocked: rows.filter(r => r.blocked).length },
+      autoReminders: !!company?.autoReminders, autoSent, monthlyDuePct: Number(company?.monthlyDuePct || 0), canEdit: ['OWNER', 'ADMIN', 'MANAGER', 'ACCOUNTANT'].includes(s.role),
+      totals: { due: Math.round(rows.reduce((a, r) => a + r.due, 0) * 1000) / 1000, late30: rows.filter(r => r.days >= 30).reduce((a, r) => a + r.due, 0), customers: rows.length, blocked: rows.filter(r => r.blocked).length, monthlyLate: rows.filter(r => r.monthly.late).length },
       rows: rows.map(r => ({ ...r, wa: r.phone ? waLink(r.phone, reminderText(r.level || 7, { customer: r.name, supplier: company?.name || '', due: money(r.due), days: r.days })) : null })),
     });
   } catch (e: any) { return bad(e.message, e.status || 500); }
@@ -40,7 +40,15 @@ export async function PATCH(req: Request) {
   try {
     const s = await requireSupplierRole(['OWNER', 'ADMIN', 'MANAGER', 'ACCOUNTANT']);
     const b = await req.json().catch(() => ({}));
-    await prisma.supplierCompany.update({ where: { id: s.companyId }, data: { autoReminders: !!b.autoReminders, remindersRunAt: null } });
-    return ok({ autoReminders: !!b.autoReminders });
+    const data: any = { remindersRunAt: null };
+    if (b.autoReminders !== undefined) data.autoReminders = !!b.autoReminders;
+    if (b.monthlyDuePct !== undefined) { const v = Number(b.monthlyDuePct); if (!Number.isFinite(v) || v < 0 || v > 100) return bad('Pourcentage entre 0 et 100', 400); data.monthlyDuePct = Math.round(v * 100) / 100; }
+    if (b.customerId && b.monthlyMin !== undefined) {
+      const v = Number(b.monthlyMin); if (!Number.isFinite(v) || v < 0) return bad('Montant mensuel invalide', 400);
+      const done = await prisma.supplierErpCustomer.updateMany({ where: { id: String(b.customerId), companyId: s.companyId }, data: { monthlyMin: Math.round(v * 1000) / 1000 } });
+      if (!done.count) return bad('Client introuvable', 404);
+    }
+    const c = await prisma.supplierCompany.update({ where: { id: s.companyId }, data, select: { autoReminders: true, monthlyDuePct: true } });
+    return ok({ autoReminders: c.autoReminders, monthlyDuePct: Number(c.monthlyDuePct) });
   } catch (e: any) { return bad(e.message, e.status || 500); }
 }

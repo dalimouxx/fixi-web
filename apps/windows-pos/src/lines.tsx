@@ -8,6 +8,22 @@ const money = (n: number) => '‎' + new Intl.NumberFormat('fr-FR', { maximumFra
 const today = () => new Intl.DateTimeFormat('fr-CA', { timeZone: 'Africa/Tunis' }).format(new Date());
 const api = (path: string) => invoke<any>('supplier_api', { method: 'GET', path, body: null });
 
+const METHODS: Record<string, string> = { CASH: 'Espèces', CARD: 'Carte', BANK_TRANSFER: 'Virement', CHEQUE: 'Chèque', CHECK: 'Chèque', D17: 'D17', FLOUCI: 'Flouci', ONLINE: 'En ligne' };
+const hour = (v: string) => new Date(v).toLocaleString('fr-FR', { timeZone: 'Africa/Tunis', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+
+/** Recette et journal d'une ligne : articles vendus un par un et recette par moyen de paiement. */
+function LineJournal({ title, totals, methods, journal, more }: { title: string; totals: any; methods: any[]; journal: any[]; more: number }) {
+  return <div className="v6-journal">
+    <h3 className="v6-h3">Recette et journal — {title}</h3>
+    <p className="v6-journal-sum"><span>Ventes <b>{money(totals.sales)}</b></span><span>Pièces <b>{totals.units}</b></span><span>Recette encaissée <b>{money(totals.collected)}</b></span>
+      {(methods || []).map(m => <span key={m.method}>{METHODS[m.method] || m.method} <b>{money(m.amount)}</b></span>)}<span>Dû des clients <b>{money(totals.due)}</b></span></p>
+    <table className="v5-table"><thead><tr><th>Heure</th><th>Ticket</th><th>Article</th><th className="num">Qté</th><th className="num">Prix</th><th className="num">Total</th></tr></thead>
+      <tbody>{(journal || []).length ? journal.map((j: any, i: number) => <tr key={i}><td>{hour(j.at)}</td><td>{j.reference}</td><td>{j.name}</td><td className="num">{j.quantity}</td><td className="num">{money(j.unitPrice)}</td><td className="num">{money(j.total)}</td></tr>)
+        : <tr><td colSpan={6}>Aucun article vendu sur la période.</td></tr>}</tbody></table>
+    {more > 0 && <small>… et {more} autre(s) article(s). Réduisez la période pour tout voir.</small>}
+  </div>;
+}
+
 export function LinesPage({ canCount, onError, onMessage, onOpenInventory }: { canCount: boolean; onError: (m: string) => void; onMessage: (m: string) => void; onOpenInventory: () => void }) {
   const [line, setLine] = useState('all'), [from, setFrom] = useState(today()), [to, setTo] = useState(today());
   const [split, setSplit] = useState<any[]>([]), [rep, setRep] = useState<any>(null), [busy, setBusy] = useState(false), [n, setN] = useState(0);
@@ -22,12 +38,14 @@ export function LinesPage({ canCount, onError, onMessage, onOpenInventory }: { c
     try { await invoke('supplier_stock_count', { request: { action: 'STOCK_COUNT_START', lineId: line, reference: 'INV-WIN-' + label + '-' + Date.now(), note: 'Inventaire ' + label + ' depuis FIXI Caisse' } }); onMessage('Inventaire de ' + label + ' démarré.'); onOpenInventory(); }
     catch (e) { onError(String(e)); }
   }
+  // Impression en A4 : seul le rapport est imprimé (pas le menu ni le panier).
+  function printReport() { document.body.dataset.printMode = 'report'; window.addEventListener('afterprint', () => { delete document.body.dataset.printMode; }, { once: true }); requestAnimationFrame(() => requestAnimationFrame(() => window.print())); }
   return <section className="v5-card v6-lines">
     <header className="v6-lines-head"><h2><Layers size={20} /> Lignes de produits</h2>
       <div className="v6-inline"><label>Du <input className="v5-input" type="date" value={from} max={to} onChange={e => setFrom(e.target.value)} /></label><label>au <input className="v5-input" type="date" value={to} min={from} onChange={e => setTo(e.target.value)} /></label>
         <button className="v5-btn v5-btn--ghost v5-btn--sm" onClick={() => { setFrom(today()); setTo(today()); }}>Aujourd’hui</button>
         <button className="v5-btn v5-btn--ghost v5-btn--sm" onClick={() => setN(x => x + 1)} disabled={busy}><RefreshCw size={14} /></button>
-        <button className="v5-btn v5-btn--ghost v5-btn--sm" onClick={() => window.print()}><Printer size={14} /> Imprimer</button></div></header>
+        <button className="v5-btn v5-btn--ghost v5-btn--sm" onClick={printReport}><Printer size={14} /> Imprimer / PDF</button></div></header>
 
     <table className="v5-table v6-lines-split"><thead><tr><th>Ligne</th><th className="num">Ventes</th><th className="num">Pièces</th><th className="num">Encaissé</th><th className="num">Dû des clients</th><th className="num">Stock</th><th className="num">Valeur du stock</th><th className="num">À payer</th></tr></thead>
       <tbody>{split.map(r => <tr key={r.id} className={line === r.id ? 'is-on' : ''}><td><button className={'v6-line-tag' + (r.id === 'own' ? ' is-own' : '')} onClick={() => setLine(r.id)}>{name(r)}</button></td><td className="num">{money(r.totals.sales)}</td><td className="num">{r.totals.units}</td><td className="num">{money(r.totals.collected)}</td><td className="num">{money(r.totals.due)}</td><td className="num">{r.stock.quantity}</td><td className="num">{money(r.stock.value)}</td><td className="num">{r.owed === null ? '—' : money(r.owed)}</td></tr>)}
@@ -49,6 +67,9 @@ export function LinesPage({ canCount, onError, onMessage, onOpenInventory }: { c
         <table className="v5-table"><thead><tr><th>Client qui doit</th><th className="num">Dû</th></tr></thead>
           <tbody>{rep.customers.length ? rep.customers.slice(0, 40).map((c: any) => <tr key={c.id || 'c'}><td>{c.name}</td><td className="num">{money(c.due)}</td></tr>) : <tr><td colSpan={2}>Aucun client ne doit rien.</td></tr>}</tbody></table>
       </div>
+      {line === 'all'
+        ? split.map(r => <LineJournal key={r.id} title={name(r)} totals={r.totals} methods={r.methods} journal={r.journal} more={r.journalMore} />)
+        : <LineJournal title={label} totals={rep.totals} methods={rep.methods} journal={rep.journal} more={rep.journalMore} />}
       <div className="v6-lines-head"><h3 className="v6-h3">Stock — {label} · {rep.stock.products} produit(s) · {rep.stock.quantity} pièce(s) · {money(rep.stock.value)}</h3>
         {canCount && line !== 'all' && <button className="v5-btn v5-btn--primary v5-btn--sm" onClick={startCount}><ClipboardCheck size={14} /> Inventaire de cette ligne</button>}</div>
       <table className="v5-table"><thead><tr><th>Produit</th><th>Catégorie</th><th className="num">Stock</th><th className="num">Prix</th><th className="num">Coût</th><th className="num">Valeur</th></tr></thead>

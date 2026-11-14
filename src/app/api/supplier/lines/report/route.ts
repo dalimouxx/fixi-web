@@ -21,7 +21,7 @@ export async function GET(req: Request) {
       const lines = await companyLines(s.companyId);
       const ids = [OWN, ...lines.filter(l => l.active).map(l => l.id)];
       const rows = [];
-      for (const id of ids) { const r = await lineReport(s.companyId, id, start, end); rows.push({ id, totals: r.totals, stock: { products: r.stock.products, quantity: r.stock.quantity, value: r.stock.value }, owed: r.consignment?.owed ?? null, ownTag: r.ownTag, tag: id === OWN ? null : lines.find(l => l.id === id)?.tag }); }
+      for (const id of ids) { const r = await lineReport(s.companyId, id, start, end); rows.push({ id, totals: r.totals, methods: r.methods, journal: r.journal.slice(0, 600), journalMore: r.journalMore + Math.max(0, r.journal.length - 600), stock: { products: r.stock.products, quantity: r.stock.quantity, value: r.stock.value }, owed: r.consignment?.owed ?? null, ownTag: r.ownTag, tag: id === OWN ? null : lines.find(l => l.id === id)?.tag }); }
       return ok({ from, to, split: rows });
     }
     const line = raw === 'all' ? null : raw === OWN ? OWN : await checkLineId(s.companyId, raw);

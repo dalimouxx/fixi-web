@@ -67,7 +67,7 @@
 @media(max-width:1290px){.v4-ticket-filters{grid-template-columns:repeat(2,minmax(0,1fr))}.v4-ticket-filters label:first-child{grid-column:1/-1}}
 @media(max-width:1000px){.v4-ticket-filters{grid-template-columns:1fr}.v4-ticket-filters label:first-child{grid-column:auto}}
 @media print{
- @page{size:80mm auto;margin:0}
+ /* La taille de la page est posée par print-page.ts selon ce qu'on imprime (ticket 80 mm, étiquette, A4). */
  body[data-print-mode="ticket"] .v4-receipt{display:block!important;visibility:visible!important;background:#fff!important;color:#000!important;
  width:78mm!important;max-width:78mm!important;margin:0!important;padding:4mm 2mm!important;box-shadow:none!important}
  body[data-print-mode="ticket"] .v4-receipt *{visibility:visible!important}
@@ -171,3 +171,36 @@
     flex-shrink:0!important;
   }
 }
+
+
+/* Étiquette 20 mm de large x 40 mm de haut : l'étiquette 40 x 20 tournée d'un quart de tour. */
+.fixi-label-turn { display: contents; }
+@media print {
+  body[data-print-mode="labels"][data-label-format="40x20"][data-label-portrait] .labels-print-area { width:20mm!important; }
+  body[data-print-mode="labels"][data-label-format="40x20"][data-label-portrait] .fixi-label-turn {
+    display:block!important; position:relative!important; width:20mm!important; height:40mm!important; overflow:hidden!important;
+    margin:0!important; padding:0!important; break-after:page!important; page-break-after:always!important; break-inside:avoid!important;
+  }
+  body[data-print-mode="labels"][data-label-format="40x20"][data-label-portrait] .fixi-label-turn .fixi-label {
+    page:auto!important; break-after:auto!important; page-break-after:auto!important;
+    position:absolute!important; top:0!important; left:20mm!important; transform-origin:top left!important; transform:rotate(90deg)!important;
+  }
+}
+
+/* Rapport (lignes SL / MG) : A4, sans le menu ni le panier. */
+@media print {
+  body[data-print-mode="report"] .v5-side, body[data-print-mode="report"] .v5-basket, body[data-print-mode="report"] .v4-receipt { display:none!important; }
+  body[data-print-mode="report"], body[data-print-mode="report"] #root, body[data-print-mode="report"] .v5-app, body[data-print-mode="report"] .v5-main {
+    display:block!important; height:auto!important; min-height:0!important; max-height:none!important; overflow:visible!important; background:#fff!important; color:#000!important; position:static!important;
+  }
+  body[data-print-mode="report"] .v5-main *:not(.v6-lines):not(.v6-lines *):not(:has(.v6-lines)) { display:none!important; }
+  body[data-print-mode="report"] .v6-lines { border:0!important; box-shadow:none!important; padding:0!important; background:#fff!important; color:#000!important; }
+  body[data-print-mode="report"] .v6-lines * { color:#000!important; }
+  body[data-print-mode="report"] .v6-lines table { width:100%!important; border-collapse:collapse; font-size:9.5pt; }
+  body[data-print-mode="report"] .v6-lines th, body[data-print-mode="report"] .v6-lines td { border-bottom:1px solid #bbb; padding:3px 5px; background:none!important; }
+  body[data-print-mode="report"] .v6-lines tr { break-inside:avoid; }
+  body[data-print-mode="report"] .v6-line-tag { display:inline!important; background:none!important; border:0!important; padding:0!important; font-weight:800; }
+}
+.v6-journal { display:grid; gap:8px; }
+.v6-journal-sum { display:flex; flex-wrap:wrap; gap:6px 18px; margin:0; }
+.v6-journal-sum b { margin-left:4px; }

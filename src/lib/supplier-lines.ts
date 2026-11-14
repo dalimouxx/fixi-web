@@ -77,7 +77,7 @@ export function computeLineReport(args: {
   sales: SaleLite[];
   dueSales: SaleLite[];
   items: ItemLite[];
-  payments: { saleId: string | null; amount: number; createdAt: Date }[];
+  payments: { saleId: string | null; amount: number; createdAt: Date; method?: string }[];
   lineOf: (productId: string | null, saleId: string) => string;
   commissionOf?: (productId: string | null) => number | null;
   customerName: (id: string | null) => string;
@@ -94,6 +94,7 @@ export function computeLineReport(args: {
   for (const it of args.items) { const a = itemsBySale.get(it.saleId) || []; a.push(it); itemsBySale.set(it.saleId, a); }
   const totals = zero();
   const days = new Map<string, LineFigures>();
+  const methods = new Map<string, number>(); // recette par moyen de paiement
   const day = (d: Date) => { const k = tunisDay(d); const v = days.get(k) || zero(); days.set(k, v); return v; };
   for (const s of args.sales) {
     const share = shareOf(s.id);
@@ -112,6 +113,7 @@ export function computeLineReport(args: {
     if (share <= 0) continue;
     const v = p.amount * share;
     totals.collected += v; day(p.createdAt).collected += v;
+    const m = p.method || 'CASH'; methods.set(m, (methods.get(m) || 0) + v);
   }
   const byCustomer = new Map<string, number>();
   for (const s of args.dueSales) {
@@ -126,6 +128,7 @@ export function computeLineReport(args: {
   const round = (f: LineFigures): LineFigures => ({ sales: r3(f.sales), collected: r3(f.collected), due: r3(f.due), count: f.count, units: f.units, profit: r3(f.profit) });
   return {
     totals: round(totals),
+    methods: [...methods.entries()].map(([method, amount]) => ({ method, amount: r3(amount) })).filter(m => m.amount > 0).sort((a, b) => b.amount - a.amount),
     days: [...days.entries()].sort((a, b) => b[0].localeCompare(a[0])).map(([date, f]) => ({ date, ...round(f) })),
     customers: [...byCustomer.entries()].map(([id, due]) => ({ id: id || null, name: args.customerName(id || null), due: r3(due) })).filter(c => c.due > 0).sort((a, b) => b.due - a.due),
   };
@@ -188,9 +191,9 @@ export async function lineReport(companyId: string, line: string | null, from: D
     return c in commissions ? commissions[c] : null;
   };
   const [periodSales, dueSales, payments] = await Promise.all([
-    prisma.supplierErpSale.findMany({ where: { companyId, status: { not: 'CANCELLED' }, createdAt: { gte: from, lt: to } }, select: { id: true, customerId: true, total: true, paid: true, createdAt: true } }),
+    prisma.supplierErpSale.findMany({ where: { companyId, status: { not: 'CANCELLED' }, createdAt: { gte: from, lt: to } }, select: { id: true, customerId: true, total: true, paid: true, createdAt: true, reference: true } }),
     prisma.supplierErpSale.findMany({ where: { companyId, status: { not: 'CANCELLED' } }, select: { id: true, customerId: true, total: true, paid: true, createdAt: true } }),
-    prisma.supplierErpPayment.findMany({ where: { companyId, kind: 'IN', createdAt: { gte: from, lt: to } }, select: { saleId: true, amount: true, createdAt: true } }),
+    prisma.supplierErpPayment.findMany({ where: { companyId, kind: 'IN', createdAt: { gte: from, lt: to } }, select: { saleId: true, amount: true, createdAt: true, method: true } }),
   ]);
   const num = (s: any): SaleLite => ({ id: s.id, customerId: s.customerId, total: Number(s.total), paid: Number(s.paid), createdAt: s.createdAt });
   for (const s of [...periodSales, ...dueSales]) saleDate.set(s.id, s.createdAt.getTime());
@@ -198,7 +201,8 @@ export async function lineReport(companyId: string, line: string | null, from: D
   const saleIds = [...new Set([...periodSales.map(s => s.id), ...due.map(s => s.id), ...payments.map(p => p.saleId).filter(Boolean) as string[]])];
   const toItem = (i: any): ItemLite => ({ saleId: i.saleId, productId: i.productId, quantity: i.quantity, unitPrice: Number(i.unitPrice), unitCost: Number(i.unitCost), discount: Number(i.discount), extra: Number(i.extra || 0) });
   const itemSelect = { saleId: true, productId: true, quantity: true, unitPrice: true, unitCost: true, discount: true, extra: true } as const;
-  const items: ItemLite[] = saleIds.length ? (await prisma.supplierErpSaleItem.findMany({ where: { saleId: { in: saleIds } }, select: itemSelect })).map(toItem) : [];
+  const rawItems = saleIds.length ? await prisma.supplierErpSaleItem.findMany({ where: { saleId: { in: saleIds } }, select: { ...itemSelect, name: true } }) : [];
+  const items: ItemLite[] = rawItems.map(toItem);
   const unknown = saleIds.filter(id => !saleDate.has(id));
   if (unknown.length) for (const s of await prisma.supplierErpSale.findMany({ where: { id: { in: unknown } }, select: { id: true, createdAt: true } })) saleDate.set(s.id, s.createdAt.getTime());
   const customerIds = [...new Set(due.map(s => s.customerId).filter(Boolean) as string[])];
@@ -206,9 +210,16 @@ export async function lineReport(companyId: string, line: string | null, from: D
   const cname = new Map(customers.map(c => [c.id, c.name]));
   const report = computeLineReport({
     line, sales: periodSales.map(num), dueSales: due, items,
-    payments: payments.map(p => ({ saleId: p.saleId, amount: Number(p.amount), createdAt: p.createdAt })),
+    payments: payments.map(p => ({ saleId: p.saleId, amount: Number(p.amount), createdAt: p.createdAt, method: p.method })),
     lineOf, commissionOf, customerName: id => (id && cname.get(id)) || 'Client comptoir',
   });
+
+  // Journal de la ligne : chaque article vendu sur la période (heure, ticket, produit, quantité, montant) — sans coût ni bénéfice.
+  const inPeriod = new Map(periodSales.map(s => [s.id, s]));
+  const journalAll = rawItems.filter(i => inPeriod.has(i.saleId) && (line === null || lineOf(i.productId, i.saleId) === line))
+    .map(i => { const sale = inPeriod.get(i.saleId)!; return { at: sale.createdAt, reference: sale.reference, name: i.name, quantity: i.quantity, unitPrice: Number(i.unitPrice), total: r3(Number(i.unitPrice) * i.quantity - Number(i.discount)) }; })
+    .sort((a, b) => a.at.getTime() - b.at.getTime());
+  const journal = journalAll.slice(0, 1500), journalMore = journalAll.length - journal.length;
 
   // Stock de la ligne : liste des produits, quantités et valeur au coût (pour l'inventaire de la ligne).
   const inStock = products.filter(p => p.active && (line === null || (line === OWN ? !p.lineId : p.lineId === line)));
@@ -240,5 +251,5 @@ export async function lineReport(companyId: string, line: string | null, from: D
     const paidOut = await prisma.supplierErpPayment.aggregate({ where: { companyId, kind: 'OUT', lineId: line as string }, _sum: { amount: true } });
     consignment = consignmentBalance(sold, back, Number(paidOut._sum.amount || 0));
   }
-  return { line, lines, ownTag: company?.ownLineTag || null, hasScale, commissions, ...report, stock, consignment };
+  return { line, lines, ownTag: company?.ownLineTag || null, hasScale, commissions, ...report, journal, journalMore, stock, consignment };
 }

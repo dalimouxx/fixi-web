@@ -43,6 +43,37 @@ export function creditOverflow(limit: number, currentDue: number, newAmount: num
   return Math.max(0, Math.round((currentDue + newAmount - limit) * 1000) / 1000);
 }
 
+export const MONTH_DAYS = 30;
+export type MonthlyRule = { minAmount: number; pct: number };
+export type MonthlyState = { required: number; paid: number; missing: number; oldDue: number; late: boolean };
+
+/**
+ * Règlement mensuel : un client qui a un dû de plus de 30 jours doit avoir réglé, sur les 30 derniers jours,
+ * soit son montant minimum, soit la part (%) fixée par le fournisseur — sans jamais dépasser son ancien dû.
+ * Un paiement fait au moment même de l'achat (moins de 5 minutes après la facture) ne compte pas comme un règlement de dette.
+ */
+export function monthlyDue(rule: MonthlyRule, sales: DueSale[], payments: { amount: number; createdAt: Date | string; saleCreatedAt?: Date | string | null }[], now = Date.now()): MonthlyState {
+  const r3 = (n: number) => Math.round(n * 1000) / 1000, since = now - MONTH_DAYS * DAY;
+  let oldDue = 0;
+  for (const s of sales) {
+    if (new Date(s.createdAt).getTime() > since || (s.dueAt && new Date(s.dueAt).getTime() > now)) continue;
+    oldDue += Math.max(0, Number(s.total) - Number(s.credit || 0) - Number(s.paid));
+  }
+  let paid = 0;
+  for (const p of payments) {
+    const at = new Date(p.createdAt).getTime();
+    if (at < since || at > now) continue;
+    if (p.saleCreatedAt && at - new Date(p.saleCreatedAt).getTime() < 5 * 60_000) continue;
+    paid += Number(p.amount);
+  }
+  oldDue = r3(oldDue); paid = r3(paid);
+  const base = oldDue + paid;
+  const wanted = rule.minAmount > 0 ? rule.minAmount : rule.pct > 0 ? base * Math.min(100, rule.pct) / 100 : 0;
+  const required = oldDue > 0.0005 ? r3(Math.min(wanted, base)) : 0;
+  const missing = r3(Math.max(0, required - paid));
+  return { required, paid, missing, oldDue, late: missing > 0.0005 };
+}
+
 /** Distance à vol d'oiseau (km). */
 export function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
   const R = 6371, r = (x: number) => (x * Math.PI) / 180;

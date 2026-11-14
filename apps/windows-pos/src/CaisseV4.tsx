@@ -27,7 +27,7 @@ import './v5.css';
 import './fixi-max.css';
 
 type Product={id:string;name:string;sku:string;barcode?:string|null;category:string|null;lineId?:string|null;tag?:string|null;price:number;wholesalePrice?:number|null;minStock?:number;stock:number;sold30?:number;onHand?:number;tiers?:{minQty:number;unitPrice:number}[]};
-type Customer={id:string;name:string;phone?:string|null;taxId?:string|null;address?:string|null;creditLimit?:number;priceMode?:string;discountPct?:number;due?:number};
+type Customer={id:string;name:string;phone?:string|null;taxId?:string|null;address?:string|null;creditLimit?:number;monthlyMin?:number;priceMode?:string;discountPct?:number;due?:number};
 type Boot={lines?:{id:string;tag:string;name:string}[];ownTag?:string|null;companyName:string;role:string;perms?:Perm[];discountLimitPct?:number;products:Product[];customers:Customer[];pinConfigured?:boolean;receiptProfile?:import('./TicketV4').ReceiptBusinessProfile|null;account?:{id:string;fullName:string}};
 type CustomLine={id:string;name:string;price:number;quantity:number};
 type SaleItem={productId:string;quantity:number;unitPrice:number;extra?:number}|{custom:true;name:string;quantity:number;unitPrice:number};
@@ -589,11 +589,12 @@ function App(){
     </div>
     <h2 className="v5-card-title">Clients <small>{boot.customers.length}</small></h2>
     {boot.customers.length===0?<Empty icon={Users} title="Aucun client" text="Ajoutez votre premier client ci-dessus."/>:
-    <div className="v5-table-wrap"><table className="v5-table"><thead><tr><th>Client</th><th>Tarif · remise · plafond</th><th className="act"></th></tr></thead><tbody>
+    <div className="v5-table-wrap"><table className="v5-table"><thead><tr><th>Client</th><th>Tarif · remise · plafond · minimum par mois</th><th className="act"></th></tr></thead><tbody>
     {boot.customers.map(c=><tr key={c.id}><td><b>{c.name}</b><small>{[c.phone,c.taxId?'MF '+c.taxId:''].filter(Boolean).join(' · ')}{Number(c.due)>0?' · doit '+money(Number(c.due)):''}</small></td>
      <td>{canDiscount&&boot.role!=='DEMO'?<div className="v6-client-terms"><select aria-label={'Tarif '+c.name} value={c.priceMode||'RETAIL'} onChange={e=>void updateCustomer(c,{priceMode:e.target.value})}><option value="RETAIL">Détail</option><option value="WHOLESALE">Gros</option></select>
       <label><input type="number" min={0} max={50} step={0.5} defaultValue={Number(c.discountPct||0)} onBlur={e=>{const v=Number(e.target.value);if(v!==Number(c.discountPct||0))void updateCustomer(c,{discountPct:v})}} aria-label={'Remise '+c.name}/> %</label>
-      <label>Plafond <input type="number" min={0} step={10} defaultValue={Number(c.creditLimit||0)} onBlur={e=>{const v=Number(e.target.value);if(v!==Number(c.creditLimit||0))void updateCustomer(c,{creditLimit:v})}} aria-label={'Plafond '+c.name}/></label></div>
+      <label>Plafond <input type="number" min={0} step={10} defaultValue={Number(c.creditLimit||0)} onBlur={e=>{const v=Number(e.target.value);if(v!==Number(c.creditLimit||0))void updateCustomer(c,{creditLimit:v})}} aria-label={'Plafond '+c.name}/></label>
+      <label title="Montant que ce client doit régler chaque mois sur son ancien dû. Sinon ses achats à crédit sont bloqués.">Min/mois <input type="number" min={0} step={10} defaultValue={Number(c.monthlyMin||0)} onBlur={e=>{const v=Number(e.target.value);if(v!==Number(c.monthlyMin||0))void updateCustomer(c,{monthlyMin:v})}} aria-label={'Minimum par mois '+c.name}/></label></div>
       :<small>{c.priceMode==='WHOLESALE'?'Gros':'Détail'}{Number(c.discountPct)>0?' · -'+c.discountPct+' %':''}</small>}</td>
      <td className="act"><button className="v5-btn v5-btn--soft v5-btn--sm" onClick={()=>{chooseCustomer(c.id);setPage('caisse')}}><ShoppingCart size={15}/> Vendre</button></td></tr>)}
     </tbody></table></div>}</section>}

@@ -18,7 +18,9 @@ export default async function Label({ params, searchParams }: { params: Promise<
   const device = [r.brand, r.model].filter(Boolean).join(' ');
   const date = new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: '2-digit' }).format(r.createdAt);
   const phone = String(r.client.phone || '').replace(/\D/g, '');
-  return <div className="fx-label-page">
+  // La taille « étiquette » est posée ici seulement : dans une feuille de style commune, elle s'appliquait à toutes
+  // les impressions du site (factures, rapports…) et les PDF sortaient en 50 × 30 mm, un mot par page.
+  return <div className="fx-label-page"><style>{'@media print{@page{size:50mm 30mm;margin:0}}'}</style>
     {Array.from({ length: copies }).map((_, i) => <div className="fx-label" key={i}>
       <div className="fx-label-main">
         <b className="fx-label-code">{r.code}</b>

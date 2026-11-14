@@ -18,7 +18,7 @@ type Invoice = {
   credits: { id:string;reference:string;date:string;amount:number;refunded:number }[];
   delivery?: { driverName?:string|null;deliveredAt?:string|null;recipientName?:string|null;proofUrl?:string|null }|null;
 };
-type Supplier = { customerId: string; company?: { id:string;name:string;region?:string|null;phone?:string|null }|null; due:number; totalPaid:number; sales:Invoice[] };
+type Supplier = { monthly?: { required:number; paid:number; missing:number; late:boolean }|null; customerId: string; company?: { id:string;name:string;region?:string|null;phone?:string|null }|null; due:number; totalPaid:number; sales:Invoice[] };
 type Statement = {
  totalDue:number;totalPaid:number;totalInvoiced:number;suppliers:Supplier[];
  pendingOrders:{id:string;reference:string;supplier:string;createdAt:string;status:string;total:number;
@@ -83,6 +83,11 @@ export default function MySupplierDebts() {
         <div><h2>{s.company?.name||'Fournisseur'}</h2><small>{s.company?.region||'—'} {s.company?.phone?' · '+s.company.phone:''} · {s.sales.length} facture(s) affichée(s)</small></div>
         <div style={{textAlign:'right'}}><small>Solde fournisseur</small><strong style={{display:'block'}}>{currency(s.due)}</strong></div>
       </div>
+      {s.monthly&&s.monthly.required>0&&<div className={s.monthly.late?styles.errorMsg:styles.note} role={s.monthly.late?'alert':undefined} style={{margin:'10px 16px'}}>
+        {s.monthly.late
+          ?<><b>Achats bloqués chez ce fournisseur.</b> Règlement mensuel en retard : il reste {currency(s.monthly.missing)} à régler (minimum du mois {currency(s.monthly.required)}, déjà réglé {currency(s.monthly.paid)}).</>
+          :<>Règlement mensuel à jour : {currency(s.monthly.paid)} réglé sur les 30 derniers jours (minimum {currency(s.monthly.required)}).</>}
+      </div>}
       {s.sales.map((x,index)=><details key={x.id} className={styles.order} open={index===0}>
         <summary>
           <div className={styles.orderTitle}><strong>{x.reference}</strong><span>Facture du {dt(x.createdAt)}</span></div>

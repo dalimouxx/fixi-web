@@ -316,7 +316,7 @@ html[dir="rtl"] :is(b,strong,small,span,td,th,em,h3,label,p){unicode-bidi:plaint
 .fx-label-tools p{margin:0;color:var(--fx-ink-2)}
 .fx-label-copies{display:flex;align-items:center;justify-content:center;gap:12px;font-weight:700}
 @media print{
-  @page{size:50mm 30mm;margin:0}
+  /* Pas de @page ici : la taille 50 × 30 mm est posée par la page de l'étiquette elle-même (src/app/label). */
   .fx-label-page{padding:0;background:#fff;gap:0;display:block}
   .fx-label{border:0;border-radius:0;page-break-after:always;break-after:page}
   .global-lang-toggle,.fx-install{display:none!important}

@@ -16,17 +16,24 @@ export function SupplierReminders() {
     try { const x = await fetch('/api/supplier/reminders', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ customerId: r.id }) }); const j = await x.json(); if (!x.ok) throw new Error(j.error); setSent(s => ({ ...s, [r.id]: j.notified ? 'Relancé dans Fixi' : 'Relance notée' })); if (j.wa && !j.notified) window.open(j.wa, '_blank'); }
     catch (e: any) { setErr(e.message); }
   }
+  async function patch(body: any) { setErr(''); const x = await fetch('/api/supplier/reminders', { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }); if (!x.ok) setErr((await x.json().catch(() => ({}))).error || 'Enregistrement impossible'); setN(v => v + 1); }
   async function toggle() { await fetch('/api/supplier/reminders', { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ autoReminders: !d.autoReminders }) }); setN(x => x + 1); }
   return <section className="supplier-panel rm">
     <header className="rm-head">
       <div><h3><BellRing size={17} /> Relances de paiement</h3><p>{d.totals.customers} client(s) · {money(d.totals.due)} à encaisser{d.totals.late30 > 0 ? ` · ${money(d.totals.late30)} en retard de plus de 30 jours` : ''}{d.totals.blocked ? ` · ${d.totals.blocked} bloqué(s) au plafond` : ''}</p></div>
       <label className="rm-auto"><input type="checkbox" checked={d.autoReminders} onChange={toggle} /><span><b>Relances automatiques</b><small>J+7, J+15, J+30 · ateliers Fixi</small></span></label>
     </header>
+    <div className="rm-monthly">
+      <label><b>Règlement mensuel</b><small>Chaque client doit régler chaque mois cette part de son dû de plus de 30 jours. Sinon il est prévenu et ses achats à crédit sont bloqués. 0 = pas de règle.</small></label>
+      <span><input className="input" type="number" min={0} max={100} step={1} defaultValue={d.monthlyDuePct} key={'p' + d.monthlyDuePct} disabled={!d.canEdit} onBlur={e => { const v = Number(e.target.value); if (v !== d.monthlyDuePct) void patch({ monthlyDuePct: v }); }} aria-label="Part du dû à régler chaque mois" /> %</span>
+    </div>
+    {d.totals.monthlyLate > 0 && <p className="rm-err"><Lock size={14} /> {d.totals.monthlyLate} client(s) bloqué(s) : règlement mensuel en retard.</p>}
     {d.autoSent > 0 && <p className="rm-info"><Check size={15} /> {d.autoSent} relance(s) automatique(s) envoyée(s) aujourd’hui.</p>}
     {err && <p className="rm-err">{err}</p>}
     {d.rows.length ? <ul className="rm-list">{d.rows.slice(0, 40).map((r: any) => <li key={r.id}>
       <span className={'rm-age ' + lvl(r.days)}>{r.days} j</span>
-      <div><b>{r.name}{r.blocked && <em><Lock size={11} /> plafond atteint</em>}</b><small>{money(r.due)}{r.creditLimit > 0 ? ` / plafond ${money(r.creditLimit)}` : ''}{r.last ? ` · relancé le ${new Date(r.last.at).toLocaleDateString('fr-FR')}${r.last.auto ? ' (auto)' : ''}` : ''}</small></div>
+      <div><b>{r.name}{r.monthly?.late ? <em><Lock size={11} /> bloqué · reste {money(r.monthly.missing)} ce mois</em> : r.blocked && <em><Lock size={11} /> plafond atteint</em>}</b><small>{money(r.due)}{r.creditLimit > 0 ? ` / plafond ${money(r.creditLimit)}` : ''}{r.last ? ` · relancé le ${new Date(r.last.at).toLocaleDateString('fr-FR')}${r.last.auto ? ' (auto)' : ''}` : ''}</small></div>
+      {d.canEdit && <label className="rm-min" title="Montant fixe à régler chaque mois par ce client (0 = règle générale en %)"><small>Min/mois</small><input className="input" type="number" min={0} step={10} defaultValue={r.monthlyMin} key={r.id + '-' + r.monthlyMin} onBlur={e => { const v = Number(e.target.value); if (v !== r.monthlyMin) void patch({ customerId: r.id, monthlyMin: v }); }} aria-label={'Minimum par mois ' + r.name} /></label>}
       <Link className="btn btn-ghost btn-sm" href={'/supplier/statements/' + r.id} target="_blank" title="Relevé de compte"><FileText size={14} /></Link>
       {r.wa && <a className="btn btn-ghost btn-sm" href={r.wa} target="_blank" rel="noreferrer" title="Message WhatsApp prêt"><MessageCircle size={14} /></a>}
       {sent[r.id] ? <span className="rm-sent"><Check size={14} /> {sent[r.id]}</span> : <button className="btn btn-soft btn-sm" onClick={() => remind(r)}><Send size={14} /> Relancer</button>}

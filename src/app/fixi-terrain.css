@@ -238,3 +238,35 @@ html[data-theme='dark'] .fx-mnt-blob{opacity:.35}
 .sl-split td.num, .sl-split th.num { text-align: right; white-space: nowrap; }
 .sl-split-tag { border: 0; background: var(--fx-brand, #f0782b); color: #fff; font-weight: 800; border-radius: 999px; padding: 3px 12px; cursor: pointer; }
 .sl-remove { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; } .sl-remove .btn { color: var(--fx-danger, #dc2626); }
+
+/* Règlement mensuel des clients */
+.rm-monthly { display: flex; gap: 14px; align-items: center; justify-content: space-between; flex-wrap: wrap; margin: 12px 0; padding: 10px 12px; border: 1px solid var(--fx-line, #e5e7eb); border-radius: 12px; }
+.rm-monthly label { display: grid; gap: 2px; flex: 1 1 260px; }
+.rm-monthly small { color: var(--fx-ink-2, #667085); }
+.rm-monthly span { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; }
+.rm-monthly input { width: 84px; text-align: right; }
+.rm-min { display: inline-flex; align-items: center; gap: 5px; }
+.rm-min input { width: 82px; height: 32px; padding: 2px 6px; text-align: right; }
+
+/* Recette et journal de chaque ligne */
+.sl-journal { display: grid; gap: 8px; border-top: 1px solid var(--fx-line, #e9e4df); padding-top: 14px; }
+.sl-journal h4 { margin: 0; font-size: 15px; }
+.sl-journal-sum { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 0; }
+.sl-journal-sum b { margin-left: 4px; }
+.sl-journal .table { min-width: 0 !important; width: 100%; }
+.sl-journal td.num, .sl-journal th.num { text-align: right; white-space: nowrap; }
+@media print { .sl-journal { break-before: auto; } .sl-journal tr { break-inside: avoid; } }
+
+/* Impression du tableau de bord fournisseur (rapports, lignes SL / MG) : seulement le contenu, en pleine largeur.
+   Dans la couche « legacy » : ses règles !important passent avant celles écrites hors couche. */
+@layer legacy {
+@media print {
+  html body .supplier-os.supplier-os > aside.fixi-supplier-drawer, html body .supplier-os > .fxm-aurora, html body .supplier-os > main > header, html body .supplier-os > main > .fx-subtabs,
+  .fx-lang-choice, .fx-tour, .fx-install, .global-lang-toggle { display: none !important; }
+  .supplier-os { display: block !important; background: #fff !important; min-height: 0 !important; }
+  .supplier-os > main { display: block !important; padding: 8mm !important; margin: 0 !important; width: auto !important; max-width: none !important; overflow: visible !important; }
+  .supplier-os .supplier-panel { box-shadow: none !important; border: 0 !important; padding: 0 !important; background: #fff !important; }
+  .sl-lines .table { font-size: 9.5pt; } .sl-lines .table th, .sl-lines .table td { padding: 3px 6px !important; }
+  .sl-split-tag { background: none !important; color: #000 !important; padding: 0 !important; }
+}
+}
