@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
 jobs:
   e2e:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04 # Playwright ne prend pas encore en charge Ubuntu 26.04
     timeout-minutes: 30
     services:
       postgres:
